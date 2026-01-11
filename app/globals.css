@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* 
+ * Jobmark Design System - Late Night Café Aesthetic
+ * Warm, inviting colors inspired by cozy coffee shops
+ * No gradients, no emojis - clean and sophisticated
+ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+/* Late Night Café - Dark Theme Default */
+:root,
+.dark {
+  --radius: 0.75rem;
+  
+  /* Deep warm brown background - like a cozy café at night */
+  --background: #1a1412;
+  --foreground: #f5f0e8;
+  
+  /* Slightly lighter warm cards */
+  --card: #241e1a;
+  --card-foreground: #f5f0e8;
+  
+  --popover: #2a2320;
+  --popover-foreground: #f5f0e8;
+  
+  /* Warm Amber Primary - like soft lamp light */
+  --primary: #d4a574;
+  --primary-foreground: #1a1412;
+  
+  /* Muted warm tones */
+  --secondary: #2a2320;
+  --secondary-foreground: #e8dfd4;
+  
+  --muted: #2a2320;
+  --muted-foreground: #a89888;
+  
+  /* Warm accent - golden amber */
+  --accent: #c49a6c;
+  --accent-foreground: #1a1412;
+  
+  /* Soft coral for destructive */
+  --destructive: #c75f5f;
+  
+  /* Warm borders */
+  --border: #3d332c;
+  --input: #3d332c;
+  --ring: #d4a574;
+  
+  /* Chart colors - warm palette */
+  --chart-1: #d4a574;
+  --chart-2: #7fb069;
+  --chart-3: #e0a458;
+  --chart-4: #c49a6c;
+  --chart-5: #a89888;
+  
+  /* Sidebar - darker café corner */
+  --sidebar: #1e1814;
+  --sidebar-foreground: #f5f0e8;
+  --sidebar-primary: #d4a574;
+  --sidebar-primary-foreground: #1a1412;
+  --sidebar-accent: #2a2320;
+  --sidebar-accent-foreground: #e8dfd4;
+  --sidebar-border: #3d332c;
+  --sidebar-ring: #d4a574;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom utilities for Jobmark café aesthetic */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Smooth focus for form elements */
+  .focus-ring {
+    @apply outline-none ring-2 ring-ring/50 ring-offset-2 ring-offset-background;
+  }
+  
+  /* Subtle card hover - no harsh effects */
+  .card-hover {
+    @apply transition-all duration-300 hover:bg-card/80;
+  }
+  
+  /* Warm glow effect for ambient lighting feel */
+  .warm-glow {
+    box-shadow: 0 0 40px rgba(212, 165, 116, 0.08);
+  }
+  
+  /* Soft ambient shadow */
+  .ambient-shadow {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Custom scrollbar utilities */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-track-transparent {
+    scrollbar-color: transparent transparent;
+  }
+  
+  .scrollbar-thumb-border\/50 {
+    scrollbar-color: hsl(var(--border) / 0.5) transparent;
+  }
+  
+  /* Webkit scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.3);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--border) / 0.5);
+  }
+}
