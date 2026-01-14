@@ -9,11 +9,13 @@ import {
   BarChart3, 
   FolderOpen, 
   FileText, 
-  Settings 
+  Settings,
+  MessageSquare 
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", icon: Pen, label: "Journal" },
+  { href: "/chat", icon: MessageSquare, label: "Mentor" },
   { href: "/projects", icon: FolderOpen, label: "Projects" },
   { href: "/reports", icon: FileText, label: "Reports" },
   { href: "/insights", icon: BarChart3, label: "Insights" },
@@ -25,7 +27,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex w-64 flex-col border-r border-border/50 bg-sidebar">
+    <aside className="hidden lg:flex w-64 flex-col border-r border-border/50 bg-sidebar sticky top-0 h-screen overflow-y-auto shrink-0">
       <div className="p-6">
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -42,7 +44,7 @@ export function Sidebar() {
             href={item.href}
             icon={item.icon}
             label={item.label}
-            isActive={pathname === item.href}
+            isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
           />
         ))}
       </nav>

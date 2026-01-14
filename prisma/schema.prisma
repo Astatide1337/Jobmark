@@ -64,13 +64,14 @@ model User {
   monthlyActivityGoal  Int     @default(20)
 
   // Relations
-  accounts   Account[]
-  sessions   Session[]
-  projects   Project[]
-  activities Activity[]
-  reports    Report[]
-  goals      Goal[]
-  settings   UserSettings?
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  activities    Activity[]
+  reports       Report[]
+  goals         Goal[]
+  settings      UserSettings?
+  conversations Conversation[]
 }
 
 model Goal {
@@ -83,6 +84,7 @@ model Goal {
   updatedAt DateTime @updatedAt
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
 
   @@index([userId])
 }
@@ -141,6 +143,7 @@ model Project {
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities Activity[]
+  conversations Conversation[]
 
   @@index([userId])
   @@index([userId, archived])
@@ -163,3 +166,36 @@ model Activity {
   @@index([userId, createdAt(sort: Desc)])
 }
 
+// Chat models for AI Career Coach
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String    @default("New Chat")
+  mode      String    @default("general") // "general" | "goal-coach" | "interview"
+  
+  // Context references
+  projectId String?   // If conversation is about a specific project
+  goalId    String?   // If conversation is about a specific goal
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  goal      Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  messages  Message[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String       // "user" | "assistant" | "system"
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
