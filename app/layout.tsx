@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/ui/command-palette";
+import { SettingsProvider } from "@/components/providers/settings-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,15 +28,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
       >
-        {children}
-        <CommandPalette />
-        <Toaster position="bottom-right" />
+        <SettingsProvider>
+          {children}
+          <CommandPalette />
+          <Toaster position="bottom-right" />
+        </SettingsProvider>
       </body>
     </html>
   );
 }
-

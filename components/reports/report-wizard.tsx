@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ReportConfig, streamReport, saveReportToHistory, checkActivityCount } from "@/app/actions/reports";
+import { updateReportSettings } from "@/app/actions/settings";
 import { readStreamableValue } from "ai/rsc";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LiveEditor } from "./live-editor";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, Sparkles, Save, CheckCircle, AlertCircle, Mail, Send } from "lucide-react";
+import { ArrowRight, ChevronLeft, Sparkles, Save, CheckCircle, AlertCircle, Mail, Send, Download, FileText, File } from "lucide-react";
 import { format } from "date-fns";
+import { exportToPdf, exportToWord } from "@/lib/report-export";
+import { toast } from "sonner";
 import {
   Popover,
   PopoverContent,
@@ -24,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/components/providers/settings-provider";
 
 interface Project {
   id: string;
@@ -35,12 +39,25 @@ interface ReportWizardProps {
 }
 
 export function ReportWizard({ projects }: ReportWizardProps) {
+  const { settings } = useSettings();
   const [step, setStep] = useState(1);
   const [config, setConfig] = useState<ReportConfig>({
     dateRange: "7d",
     projectId: undefined, // All projects
-    tone: "professional",
+    tone: "professional", // Will be updated by useEffect
+    notes: "", // Placeholder for custom instructions
   });
+  
+  // Apply user's default settings when they load
+  useEffect(() => {
+    if (settings) {
+      setConfig(prev => ({
+        ...prev,
+        tone: (settings.defaultTone as ReportConfig["tone"]) || prev.tone,
+        notes: settings.customInstructions || prev.notes,
+      }));
+    }
+  }, [settings]);
   
   // Custom date selection state
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
@@ -110,6 +127,13 @@ export function ReportWizard({ projects }: ReportWizardProps) {
     nextStep(); // Go to step 4
     setIsStreaming(true);
     setReportContent("");
+
+    // Auto-save the selected tone as future default
+    if (config.tone) {
+      updateReportSettings({ defaultTone: config.tone }).catch((err: any) => 
+        console.error("Failed to auto-save tone preference", err)
+      );
+    }
 
     try {
       // Finalize config with custom dates if selected
@@ -187,7 +211,10 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8">
+    <div className={cn(
+      "py-8 h-full",
+      step < 4 ? "max-w-2xl mx-auto" : "w-full"
+    )}>
       {/* Progress Indicator */}
       {step < 4 && (
         <div className="flex justify-between items-center mb-12 px-2">
@@ -312,12 +339,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
               <Button 
                 onClick={handleNextStep} 
                 size="lg" 
-                className={cn(
-                    "rounded-full px-8 transition-all duration-200",
-                    !hasValidActivities || isValidating
-                        ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
-                        : ""
-                )}
+                className="rounded-full px-8"
                 disabled={!hasValidActivities || isValidating}
               >
                 Next <ArrowRight className="ml-2 h-4 w-4" />
@@ -435,8 +457,9 @@ export function ReportWizard({ projects }: ReportWizardProps) {
             animate={{ opacity: 1, scale: 1 }}
             className="h-full"
           >
-             <div className="flex justify-between items-center mb-6">
-               <div className="flex items-center gap-2">
+             <div className="flex flex-col h-full gap-6 w-full">
+               {/* Header: Back & Title */}
+               <div className="flex items-center gap-2 shrink-0 pl-1">
                  <Button variant="ghost" size="icon-sm" onClick={() => setStep(1)} disabled={isStreaming}>
                    <ChevronLeft className="h-4 w-4" />
                  </Button>
@@ -445,42 +468,93 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                    {isStreaming && <span className="text-xs font-normal text-muted-foreground animate-pulse">(Generating...)</span>}
                  </h2>
                </div>
-               
-               <div className="flex gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
-                        <Send className="mr-2 h-4 w-4" />
-                        Send via...
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleEmail} className="group cursor-pointer">
-                         <Mail className="mr-2 h-4 w-4 text-foreground group-focus:text-accent-foreground" /> 
-                         <span className="group-focus:text-accent-foreground">Default Mail App</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleGmail} className="group cursor-pointer">
-                         <span className="mr-2 text-lg font-bold text-foreground group-focus:text-accent-foreground">M</span> 
-                         <span className="group-focus:text-accent-foreground">Gmail</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
 
-                  <Button variant="outline" onClick={() => navigator.clipboard.writeText(reportContent)}>
-                     Copy
-                  </Button>
-                  <Button onClick={handleSave} disabled={isStreaming || isSaving || saved}>
-                     {saved ? <CheckCircle className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                     {saved ? "Saved" : "Save to History"}
-                  </Button>
-                </div>
+               {/* Content Layout: Editor (Left) + Actions (Right) */}
+               <div className="flex gap-8 flex-1 min-h-0">
+                 {/* Main Editor Area - Scales with height */}
+                 <div className="flex-1 h-full flex flex-col min-h-0">
+                   <div className="flex-1 rounded-2xl border border-border/50 bg-card/30 shadow-2xl shadow-black/40 flex flex-col">
+                       <LiveEditor 
+                          value={reportContent} 
+                          onChange={setReportContent}
+                          isStreaming={isStreaming}
+                          className="flex-1 h-full"
+                       />
+                   </div>
+                 </div>
+
+                 {/* Vertical Actions Sidebar */}
+                 <div className="w-64 shrink-0 flex flex-col gap-4 pt-4">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-1">Actions</div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start rounded-xl h-12 border-muted-foreground/20 hover:border-muted-foreground/50 hover:bg-transparent">
+                          <Send className="mr-2 h-4 w-4" />
+                          Send via...
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                        <DropdownMenuItem onClick={handleEmail} className="group cursor-pointer">
+                           <Mail className="mr-2 h-4 w-4 text-foreground group-focus:text-accent-foreground" /> 
+                           <span className="group-focus:text-accent-foreground">Default Mail App</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleGmail} className="group cursor-pointer">
+                           <span className="mr-2 text-lg font-bold text-foreground group-focus:text-accent-foreground">M</span> 
+                           <span className="group-focus:text-accent-foreground">Gmail</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+  
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start rounded-xl h-12 border-muted-foreground/20 hover:border-muted-foreground/50 hover:bg-transparent">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                        <DropdownMenuItem onClick={async () => {
+                            try {
+                                toast.info("Generating PDF...");
+                                await exportToPdf(reportContent);
+                                toast.success("PDF Downloaded");
+                            } catch (e) {
+                                toast.error("Failed to generate PDF");
+                            }
+                        }} className="group cursor-pointer">
+                           <File className="mr-2 h-4 w-4 text-foreground group-focus:text-accent-foreground" /> 
+                           <span className="group-focus:text-accent-foreground">Download as PDF</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                            try {
+                                toast.info("Generating Word Doc...");
+                                exportToWord(reportContent);
+                                toast.success("Word Doc Downloaded");
+                            } catch (e) {
+                                toast.error("Failed to generate Word Doc");
+                            }
+                        }} className="group cursor-pointer">
+                           <FileText className="mr-2 h-4 w-4 text-foreground group-focus:text-accent-foreground" /> 
+                           <span className="group-focus:text-accent-foreground">Download as Word</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button variant="outline" className="w-full justify-start rounded-xl h-12 border-muted-foreground/20 hover:border-muted-foreground/50 hover:bg-transparent" onClick={() => navigator.clipboard.writeText(reportContent)}>
+                       <Sparkles className="mr-2 h-4 w-4" />
+                       Copy Text
+                    </Button>
+
+                    <div className="h-4" /> {/* Spacer */}
+
+                    <Button className="w-full justify-start rounded-xl h-12 bg-[var(--accent-warm)] hover:bg-[var(--accent-warm-hover)] text-black font-semibold shadow-lg shadow-[var(--accent-warm)]/10" onClick={handleSave} disabled={isStreaming || isSaving || saved}>
+                       {saved ? <CheckCircle className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                       {saved ? "Saved to History" : "Save to History"}
+                    </Button>
+                 </div>
+               </div>
              </div>
-
-             <LiveEditor 
-                value={reportContent} 
-                onChange={setReportContent}
-                isStreaming={isStreaming}
-             />
           </motion.div>
         )}
 
@@ -491,17 +565,18 @@ export function ReportWizard({ projects }: ReportWizardProps) {
 
 function OptionCard({ selected, onClick, label, description }: { selected: boolean; onClick: () => void; label: string; description?: string }) {
   return (
-    <div 
+    <button 
+      type="button"
       onClick={onClick}
       className={cn(
-        "cursor-pointer rounded-xl border-2 p-6 transition-all duration-200 hover:scale-[1.02]",
+        "cursor-pointer rounded-xl border-2 p-6 transition-all duration-200 hover:scale-[1.02] text-left w-full",
         selected 
           ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" 
           : "border-border/50 bg-card hover:border-primary/50"
       )}
     >
       <div className="font-semibold text-lg mb-1">{label}</div>
-      {description && <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>}
-    </div>
+      {description && <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>}
+    </button>
   )
 }

@@ -58,10 +58,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Settings
+  // Legacy Settings (kept for compatibility)
   weekendStreakEnabled Boolean @default(true)
   defaultProjectId     String?
-  monthlyActivityGoal  Int     @default(20) // User can customize in Goal Setting
+  monthlyActivityGoal  Int     @default(20)
 
   // Relations
   accounts   Account[]
@@ -69,17 +69,62 @@ model User {
   projects   Project[]
   activities Activity[]
   reports    Report[]
+  goals      Goal[]
+  settings   UserSettings?
+}
+
+model Goal {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @db.VarChar(200) // "Decide exactly what you want"
+  deadline  DateTime?
+  why       String?  @db.VarChar(500) // "Why is it important"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Goals (Brian Tracy Method)
+  primaryGoal   String?
+  goalDeadline  DateTime?
+  whyStatement  String?   @db.Text
+  dailyTarget   Int       @default(1)
+  weeklyTarget  Int       @default(10)
+  monthlyTarget Int       @default(40)
+
+  // Report Customization
+  defaultTone        String  @default("professional")
+  customInstructions String? @db.Text
+
+  // Appearance
+  themePreset     String @default("cafe")
+  themeMode       String @default("dark")
+
+  // Preferences
+  hideArchived    Boolean @default(false)
+  showConfetti    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Report {
   id        String   @id @default(cuid())
   userId    String
-  title     String   // e.g. "Weekly Report - Jan 10"
+  title     String
   content   String   @db.Text
-  metadata  Json?    // Stores config like dateRange, tone, etc.
+  metadata  Json?
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -118,4 +163,3 @@ model Activity {
   @@index([userId, createdAt(sort: Desc)])
 }
 
-// (Removed duplicate Report model)

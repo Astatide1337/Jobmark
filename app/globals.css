@@ -46,10 +46,17 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+}
+
+/* Hide all scrollbars globally while preserving scroll functionality */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Late Night Café - Dark Theme Default */
@@ -71,6 +78,10 @@
   /* Warm Amber Primary - like soft lamp light */
   --primary: #d4a574;
   --primary-foreground: #1a1412;
+  
+  /* Warm Accent - for CTA buttons */
+  --accent-warm: #E3B283;
+  --accent-warm-hover: #d9a370;
   
   /* Muted warm tones */
   --secondary: #2a2320;

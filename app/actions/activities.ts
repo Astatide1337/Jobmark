@@ -67,7 +67,7 @@ export async function createActivity(
   }
 }
 
-export async function getActivities(limit = 20, offset = 0) {
+export async function getActivities(limit = 20, offset = 0, hideArchived = false) {
   const session = await auth();
   
   if (!session?.user?.id) {
@@ -75,13 +75,21 @@ export async function getActivities(limit = 20, offset = 0) {
   }
 
   const activities = await prisma.activity.findMany({
-    where: { userId: session.user.id },
+    where: { 
+      userId: session.user.id,
+      ...(hideArchived && {
+        OR: [
+          { projectId: null }, // Activities without a project
+          { project: { archived: false } }, // Activities from non-archived projects
+        ],
+      }),
+    },
     orderBy: { createdAt: "desc" },
     take: limit,
     skip: offset,
     include: {
       project: {
-        select: { id: true, name: true, color: true },
+        select: { id: true, name: true, color: true, archived: true },
       },
     },
   });
@@ -128,21 +136,51 @@ export async function getActivityStats() {
   const session = await auth();
   
   if (!session?.user?.id) {
-    return { thisMonth: 0, recentDates: [], projects: 0, monthlyGoal: 20 };
+    return { 
+      thisMonth: 0, 
+      today: 0,
+      thisWeek: 0,
+      recentDates: [], 
+      projects: 0, 
+      monthlyGoal: 20,
+      dailyGoal: 3,
+      weeklyGoal: 15,
+    };
   }
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  // Get start of week (Sunday = 0)
+  const dayOfWeek = now.getDay();
+  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
 
-  const [user, thisMonthCount, projectCount] = await Promise.all([
+  const [user, settings, thisMonthCount, todayCount, thisWeekCount, projectCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { monthlyActivityGoal: true },
+    }),
+    prisma.userSettings.findUnique({
+      where: { userId: session.user.id },
+      select: { dailyTarget: true, weeklyTarget: true },
     }),
     prisma.activity.count({
       where: {
         userId: session.user.id,
         logDate: { gte: startOfMonth },
+      },
+    }),
+    prisma.activity.count({
+      where: {
+        userId: session.user.id,
+        logDate: { gte: startOfDay },
+      },
+    }),
+    prisma.activity.count({
+      where: {
+        userId: session.user.id,
+        logDate: { gte: startOfWeek },
       },
     }),
     prisma.project.count({
@@ -166,8 +204,12 @@ export async function getActivityStats() {
 
   return {
     thisMonth: thisMonthCount,
+    today: todayCount,
+    thisWeek: thisWeekCount,
     recentDates,
     projects: projectCount,
     monthlyGoal: user?.monthlyActivityGoal ?? 20,
+    dailyGoal: settings?.dailyTarget ?? 3,
+    weeklyGoal: settings?.weeklyTarget ?? 15,
   };
 }

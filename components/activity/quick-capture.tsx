@@ -15,6 +15,7 @@ import { format, isToday, isYesterday, subDays } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
+import { useSettings } from "@/components/providers/settings-provider";
 
 const initialState: ActivityFormState = {
   success: false,
@@ -88,13 +89,17 @@ interface Project {
   id: string;
   name: string;
   color: string;
+  archived?: boolean;
 }
 
 interface QuickCaptureProps {
   projects?: Project[];
+  todayCount?: number;
+  dailyGoal?: number;
 }
 
-export function QuickCapture({ projects = [] }: QuickCaptureProps) {
+export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: QuickCaptureProps) {
+  const { settings } = useSettings();
   const [state, formAction, isPending] = useActionState(createActivity, initialState);
   const [content, setContent] = useState("");
   const [selectedProject, setSelectedProject] = useState<string>("");
@@ -110,6 +115,14 @@ export function QuickCapture({ projects = [] }: QuickCaptureProps) {
   const [isImproving, setIsImproving] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
+  // Filter projects based on hideArchived setting
+  const visibleProjects = useMemo(() => {
+    if (settings?.hideArchived) {
+      return projects.filter(p => !p.archived);
+    }
+    return projects;
+  }, [projects, settings?.hideArchived]);
+
   // Detect OS on mount
   useEffect(() => {
     setIsMac(navigator.platform.toLowerCase().includes("mac"));
@@ -119,13 +132,17 @@ export function QuickCapture({ projects = [] }: QuickCaptureProps) {
     if (state.success) {
       setContent("");
       setSelectedDate(new Date()); // Reset to today
-      triggerConfetti();
+      
+      // Only trigger confetti if setting is enabled (default true)
+      if (settings?.showConfetti !== false) {
+        triggerConfetti();
+      }
       
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
     }
-  }, [state]);
+  }, [state, settings?.showConfetti]);
 
   const charCount = content.length;
   const isValidLength = charCount >= 10 && charCount <= 1000;
@@ -203,7 +220,16 @@ export function QuickCapture({ projects = [] }: QuickCaptureProps) {
   return (
     <Card className="bg-card border-border/50 warm-glow">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Quick Capture</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Quick Capture</CardTitle>
+          <span className={`text-xs px-2 py-1 rounded-full ${
+            todayCount >= dailyGoal 
+              ? "bg-green-500/20 text-green-400" 
+              : "bg-primary/20 text-primary"
+          }`}>
+            {todayCount}/{dailyGoal} today
+          </span>
+        </div>
         <CardDescription>
           What did you accomplish {isToday(selectedDate) ? "today" : isYesterday(selectedDate) ? "yesterday" : `on ${format(selectedDate, "MMM d")}`}?
         </CardDescription>
@@ -360,7 +386,7 @@ export function QuickCapture({ projects = [] }: QuickCaptureProps) {
                 <>
                   <input type="hidden" name="projectId" value={selectedProject} />
                   <ProjectChipSelector
-                    projects={projects}
+                    projects={visibleProjects}
                     selectedId={selectedProject}
                     onSelect={setSelectedProject}
                   />

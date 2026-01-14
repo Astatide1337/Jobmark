@@ -104,6 +104,7 @@ export async function streamReport(config: ReportConfig) {
   Generate a report based on the log. Group by project/theme.
   - **No Intro Fluff**: Do not say "Here is the report" or "The log covers...".
   - **Structure**: Group related tasks together logically.
+  - **User Overrides**: PRIORITIZE any instructions provided in "User Notes" above.
   `;
 
   // 5. Stream
@@ -231,6 +232,30 @@ export async function deleteReport(reportId: string) {
       id: reportId,
       userId: session.user.id, // Security: ensure user owns report
     },
+  });
+
+  return { success: true };
+}
+
+// Update a saved report
+export async function updateReport(reportId: string, content: string, title?: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const updateData: { content: string; title?: string } = {
+    content,
+  };
+  
+  if (title) {
+    updateData.title = title;
+  }
+
+  await prisma.report.update({
+    where: {
+      id: reportId,
+      userId: session.user.id, // Security: ensure user owns report
+    },
+    data: updateData,
   });
 
   return { success: true };

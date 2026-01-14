@@ -176,7 +176,7 @@ export async function unarchiveProject(projectId: string) {
   }
 }
 
-export async function getProjectDetails(projectId: string) {
+export async function getProjectDetails(projectId: string, activityLimit = 20) {
   const session = await auth();
   
   if (!session?.user?.id) {
@@ -191,6 +191,7 @@ export async function getProjectDetails(projectId: string) {
     include: {
       activities: {
         orderBy: { createdAt: "desc" },
+        take: activityLimit,
       },
       _count: {
         select: { activities: true },
@@ -199,4 +200,38 @@ export async function getProjectDetails(projectId: string) {
   });
 
   return project;
+}
+
+export async function getProjectActivities(
+  projectId: string,
+  limit: number = 20,
+  offset: number = 0
+) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return [];
+  }
+
+  // Verify project belongs to user
+  const project = await prisma.project.findUnique({
+    where: { 
+      id: projectId,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!project) {
+    return [];
+  }
+
+  const activities = await prisma.activity.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: offset,
+  });
+
+  return activities;
 }

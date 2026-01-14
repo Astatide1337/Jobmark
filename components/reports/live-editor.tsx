@@ -13,10 +13,12 @@ interface LiveEditorProps {
   value: string;
   onChange: (val: string) => void;
   isStreaming: boolean;
+  className?: string; // Allow external styling
 }
 
-export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
+export function LiveEditor({ value, onChange, isStreaming, className }: LiveEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightSpanRef = useRef<HTMLSpanElement>(null);
 
@@ -24,16 +26,6 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
   const [instruction, setInstruction] = useState("");
   const [isImproving, setIsImproving] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
-
-  // Sync height of container to content
-  useEffect(() => {
-    if (textareaRef.current && containerRef.current) {
-      textareaRef.current.style.height = "auto";
-      const newHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = newHeight + "px";
-      containerRef.current.style.height = newHeight + "px";
-    }
-  }, [value]);
 
   // Handle Selection
   const handleSelect = () => {
@@ -58,6 +50,11 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
       const spanRect = highlightSpanRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
       
+      // Calculate top relative to the viewport first, then adjust for container
+      // However, since menu is inside AnimatePresence -> likely fixed or absolute relative to container
+      // If we use fixed positioning for the menu (Portal), we use spanRect directly.
+      // If we use absolute positioning inside the container, we need relative coords.
+      
       const top = spanRect.bottom - containerRect.top; 
       const left = spanRect.left - containerRect.left + (spanRect.width / 2);
 
@@ -65,10 +62,16 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
     }
   };
 
-  // Re-calculate position on resize
+  // Re-calculate position on resize or scroll
   useEffect(() => {
+     const handleScroll = () => updateMenuPos();
      window.addEventListener("resize", updateMenuPos);
-     return () => window.removeEventListener("resize", updateMenuPos);
+     scrollContainerRef.current?.addEventListener("scroll", handleScroll);
+     
+     return () => {
+        window.removeEventListener("resize", updateMenuPos);
+        scrollContainerRef.current?.removeEventListener("scroll", handleScroll);
+     };
   }, [selection]);
 
 
@@ -107,44 +110,48 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
   }, [value, selection]);
 
   return (
-    <div className="relative min-h-[400px] bg-card border border-border/50 rounded-lg font-mono text-sm leading-relaxed group">
-    
-    {/* Container for overlay and textarea */}
-    <div ref={containerRef} className="relative w-full min-h-[400px] p-6">
-        
-        {/* 1. Backdrop Highlight Layer (Mirrors Textarea) */}
-        <div 
-            aria-hidden="true"
-            className="absolute inset-0 p-6 pointer-events-none whitespace-pre-wrap break-words text-transparent"
-        >
-        {selection ? (
-            <>
-            {before}
-            <span 
-                ref={highlightSpanRef} 
-                className="bg-primary/20 text-transparent rounded-[2px] box-decoration-clone"
-            >
-                {selected}
-            </span>
-            {after}
-            </>
-        ) : (
-            value
-        )}
-        {/* Ensure last line break renders height */}
-        <br />
-        </div>
+    <div 
+        ref={containerRef}
+        className={cn("relative w-full h-[500px] bg-card/50 border border-border/50 rounded-lg font-sans text-base leading-relaxed group shadow-sm flex flex-col", className)}
+    >    
+        <div ref={scrollContainerRef} className="relative flex-1 w-full h-full overflow-y-auto overflow-x-hidden">
+             {/* Wrapper to ensure height matches content */}
+             <div className="relative min-h-full">
+                {/* 1. Backdrop Highlight Layer (Mirrors Textarea) - DRIVES HEIGHT */}
+                <div 
+                    aria-hidden="true"
+                    className="relative p-6 pointer-events-none whitespace-pre-wrap break-words text-transparent"
+                >
+                {selection ? (
+                    <>
+                    {before}
+                    <span 
+                        ref={highlightSpanRef} 
+                        className="bg-primary/20 text-transparent rounded-[2px] box-decoration-clone"
+                    >
+                        {selected}
+                    </span>
+                    {after}
+                    </>
+                ) : (
+                    value
+                )}
+                {/* Ensure last line break renders height */}
+                <br />
+                </div>
 
-        {/* 2. Actual Textarea */}
-        <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onSelect={handleSelect}
-        className="absolute inset-0 w-full h-full p-6 bg-transparent resize-none focus:outline-none break-words text-foreground z-10"
-        placeholder="Report will stream here..."
-        spellCheck="false"
-        />
+                {/* 2. Actual Textarea - ABSOLUTE OVERLAY MATCHING PARENT */}
+                <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                onSelect={handleSelect}
+                className="absolute inset-0 w-full h-full p-6 bg-transparent resize-none focus:outline-none break-words text-foreground z-10 font-sans text-base leading-relaxed overflow-hidden"
+                placeholder="Report will stream here..."
+                spellCheck="false"
+                />
+            </div>
+        </div>
         
         {isStreaming && (
             <div className="absolute bottom-4 right-4 z-20 pointer-events-none">
@@ -153,7 +160,7 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
                 </span>
             </div>
         )}
-    </div>
+
 
     {/* Floating Copilot Toolbar */}
     <AnimatePresence>
@@ -172,8 +179,8 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
             {/* Arrow pointer */}
             <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-popover absolute -top-[6px] left-1/2 -translate-x-1/2 drop-shadow-sm" />
 
-            <div className="bg-popover border border-border shadow-xl rounded-xl p-1 flex items-center gap-2 w-[380px]">
-                <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 ml-1">
+            <div className="bg-popover border border-border shadow-xl rounded-xl p-2 flex items-center gap-3 w-[380px]">
+                <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
                     <Sparkles className="h-4 w-4" />
                 </div>
                 
@@ -195,6 +202,7 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
                     className={cn("h-8 w-8 hover:bg-primary/10 hover:text-primary", instruction && "text-primary")}
                     onClick={handleImprove}
                     disabled={!instruction || isImproving}
+                    aria-label="Submit AI improvement"
                     >
                     {isImproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
                     </Button>
@@ -206,6 +214,7 @@ export function LiveEditor({ value, onChange, isStreaming }: LiveEditorProps) {
                         setSelection(null);
                         setMenuPosition(null);
                     }}
+                    aria-label="Cancel selection"
                     >
                     <X className="h-4 w-4" />
                     </Button>

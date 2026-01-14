@@ -2,11 +2,20 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Trash2, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, FileText, Download, File, Pencil, X, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { deleteReport } from "@/app/actions/reports";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportToPdf, exportToWord } from "@/lib/report-export";
+import { deleteReport, updateReport } from "@/app/actions/reports";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { LiveEditor } from "./live-editor";
 
 interface Report {
   id: string;
@@ -24,6 +33,11 @@ export function ReportHistory({ initialReports }: ReportHistoryProps) {
   const [reports, setReports] = useState(initialReports);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  
+  // Edit mode state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // prevent expand toggle
@@ -42,6 +56,36 @@ export function ReportHistory({ initialReports }: ReportHistoryProps) {
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
+  };
+
+  // Edit mode handlers
+  const startEdit = (report: Report) => {
+    setEditingId(report.id);
+    setEditContent(report.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditContent("");
+  };
+
+  const saveEdit = async (reportId: string) => {
+    setIsSaving(true);
+    try {
+      await updateReport(reportId, editContent);
+      // Update local state
+      setReports(reports.map(r => 
+        r.id === reportId ? { ...r, content: editContent } : r
+      ));
+      toast.success("Report saved!");
+      setEditingId(null);
+      setEditContent("");
+    } catch (error) {
+      console.error("Failed to save report:", error);
+      toast.error("Failed to save report");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (reports.length === 0) {
@@ -103,17 +147,106 @@ export function ReportHistory({ initialReports }: ReportHistoryProps) {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden bg-muted/20 border-t"
               >
-                <div className="p-6 whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/90">
-                  {report.content}
-                </div>
-                <div className="p-2 flex justify-end bg-muted/40 border-t">
-                   <Button 
-                     variant="outline" 
-                     size="sm" 
-                     onClick={() => navigator.clipboard.writeText(report.content)}
-                   >
-                     Copy to Clipboard
-                   </Button>
+                {/* Content Area - Either Editor or Static View */}
+                {editingId === report.id ? (
+                  <div className="p-4">
+                    <LiveEditor 
+                      value={editContent}
+                      onChange={setEditContent}
+                      isStreaming={false}
+                      className="min-h-[300px] rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-6 whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/90">
+                    {report.content}
+                  </div>
+                )}
+
+                {/* Action Bar */}
+                <div className="p-3 flex justify-between items-center bg-muted/40 border-t">
+                   {editingId === report.id ? (
+                     // Edit Mode Actions
+                     <div className="flex gap-2">
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         onClick={cancelEdit}
+                         disabled={isSaving}
+                       >
+                         <X className="mr-2 h-4 w-4" />
+                         Cancel
+                       </Button>
+                       <Button 
+                         size="sm" 
+                         onClick={() => saveEdit(report.id)}
+                         disabled={isSaving}
+                         className="bg-[var(--accent-warm)] hover:bg-[var(--accent-warm-hover)] text-black"
+                       >
+                         <Save className="mr-2 h-4 w-4" />
+                         {isSaving ? "Saving..." : "Save Changes"}
+                       </Button>
+                     </div>
+                   ) : (
+                     // View Mode Actions
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={() => startEdit(report)}
+                     >
+                       <Pencil className="mr-2 h-4 w-4" />
+                       Edit
+                     </Button>
+                   )}
+
+                   <div className="flex gap-2">
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button variant="outline" size="sm">
+                           <Download className="mr-2 h-4 w-4" />
+                           Export
+                         </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={async () => {
+                            try {
+                                toast.info("Generating PDF...");
+                                const contentToExport = editingId === report.id ? editContent : report.content;
+                                await exportToPdf(contentToExport, { filename: `${report.title}.pdf` });
+                                toast.success("PDF Downloaded");
+                            } catch (e) {
+                                toast.error("Failed to generate PDF");
+                            }
+                         }} className="cursor-pointer">
+                           <File className="mr-2 h-4 w-4" /> PDF
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => {
+                            try {
+                                toast.info("Generating Word Doc...");
+                                const contentToExport = editingId === report.id ? editContent : report.content;
+                                exportToWord(contentToExport, { filename: `${report.title}.doc` });
+                                toast.success("Word Doc Downloaded");
+                            } catch (e) {
+                                toast.error("Failed to generate Word Doc");
+                            }
+                         }} className="cursor-pointer">
+                           <FileText className="mr-2 h-4 w-4" /> Word
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={() => {
+                         const contentToCopy = editingId === report.id ? editContent : report.content;
+                         navigator.clipboard.writeText(contentToCopy);
+                         toast.success("Copied to clipboard!");
+                       }}
+                     >
+                       Copy
+                     </Button>
+                   </div>
                 </div>
               </motion.div>
             )}

@@ -18,7 +18,7 @@ export function DashboardShell({ children, header }: DashboardShellProps) {
         {header}
         
         <PageTransition>
-          <div className="flex-1 p-6 lg:p-8 overflow-auto">
+          <div className="flex-1 p-6 lg:p-8 xl:p-10 overflow-auto">
             {children}
           </div>
         </PageTransition>

@@ -19,7 +19,7 @@ const navItems = [
   { href: "/insights", icon: BarChart3, label: "Insights" },
 ];
 
-const settingsItem = { href: "/dashboard/settings", icon: Settings, label: "Settings" };
+const settingsItem = { href: "/settings", icon: Settings, label: "Settings" };
 
 export function Sidebar() {
   const pathname = usePathname();

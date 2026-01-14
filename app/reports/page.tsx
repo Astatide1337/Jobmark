@@ -36,10 +36,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         />
       }
     >
-      <div className="max-w-5xl mx-auto">
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <div className="flex justify-center">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+
+      <div className="h-[calc(100vh-140px)] flex flex-col">
+        <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col space-y-8">
+          <div className="flex justify-center shrink-0">
+            <TabsList className="grid w-full max-w-lg grid-cols-2">
               <TabsTrigger value="new">
                 <Sparkles className="mr-2 h-4 w-4" />
                 New Report
@@ -51,11 +52,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             </TabsList>
           </div>
 
-          <TabsContent value="new">
+          <TabsContent value="new" className="flex-1 min-h-0">
             <ReportWizard projects={projects} />
           </TabsContent>
           
-          <TabsContent value="history">
+          <TabsContent value="history" className="flex-1 min-h-0">
             <ReportHistory initialReports={reports} />
           </TabsContent>
         </Tabs>

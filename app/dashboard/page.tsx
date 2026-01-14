@@ -2,11 +2,15 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getActivities, getActivityStats, getActivityCount } from "@/app/actions/activities";
 import { getProjects } from "@/app/actions/projects";
+import { getUserSettings } from "@/app/actions/settings";
 import { QuickCapture } from "@/components/activity/quick-capture";
 import { ActivityTimeline } from "@/components/activity/activity-timeline";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { GoalMotivator } from "@/components/dashboard/goal-motivator";
+
+import { getGoals } from "@/app/actions/goals";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -15,11 +19,16 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [activities, stats, projects, totalCount] = await Promise.all([
-    getActivities(20),
+  // Get user settings first to know if we should hide archived
+  const settings = await getUserSettings();
+  const hideArchived = settings?.hideArchived ?? false;
+
+  const [activities, stats, projects, totalCount, goals] = await Promise.all([
+    getActivities(20, 0, hideArchived),
     getActivityStats(),
     getProjects(),
     getActivityCount(),
+    getGoals(),
   ]);
 
   // Get time-appropriate greeting
@@ -38,7 +47,7 @@ export default async function DashboardPage() {
     >
       <div className="max-w-4xl mx-auto">
         {/* Welcome */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">
             {greeting}, {session.user.name?.split(" ")[0]}.
           </h1>
@@ -47,9 +56,16 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        {/* Goal Motivator (Carousel) */}
+        <GoalMotivator goals={goals} settings={settings} />
+
         {/* Quick Capture */}
         <div className="mb-8">
-          <QuickCapture projects={projects.map(p => ({ id: p.id, name: p.name, color: p.color }))} />
+          <QuickCapture 
+            projects={projects.map(p => ({ id: p.id, name: p.name, color: p.color, archived: p.archived }))} 
+            todayCount={stats.today}
+            dailyGoal={stats.dailyGoal}
+          />
         </div>
 
         {/* Stats */}
@@ -64,11 +80,15 @@ export default async function DashboardPage() {
 
         {/* Activity Timeline */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+            <span className="text-sm text-muted-foreground">
+              This week: <span className="text-foreground font-medium">{stats.thisWeek}/{stats.weeklyGoal}</span>
+            </span>
+          </div>
           <ActivityTimeline activities={activities} totalCount={totalCount} />
         </div>
       </div>
     </DashboardShell>
   );
 }
-
