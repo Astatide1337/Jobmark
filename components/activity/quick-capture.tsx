@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ProjectChipSelector } from "@/components/project/project-chip-selector";
+import { ProjectChipSelector } from "@/components/projects/project-chip-selector";
 import { Loader2, Send, CalendarIcon, Sparkles, ArrowUp, X } from "lucide-react";
 import { format, isToday, isYesterday, subDays } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
@@ -358,6 +358,7 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
                           type="button"
                           size="icon" 
                           variant="ghost" 
+                          aria-label="Enhance with AI"
                           className={cn("h-8 w-8 hover:bg-primary/10 hover:text-primary", instruction && "text-primary")}
                           onClick={handleImprove}
                           disabled={!instruction || isImproving}
@@ -368,6 +369,7 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
                           type="button"
                           size="icon" 
                           variant="ghost" 
+                          aria-label="Close AI Toolbar"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={dismissToolbar}
                         >

@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 export interface SearchResult {
   id: string;
@@ -45,7 +46,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   }
 
   // Construct Activity where clause
-  const activityWhere: any = {
+  const activityWhere: Prisma.ActivityWhereInput = {
     userId: session.user.id,
     OR: [
       { content: { contains: searchTerm, mode: "insensitive" } },
@@ -58,12 +59,16 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     const endOfDay = new Date(searchDate);
     endOfDay.setHours(23, 59, 59, 999);
     
-    activityWhere.OR.push({
-      logDate: {
-        gte: startOfDay,
-        lte: endOfDay,
-      }
-    });
+    // We need to assert this because the dynamic push to OR array 
+    // is sometimes tricky for TS to infer with simple objects
+    if (Array.isArray(activityWhere.OR)) {
+      (activityWhere.OR as any[]).push({
+        logDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        }
+      });
+    }
   }
 
   // Search activities, projects, and reports in parallel

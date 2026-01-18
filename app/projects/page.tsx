@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getProjects } from "@/app/actions/projects";
-import { ProjectList } from "@/components/project/project-list";
+import { ProjectList } from "@/components/projects/project-list";
+import { ProjectDialog } from "@/components/projects/project-dialog";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 
