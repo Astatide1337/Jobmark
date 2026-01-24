@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useMemo } from "react";
 import { createActivity, type ActivityFormState } from "@/app/actions/activities";
 import { improveText } from "@/app/actions/reports";
+import { polishDictation } from "@/app/actions/dictation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { ProjectChipSelector } from "@/components/projects/project-chip-selector";
-import { Loader2, Send, CalendarIcon, Sparkles, ArrowUp, X } from "lucide-react";
+import { Loader2, Send, CalendarIcon, Sparkles, ArrowUp, X, Mic, MicOff, Wand2 } from "lucide-react";
 import { format, isToday, isYesterday, subDays } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,11 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
   const [isImproving, setIsImproving] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
+  // Dictation state
+  const [isListening, setIsListening] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
+  const recognitionRef = useRef<any>(null); // Type 'any' because SpeechRecognition is not standard TS yet
+
   // Filter projects based on hideArchived setting
   const visibleProjects = useMemo(() => {
     if (settings?.hideArchived) {
@@ -210,7 +216,127 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
     }
   };
 
-  // Dismiss AI toolbar
+
+
+  // Dictation Logic
+  const toggleListening = () => {
+    if (isListening) {
+      // Stop listening
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+      handleDictationPolish();
+    } else {
+      // Start listening
+      if (!("webkitSpeechRecognition" in window)) {
+        alert("Your browser does not support speech recognition. Please try Chrome or Edge.");
+        return;
+      }
+
+      const SpeechRecognition = (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        // Determine where to append. If we just started, we append.
+        // For simplicity in this v1, raw dictation appends to existing content.
+        // We'll trust the user to manage cursor or we just append to end.
+        if (finalTranscript || interimTranscript) {
+          // Note: In a real "draft" mode we might want to keep the "interim" separate visually
+          // But for now, let's just update the content.
+          // However, updating state on every interim keyframe might be jittery if we don't handle it carefully.
+          // Let's just create a combined view.
+          // Actually, standard behavior:
+          // Keep track of what was there BEFORE dictation started?
+          // For now, let's just append final results to content, and show interim in a separate ephemeral UI?
+          // No, user wants "words populate".
+          
+          // Strategy: Update content with (Existing + Final + Interim)
+          // Ideally we need to know the insertion point, but appending to end is safest for QuickCapture.
+           
+           // A better approach for React controlled input:
+           // We can't easily mix "typed" content with "streamed" content in the same state variable without cursor jumping.
+           // Recommendation: Just append final results. Show interim in a preview bubble?
+           // OR: Just append everything.
+           
+           if (finalTranscript) {
+             setContent(prev => {
+                const needsSpace = prev.length > 0 && !prev.endsWith(" ");
+                return prev + (needsSpace ? " " : "") + finalTranscript;
+             });
+           }
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'no-speech') {
+            // Ignore no-speech error as it just means the user didn't speak instantly.
+            // We can optionally restart or just let it be. 
+            // In continuous mode, some browsers stop.
+            console.log("No speech detected, continuing...");
+            return;
+        }
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        // We don't auto-polish on simple end, because it might be a pause.
+        // We only polish when user explicitly toggles OFF.
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    }
+  };
+
+  const handleDictationPolish = async () => {
+    // Only polish if there's enough text and it looks "raw" (simple heuristic or user action)
+    // Actually, usually we polish only the RECENTLY dictated part.
+    // For this simple implementation, let's polish the WHOLE text or just the new part?
+    // "polishDictation" polishes the given string.
+    // If we polish the whole textarea, it might change things user intentionally wrote.
+    // Let's offer a "Magic Wand" polish button for the whole text, 
+    // AND auto-polish the last session? Auto-polish is riskier.
+    // Let's implemented a explicit "Magic Polish" after dictation stops.
+    
+    // Changing strategy slightly: 
+    // User dictates -> Words appear. 
+    // User stops -> Words stay.
+    // User clicks "Polish" (or we trigger it and Replace).
+    
+    if (!content.trim()) return;
+    
+    setIsPolishing(true);
+    try {
+        const polished = await polishDictation(content);
+        if (polished) setContent(polished);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsPolishing(false);
+    }
+  };
+
   const dismissToolbar = () => {
     setSelection(null);
     setInstruction("");
@@ -227,7 +353,17 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
               ? "bg-green-500/20 text-green-400" 
               : "bg-primary/20 text-primary"
           }`}>
-            {todayCount}/{dailyGoal} today
+             {isListening ? (
+                <span className="flex items-center gap-1">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    Recording...
+                </span>
+             ) : (
+                `${todayCount}/${dailyGoal} today`
+             )}
           </span>
         </div>
         <CardDescription>
@@ -307,6 +443,18 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
                      }, 200);
                   }}
                 />
+
+                {/* Dictation Polish Overlay/Button */}
+                {/* Dictation Polish Overlay/Button */}
+                {isPolishing && (
+                    <div className="absolute bottom-2 right-2 z-30">
+                        <div className="bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2 text-xs animate-in fade-in slide-in-from-bottom-2">
+                            <Sparkles className="h-3 w-3 animate-pulse" />
+                            Polishing...
+                        </div>
+                    </div>
+                )}
+
               </div>
               
               <div className="absolute bottom-3 right-3 text-xs text-muted-foreground z-20 pointer-events-none">
@@ -427,6 +575,34 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
                   />
                 </PopoverContent>
               </Popover>
+
+              <div className="h-6 w-px bg-border/50 mx-1" />
+
+              <Button
+                type="button"
+                variant={isListening ? "destructive" : "ghost"}
+                size="sm"
+                className={cn(
+                    "h-9 px-3 transition-all duration-300", 
+                    isListening ? "animate-pulse bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 border border-red-500/20" : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={toggleListening}
+              >
+                {isListening ? (
+                    <>
+                        <span className="relative flex h-2 w-2 mr-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                        Stop
+                    </>
+                ) : (
+                    <>
+                        <Mic className="h-4 w-4 mr-2" />
+                        Dictate
+                    </>
+                )}
+              </Button>
             </div>
 
             {state.errors?.content && (
