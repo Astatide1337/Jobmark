@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { SettingsProvider } from "@/components/providers/settings-provider";
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
+import { GrainOverlay } from "@/components/landing/grain-overlay";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,10 +18,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Jobmark - Capture Your Daily Wins",
-  description: "AI-powered work activity logger. Log accomplishments effortlessly, generate impressive reports instantly.",
-  keywords: ["productivity", "work tracker", "activity log", "AI reports", "accomplishment journal"],
+  title: "Jobmark - Never Forget a Win Again",
+  description: "The work journal that writes your reports for you. Capture accomplishments in 30 seconds, generate polished reports with AI.",
+  keywords: ["productivity", "work tracker", "activity log", "AI reports", "accomplishment journal", "work journal"],
 };
 
 export default function RootLayout({
@@ -30,13 +38,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased`}
       >
-        <SettingsProvider>
-          {children}
-          <CommandPalette />
-          <Toaster position="bottom-right" />
-        </SettingsProvider>
+        <SmoothScrollProvider>
+          <SettingsProvider>
+            {children}
+            <CommandPalette />
+            <Toaster position="bottom-right" />
+          </SettingsProvider>
+          <GrainOverlay />
+        </SmoothScrollProvider>
       </body>
     </html>
   );

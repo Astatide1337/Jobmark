@@ -19,9 +19,10 @@ interface ProjectDialogProps {
     description: string | null;
     color: string;
   };
+  onSubmit?: (data: FormData) => Promise<{ success: boolean; message: string; errors?: any }>;
 }
 
-export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProps) {
+export function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogProps) {
   const isEditing = !!project;
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
@@ -51,7 +52,10 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
       formData.append("description", description);
 
       let result: any;
-      if (isEditing && project) {
+      
+      if (onSubmit) {
+          result = await onSubmit(formData);
+      } else if (isEditing && project) {
         // Update
         result = await updateProject(project.id, { name, color, description });
       } else {

@@ -4,8 +4,17 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Check for session token
+  const sessionToken = request.cookies.get("authjs.session-token") || 
+                       request.cookies.get("__Secure-authjs.session-token");
+
+  // Redirect logged-in users from landing page to dashboard
+  if (pathname === "/" && sessionToken) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // Public routes that don't require authentication
-  const publicRoutes = ["/", "/login", "/api/auth"];
+  const publicRoutes = ["/", "/api/auth", "/terms", "/privacy"];
   const isPublicRoute = publicRoutes.some(route => 
     pathname === route || pathname.startsWith(route + "/")
   );
@@ -21,14 +30,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session token (simple cookie check for protected routes)
-  const sessionToken = request.cookies.get("authjs.session-token") || 
-                       request.cookies.get("__Secure-authjs.session-token");
-
+  // Redirect unauthenticated users to landing page (modal will handle auth)
   if (!sessionToken) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

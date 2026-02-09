@@ -15,8 +15,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   pages: {
-    signIn: "/login",
-    error: "/login",
+    // Auth modal handles sign-in on landing page
+    error: "/",
   },
   session: {
     strategy: "database",

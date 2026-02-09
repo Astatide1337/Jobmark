@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
 import { useSettings } from "@/components/providers/settings-provider";
+import { toast } from "sonner";
 
 const initialState: ActivityFormState = {
   success: false,
@@ -93,16 +94,37 @@ interface Project {
   archived?: boolean;
 }
 
+// ... imports
+
 interface QuickCaptureProps {
   projects?: Project[];
   todayCount?: number;
   dailyGoal?: number;
+  demoMode?: boolean;
 }
 
-export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: QuickCaptureProps) {
+export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, demoMode = false }: QuickCaptureProps) {
   const { settings } = useSettings();
   const [state, formAction, isPending] = useActionState(createActivity, initialState);
   const [content, setContent] = useState("");
+  // ... other state
+
+  // Demo Submission Logic
+  const handleDemoSubmit = async (formData: FormData) => {
+    if (!content && !formData.get("content")) return;
+    
+    // Simulate network delay
+    await new Promise(r => setTimeout(r, 1000));
+    
+    setContent("");
+    setSelectedDate(new Date());
+    triggerConfetti();
+    toast.success("Activity captured (Demo Mode)");
+  };
+
+  const currentAction = demoMode ? (payload: FormData) => handleDemoSubmit(payload) : formAction;
+
+  // ... (rest of component)
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -291,7 +313,6 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
             // Ignore no-speech error as it just means the user didn't speak instantly.
             // We can optionally restart or just let it be. 
             // In continuous mode, some browsers stop.
-            console.log("No speech detected, continuing...");
             return;
         }
         console.error("Speech recognition error", event.error);
@@ -371,7 +392,7 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3 }: Q
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction}>
+        <form ref={formRef} action={currentAction}>
           <div className="space-y-4">
             {/* Textarea with selection highlight (Mirrored from LiveEditor) */}
             <div className="relative group">

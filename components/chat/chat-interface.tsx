@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
-import { readStreamableValue } from "ai/rsc";
+import { readStreamableValue } from "@ai-sdk/rsc";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";

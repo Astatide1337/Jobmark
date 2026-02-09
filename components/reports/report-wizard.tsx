@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ReportConfig, streamReport, saveReportToHistory, checkActivityCount } from "@/app/actions/reports";
 import { updateReportSettings } from "@/app/actions/settings";
-import { readStreamableValue } from "ai/rsc";
+import { readStreamableValue } from "@ai-sdk/rsc";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LiveEditor } from "./live-editor";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, Sparkles, Save, CheckCircle, AlertCircle, Mail, Send, Download, FileText, File } from "lucide-react";
+import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { exportToPdf, exportToWord } from "@/lib/report-export";
 import { toast } from "sonner";
@@ -60,7 +61,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   }, [settings]);
   
   // Custom date selection state
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const [reportContent, setReportContent] = useState("");
@@ -310,7 +311,6 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                     // but usually helpful. We ensure 'selected' is strictly controlled.
                     defaultMonth={dateRange?.from || new Date()} 
                     selected={dateRange}
-                    // @ts-ignore
                     onSelect={setDateRange}
                     numberOfMonths={2}
                   />

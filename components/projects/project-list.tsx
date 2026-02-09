@@ -27,9 +27,27 @@ export interface ProjectListProps {
   projects: Project[];
   initialFilter: "active" | "archived";
   openCreate?: boolean;
+  onCreate?: (data: FormData) => Promise<{ success: boolean; message: string; errors?: any }>;
+  onUpdate?: (id: string, data: FormData) => Promise<{ success: boolean; message: string; errors?: any }>;
+  onArchive?: (id: string) => Promise<void>;
+  onUnarchive?: (id: string) => Promise<void>;
+  onTabChange?: (value: string) => void;
+  disableNavigation?: boolean;
+  onViewTimeline?: (id: string) => void;
 }
 
-export function ProjectList({ projects, initialFilter, openCreate = false }: ProjectListProps) {
+export function ProjectList({ 
+    projects, 
+    initialFilter, 
+    openCreate = false,
+    onCreate,
+    onUpdate,
+    onArchive,
+    onUnarchive,
+    onTabChange,
+    disableNavigation,
+    onViewTimeline
+}: ProjectListProps) {
   const [showCreate, setShowCreate] = useState(openCreate);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,12 +56,18 @@ export function ProjectList({ projects, initialFilter, openCreate = false }: Pro
   // Clear ?new param from URL when modal closes
   useEffect(() => {
     if (openCreate && !showCreate) {
-      router.replace("/projects", { scroll: false });
+      if (!disableNavigation) {
+          router.replace("/projects", { scroll: false });
+      }
     }
-  }, [showCreate, openCreate, router]);
+  }, [showCreate, openCreate, router, disableNavigation]);
 
   const handleTabChange = (value: string) => {
-    router.push(`/projects?filter=${value}`);
+    if (onTabChange) {
+        onTabChange(value);
+    } else {
+        router.push(`/projects?filter=${value}`);
+    }
   };
 
   // Filter and Sort Logic
@@ -88,13 +112,13 @@ export function ProjectList({ projects, initialFilter, openCreate = false }: Pro
           </Button>
           
           <div className="mt-8">
-             <Button variant="link" size="sm" onClick={() => router.push("/projects?filter=archived")}>
+             <Button variant="link" size="sm" onClick={() => handleTabChange("archived")}>
                 View Archived Projects
              </Button>
           </div>
         </CardContent>
       </Card>
-      <ProjectDialog open={showCreate} onOpenChange={setShowCreate} />
+      <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
      </>
     );
   }
@@ -191,12 +215,20 @@ export function ProjectList({ projects, initialFilter, openCreate = false }: Pro
            </div>
         ) : (
            filteredProjects.map((project) => (
-             <ProjectCard key={project.id} project={project} />
+             <ProjectCard 
+                key={project.id} 
+                project={project} 
+                onArchive={onArchive}
+                onUnarchive={onUnarchive}
+                onUpdate={onUpdate}
+                disableNavigation={disableNavigation}
+                onViewTimeline={onViewTimeline}
+             />
            ))
         )}
       </div>
 
-      <ProjectDialog open={showCreate} onOpenChange={setShowCreate} />
+      <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
     </div>
   );
 }

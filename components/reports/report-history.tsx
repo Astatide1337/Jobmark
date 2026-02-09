@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Trash2, ChevronDown, ChevronUp, FileText, Download, File, Pencil, X, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,11 @@ interface Report {
 
 interface ReportHistoryProps {
   initialReports: Report[];
+  onUpdate?: (id: string, content: string) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
 }
 
-export function ReportHistory({ initialReports }: ReportHistoryProps) {
+export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHistoryProps) {
   const [reports, setReports] = useState(initialReports);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -39,13 +41,22 @@ export function ReportHistory({ initialReports }: ReportHistoryProps) {
   const [editContent, setEditContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sync internal state if initialReports changes (e.g. from parent demo)
+  useEffect(() => {
+     setReports(initialReports);
+  }, [initialReports]);
+
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // prevent expand toggle
     if (!confirm("Are you sure you want to delete this report?")) return;
 
     setIsDeleting(id);
     try {
-      await deleteReport(id);
+      if (onDelete) {
+          await onDelete(id);
+      } else {
+          await deleteReport(id);
+      }
       setReports(reports.filter(r => r.id !== id));
     } catch (error) {
       console.error("Failed to delete report:", error);
@@ -72,7 +83,12 @@ export function ReportHistory({ initialReports }: ReportHistoryProps) {
   const saveEdit = async (reportId: string) => {
     setIsSaving(true);
     try {
-      await updateReport(reportId, editContent);
+      if (onUpdate) {
+          await onUpdate(reportId, editContent);
+      } else {
+          await updateReport(reportId, editContent);
+      }
+      
       // Update local state
       setReports(reports.map(r => 
         r.id === reportId ? { ...r, content: editContent } : r

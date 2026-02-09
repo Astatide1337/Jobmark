@@ -59,10 +59,9 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     const endOfDay = new Date(searchDate);
     endOfDay.setHours(23, 59, 59, 999);
     
-    // We need to assert this because the dynamic push to OR array 
-    // is sometimes tricky for TS to infer with simple objects
-    if (Array.isArray(activityWhere.OR)) {
-      (activityWhere.OR as any[]).push({
+    // Add date filter to OR clause
+    if (activityWhere.OR && Array.isArray(activityWhere.OR)) {
+      activityWhere.OR.push({
         logDate: {
           gte: startOfDay,
           lte: endOfDay,

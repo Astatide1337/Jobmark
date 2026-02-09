@@ -25,21 +25,34 @@ interface Project {
 
 interface ProjectCardProps {
   project: Project;
+  onArchive?: (id: string) => Promise<void>;
+  onUnarchive?: (id: string) => Promise<void>;
+  onUpdate?: (id: string, data: FormData) => Promise<{ success: boolean; message: string; errors?: any }>;
+  disableNavigation?: boolean;
+  onViewTimeline?: (id: string) => void;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onArchive, onUnarchive, onUpdate, disableNavigation, onViewTimeline }: ProjectCardProps) {
   const [isPending, startTransition] = useTransition();
   const [showEdit, setShowEdit] = useState(false);
 
   const handleArchive = () => {
     startTransition(async () => {
-      await archiveProject(project.id);
+      if (onArchive) {
+          await onArchive(project.id);
+      } else {
+          await archiveProject(project.id);
+      }
     });
   };
 
   const handleUnarchive = () => {
     startTransition(async () => {
-      await unarchiveProject(project.id);
+      if (onUnarchive) {
+          await onUnarchive(project.id);
+      } else {
+          await unarchiveProject(project.id);
+      }
     });
   };
 
@@ -47,15 +60,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <>
-      <Card className={cn("bg-card border-border/50 group hover:border-border transition-all hover:shadow-sm flex flex-col h-full relative overflow-hidden", project.archived && "opacity-75 bg-muted/20 border-border/30")}>
+      <Card className={cn("bg-card border-border/50 group/project hover:border-border transition-all hover:shadow-sm flex flex-col h-full relative overflow-hidden", project.archived && "opacity-75 bg-muted/20 border-border/30")}>
         {/* Make the whole card clickable via overlay or wrapping content */}
-        <Link href={`/projects/${project.id}`} className="flex flex-col flex-1 h-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
+        <Link 
+            href={disableNavigation ? "#" : `/projects/${project.id}`} 
+            onClick={(e) => disableNavigation && e.preventDefault()}
+            className={cn(
+                "flex flex-col flex-1 h-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl",
+                disableNavigation && "cursor-default"
+            )}
+        >
             <CardContent className="p-5 flex-1 relative">
             
             {/* Header */}
             <div className="flex items-start justify-between gap-4 mb-6">
                 <div 
-                    className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110 duration-300 relative"
+                    className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover/project:scale-110 duration-300 relative"
                     style={{ backgroundColor: project.archived ? "hsl(var(--muted))" : `${project.color}10` }}
                 >
                     <FolderOpen className="h-7 w-7" style={{ color: project.archived ? "hsl(var(--muted-foreground))" : project.color }} />
@@ -69,7 +89,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
             {/* Title & Desc */}
             <div className="space-y-2">
-                <h3 className={cn("font-bold text-xl text-foreground truncate transition-colors pr-8", !project.archived && "group-hover:text-primary")}>
+                <h3 className={cn("font-bold text-xl text-foreground truncate transition-colors pr-8", !project.archived && "group-hover/project:text-primary")}>
                     {project.name}
                 </h3>
                 
@@ -110,13 +130,24 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <div className="absolute top-5 right-5 z-10">
              <DropdownMenu>
                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity hover:bg-muted">
+                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground opacity-50 group-hover/project:opacity-100 transition-opacity hover:bg-muted">
                    <MoreVertical className="h-4 w-4" />
                  </Button>
                </DropdownMenuTrigger>
                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                  <DropdownMenuItem asChild>
-                    <Link href={`/projects/${project.id}`} className="cursor-pointer">
+                    <Link 
+                        href={disableNavigation ? "#" : `/projects/${project.id}`} 
+                        onClick={(e) => {
+                            if (onViewTimeline) {
+                                e.preventDefault();
+                                onViewTimeline(project.id);
+                            } else if (disableNavigation) {
+                                e.preventDefault();
+                            }
+                        }}
+                        className="cursor-pointer"
+                    >
                         <Activity className="mr-2 h-4 w-4" /> View Timeline
                     </Link>
                  </DropdownMenuItem>
@@ -144,7 +175,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <ProjectDialog 
         open={showEdit} 
         onOpenChange={setShowEdit} 
-        project={project} 
+        project={project}
+        onSubmit={onUpdate ? ((data) => onUpdate(project.id, data)) : undefined}
       />
     </>
   );

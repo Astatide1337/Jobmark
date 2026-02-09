@@ -14,47 +14,86 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", icon: Pen, label: "Journal" },
-  { href: "/chat", icon: MessageSquare, label: "Mentor" },
-  { href: "/projects", icon: FolderOpen, label: "Projects" },
-  { href: "/reports", icon: FileText, label: "Reports" },
-  { href: "/insights", icon: BarChart3, label: "Insights" },
+  { href: "/dashboard", icon: Pen, label: "Journal", demoId: "journal" },
+  { href: "/chat", icon: MessageSquare, label: "Mentor", demoId: "feature-mentor" },
+  { href: "/projects", icon: FolderOpen, label: "Projects", demoId: "feature-projects" },
+  { href: "/reports", icon: FileText, label: "Reports", demoId: "feature-reports" },
+  { href: "/insights", icon: BarChart3, label: "Insights", demoId: "feature-insights" },
 ];
 
-const settingsItem = { href: "/settings", icon: Settings, label: "Settings" };
+const settingsItem = { href: "/settings", icon: Settings, label: "Settings", demoId: "settings" };
 
-export function Sidebar() {
+interface SidebarProps {
+  mode?: "app" | "demo";
+  activePath?: string;
+}
+
+export function Sidebar({ mode = "app", activePath = "/" }: SidebarProps) {
   const pathname = usePathname();
+  
+  const handleDemoClick = (id: string) => {
+    if (mode === "demo") {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
 
+  const currentPath = mode === "demo" ? activePath : pathname;
+  
   return (
-    <aside className="hidden lg:flex w-64 flex-col border-r border-border/50 bg-sidebar sticky top-0 h-screen overflow-y-auto shrink-0">
+    <aside className={cn(
+      "hidden lg:flex w-64 flex-col border-r border-border/50 bg-sidebar shrink-0",
+      mode === "app" ? "sticky top-0 h-screen overflow-y-auto" : "h-full"
+    )}>
       <div className="p-6">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center">
-            <Pen className="h-4 w-4 text-primary" />
+        {mode === "app" ? (
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Pen className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-lg font-semibold text-foreground">Jobmark</span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Pen className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-lg font-semibold text-foreground">Jobmark</span>
           </div>
-          <span className="text-lg font-semibold text-foreground">Jobmark</span>
-        </Link>
+        )}
       </div>
 
       <nav className="flex-1 px-3">
         {navItems.map((item) => (
           <NavItem
             key={item.href}
+            mode={mode}
             href={item.href}
+            demoId={item.demoId}
             icon={item.icon}
             label={item.label}
-            isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+            isActive={mode === "app" 
+              ? (currentPath === item.href || currentPath?.startsWith(item.href + "/"))
+              : (item.label === "Journal" && currentPath === "/dashboard") ||
+                (item.label === "Mentor" && currentPath === "/mentor") ||
+                currentPath?.includes(item.label.toLowerCase())
+            }
+            onClick={mode === "demo" ? () => handleDemoClick(item.demoId) : undefined}
           />
         ))}
       </nav>
 
       <div className="p-3 border-t border-border/50">
         <NavItem
+          mode={mode}
           href={settingsItem.href}
+          demoId={settingsItem.demoId}
           icon={settingsItem.icon}
           label={settingsItem.label}
-          isActive={pathname === settingsItem.href}
+          isActive={currentPath === settingsItem.href}
+          onClick={mode === "demo" ? () => {} : undefined}
         />
       </div>
     </aside>
@@ -62,30 +101,28 @@ export function Sidebar() {
 }
 
 function NavItem({
+  mode = "app",
   href,
+  demoId,
   icon: Icon,
   label,
   isActive,
+  onClick,
 }: {
+  mode?: "app" | "demo";
   href: string;
+  demoId: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   isActive: boolean;
+  onClick?: () => void;
 }) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-1",
-        isActive 
-          ? "text-sidebar-accent-foreground" 
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
+  const content = (
+    <>
       {/* Active background indicator with animation */}
       {isActive && (
         <motion.div
-          layoutId="sidebar-active"
+          layoutId={mode === "demo" ? "demo-sidebar-active" : "sidebar-active"}
           className="absolute inset-0 bg-sidebar-accent rounded-lg"
           transition={{ type: "spring", stiffness: 500, damping: 35 }}
         />
@@ -95,6 +132,30 @@ function NavItem({
       <span className="relative z-10">
         {label}
       </span>
+    </>
+  );
+
+  const className = cn(
+    "group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-1",
+    isActive 
+      ? "text-sidebar-accent-foreground" 
+      : "text-muted-foreground hover:text-foreground"
+  );
+
+  if (mode === "demo") {
+    return (
+      <button
+        onClick={onClick}
+        className={cn(className, "w-full text-left")}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {content}
     </Link>
   );
 }

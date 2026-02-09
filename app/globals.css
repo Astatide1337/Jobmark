@@ -166,7 +166,8 @@
   }
   
   .scrollbar-thin {
-    scrollbar-width: thin;
+    scrollbar-width: thin !important;
+    -ms-overflow-style: auto !important;
   }
   
   .scrollbar-track-transparent {
@@ -177,8 +178,9 @@
     scrollbar-color: hsl(var(--border) / 0.5) transparent;
   }
   
-  /* Webkit scrollbar styling */
+  /* Webkit scrollbar styling - use !important to override global hide */
   .scrollbar-thin::-webkit-scrollbar {
+    display: block !important;
     width: 6px;
   }
   
@@ -193,5 +195,34 @@
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--border) / 0.5);
+  }
+
+  /* Editorial typography utilities */
+  .editorial-heading {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  /* Perspective utilities for 3D transforms */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .perspective-1200 {
+    perspective: 1200px;
+  }
+
+  /* Glass morphism */
+  .glass {
+    background: rgba(36, 30, 26, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Magnetic hover effect base */
+  .magnetic {
+    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   }
 }
