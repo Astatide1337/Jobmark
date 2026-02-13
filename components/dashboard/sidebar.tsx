@@ -10,7 +10,8 @@ import {
   FolderOpen, 
   FileText, 
   Settings,
-  MessageSquare 
+  MessageSquare,
+  Coffee 
 } from "lucide-react";
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { href: "/projects", icon: FolderOpen, label: "Projects", demoId: "feature-projects" },
   { href: "/reports", icon: FileText, label: "Reports", demoId: "feature-reports" },
   { href: "/insights", icon: BarChart3, label: "Insights", demoId: "feature-insights" },
+  { href: "/focus", icon: Coffee, label: "Focus", demoId: "feature-focus" },
 ];
 
 const settingsItem = { href: "/settings", icon: Settings, label: "Settings", demoId: "settings" };
