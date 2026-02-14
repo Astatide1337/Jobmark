@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
-import { getConversation, getConversations, updateConversationContext } from "@/app/actions/chat";
+import { getConversation, getConversations } from "@/app/actions/chat";
 import { getProjects } from "@/app/actions/projects";
 import { getGoals } from "@/app/actions/goals";
+import { getContacts } from "@/app/actions/network";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
@@ -21,11 +22,12 @@ export default async function ConversationPage({ params }: ConversationPageProps
 
   const { conversationId } = await params;
 
-  const [conversation, conversations, projects, goals] = await Promise.all([
+  const [conversation, conversations, projects, goals, contacts] = await Promise.all([
     getConversation(conversationId),
     getConversations(),
     getProjects(),
     getGoals(),
+    getContacts(),
   ]);
 
   if (!conversation) {
@@ -43,11 +45,11 @@ export default async function ConversationPage({ params }: ConversationPageProps
           title={conversation.title}
         />
       }
-      className="p-0"
+      className="p-0 overflow-hidden"
     >
-      <div className="flex h-[calc(100vh-100px)]">
+      <div className="flex h-[calc(100vh-100px)] min-h-0">
         {/* Sidebar - Desktop */}
-        <div className="hidden lg:flex w-[340px] shrink-0 flex-col p-6 h-full">
+        <div className="hidden lg:flex w-[340px] shrink-0 flex-col p-6 h-full min-h-0">
           <ChatSidebar
             conversations={conversations}
             activeConversationId={conversationId}
@@ -60,7 +62,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
         </div>
 
         {/* Chat Interface */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <ConversationClient
             conversation={conversation}
             projects={activeProjects.map((p) => ({
@@ -71,6 +73,12 @@ export default async function ConversationPage({ params }: ConversationPageProps
             goals={goals.map((g) => ({
               id: g.id,
               title: g.title,
+            }))}
+            contacts={contacts.map((c) => ({
+              id: c.id,
+              fullName: c.fullName,
+              relationship: c.relationship ?? null,
+              interactionsCount: c._count?.interactions ?? 0,
             }))}
           />
         </div>

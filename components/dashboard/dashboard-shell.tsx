@@ -20,7 +20,12 @@ export function DashboardShell({ children, header, className }: DashboardShellPr
         {header}
         
         <PageTransition>
-          <div className={cn("flex-1 p-6 lg:p-8 xl:p-10 overflow-auto", className)}>
+          <div
+            className={cn(
+              "flex-1 min-h-0 p-6 lg:p-8 xl:p-10 overflow-auto",
+              className
+            )}
+          >
             {children}
           </div>
         </PageTransition>

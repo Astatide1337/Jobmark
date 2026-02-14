@@ -7,31 +7,46 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { FolderOpen, Target, X, Plus } from "lucide-react";
+import { FolderOpen, Target, Users, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type ContactOption = {
+  id: string;
+  fullName: string;
+  relationship: string | null;
+  interactionsCount: number;
+};
 
 interface ContextSelectorProps {
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
+  contacts?: ContactOption[];
   selectedProjectId: string | null;
   selectedGoalId: string | null;
+  selectedContactId?: string | null;
   onProjectSelect: (projectId: string | null) => void;
   onGoalSelect: (goalId: string | null) => void;
+  onContactSelect?: (contactId: string | null) => void;
 }
 
 export function ContextSelector({
   projects,
   goals,
+  contacts = [],
   selectedProjectId,
   selectedGoalId,
+  selectedContactId = null,
   onProjectSelect,
   onGoalSelect,
+  onContactSelect,
 }: ContextSelectorProps) {
   const [projectOpen, setProjectOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
   const selectedGoal = goals.find((g) => g.id === selectedGoalId);
+  const selectedContact = contacts.find((c) => c.id === selectedContactId);
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
@@ -59,6 +74,22 @@ export function ContextSelector({
           <span className="text-foreground truncate max-w-[150px]">{selectedGoal.title}</span>
           <button
             onClick={() => onGoalSelect(null)}
+            className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Selected Contact Chip */}
+      {selectedContact && onContactSelect && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border/50 text-sm">
+          <Users className="h-3 w-3 text-primary" />
+          <span className="text-foreground truncate max-w-[160px]">
+            {selectedContact.fullName}
+          </span>
+          <button
+            onClick={() => onContactSelect(null)}
             className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-3 w-3" />
@@ -138,6 +169,52 @@ export function ContextSelector({
                   >
                     <Target className="h-3 w-3 text-primary shrink-0" />
                     <span className="truncate">{goal.title}</span>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Contact Selector */}
+        {!selectedContact && contacts.length > 0 && onContactSelect && (
+          <Popover open={contactOpen} onOpenChange={setContactOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                <Users className="h-3 w-3 mr-1" />
+                Contact
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-2" align="start">
+              <div className="space-y-1 max-h-[240px] overflow-y-auto" data-lenis-prevent>
+                {contacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    onClick={() => {
+                      onContactSelect(contact.id);
+                      setContactOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex flex-col gap-0.5 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-left",
+                      contact.id === selectedContactId && "bg-muted"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {contact.fullName}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground shrink-0">
+                        {contact.interactionsCount} logs
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {contact.relationship || "No relationship set"}
+                    </span>
                   </button>
                 ))}
               </div>

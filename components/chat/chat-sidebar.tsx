@@ -179,7 +179,7 @@ export function ChatSidebar({
       </div>
 
       {/* Conversation List */}
-      <div className="flex-1 overflow-y-auto px-2 pb-4">
+      <div className="flex-1 overflow-y-auto px-2 pb-4" data-lenis-prevent>
         <div className="text-xs font-medium text-muted-foreground px-2 mb-2">
           Recent Chats
         </div>

@@ -8,9 +8,11 @@ import { revalidatePath } from "next/cache";
 import {
   buildProjectContext,
   buildGoalContext,
+  buildContactContext,
   buildUserSummary,
   buildInterviewContext,
 } from "./chat-context";
+import { formatDate, getChannelLabel } from "@/lib/network";
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -84,10 +86,12 @@ export interface ConversationData {
   mode: ConversationMode;
   projectId: string | null;
   goalId: string | null;
+  contactId: string | null;
   createdAt: Date;
   updatedAt: Date;
   project: { id: string; name: string; color: string } | null;
   goal: { id: string; title: string } | null;
+  contact: { id: string; fullName: string } | null;
 }
 
 export interface MessageData {
@@ -107,7 +111,8 @@ export interface ConversationWithMessages extends ConversationData {
 export async function createConversation(
   mode: ConversationMode = "general",
   projectId?: string,
-  goalId?: string
+  goalId?: string,
+  contactId?: string
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -120,6 +125,7 @@ export async function createConversation(
       mode,
       projectId: projectId || null,
       goalId: goalId || null,
+      contactId: contactId || null,
       title: mode === "goal-coach" 
         ? "Goal Setting Session" 
         : mode === "interview" 
@@ -129,6 +135,7 @@ export async function createConversation(
     include: {
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
+      contact: { select: { id: true, fullName: true } },
     },
   });
 
@@ -140,10 +147,12 @@ export async function createConversation(
     mode: conversation.mode as ConversationMode,
     projectId: conversation.projectId,
     goalId: conversation.goalId,
+    contactId: conversation.contactId,
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt,
     project: conversation.project,
     goal: conversation.goal,
+    contact: conversation.contact,
   };
 }
 
@@ -161,19 +170,22 @@ export async function getConversations(limit = 20): Promise<ConversationData[]> 
     include: {
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
+      contact: { select: { id: true, fullName: true } },
     },
   });
 
-  return conversations.map((c) => ({
+  return conversations.map((c: any) => ({
     id: c.id,
     title: c.title,
     mode: c.mode as ConversationMode,
     projectId: c.projectId,
     goalId: c.goalId,
+    contactId: c.contactId,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
     project: c.project,
     goal: c.goal,
+    contact: c.contact,
   }));
 }
 
@@ -194,6 +206,7 @@ export async function getConversation(
     include: {
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
+      contact: { select: { id: true, fullName: true } },
       messages: {
         orderBy: { createdAt: "asc" },
       },
@@ -208,16 +221,18 @@ export async function getConversation(
     mode: conversation.mode as ConversationMode,
     projectId: conversation.projectId,
     goalId: conversation.goalId,
+    contactId: conversation.contactId,
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt,
     project: conversation.project,
     goal: conversation.goal,
-    messages: conversation.messages.map((m) => ({
-      id: m.id,
-      role: m.role as "user" | "assistant" | "system",
-      content: m.content,
-      createdAt: m.createdAt,
-    })),
+    contact: conversation.contact,
+     messages: conversation.messages.map((m: any) => ({
+       id: m.id,
+       role: m.role as "user" | "assistant" | "system",
+       content: m.content,
+       createdAt: m.createdAt,
+     })),
   };
 }
 
@@ -312,6 +327,38 @@ export async function streamChatMessage(
     }
   }
 
+  // Add contact context if available
+  if (conversation.contactId) {
+    const contactContext = await buildContactContext(conversation.contactId);
+    if (contactContext) {
+      contextString += `\n\nReferenced Contact: "${contactContext.fullName}"`;
+      if (contactContext.relationship) {
+        contextString += `\nRelationship: ${contactContext.relationship}`;
+      }
+      if (contactContext.personalityTraits) {
+        contextString += `\nPersonality/Traits: ${contactContext.personalityTraits}`;
+      }
+      if (contactContext.notes) {
+        contextString += `\nNotes: ${contactContext.notes}`;
+      }
+
+      if (contactContext.recentInteractions.length > 0) {
+        contextString += `\n\nRecent Interactions:`;
+        for (const interaction of contactContext.recentInteractions) {
+          const dateStr = formatDate(interaction.occurredAt);
+          const channelStr = getChannelLabel(interaction.channel);
+          contextString += `\n- ${dateStr} (${channelStr}): ${interaction.summary}`;
+          if (interaction.nextStep) {
+            contextString += `\n  Next: ${interaction.nextStep}`;
+          }
+          if (interaction.followUpDate) {
+            contextString += `\n  Follow-up: ${formatDate(interaction.followUpDate)}`;
+          }
+        }
+      }
+    }
+  }
+
   // Add existing goals for goal-coach mode
   if (conversation.mode === "goal-coach" && userSummary?.recentGoals.length) {
     contextString += `\n\nExisting Goals:\n${userSummary.recentGoals
@@ -357,7 +404,7 @@ ${userMessage}
     let fullResponse = "";
     try {
       const completion = await openai.chat.completions.create({
-        model: "xiaomi/mimo-v2-flash:free",
+        model: "z-ai/glm-4.5-air:free",
         messages,
         stream: true,
       });
@@ -393,7 +440,7 @@ ${userMessage}
       ) {
         // Generate a short title from the first message
         const titleCompletion = await openai.chat.completions.create({
-          model: "xiaomi/mimo-v2-flash:free",
+          model: "z-ai/glm-4.5-air:free",
           messages: [
             {
               role: "system",
@@ -467,21 +514,27 @@ export async function renameConversation(conversationId: string, title: string) 
 }
 
 /**
- * Update conversation context (project or goal reference)
+ * Update conversation context (project, goal, or contact reference)
  */
 export async function updateConversationContext(
   conversationId: string,
   projectId?: string | null,
-  goalId?: string | null
+  goalId?: string | null,
+  contactId?: string | null
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
 
-  const data: { projectId?: string | null; goalId?: string | null } = {};
+  const data: {
+    projectId?: string | null;
+    goalId?: string | null;
+    contactId?: string | null;
+  } = {};
   if (projectId !== undefined) data.projectId = projectId;
   if (goalId !== undefined) data.goalId = goalId;
+  if (contactId !== undefined) data.contactId = contactId;
 
   await prisma.conversation.update({
     where: {

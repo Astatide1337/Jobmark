@@ -113,7 +113,7 @@ export async function streamReport(config: ReportConfig) {
   (async () => {
     try {
         const completion = await openai.chat.completions.create({
-          model: "xiaomi/mimo-v2-flash:free",
+          model: "z-ai/glm-4.5-air:free",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: prompt },
@@ -144,7 +144,7 @@ export async function improveText(selection: string, instruction: string) {
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const completion = await openai.chat.completions.create({
-    model: "xiaomi/mimo-v2-flash:free",
+    model: "z-ai/glm-4.5-air:free",
     messages: [
         { role: "system", content: "You are an expert editor. Rewrite the text based on the instruction. Return ONLY the rewritten text." },
         { role: "user", content: `Original: "${selection}"\nInstruction: ${instruction}\nRewritten:` }

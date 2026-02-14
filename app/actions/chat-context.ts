@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { formatDate, getChannelLabel } from "@/lib/network";
 
 // Types for conversation context
 export interface ProjectContext {
@@ -23,6 +24,24 @@ export interface GoalContext {
   deadline: Date | null;
   why: string | null;
   createdAt: Date;
+}
+
+export interface ContactContext {
+  id: string;
+  fullName: string;
+  relationship: string | null;
+  personalityTraits: string | null;
+  notes: string | null;
+  email: string | null;
+  phone: string | null;
+  recentInteractions: Array<{
+    occurredAt: Date;
+    channel: string;
+    summary: string;
+    nextStep: string | null;
+    followUpDate: Date | null;
+    rawNotes: string | null;
+  }>;
 }
 
 export interface UserSummary {
@@ -94,6 +113,57 @@ export async function buildGoalContext(goalId: string): Promise<GoalContext | nu
 }
 
 /**
+ * Build context about a specific contact for the AI
+ */
+export async function buildContactContext(
+  contactId: string
+): Promise<ContactContext | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const contact = await prisma.contact.findUnique({
+    where: {
+      id: contactId,
+      userId: session.user.id,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      relationship: true,
+      personalityTraits: true,
+      notes: true,
+      email: true,
+      phone: true,
+      interactions: {
+        orderBy: { occurredAt: "desc" },
+        take: 10,
+        select: {
+          occurredAt: true,
+          channel: true,
+          summary: true,
+          nextStep: true,
+          followUpDate: true,
+          rawNotes: true,
+        },
+      },
+    },
+  });
+
+  if (!contact) return null;
+
+  return {
+    id: contact.id,
+    fullName: contact.fullName,
+    relationship: contact.relationship,
+    personalityTraits: contact.personalityTraits,
+    notes: contact.notes,
+    email: contact.email,
+    phone: contact.phone,
+    recentInteractions: contact.interactions,
+  };
+}
+
+/**
  * Build a summary of the user's overall profile for the AI
  */
 export async function buildUserSummary(): Promise<UserSummary | null> {
@@ -122,9 +192,12 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
     take: 365,
   });
 
-  const uniqueDates = Array.from(
-    new Set(recentActivities.map((a) => a.createdAt.toLocaleDateString("en-CA")))
-  ).sort((a, b) => b.localeCompare(a));
+  const activityDateStrings: string[] = recentActivities.map(
+    (a: { createdAt: Date }) => a.createdAt.toLocaleDateString("en-CA")
+  );
+  const uniqueDates: string[] = [...new Set(activityDateStrings)].sort((a, b) =>
+    b.localeCompare(a)
+  );
 
   let currentStreak = 0;
   if (uniqueDates.length > 0) {
@@ -156,13 +229,15 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
     totalProjects: projectCount,
     currentStreak,
     goalsCount: goals.length,
-    recentGoals: goals.map((g) => ({
+    recentGoals: goals.map(
+      (g: { id: string; title: string; deadline: Date | null; why: string | null; createdAt: Date }) => ({
       id: g.id,
       title: g.title,
       deadline: g.deadline,
       why: g.why,
       createdAt: g.createdAt,
-    })),
+    })
+    ),
   };
 }
 
@@ -192,7 +267,7 @@ export async function buildInterviewContext(projectId: string) {
 
   // Format activities as a timeline for the AI
   const timeline = project.activities
-    .map((a) => {
+    .map((a: { content: string; createdAt: Date }) => {
       const dateStr = a.createdAt.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",

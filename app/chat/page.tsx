@@ -31,11 +31,11 @@ export default async function ChatPage() {
           title="AI Mentor"
         />
       }
-      className="p-0"
+      className="p-0 overflow-hidden"
     >
-      <div className="flex h-[calc(100vh-100px)]">
+      <div className="flex h-[calc(100vh-100px)] min-h-0">
         {/* Sidebar - Desktop */}
-        <div className="hidden lg:flex w-[340px] shrink-0 flex-col p-6 h-full">
+        <div className="hidden lg:flex w-[340px] shrink-0 flex-col p-6 h-full min-h-0">
           <ChatSidebar
             conversations={conversations}
             projects={activeProjects.map((p) => ({
@@ -47,7 +47,7 @@ export default async function ChatPage() {
         </div>
 
         {/* Main Content - Suggested Prompts */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8" data-lenis-prevent>
           <SuggestedPrompts
             projects={activeProjects.map((p) => ({
               id: p.id,

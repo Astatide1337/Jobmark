@@ -184,6 +184,7 @@ model Contact {
 
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   interactions InteractionLog[]
+  conversations Conversation[]
 
   @@index([userId, fullName])
   @@index([userId, createdAt(sort: Desc)])
@@ -220,6 +221,7 @@ model Conversation {
   // Context references
   projectId String?   // If conversation is about a specific project
   goalId    String?   // If conversation is about a specific goal
+  contactId String?   // If conversation references a specific contact
   
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -227,9 +229,11 @@ model Conversation {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   goal      Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
   messages  Message[]
 
   @@index([userId, updatedAt(sort: Desc)])
+  @@index([userId, contactId])
 }
 
 model Message {

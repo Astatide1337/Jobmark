@@ -22,7 +22,7 @@ export async function polishDictation(text: string) {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "xiaomi/mimo-v2-flash:free",
+      model: "z-ai/glm-4.5-air:free",
       messages: [
         {
           role: "system",

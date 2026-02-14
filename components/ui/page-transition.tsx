@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 /**
  * Page Transition Wrapper
@@ -13,6 +14,7 @@ import { ReactNode } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
+  className?: string;
 }
 
 const pageVariants = {
@@ -36,7 +38,7 @@ const pageTransition = {
   duration: 0.2,
 };
 
-export function PageTransition({ children }: PageTransitionProps) {
+export function PageTransition({ children, className }: PageTransitionProps) {
   return (
     <motion.div
       initial="initial"
@@ -44,6 +46,7 @@ export function PageTransition({ children }: PageTransitionProps) {
       exit="exit"
       variants={pageVariants}
       transition={pageTransition}
+      className={cn("flex-1 min-h-0", className)}
     >
       {children}
     </motion.div>

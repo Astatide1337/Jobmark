@@ -43,7 +43,7 @@ export async function getManifestationContent() {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "xiaomi/mimo-v2-flash:free", // Using the free model as per project convention
+      model: "z-ai/glm-4.5-air:free", // Using the free model as per project convention
       messages: [
         {
           role: "system",

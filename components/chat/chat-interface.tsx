@@ -21,9 +21,15 @@ interface ChatInterfaceProps {
   initialMessages: MessageData[];
   projectId: string | null;
   goalId: string | null;
+  contactId: string | null;
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
-  onContextChange?: (projectId?: string | null, goalId?: string | null) => void;
+  contacts: Array<{ id: string; fullName: string; relationship: string | null; interactionsCount: number }>;
+  onContextChange?: (
+    projectId?: string | null,
+    goalId?: string | null,
+    contactId?: string | null
+  ) => void;
 }
 
 export function ChatInterface({
@@ -32,8 +38,10 @@ export function ChatInterface({
   initialMessages,
   projectId,
   goalId,
+  contactId,
   projects,
   goals,
+  contacts,
   onContextChange,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
@@ -159,7 +167,7 @@ export function ChatInterface({
   return (
     <div className="flex flex-col h-full relative bg-background">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto w-full">
+      <div className="flex-1 overflow-y-auto w-full" data-lenis-prevent>
         <div className="max-w-3xl mx-auto px-4 pt-6 pb-40 min-h-full flex flex-col justify-end">
           {/* Welcome Message */}
           {messages.length === 0 && !streamingContent && (
@@ -216,10 +224,13 @@ export function ChatInterface({
               <ContextSelector
                 projects={projects}
                 goals={goals}
+                contacts={contacts}
                 selectedProjectId={projectId}
                 selectedGoalId={goalId}
+                selectedContactId={contactId}
                 onProjectSelect={(id) => onContextChange?.(id, goalId)}
                 onGoalSelect={(id) => onContextChange?.(projectId, id)}
+                onContactSelect={(id) => onContextChange?.(projectId, goalId, id)}
               />
             </div>
             
