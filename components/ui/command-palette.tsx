@@ -19,6 +19,8 @@ import {
   Search,
   FileBarChart,
   Sparkles,
+  Users,
+  MessageSquare,
 } from "lucide-react";
 import { ActivityDetailModal } from "@/components/activity/activity-detail-modal";
 import { globalSearch, getRecentProjects, type SearchResult } from "@/app/actions/search";
@@ -35,6 +37,7 @@ const quickActions = [
 const navigationItems = [
   { id: "dashboard", label: "Dashboard", icon: Home, href: "/dashboard" },
   { id: "projects", label: "Projects", icon: FolderOpen, href: "/projects" },
+  { id: "network", label: "Network", icon: Users, href: "/network" },
 ];
 
 export function CommandPalette() {
@@ -130,7 +133,7 @@ export function CommandPalette() {
       open={open} 
       onOpenChange={setOpen}
       title="Search Everything"
-      description="Search for activities, projects, reports, or navigate anywhere"
+      description="Search for activities, projects, reports, contacts, interactions, or navigate anywhere"
       showCloseButton={false}
       shouldFilter={false} // Disable internal filtering to allow server results (e.g. "today") to show
     >
@@ -245,6 +248,48 @@ export function CommandPalette() {
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: result.color || "#6366f1" }}
                       />
+                      <div className="flex-1">
+                        <p className="text-sm">{result.title}</p>
+                        <p className="text-xs text-muted-foreground">{result.subtitle}</p>
+                      </div>
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            )}
+
+            {/* Contact Results */}
+            {results.filter(r => r.type === "contact").length > 0 && (
+              <CommandGroup heading="Contacts">
+                {results
+                  .filter((r) => r.type === "contact")
+                  .map((result) => (
+                    <CommandItem
+                      key={result.id}
+                      onSelect={() => handleResultSelect(result)}
+                      className="flex items-center gap-3 mb-1"
+                    >
+                      <Users className="h-4 w-4" />
+                      <div className="flex-1">
+                        <p className="text-sm">{result.title}</p>
+                        <p className="text-xs text-muted-foreground">{result.subtitle}</p>
+                      </div>
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            )}
+
+            {/* Interaction Results */}
+            {results.filter(r => r.type === "interaction").length > 0 && (
+              <CommandGroup heading="Interactions">
+                {results
+                  .filter((r) => r.type === "interaction")
+                  .map((result) => (
+                    <CommandItem
+                      key={result.id}
+                      onSelect={() => handleResultSelect(result)}
+                      className="flex items-center gap-3 mb-1"
+                    >
+                      <MessageSquare className="h-4 w-4" />
                       <div className="flex-1">
                         <p className="text-sm">{result.title}</p>
                         <p className="text-xs text-muted-foreground">{result.subtitle}</p>

@@ -3,10 +3,12 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import { formatDate, getChannelLabel } from "@/lib/network";
+
 
 export interface SearchResult {
   id: string;
-  type: "activity" | "project" | "report";
+  type: "activity" | "project" | "report" | "contact" | "interaction";
   title: string;
   subtitle?: string;
   url: string;
@@ -71,7 +73,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   }
 
   // Search activities, projects, and reports in parallel
-  const [activities, projects, reports] = await Promise.all([
+  const [activities, projects, reports, contacts, interactions] = await Promise.all([
     prisma.activity.findMany({
       where: activityWhere,
       orderBy: { createdAt: "desc" },
@@ -100,14 +102,36 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    prisma.contact.findMany({
+      where: {
+        userId: session.user.id,
+        OR: [
+          { fullName: { contains: searchTerm, mode: "insensitive" } },
+          { email: { contains: searchTerm, mode: "insensitive" } },
+        ],
+      },
+      take: 5,
+      select: { id: true, fullName: true, email: true, relationship: true },
+    }),
+    prisma.interactionLog.findMany({
+      where: {
+        userId: session.user.id,
+        summary: { contains: searchTerm, mode: "insensitive" },
+      },
+      take: 5,
+      include: {
+        contact: { select: { id: true, fullName: true } },
+      },
+    }),
   ]);
 
   const results: SearchResult[] = [];
 
   // Add activity results
   activities.forEach((activity) => {
-    const dateStr = activity.logDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const dateStr = formatDate(activity.logDate);
     const projectStr = activity.project?.name || "No Project";
+
     
     results.push({
       id: activity.id,
@@ -139,8 +163,36 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       id: report.id,
       type: "report",
       title: report.title,
-      subtitle: new Date(report.createdAt).toLocaleDateString(),
+      subtitle: formatDate(report.createdAt),
       url: "/reports?tab=history",
+    });
+  });
+
+  // Add contact results
+  contacts.forEach((contact) => {
+    results.push({
+      id: contact.id,
+      type: "contact",
+      title: contact.fullName,
+      subtitle: contact.relationship || contact.email || undefined,
+      url: `/network/${contact.id}`,
+    });
+  });
+
+  // Add interaction results
+  interactions.forEach((interaction) => {
+    const truncatedSummary =
+      interaction.summary.length > 80
+        ? interaction.summary.substring(0, 80) + "..."
+        : interaction.summary;
+    const dateStr = formatDate(interaction.occurredAt);
+    const channelStr = getChannelLabel(interaction.channel);
+    results.push({
+      id: interaction.id,
+      type: "interaction",
+      title: truncatedSummary,
+      subtitle: `${interaction.contact.fullName} • ${channelStr} • ${dateStr}`,
+      url: `/network/${interaction.contactId}`,
     });
   });
 

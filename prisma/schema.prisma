@@ -73,6 +73,8 @@ model User {
   goals         Goal[]
   settings      UserSettings?
   conversations Conversation[]
+  contacts      Contact[]
+  interactionLogs InteractionLog[]
 }
 
 model Goal {
@@ -165,6 +167,47 @@ model Activity {
   @@index([userId, logDate(sort: Desc)])
   @@index([projectId])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+model Contact {
+  id                String           @id @default(cuid())
+  userId            String
+  fullName          String           @db.VarChar(150)
+  phone             String?          @db.VarChar(50)
+  email             String?          @db.VarChar(255)
+  birthday          DateTime?
+  relationship      String?          @db.VarChar(120)
+  personalityTraits String?          @db.Text
+  notes             String?          @db.Text
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions InteractionLog[]
+
+  @@index([userId, fullName])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, email])
+}
+
+model InteractionLog {
+  id           String   @id @default(cuid())
+  userId       String
+  contactId    String
+  occurredAt   DateTime @default(now())
+  channel      String   @default("other")
+  summary      String   @db.Text
+  nextStep     String?  @db.Text
+  followUpDate DateTime?
+  rawNotes     String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([userId, contactId, occurredAt(sort: Desc)])
+  @@index([userId, followUpDate])
 }
 
 // Chat models for AI Career Coach

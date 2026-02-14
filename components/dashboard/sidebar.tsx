@@ -11,7 +11,8 @@ import {
   FileText, 
   Settings,
   MessageSquare,
-  Coffee 
+  Coffee,
+  Users 
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/reports", icon: FileText, label: "Reports", demoId: "feature-reports" },
   { href: "/insights", icon: BarChart3, label: "Insights", demoId: "feature-insights" },
   { href: "/focus", icon: Coffee, label: "Focus", demoId: "feature-focus" },
+  { href: "/network", icon: Users, label: "Network", demoId: "feature-network" },
 ];
 
 const settingsItem = { href: "/settings", icon: Settings, label: "Settings", demoId: "settings" };
