@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
+import { DictateButton } from "@/components/ui/dictate-button";
 import {
   Loader2,
   ChevronDown,
@@ -343,29 +344,13 @@ export function InteractionLogForm({
             <Label htmlFor="interaction-summary">
               Summary <span className="text-destructive">*</span>
             </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "rounded-xl transition-all",
-                  isListening && activeField === "summary"
-                    ? "border-destructive text-destructive bg-destructive/5"
-                    : ""
-                )}
+            <DictateButton
+                isListening={isListening && activeField === "summary"}
+                isPolishing={isPolishing && activeField === "summary"}
                 onClick={() => toggleListening("summary")}
-                disabled={isLoading || isPolishing}
-              >
-              {isListening && activeField === "summary" ? (
-                <>
-                  <Square className="h-4 w-4 mr-1" /> Stop
-                </>
-              ) : (
-                <>
-                  <Mic className="h-4 w-4 mr-1" /> Dictate
-                </>
-              )}
-            </Button>
+                disabled={isLoading}
+              />
+
           </div>
           <Textarea
             id="interaction-summary"
@@ -383,29 +368,13 @@ export function InteractionLogForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="interaction-nextStep">Next Step</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "rounded-xl transition-all",
-                  isListening && activeField === "nextStep"
-                    ? "border-destructive text-destructive bg-destructive/5"
-                    : ""
-                )}
+            <DictateButton
+                isListening={isListening && activeField === "nextStep"}
+                isPolishing={isPolishing && activeField === "nextStep"}
                 onClick={() => toggleListening("nextStep")}
-                disabled={isLoading || isPolishing}
-              >
-              {isListening && activeField === "nextStep" ? (
-                <>
-                  <Square className="h-4 w-4 mr-1" /> Stop
-                </>
-              ) : (
-                <>
-                  <Mic className="h-4 w-4 mr-1" /> Dictate
-                </>
-              )}
-            </Button>
+                disabled={isLoading}
+              />
+
           </div>
           <Textarea
             id="interaction-nextStep"

@@ -60,7 +60,7 @@ export function DashboardShell({
             className={cn(
               "flex-1 min-h-0 flex flex-col",
               uiV2 
-                ? "overflow-y-auto scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent" 
+                ? "overflow-y-auto scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent px-4 lg:px-8 py-6" 
                 : "h-full overflow-hidden",
               className
             )}

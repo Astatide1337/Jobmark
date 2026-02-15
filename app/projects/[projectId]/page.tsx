@@ -35,18 +35,20 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
         />
       }
     >
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 py-8 space-y-8">
         
         {/* Back navigation */}
         <Link 
             href="/projects" 
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-all active:scale-95 group"
         >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Projects
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Back to Projects
         </Link>
 
         {/* Header Card */}
-        <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm">
+        <div className="bg-card/40 border border-border/40 rounded-2xl p-6 shadow-sm backdrop-blur-sm">
+
             <div className="flex items-start gap-4">
                  <div 
                    className="h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"

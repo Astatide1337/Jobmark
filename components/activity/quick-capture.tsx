@@ -11,7 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { ProjectChipSelector } from "@/components/projects/project-chip-selector";
+import { DictateButton } from "@/components/ui/dictate-button";
 import { Loader2, Send, CalendarIcon, Sparkles, ArrowUp, X, Mic, MicOff, Wand2 } from "lucide-react";
+
 import { format, isToday, isYesterday, subDays } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -600,32 +602,13 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
 
               <div className="h-6 w-px bg-border/50 mx-1" />
 
-              <Button
-                type="button"
-                variant={isListening ? "destructive" : "ghost"}
-                size="sm"
-                className={cn(
-                    "h-9 px-3 transition-all duration-300", 
-                    isListening ? "animate-pulse bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 border border-red-500/20" : "text-muted-foreground hover:bg-muted/40 hover:text-primary active:scale-95"
-                )}
+              <DictateButton
+                isListening={isListening}
+                isPolishing={isPolishing}
                 onClick={toggleListening}
-              >
+                disabled={isPending}
+              />
 
-                {isListening ? (
-                    <>
-                        <span className="relative flex h-2 w-2 mr-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                        </span>
-                        Stop
-                    </>
-                ) : (
-                    <>
-                        <Mic className="h-4 w-4 mr-2" />
-                        Dictate
-                    </>
-                )}
-              </Button>
             </div>
 
             {state.errors?.content && (

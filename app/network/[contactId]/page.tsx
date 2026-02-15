@@ -34,16 +34,17 @@ export default async function ContactDetailPage({
         />
       }
     >
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 space-y-8">
         <Link
           href="/network"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-all active:scale-95 group"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Back to Network
         </Link>
         <ContactDetailView contact={contact} interactions={interactions} />
       </div>
     </DashboardShell>
+
   );
 }

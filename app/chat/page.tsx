@@ -7,7 +7,6 @@ import { getContacts } from "@/app/actions/network";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { ChatInterface } from "@/components/chat/chat-interface";
-import { useUI } from "@/components/providers/ui-provider";
 
 export default async function ChatPage() {
   const session = await auth();
