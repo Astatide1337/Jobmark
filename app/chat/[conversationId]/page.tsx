@@ -6,7 +6,6 @@ import { getGoals } from "@/app/actions/goals";
 import { getContacts } from "@/app/actions/network";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { ConversationClient } from "./conversation-client";
 
 interface ConversationPageProps {
@@ -46,42 +45,36 @@ export default async function ConversationPage({ params }: ConversationPageProps
         />
       }
       className="p-0 overflow-hidden"
+      chatSidebarData={{
+        conversations,
+        activeConversationId: conversationId,
+        projects: activeProjects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          color: p.color,
+        })),
+      }}
     >
-      <div className="flex h-[calc(100vh-100px)] min-h-0">
-        {/* Sidebar - Desktop */}
-        <div className="hidden lg:flex w-[340px] shrink-0 flex-col p-6 h-full min-h-0">
-          <ChatSidebar
-            conversations={conversations}
-            activeConversationId={conversationId}
-            projects={activeProjects.map((p) => ({
-              id: p.id,
-              name: p.name,
-              color: p.color,
-            }))}
-          />
-        </div>
-
-        {/* Chat Interface */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <ConversationClient
-            conversation={conversation}
-            projects={activeProjects.map((p) => ({
-              id: p.id,
-              name: p.name,
-              color: p.color,
-            }))}
-            goals={goals.map((g) => ({
-              id: g.id,
-              title: g.title,
-            }))}
-            contacts={contacts.map((c) => ({
-              id: c.id,
-              fullName: c.fullName,
-              relationship: c.relationship ?? null,
-              interactionsCount: c._count?.interactions ?? 0,
-            }))}
-          />
-        </div>
+      <div className="h-full min-h-0">
+        <ConversationClient
+          conversation={conversation}
+          userName={session.user.name}
+          projects={activeProjects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            color: p.color,
+          }))}
+          goals={goals.map((g) => ({
+            id: g.id,
+            title: g.title,
+          }))}
+          contacts={contacts.map((c) => ({
+            id: c.id,
+            fullName: c.fullName,
+            relationship: c.relationship ?? null,
+            interactionsCount: c._count?.interactions ?? 0,
+          }))}
+        />
       </div>
     </DashboardShell>
   );

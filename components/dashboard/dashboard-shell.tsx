@@ -4,19 +4,32 @@ import { ReactNode } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { PageTransition } from "@/components/ui/page-transition";
 import { cn } from "@/lib/utils";
+import type { ConversationData } from "@/app/actions/chat";
 
 interface DashboardShellProps {
   children: ReactNode;
   header?: ReactNode;
   className?: string; // Allow custom classes for the main content area
+  hideSidebar?: boolean;
+  chatSidebarData?: {
+    conversations: ConversationData[];
+    activeConversationId?: string;
+    projects: Array<{ id: string; name: string; color: string }>;
+  };
 }
 
-export function DashboardShell({ children, header, className }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  header,
+  className,
+  hideSidebar = false,
+  chatSidebarData,
+}: DashboardShellProps) {
   return (
     <div className="min-h-screen bg-background flex">
-      <Sidebar />
+      {!hideSidebar && <Sidebar chatSidebarData={chatSidebarData} />}
       
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0">
         {header}
         
         <PageTransition>
