@@ -9,7 +9,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Pen, Settings, LogOut, Calendar, ChevronDown } from "lucide-react";
+import { Pen, Settings, LogOut, Calendar, ChevronDown, Menu } from "lucide-react";
 import Link from "next/link";
 
 interface DashboardHeaderProps {
@@ -17,50 +17,65 @@ interface DashboardHeaderProps {
   userImage?: string | null;
   showDate?: boolean;
   title?: string;
+  onMenuClick?: () => void;
 }
 
 export function DashboardHeader({ 
   userName, 
   userImage, 
   showDate = false,
-  title 
+  title,
+  onMenuClick
 }: DashboardHeaderProps) {
   const initials = userName
+
     ?.split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase() || "U";
 
   return (
-    <header className="border-b border-border/50 bg-card/30">
-      <div className="px-6 py-4 flex items-center justify-between">
-        {/* Mobile Logo */}
-        <div className="lg:hidden flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Pen className="h-4 w-4 text-primary" />
-          </div>
-          <span className="font-semibold">Jobmark</span>
-        </div>
+    <header className="border-b border-border/50 bg-card/30 sticky top-0 z-30 backdrop-blur-md">
+      <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Mobile Menu Toggle */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden" 
+            onClick={onMenuClick}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
 
-        {/* Title or Date */}
-        <div className="hidden lg:block">
-          {title ? (
-            <h1 className="text-lg font-semibold">{title}</h1>
-          ) : showDate ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Pen className="h-4 w-4 text-primary" />
             </div>
-          ) : null}
+          </div>
+          
+          {/* Title or Date */}
+          <div className="flex flex-col">
+            {title ? (
+              <h1 className="text-sm lg:text-lg font-semibold truncate max-w-[200px] lg:max-w-none">{title}</h1>
+            ) : showDate ? (
+              <div className="hidden lg:flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span className="text-sm">
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {/* User Menu */}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">

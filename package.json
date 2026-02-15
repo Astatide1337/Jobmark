@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "verify:chat": "eslint components/chat app/chat app/api/chat"
   },
   "dependencies": {
     "@ai-sdk/rsc": "^2.0.49",

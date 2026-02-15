@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
-import { 
-  Pen, 
-  BarChart3, 
-  FolderOpen, 
-  FileText, 
+import {
+  Pen,
+  BarChart3,
+  FolderOpen,
+  FileText,
   Settings,
   MessageSquare,
   Coffee,
@@ -52,6 +52,8 @@ const settingsItem = { href: "/settings", icon: Settings, label: "Settings", dem
 interface SidebarProps {
   mode?: "app" | "demo";
   activePath?: string;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
   chatSidebarData?: {
     conversations: ConversationData[];
     activeConversationId?: string;
@@ -59,8 +61,9 @@ interface SidebarProps {
   };
 }
 
-export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: SidebarProps) {
+export function Sidebar({ mode = "app", activePath = "/", isMobileOpen, onMobileClose, chatSidebarData }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const currentPath = mode === "demo" ? activePath : pathname;
   const [viewMode, setViewMode] = useState<"history" | "navigation">("history");
   const [isPending, startTransition] = useTransition();
@@ -72,7 +75,8 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
   const handleNewChat = async (chatMode: ConversationMode, projectId?: string) => {
     startTransition(async () => {
       const conversation = await createConversation(chatMode, projectId);
-      window.location.href = `/chat/${conversation.id}`;
+      onMobileClose?.();
+      router.push(`/chat/${conversation.id}`);
     });
   };
 
@@ -80,7 +84,8 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
     startTransition(async () => {
       await deleteConversation(conversationId);
       if (chatSidebarData?.activeConversationId === conversationId) {
-        window.location.href = "/chat";
+        onMobileClose?.();
+        router.push("/chat");
       }
     });
   };
@@ -123,7 +128,7 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
         return <MessageSquare className="h-4 w-4" />;
     }
   };
-  
+
   const handleDemoClick = (id: string) => {
     if (mode === "demo") {
       const element = document.getElementById(id);
@@ -135,10 +140,20 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
 
 
   return (
-    <aside className={cn(
-      "hidden lg:flex w-64 flex-col border-r border-border/50 bg-sidebar shrink-0",
-      mode === "app" ? "sticky top-0 h-screen overflow-y-auto" : "h-full"
-    )}>
+    <>
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-72 flex-col border-r border-border/50 bg-sidebar transition-transform duration-300 lg:static lg:flex lg:w-64 lg:translate-x-0",
+        isMobileOpen ? "translate-x-0" : "-translate-x-full",
+        mode === "app" ? "lg:sticky lg:top-0 h-screen overflow-y-auto" : "h-full"
+      )}>
       <div className="p-6">
         {mode === "app" ? (
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -227,7 +242,9 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
                   <div key={conversation.id} className="group mb-1">
                     <Link
                       href={`/chat/${conversation.id}`}
+                      onClick={() => onMobileClose?.()}
                       className={cn(
+
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                         chatSidebarData.activeConversationId === conversation.id
                           ? "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -237,7 +254,13 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
                       <span className="shrink-0">{getChatModeIcon(conversation.mode)}</span>
                       <div className="min-w-0 flex-1">
                         {editingId === conversation.id ? (
-                          <form onSubmit={handleRenameSubmit} onClick={(e) => e.stopPropagation()}>
+                          <form 
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleRenameSubmit();
+                            }} 
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Input
                               value={editTitle}
                               onChange={(e) => setEditTitle(e.target.value)}
@@ -253,6 +276,7 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
                           {getChatModeLabel(conversation.mode)}
                         </div>
                       </div>
+
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -307,30 +331,29 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
               demoId={item.demoId}
               icon={item.icon}
               label={item.label}
-              isActive={mode === "app" 
+              isActive={mode === "app"
                 ? (currentPath === item.href || currentPath?.startsWith(item.href + "/"))
                 : (item.label === "Journal" && currentPath === "/dashboard") ||
-                  (item.label === "Mentor" && currentPath === "/mentor") ||
-                  currentPath?.includes(item.label.toLowerCase())
+                (item.label === "Mentor" && currentPath === "/mentor") ||
+                currentPath?.includes(item.label.toLowerCase())
               }
-              onClick={mode === "demo" ? () => handleDemoClick(item.demoId) : undefined}
+              onClick={mode === "demo" ? () => handleDemoClick(item.demoId) : () => onMobileClose?.()}
             />
           ))
         )}
       </nav>
-
+      {isChatRoute && chatSidebarData && (
+        <button
+          type="button"
+          onClick={() =>
+            setViewMode((prev) => (prev === "history" ? "navigation" : "history"))
+          }
+          className="mb-2 w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {viewMode === "history" ? "Switch to navigation" : "Switch to chat history"}
+        </button>
+      )}
       <div className="p-3 border-t border-border/50">
-        {isChatRoute && chatSidebarData && (
-          <button
-            type="button"
-            onClick={() =>
-              setViewMode((prev) => (prev === "history" ? "navigation" : "history"))
-            }
-            className="mb-2 w-full text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {viewMode === "history" ? "Switch to navigation" : "Switch to chat history"}
-          </button>
-        )}
         <NavItem
           mode={mode}
           href={settingsItem.href}
@@ -338,17 +361,17 @@ export function Sidebar({ mode = "app", activePath = "/", chatSidebarData }: Sid
           icon={settingsItem.icon}
           label={settingsItem.label}
           isActive={currentPath === settingsItem.href}
-          onClick={mode === "demo" ? () => {} : undefined}
+          onClick={mode === "demo" ? () => { } : () => onMobileClose?.()}
         />
       </div>
     </aside>
+    </>
   );
 }
 
 function NavItem({
   mode = "app",
   href,
-  demoId,
   icon: Icon,
   label,
   isActive,
@@ -372,7 +395,7 @@ function NavItem({
           transition={{ type: "spring", stiffness: 500, damping: 35 }}
         />
       )}
-      
+
       <Icon className="relative z-10 h-4 w-4" />
       <span className="relative z-10">
         {label}
@@ -382,8 +405,8 @@ function NavItem({
 
   const className = cn(
     "group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-1",
-    isActive 
-      ? "text-sidebar-accent-foreground" 
+    isActive
+      ? "text-sidebar-accent-foreground"
       : "text-muted-foreground hover:text-foreground"
   );
 

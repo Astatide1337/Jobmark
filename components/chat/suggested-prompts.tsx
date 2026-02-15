@@ -8,6 +8,7 @@ import {
   Briefcase,
   Brain,
   TrendingUp,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createConversation, type ConversationMode } from "@/app/actions/chat";
@@ -23,44 +24,40 @@ const PROMPTS = [
     id: "goal-setting",
     icon: Target,
     title: "Set a New Goal",
-    description: "Walk through Brian Tracy's proven 7-step goal-setting method",
+    description: "Break down a big ambition into a 7-step actionable plan",
     mode: "goal-coach" as ConversationMode,
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
-    hoverBorder: "group-hover:border-amber-500/50",
   },
   {
     id: "interview",
     icon: Briefcase,
     title: "Practice Interview",
-    description: "Mock behavioral interview based on your project work",
+    description: "Mock behavioral session based on your real project work",
     mode: "interview" as ConversationMode,
     needsProject: true,
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
-    hoverBorder: "group-hover:border-blue-500/50",
   },
   {
     id: "imposter",
     icon: Brain,
     title: "Overcome Self-Doubt",
-    description: "Work through imposter syndrome and build confidence",
+    description: "Work through imposter syndrome and build career confidence",
     mode: "general" as ConversationMode,
     initialMessage: "I've been struggling with imposter syndrome at work. I feel like I don't belong and that people will find out I'm not as capable as they think. Can you help me work through these feelings?",
     color: "text-rose-500",
     bgColor: "bg-rose-500/10",
-    hoverBorder: "group-hover:border-rose-500/50",
   },
   {
     id: "clarity",
     icon: TrendingUp,
     title: "Career Direction",
-    description: "Get clarity on your career path and next steps",
+    description: "Get clarity on your path and figure out your next big move",
     mode: "general" as ConversationMode,
     initialMessage: "I feel stuck in my career and unsure where I want to go next. Can you help me think through my options and figure out a direction that aligns with my values?",
     color: "text-emerald-500",
     bgColor: "bg-emerald-500/10",
-    hoverBorder: "group-hover:border-emerald-500/50",
   },
 ];
 
@@ -74,9 +71,15 @@ export function SuggestedPrompts({ projects, userName }: SuggestedPromptsProps) 
       try {
         const conversation = await createConversation(
           prompt.mode,
-          projectId
+          projectId,
+          undefined,
+          undefined,
+          prompt.initialMessage
         );
-        router.push(`/chat/${conversation.id}`);
+        
+        // If it has an initial message, we want to auto-start the stream on the next page
+        const url = `/chat/${conversation.id}${prompt.initialMessage ? "?autoStart=true" : ""}`;
+        router.push(url);
       } catch (error) {
         console.error("Failed to create conversation:", error);
       }
@@ -84,93 +87,103 @@ export function SuggestedPrompts({ projects, userName }: SuggestedPromptsProps) 
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-8 px-1 pb-8 pt-4">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{greeting}</h1>
-        <p className="mx-auto max-w-2xl text-sm leading-6 text-muted-foreground">
-          Pick a starting point for this new conversation. I can coach your goals,
-          run interview practice, or help untangle career blockers.
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-10 pb-32">
+      <div className="mb-8 text-center space-y-3 animate-in fade-in slide-in-from-top-4 duration-1000 fill-mode-both">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground font-serif leading-tight">
+          {greeting}
+        </h1>
+        <p className="mx-auto max-w-xl text-base text-muted-foreground/70 leading-relaxed font-medium">
+          Your AI career partner. How shall we begin today?
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {PROMPTS.map((prompt) => (
           <div key={prompt.id} className="h-full">
             {prompt.needsProject ? (
               projects.length > 0 ? (
                 <Card
                   className={cn(
-                    "group h-full border-border/70 bg-card/70 p-5 transition-colors",
+                    "group relative h-full overflow-hidden border-border/40 bg-card/10 p-6 transition-all duration-500 hover:bg-card/20 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 rounded-[1.5rem]",
                     isPending && "pointer-events-none opacity-70"
                   )}
                 >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={cn(
-                        "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl shadow-md ring-1 ring-white/10",
                         prompt.bgColor
-                      )}
-                    >
-                      <prompt.icon className={cn("h-5 w-5", prompt.color)} />
+                      )}>
+                        <prompt.icon className={cn("h-5 w-5", prompt.color)} />
+                      </div>
                     </div>
+                    
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-foreground">{prompt.title}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">{prompt.description}</p>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {projects.slice(0, 4).map((project) => (
-                          <button
-                            key={project.id}
-                            type="button"
-                            onClick={() => handlePromptClick(prompt, project.id)}
-                            disabled={isPending}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted"
-                          >
-                            <span
-                              className="h-1.5 w-1.5 rounded-full"
-                              style={{ backgroundColor: project.color }}
-                            />
-                            {project.name}
-                          </button>
-                        ))}
+                      <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                        {prompt.title}
+                      </h3>
+                      <p className="text-muted-foreground/80 leading-relaxed text-sm mb-6">
+                        {prompt.description}
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          {projects.slice(0, 4).map((project) => (
+                            <button
+                              key={project.id}
+                              type="button"
+                              onClick={() => handlePromptClick(prompt, project.id)}
+                              disabled={isPending}
+                              className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-1.5 text-xs font-semibold text-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary hover:scale-105 active:scale-95 shadow-sm"
+                            >
+                              <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: project.color }}
+                              />
+                              {project.name}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </Card>
               ) : (
-                <Card className="h-full border-border/70 bg-card/40 p-5 opacity-70">
-                  <div className="flex items-start gap-4">
-                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                      <prompt.icon className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-foreground">{prompt.title}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Add a project first to start interview practice.
-                      </p>
-                    </div>
-                  </div>
+                <Card className="h-full border-dashed border-border/60 bg-muted/5 p-6 rounded-[1.5rem] flex flex-col justify-center items-center text-center">
+                  <h3 className="text-base font-bold text-muted-foreground/60 mb-2">{prompt.title}</h3>
+                  <p className="text-xs text-muted-foreground/40 leading-relaxed">
+                    Set up your first project to unlock this mode.
+                  </p>
                 </Card>
               )
             ) : (
               <Card
                 onClick={() => handlePromptClick(prompt)}
                 className={cn(
-                  "group h-full cursor-pointer border-border/70 bg-card/70 p-5 transition-colors hover:bg-card",
+                  "group relative h-full cursor-pointer overflow-hidden border-border/40 bg-card/10 p-6 transition-all duration-500 hover:bg-card/20 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 rounded-[1.5rem]",
                   isPending && "pointer-events-none opacity-70"
                 )}
               >
-                <div className="flex items-start gap-4">
-                  <div
-                    className={cn(
-                      "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                <div className="flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl shadow-md ring-1 ring-white/10",
                       prompt.bgColor
-                    )}
-                  >
-                    <prompt.icon className={cn("h-5 w-5", prompt.color)} />
+                    )}>
+                      <prompt.icon className={cn("h-5 w-5", prompt.color)} />
+                    </div>
+                    <div className="h-8 w-8 flex items-center justify-center rounded-full bg-muted/10 opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:bg-primary/10">
+                      <ArrowRight className="h-4 w-4 text-primary" />
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">{prompt.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{prompt.description}</p>
+                  
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                      {prompt.title}
+                    </h3>
+                    <p className="text-muted-foreground/80 leading-relaxed text-sm">
+                      {prompt.description}
+                    </p>
                   </div>
                 </div>
               </Card>

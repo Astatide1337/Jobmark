@@ -40,7 +40,8 @@ export async function createConversation(
   mode: ConversationMode = "general",
   projectId?: string,
   goalId?: string,
-  contactId?: string
+  contactId?: string,
+  initialMessage?: string
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -59,6 +60,12 @@ export async function createConversation(
         : mode === "interview" 
         ? "Mock Interview" 
         : "New Chat",
+      messages: initialMessage ? {
+        create: {
+          role: "user",
+          content: initialMessage,
+        }
+      } : undefined,
     },
     include: {
       project: { select: { id: true, name: true, color: true } },
@@ -81,6 +88,7 @@ export async function createConversation(
     project: conversation.project,
     goal: conversation.goal,
     contact: conversation.contact,
+    hasInitialMessage: !!initialMessage,
   };
 }
 

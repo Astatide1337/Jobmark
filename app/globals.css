@@ -189,12 +189,15 @@
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--border) / 0.3);
-    border-radius: 3px;
+    background: #3d332c;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--border) / 0.5);
+    background: #d4a574;
+    background-clip: content-box;
   }
 
   /* Editorial typography utilities */
