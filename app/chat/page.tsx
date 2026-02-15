@@ -41,6 +41,7 @@ export default async function ChatPage() {
     >
       <div className="h-full overflow-y-auto p-8" data-lenis-prevent>
         <SuggestedPrompts
+          userName={session.user.name}
           projects={activeProjects.map((p) => ({
             id: p.id,
             name: p.name,

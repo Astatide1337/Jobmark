@@ -7,6 +7,7 @@ import { updateConversationContext, type ConversationWithMessages, type Conversa
 
 interface ConversationClientProps {
   conversation: ConversationWithMessages;
+  userName?: string | null;
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
   contacts: Array<{ id: string; fullName: string; relationship: string | null; interactionsCount: number }>;
@@ -14,6 +15,7 @@ interface ConversationClientProps {
 
 export function ConversationClient({
   conversation,
+  userName,
   projects,
   goals,
   contacts,
@@ -36,6 +38,7 @@ export function ConversationClient({
     <ChatInterface
       conversationId={conversation.id}
       mode={conversation.mode as ConversationMode}
+      userName={userName}
       initialMessages={conversation.messages}
       projectId={conversation.projectId}
       goalId={conversation.goalId}
@@ -43,6 +46,7 @@ export function ConversationClient({
       projects={projects}
       goals={goals}
       contacts={contacts}
+      isContextPending={isPending}
       onContextChange={handleContextChange}
     />
   );

@@ -58,6 +58,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
       <div className="h-full min-h-0">
         <ConversationClient
           conversation={conversation}
+          userName={session.user.name}
           projects={activeProjects.map((p) => ({
             id: p.id,
             name: p.name,

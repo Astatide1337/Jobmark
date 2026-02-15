@@ -1,23 +1,54 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
-import { readStreamableValue } from "@ai-sdk/rsc";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Bot, Sparkles, Square, ArrowUp, Paperclip } from "lucide-react";
+import { ArrowDown, ArrowUp, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  streamChatMessage,
-  type MessageData,
-  type ConversationMode,
-} from "@/app/actions/chat";
+import { type MessageData, type ConversationMode } from "@/app/actions/chat";
 import { ChatMessage } from "./chat-message";
 import { ContextSelector } from "./context-selector";
+import { getPersonalizedGreeting } from "@/lib/chat/greeting";
+
+type StreamEvent =
+  | { type: "delta"; content: string }
+  | { type: "done"; cancelled: boolean }
+  | { type: "error"; message: string };
+
+function parseStreamEvent(line: string): StreamEvent | null {
+  try {
+    return JSON.parse(line) as StreamEvent;
+  } catch {
+    return null;
+  }
+}
+
+function getModePlaceholder(mode: ConversationMode): string {
+  switch (mode) {
+    case "goal-coach":
+      return "Describe the goal you want to work on...";
+    case "interview":
+      return "Type your interview answer...";
+    default:
+      return "Ask your mentor anything...";
+  }
+}
+
+function getModeSubline(mode: ConversationMode): string {
+  switch (mode) {
+    case "goal-coach":
+      return "We can break your goal down into concrete daily steps.";
+    case "interview":
+      return "I can run a realistic mock interview and give feedback.";
+    default:
+      return "Let's turn your recent work into clear career momentum.";
+  }
+}
 
 interface ChatInterfaceProps {
   conversationId: string;
   mode: ConversationMode;
+  userName?: string | null;
   initialMessages: MessageData[];
   projectId: string | null;
   goalId: string | null;
@@ -25,6 +56,7 @@ interface ChatInterfaceProps {
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
   contacts: Array<{ id: string; fullName: string; relationship: string | null; interactionsCount: number }>;
+  isContextPending?: boolean;
   onContextChange?: (
     projectId?: string | null,
     goalId?: string | null,
@@ -35,6 +67,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({
   conversationId,
   mode,
+  userName,
   initialMessages,
   projectId,
   goalId,
@@ -42,49 +75,119 @@ export function ChatInterface({
   projects,
   goals,
   contacts,
+  isContextPending = false,
   onContextChange,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const abortStreamRef = useRef(false);
+  const requestAbortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<string | null>(null);
+  const autoFollowRef = useRef(true);
 
-  // Scroll to bottom when messages change
-  // We use "behavior: auto" for streaming to prevent jitter, smooth otherwise
+  const initialMessageSignature = useMemo(
+    () => initialMessages.map((message) => message.id).join("|"),
+    [initialMessages]
+  );
+
+  const greeting = useMemo(
+    () => getPersonalizedGreeting({ name: userName }),
+    [userName]
+  );
+
+  const isNearBottom = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return true;
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    return distanceFromBottom < 120;
+  };
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  };
+
   useEffect(() => {
-    if (streamingContent) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
-    } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    setMessages(initialMessages);
+    setStreamingContent("");
+    setIsStreaming(false);
+    setInput("");
+    setShowJumpToLatest(false);
+    autoFollowRef.current = true;
+
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+    requestIdRef.current = null;
+  }, [conversationId, initialMessageSignature, initialMessages]);
+
+  useEffect(() => {
+    return () => {
+      const activeRequestId = requestIdRef.current;
+      requestAbortRef.current?.abort();
+
+      if (activeRequestId) {
+        void fetch("/api/chat/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId: activeRequestId }),
+        });
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!autoFollowRef.current) return;
+    scrollToBottom(streamingContent ? "auto" : "smooth");
   }, [messages, streamingContent]);
+
+  const handleScroll = () => {
+    const nearBottom = isNearBottom();
+    autoFollowRef.current = nearBottom;
+    setShowJumpToLatest(!nearBottom);
+  };
 
   // Auto-resize textarea
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-    }
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
   }, [input]);
 
   const handleStop = () => {
-    abortStreamRef.current = true;
-    setIsStreaming(false);
+    const activeRequestId = requestIdRef.current;
+    if (!activeRequestId) return;
+
+    requestAbortRef.current?.abort();
+    void fetch("/api/chat/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestId: activeRequestId }),
+    }).catch(() => {
+      // ignore fire-and-forget cancellation failures
+    });
   };
 
   const handleSend = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput || isStreaming) return;
 
-    abortStreamRef.current = false;
+    const requestId = crypto.randomUUID();
+    requestIdRef.current = requestId;
 
-    // Add user message to UI immediately
+    autoFollowRef.current = true;
+    setShowJumpToLatest(false);
+
+    // optimistic user message
     const userMessage: MessageData = {
-      id: `temp-${Date.now()}`,
+      id: `local-user-${requestId}`,
       role: "user",
       content: trimmedInput,
       createdAt: new Date(),
@@ -94,33 +197,99 @@ export function ChatInterface({
     setIsStreaming(true);
     setStreamingContent("");
 
-    // Reset height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
 
-    startTransition(async () => {
-      try {
-        const { output } = await streamChatMessage(conversationId, trimmedInput);
+    const abortController = new AbortController();
+    requestAbortRef.current = abortController;
 
-        let fullContent = "";
-        for await (const delta of readStreamableValue(output)) {
-          if (abortStreamRef.current) break;
-          if (delta) {
-            fullContent += delta;
-            setStreamingContent(fullContent);
-          }
+    let streamedResponse = "";
+
+    const commitAssistantMessage = () => {
+      if (!streamedResponse.trim()) return;
+      const assistantMessage: MessageData = {
+        id: `local-assistant-${requestId}-${Date.now()}`,
+        role: "assistant",
+        content: streamedResponse,
+        createdAt: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      streamedResponse = "";
+      setStreamingContent("");
+    };
+
+    try {
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: abortController.signal,
+        body: JSON.stringify({
+          conversationId,
+          userMessage: trimmedInput,
+          requestId,
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to start chat stream");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      const handleLine = (line: string) => {
+        if (!line) return;
+        const event = parseStreamEvent(line);
+        if (!event) return;
+        if (requestIdRef.current !== requestId) return;
+
+        if (event.type === "delta") {
+          streamedResponse += event.content;
+          setStreamingContent(streamedResponse);
+          return;
         }
 
-        const assistantMessage: MessageData = {
-          id: `temp-assistant-${Date.now()}`,
-          role: "assistant",
-          content: fullContent,
-          createdAt: new Date(),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        setStreamingContent("");
-      } catch (error) {
+        if (event.type === "error") {
+          throw new Error(event.message || "Failed to stream message");
+        }
+
+        if (event.type === "done") {
+          commitAssistantMessage();
+        }
+      };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIndex = buffer.indexOf("\n");
+
+        while (newlineIndex >= 0) {
+          const line = buffer.slice(0, newlineIndex).trim();
+          buffer = buffer.slice(newlineIndex + 1);
+          handleLine(line);
+          newlineIndex = buffer.indexOf("\n");
+        }
+      }
+
+      const trailingLine = buffer.trim();
+      if (trailingLine) {
+        handleLine(trailingLine);
+      }
+
+      commitAssistantMessage();
+    } catch (error) {
+      const wasCancelled =
+        abortController.signal.aborted || requestIdRef.current !== requestId;
+
+      if (streamedResponse.trim()) {
+        commitAssistantMessage();
+      }
+
+      if (!wasCancelled) {
         console.error("Failed to send message:", error);
         const errorMessage: MessageData = {
           id: `error-${Date.now()}`,
@@ -129,70 +298,70 @@ export function ChatInterface({
           createdAt: new Date(),
         };
         setMessages((prev) => [...prev, errorMessage]);
-      } finally {
-        setIsStreaming(false);
       }
-    });
+    } finally {
+      if (requestIdRef.current === requestId) {
+        requestIdRef.current = null;
+        requestAbortRef.current = null;
+        setIsStreaming(false);
+        setStreamingContent("");
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
-
-  const getWelcomeMessage = () => {
-    switch (mode) {
-      case "goal-coach":
-        return {
-          title: "Goal Mentoring Session",
-          description: "Let's work through Brian Tracy's 7-step goal-setting method together. Start by telling me what you want to achieve.",
-        };
-      case "interview":
-        return {
-          title: "Mock Interview Practice",
-          description: "I'll conduct a mock interview based on your project work. Ready when you are – just say \"start\" to begin!",
-        };
-      default:
-        return {
-          title: "Career Mentor",
-          description: "I'm here to help with career guidance, overcoming self-doubt, and thinking through your professional goals. What's on your mind?",
-        };
-    }
-  };
-
-  const welcome = getWelcomeMessage();
 
   return (
-    <div className="flex flex-col h-full relative bg-background">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto w-full" data-lenis-prevent>
-        <div className="max-w-3xl mx-auto px-4 pt-6 pb-40 min-h-full flex flex-col justify-end">
-          {/* Welcome Message */}
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
+      <div
+        className={cn(
+          "border-b border-border/60 px-4 py-2",
+          isContextPending && "opacity-70"
+        )}
+      >
+        <div className="mx-auto w-full max-w-3xl">
+          <ContextSelector
+            projects={projects}
+            goals={goals}
+            contacts={contacts}
+            selectedProjectId={projectId}
+            selectedGoalId={goalId}
+            selectedContactId={contactId}
+            onProjectSelect={(id) => onContextChange?.(id, goalId, contactId)}
+            onGoalSelect={(id) => onContextChange?.(projectId, id, contactId)}
+            onContactSelect={(id) => onContextChange?.(projectId, goalId, id)}
+          />
+        </div>
+      </div>
+
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto overscroll-contain"
+        data-lenis-prevent
+      >
+        <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-6">
           {messages.length === 0 && !streamingContent && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-20 flex-1 flex flex-col justify-center items-center"
-            >
-              <div className="h-20 w-20 rounded-3xl bg-primary/5 flex items-center justify-center mb-6 shadow-sm border border-primary/10">
-                <Sparkles className="h-10 w-10 text-primary" />
-              </div>
-              <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight">{welcome.title}</h2>
-              <p className="text-muted-foreground max-w-md mx-auto text-lg leading-relaxed">{welcome.description}</p>
-            </motion.div>
+            <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
+              <p className="text-3xl font-semibold tracking-tight text-foreground">
+                {greeting}
+              </p>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                {getModeSubline(mode)}
+              </p>
+            </div>
           )}
 
-          {/* Message List */}
-          <div className="space-y-6">
-            <AnimatePresence mode="popLayout" initial={false}>
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
-            </AnimatePresence>
+          <div className="space-y-6 pb-4">
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
+            ))}
 
-            {/* Streaming Assistant Message */}
             {streamingContent && (
               <ChatMessage
                 message={{
@@ -204,84 +373,72 @@ export function ChatInterface({
                 isStreaming
               />
             )}
-            
-            <div ref={messagesEndRef} className="h-px" />
           </div>
         </div>
       </div>
 
-      {/* Floating Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-        {/* Gradient Fade */}
-        <div className="absolute inset-0 top-[-50px] bg-gradient-to-t from-background via-background/90 to-transparent h-[200px]" />
-        
-        <div className="pointer-events-auto max-w-3xl mx-auto px-4 pb-6 relative">
-          {/* Scroll to bottom button could go here */}
-          
-          <div className="bg-muted/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-[32px] p-2 transition-all duration-300 focus-within:bg-muted/60 focus-within:shadow-primary/5">
-            {/* Context Chips (Inside top) */}
-            <div className="px-4 py-2 border-b border-white/5 mb-1">
-              <ContextSelector
-                projects={projects}
-                goals={goals}
-                contacts={contacts}
-                selectedProjectId={projectId}
-                selectedGoalId={goalId}
-                selectedContactId={contactId}
-                onProjectSelect={(id) => onContextChange?.(id, goalId)}
-                onGoalSelect={(id) => onContextChange?.(projectId, id)}
-                onContactSelect={(id) => onContextChange?.(projectId, goalId, id)}
-              />
-            </div>
-            
-            <div className="flex items-end gap-2 pl-4 pr-2 pb-2">
+      {showJumpToLatest && (
+        <div className="pointer-events-none absolute bottom-24 left-0 right-0 z-20 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="pointer-events-auto rounded-full bg-background/90"
+            onClick={() => {
+              autoFollowRef.current = true;
+              setShowJumpToLatest(false);
+              scrollToBottom("smooth");
+            }}
+          >
+            <ArrowDown className="mr-1.5 h-3.5 w-3.5" />
+            Jump to latest
+          </Button>
+        </div>
+      )}
+
+      <div className="border-t border-border/60 bg-background/95 px-4 pb-4 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="rounded-2xl border border-border/70 bg-card/70 p-2 shadow-sm">
+            <div className="flex items-end gap-2 px-1">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={
-                  mode === "goal-coach"
-                    ? "Describe your goal..."
-                    : mode === "interview"
-                    ? "Type your answer..."
-                    : "Ask your mentor..."
-                }
-                className="min-h-[24px] max-h-[200px] w-full resize-none bg-transparent border-none shadow-none focus-visible:ring-0 px-2 py-3 text-base placeholder:text-muted-foreground/50"
-                disabled={isStreaming}
+                placeholder={getModePlaceholder(mode)}
+                className="min-h-[28px] max-h-[180px] w-full resize-none border-0 bg-transparent px-2 py-2.5 text-sm shadow-none focus-visible:ring-0"
+                disabled={isStreaming || isContextPending}
                 rows={1}
               />
-              
+
               {isStreaming ? (
                 <Button
                   onClick={handleStop}
-                  variant="default"
+                  variant="outline"
                   size="icon"
-                  className="h-10 w-10 rounded-full shrink-0 bg-primary/10 hover:bg-destructive text-primary hover:text-destructive-foreground transition-all duration-300"
+                  className="h-9 w-9 shrink-0 rounded-full"
                 >
                   <Square className="h-4 w-4 fill-current" />
                   <span className="sr-only">Stop generating</span>
                 </Button>
               ) : (
                 <Button
-                  onClick={handleSend}
-                  disabled={!input.trim()}
+                  onClick={() => void handleSend()}
+                  disabled={!input.trim() || isContextPending}
                   size="icon"
                   className={cn(
-                    "h-10 w-10 rounded-full shrink-0 transition-all duration-300",
-                    input.trim() 
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105" 
-                      : "bg-muted text-muted-foreground"
+                    "h-9 w-9 shrink-0 rounded-full transition-opacity",
+                    input.trim() ? "opacity-100" : "opacity-60"
                   )}
                 >
-                  <ArrowUp className="h-5 w-5" />
+                  <ArrowUp className="h-4 w-4" />
                   <span className="sr-only">Send</span>
                 </Button>
               )}
             </div>
           </div>
-          
-          <div className="text-center text-[10px] text-muted-foreground/60 mt-4 font-medium tracking-wide">
+
+          <div className="mt-2 text-center text-[11px] text-muted-foreground">
             AI Mentor can make mistakes. Verify important information.
           </div>
         </div>
