@@ -7,16 +7,17 @@ import { Target, Quote, ChevronLeft, ChevronRight, Calendar, PlusCircle } from "
 import { differenceInDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { GoalData } from "@/app/actions/goals";
 import type { UserSettingsData } from "@/app/actions/settings";
 
 interface GoalMotivatorProps {
   goals: GoalData[];
-  settings?: UserSettingsData | null;
+  settings: UserSettingsData | null;
 }
 
 export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
+  const shouldReduceMotion = useReducedMotion();
   // Combine new goals with legacy goal if no new goals exist yet
   // This provides a smooth migration
   const hasGoals = goals.length > 0;
@@ -114,7 +115,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
 
   const variants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
+      x: shouldReduceMotion ? 0 : (direction > 0 ? 1000 : -1000),
       opacity: 0,
     }),
     center: {
@@ -124,7 +125,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
     },
     exit: (direction: number) => ({
       zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
+      x: shouldReduceMotion ? 0 : (direction < 0 ? 1000 : -1000),
       opacity: 0,
     }),
   };

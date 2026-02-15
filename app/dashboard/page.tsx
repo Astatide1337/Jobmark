@@ -45,7 +45,7 @@ export default async function DashboardPage() {
         />
       }
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-(--container-content) mx-auto w-full">
         {/* Welcome */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">

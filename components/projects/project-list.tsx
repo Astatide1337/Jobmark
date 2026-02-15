@@ -97,9 +97,9 @@ export function ProjectList({
   if (projects.length === 0 && initialFilter === "active") {
     return (
      <>
-      <Card className="bg-card/50 border-border/50 border-dashed">
+      <Card className="bg-card/40 border-border/40 border-dashed rounded-2xl">
         <CardContent className="py-12 text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <FolderOpen className="h-6 w-6 text-primary" />
           </div>
           <h3 className="font-semibold text-foreground mb-2">No projects yet</h3>
@@ -136,9 +136,9 @@ export function ProjectList({
                 </Tabs>
             </div>
             
-            <Card className="bg-card/50 border-border/50 border-dashed">
+            <Card className="bg-card/40 border-border/40 border-dashed rounded-2xl">
                 <CardContent className="py-12 text-center">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-4">
                         <Archive className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-2">No archived projects</h3>
@@ -170,14 +170,14 @@ export function ProjectList({
           </div>
 
           {/* Toolbar: Search & Sort */}
-          <div className="flex items-center gap-3 bg-card/50 p-2 rounded-lg border border-border/50">
+          <div className="flex items-center gap-3 bg-card/40 p-2 rounded-xl border border-border/40 backdrop-blur-sm shadow-sm">
              <div className="relative flex-1">
-                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/60" />
                  <Input 
                    placeholder="Search projects..." 
                    value={searchQuery}
                    onChange={(e) => setSearchQuery(e.target.value)}
-                   className="pl-9 bg-background border-border/50 h-9"
+                   className="pl-9 bg-background/50 border-border/40 h-9"
                  />
              </div>
              

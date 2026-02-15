@@ -96,19 +96,19 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className="bg-card/50 border-border/50 cursor-default transition-all hover:bg-card/70">
+        <Card className="bg-card/40 border-border/40 cursor-default transition-all duration-300 hover:bg-card/60 hover:shadow-xl hover:shadow-primary/5 rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+              <FileText className="h-4 w-4 text-muted-foreground/70" />
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">
                 Activities
               </span>
             </div>
-            <p className="text-2xl font-bold text-foreground">{count}</p>
-            <p className="text-xs text-muted-foreground mb-3">This month</p>
+            <p className="text-3xl font-bold text-foreground tabular-nums tracking-tight">{count}</p>
+            <p className="text-xs text-muted-foreground/80 mb-4">This month</p>
             
             {/* Goal-Gradient Progress */}
-            <Progress value={progress} className="h-1.5" />
+            <Progress value={progress} className="h-1.5 rounded-full bg-muted/30" />
           </CardContent>
         </Card>
       </TooltipTrigger>
@@ -135,28 +135,28 @@ function StreakStatCard({ streak }: { streak: number }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className="bg-card/50 border-border/50 cursor-default transition-all hover:bg-card/70">
+        <Card className="bg-card/40 border-border/40 cursor-default transition-all duration-300 hover:bg-card/60 hover:shadow-xl hover:shadow-primary/5 rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <Flame className={`h-4 w-4 ${streak > 0 ? "text-primary" : "text-muted-foreground"}`} />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+              <Flame className={`h-4 w-4 ${streak > 0 ? "text-primary" : "text-muted-foreground/70"}`} />
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">
                 Streak
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-foreground">{streak}</p>
+              <p className="text-3xl font-bold text-foreground tabular-nums tracking-tight">{streak}</p>
               {streak > 3 && (
                 <TrendingUp className="h-4 w-4 text-primary" />
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground/80">
               {streak === 1 ? "Day" : "Days"}
             </p>
             
             {isAtRisk && (
-              <div className="flex items-center gap-1.5 mt-2">
+              <div className="flex items-center gap-1.5 mt-3">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] text-primary font-medium">Active</span>
+                <span className="text-[10px] text-primary font-bold uppercase tracking-wider">Active</span>
               </div>
             )}
           </CardContent>
@@ -180,16 +180,16 @@ function ProjectStatCard({ count }: { count: number }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className="bg-card/50 border-border/50 cursor-default transition-all hover:bg-card/70">
+        <Card className="bg-card/40 border-border/40 cursor-default transition-all duration-300 hover:bg-card/60 hover:shadow-xl hover:shadow-primary/5 rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+              <FolderOpen className="h-4 w-4 text-muted-foreground/70" />
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">
                 Projects
               </span>
             </div>
-            <p className="text-2xl font-bold text-foreground">{count}</p>
-            <p className="text-xs text-muted-foreground">Active</p>
+            <p className="text-3xl font-bold text-foreground tabular-nums tracking-tight">{count}</p>
+            <p className="text-xs text-muted-foreground/80">Active</p>
           </CardContent>
         </Card>
       </TooltipTrigger>

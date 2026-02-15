@@ -39,7 +39,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground font-medium"
+          className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground transition-all hover:text-primary font-medium"
         >
           {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
           {copied ? "Copied" : "Copy"}
@@ -82,20 +82,20 @@ export function ChatMessage({ message, isStreaming, isLast, onRegenerate }: Chat
   return (
     <div
       className={cn(
-        "mx-auto flex w-full max-w-3xl animate-in fade-in duration-500",
+        "mx-auto flex w-full max-w-3xl animate-in fade-in duration-300",
         isUser ? "justify-end" : "justify-start"
       )}
     >
       {isUser ? (
         <div className="group relative max-w-[75%]">
           <div
-            className="rounded-[1.5rem] rounded-tr-sm bg-muted/40 px-5 py-3.5 text-[15px] leading-relaxed text-foreground/90 backdrop-blur-sm ring-1 ring-white/5 shadow-sm"
+            className="rounded-2xl rounded-tr-sm bg-muted/40 px-5 py-3.5 text-sm leading-relaxed text-foreground/90 backdrop-blur-sm ring-1 ring-white/5 shadow-sm"
           >
             {content}
           </div>
           <button
             onClick={handleCopy}
-            className="absolute -left-12 top-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 p-2 text-muted-foreground/40 hover:text-primary hover:scale-110"
+            className="absolute -left-12 top-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 p-2 text-muted-foreground/40 hover:text-primary active:scale-110"
             title="Copy message"
           >
             {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
@@ -103,12 +103,12 @@ export function ChatMessage({ message, isStreaming, isLast, onRegenerate }: Chat
         </div>
       ) : (
         <div className="flex w-full max-w-full gap-5 group">
-          <div className="mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20 shadow-md">
+          <div className="mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20 shadow-md">
             <Bot className="h-5 w-5" />
           </div>
           
           <div className="min-w-0 flex-1 py-1">
-            <div className="prose prose-neutral dark:prose-invert max-w-none break-words text-[16px] leading-[1.8] text-foreground/90 selection:bg-primary/20">
+            <div className="prose prose-neutral dark:prose-invert max-w-none break-words text-base leading-relaxed text-foreground/90 selection:bg-primary/20">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -204,7 +204,7 @@ export function ChatMessage({ message, isStreaming, isLast, onRegenerate }: Chat
             <div className="mt-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 text-xs text-muted-foreground transition-all hover:text-primary active:scale-95"
               >
                 {isCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                 <span>{isCopied ? "Copied" : "Copy"}</span>
@@ -213,7 +213,7 @@ export function ChatMessage({ message, isStreaming, isLast, onRegenerate }: Chat
               {isLast && !isStreaming && onRegenerate && (
                 <button
                   onClick={onRegenerate}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground transition-all hover:text-primary active:scale-95"
                 >
                   <RotateCw className="h-3.5 w-3.5" />
                   <span>Regenerate</span>

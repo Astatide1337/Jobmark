@@ -38,7 +38,7 @@ export function SignInButton({
   return (
     <button
       onClick={openAuthModal}
-      className={cn(baseStyles, variants[variant], sizes[size], className)}
+      className={cn(baseStyles, variants[variant], sizes[size], "group", className)}
     >
       {children}
       {showArrow && (

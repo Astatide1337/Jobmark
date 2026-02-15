@@ -152,7 +152,7 @@ export function Sidebar({ mode = "app", activePath = "/", isMobileOpen, onMobile
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-72 flex-col border-r border-border/50 bg-sidebar transition-transform duration-300 lg:static lg:flex lg:w-64 lg:translate-x-0",
         isMobileOpen ? "translate-x-0" : "-translate-x-full",
-        mode === "app" ? "lg:sticky lg:top-0 h-screen overflow-y-auto" : "h-full"
+        mode === "app" ? "lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto" : "h-full"
       )}>
       <div className="p-6">
         {mode === "app" ? (
@@ -244,10 +244,9 @@ export function Sidebar({ mode = "app", activePath = "/", isMobileOpen, onMobile
                       href={`/chat/${conversation.id}`}
                       onClick={() => onMobileClose?.()}
                       className={cn(
-
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200",
                         chatSidebarData.activeConversationId === conversation.id
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                       )}
                     >
@@ -270,9 +269,9 @@ export function Sidebar({ mode = "app", activePath = "/", isMobileOpen, onMobile
                             />
                           </form>
                         ) : (
-                          <div className="truncate font-medium">{conversation.title}</div>
+                          <div className="truncate font-medium group-hover:text-primary transition-colors">{conversation.title}</div>
                         )}
-                        <div className="truncate text-xs text-muted-foreground">
+                        <div className="truncate text-xs text-muted-foreground group-hover:text-primary/70 transition-colors">
                           {getChatModeLabel(conversation.mode)}
                         </div>
                       </div>
@@ -304,7 +303,7 @@ export function Sidebar({ mode = "app", activePath = "/", isMobileOpen, onMobile
                             Rename
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-destructive"
+                            variant="destructive"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -314,6 +313,7 @@ export function Sidebar({ mode = "app", activePath = "/", isMobileOpen, onMobile
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
+
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </Link>
@@ -391,23 +391,24 @@ function NavItem({
       {isActive && (
         <motion.div
           layoutId={mode === "demo" ? "demo-sidebar-active" : "sidebar-active"}
-          className="absolute inset-0 bg-sidebar-accent rounded-lg"
+          className="absolute inset-0 bg-sidebar-accent rounded-xl shadow-sm"
           transition={{ type: "spring", stiffness: 500, damping: 35 }}
         />
       )}
 
-      <Icon className="relative z-10 h-4 w-4" />
-      <span className="relative z-10">
+      <Icon className="relative z-10 h-4 w-4 transition-colors group-hover:text-primary" />
+      <span className="relative z-10 transition-colors group-hover:text-primary">
         {label}
       </span>
     </>
   );
 
+
   const className = cn(
-    "group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-1",
+    "group relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 mb-1",
     isActive
-      ? "text-sidebar-accent-foreground"
-      : "text-muted-foreground hover:text-foreground"
+      ? "text-sidebar-accent-foreground font-medium"
+      : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
   );
 
   if (mode === "demo") {

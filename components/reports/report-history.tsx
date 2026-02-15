@@ -127,7 +127,7 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
             className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/30"
           >
             <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
@@ -170,7 +170,7 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                       value={editContent}
                       onChange={setEditContent}
                       isStreaming={false}
-                      className="min-h-[300px] rounded-lg"
+                      className="min-h-[300px] rounded-xl"
                     />
                   </div>
                 ) : (
@@ -193,15 +193,15 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                          <X className="mr-2 h-4 w-4" />
                          Cancel
                        </Button>
-                       <Button 
-                         size="sm" 
-                         onClick={() => saveEdit(report.id)}
-                         disabled={isSaving}
-                         className="bg-[var(--accent-warm)] hover:bg-[var(--accent-warm-hover)] text-black"
-                       >
-                         <Save className="mr-2 h-4 w-4" />
-                         {isSaving ? "Saving..." : "Save Changes"}
-                       </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => saveEdit(report.id)}
+                          disabled={isSaving}
+                          className="bg-primary text-primary-foreground"
+                        >
+                          <Save className="mr-2 h-4 w-4" />
+                          {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
                      </div>
                    ) : (
                      // View Mode Actions

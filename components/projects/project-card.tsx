@@ -60,27 +60,27 @@ export function ProjectCard({ project, onArchive, onUnarchive, onUpdate, disable
 
   return (
     <>
-      <Card className={cn("bg-card border-border/50 group/project hover:border-border transition-all hover:shadow-sm flex flex-col h-full relative overflow-hidden", project.archived && "opacity-75 bg-muted/20 border-border/30")}>
+      <Card className={cn("bg-card/40 border-border/40 group/project hover:border-border transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 flex flex-col h-full relative overflow-hidden rounded-2xl", project.archived && "opacity-75 bg-muted/10 border-border/30")}>
         {/* Make the whole card clickable via overlay or wrapping content */}
         <Link 
             href={disableNavigation ? "#" : `/projects/${project.id}`} 
             onClick={(e) => disableNavigation && e.preventDefault()}
             className={cn(
-                "flex flex-col flex-1 h-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl",
+                "flex flex-col flex-1 h-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl",
                 disableNavigation && "cursor-default"
             )}
         >
-            <CardContent className="p-5 flex-1 relative">
+            <CardContent className="p-6 flex-1 relative">
             
             {/* Header */}
             <div className="flex items-start justify-between gap-4 mb-6">
                 <div 
-                    className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover/project:scale-110 duration-300 relative"
-                    style={{ backgroundColor: project.archived ? "hsl(var(--muted))" : `${project.color}10` }}
+                    className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all group-hover/project:scale-105 group-hover/project:shadow-md group-hover/project:bg-primary/10 duration-300 relative border border-white/5"
+                    style={{ backgroundColor: project.archived ? "hsl(var(--muted))" : `${project.color}15` }}
                 >
                     <FolderOpen className="h-7 w-7" style={{ color: project.archived ? "hsl(var(--muted-foreground))" : project.color }} />
                     {project.archived && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-2xl">
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-2xl backdrop-blur-sm">
                             <Archive className="h-4 w-4 text-muted-foreground" />
                         </div>
                     )}
@@ -96,29 +96,29 @@ export function ProjectCard({ project, onArchive, onUnarchive, onUpdate, disable
                 {/* Description with fixed height for alignment */}
                 <div className="min-h-[2.5rem]">
                     {project.description ? (
-                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                        <p className="text-sm text-muted-foreground/80 line-clamp-2 leading-relaxed">
                             {project.description}
                         </p>
                     ) : (
                         // Spacer to keep card height consistent without visual noise
-                        <div className="h-full w-full" aria-hidden="true" />
+                        <div className="h-full w-full opacity-0" aria-hidden="true">No description provided</div>
                     )}
                 </div>
             </div>
             </CardContent>
 
             {/* Footer Stats */}
-            <CardFooter className="p-5 pt-0 flex flex-col gap-2 mt-auto">
-                <div className="w-full h-px bg-border/50 mb-2" />
+            <CardFooter className="px-6 pb-6 pt-0 flex flex-col gap-2 mt-auto">
+                <div className="w-full h-px bg-border/40 mb-3" />
                 
-                <div className="flex items-center justify-between w-full text-xs text-muted-foreground gap-4">
-                    <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-muted/40" title="Total Activities Logged">
-                        <Activity className="h-3.5 w-3.5" /> 
-                        <span className="font-medium">{project._count.activities}</span> entries
+                <div className="flex items-center justify-between w-full text-[11px] text-muted-foreground/70 font-medium uppercase tracking-wider gap-4">
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-muted/30 border border-border/20" title="Total Activities Logged">
+                        <Activity className="h-3 w-3" /> 
+                        <span>{project._count.activities} entries</span>
                     </div>
                     {lastActive && (
-                        <div className="flex items-center gap-1.5 px-2 py-1" title="Last Activity">
-                            <Clock className="h-3.5 w-3.5" />
+                        <div className="flex items-center gap-1.5" title="Last Activity">
+                            <Clock className="h-3 w-3" />
                             {formatDistanceToNow(new Date(lastActive))} ago
                         </div>
                     )}
@@ -130,9 +130,10 @@ export function ProjectCard({ project, onArchive, onUnarchive, onUpdate, disable
         <div className="absolute top-5 right-5 z-10">
              <DropdownMenu>
                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground opacity-50 group-hover/project:opacity-100 transition-opacity hover:bg-muted">
-                   <MoreVertical className="h-4 w-4" />
-                 </Button>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground opacity-50 group-hover/project:opacity-100 transition-all hover:bg-muted/40 hover:text-primary">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+
                </DropdownMenuTrigger>
                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                  <DropdownMenuItem asChild>
@@ -158,15 +159,16 @@ export function ProjectCard({ project, onArchive, onUnarchive, onUpdate, disable
                     </DropdownMenuItem>
                  )}
 
-                 {project.archived ? (
-                     <DropdownMenuItem onClick={handleUnarchive} className="text-primary focus:text-primary font-medium">
+                  {project.archived ? (
+                     <DropdownMenuItem onClick={handleUnarchive} className="text-primary focus:text-primary focus:bg-primary/10 font-medium">
                         <RotateCcw className="mr-2 h-4 w-4" /> Restore Project
                      </DropdownMenuItem>
                  ) : (
-                    <DropdownMenuItem onClick={handleArchive} className="text-destructive focus:text-destructive">
+                    <DropdownMenuItem variant="destructive" onClick={handleArchive}>
                         <Archive className="mr-2 h-4 w-4" /> Archive Project
                     </DropdownMenuItem>
                  )}
+
                </DropdownMenuContent>
              </DropdownMenu>
         </div>

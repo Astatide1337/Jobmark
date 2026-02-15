@@ -35,7 +35,7 @@ export function DashboardHeader({
     .toUpperCase() || "U";
 
   return (
-    <header className="border-b border-border/50 bg-card/30 sticky top-0 z-30 backdrop-blur-md">
+    <header className="border-b border-border/50 bg-card/30 sticky top-0 z-30 backdrop-blur-md mb-5">
       <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}

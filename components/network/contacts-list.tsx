@@ -80,7 +80,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -91,8 +91,8 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
+            <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 text-blue-500">
+              <MessageSquare className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.interactionsThisMonth}</p>
@@ -102,8 +102,8 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Calendar className="h-5 w-5 text-amber-500" />
+            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-500">
+              <Calendar className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.followUpsDue}</p>
@@ -144,9 +144,9 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
 
       {/* Contact Grid or Empty State */}
       {contacts.length === 0 ? (
-        <Card className="bg-card/50 border-border/50 border-dashed">
+        <Card className="bg-card/50 border-border/50 border-dashed rounded-2xl">
           <CardContent className="py-16 text-center">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <UserPlus className="h-6 w-6 text-primary" />
             </div>
             <h3 className="font-semibold text-foreground mb-2">No contacts yet</h3>

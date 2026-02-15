@@ -8,6 +8,7 @@ import { ReportWizard } from "@/components/reports/report-wizard";
 import { ReportHistory } from "@/components/reports/report-history";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, History } from "lucide-react";
+import { useUI } from "@/components/providers/ui-provider";
 
 interface ReportsPageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -36,8 +37,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         />
       }
     >
-
-      <div className="h-[calc(100vh-140px)] flex flex-col">
+      <div className="flex flex-col flex-1">
         <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col space-y-8">
           <div className="flex justify-center shrink-0">
             <TabsList className="grid w-full max-w-lg grid-cols-2">
@@ -52,11 +52,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             </TabsList>
           </div>
 
-          <TabsContent value="new" className="flex-1 min-h-0">
+          <TabsContent value="new" className="flex-1">
             <ReportWizard projects={projects} />
           </TabsContent>
           
-          <TabsContent value="history" className="flex-1 min-h-0">
+          <TabsContent value="history" className="flex-1">
             <ReportHistory initialReports={reports} />
           </TabsContent>
         </Tabs>

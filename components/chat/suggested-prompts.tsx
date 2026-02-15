@@ -14,12 +14,19 @@ import { cn } from "@/lib/utils";
 import { createConversation, type ConversationMode } from "@/app/actions/chat";
 import { getPersonalizedGreeting } from "@/lib/chat/greeting";
 
-interface SuggestedPromptsProps {
-  projects: Array<{ id: string; name: string; color: string }>;
-  userName?: string | null;
+export interface SuggestedPrompt {
+  id: string;
+  icon: any;
+  title: string;
+  description: string;
+  mode: ConversationMode;
+  color: string;
+  bgColor: string;
+  needsProject?: boolean;
+  initialMessage?: string;
 }
 
-const PROMPTS = [
+const SUGGESTED_CHAT_PROMPTS: SuggestedPrompt[] = [
   {
     id: "goal-setting",
     icon: Target,
@@ -61,12 +68,23 @@ const PROMPTS = [
   },
 ];
 
-export function SuggestedPrompts({ projects, userName }: SuggestedPromptsProps) {
+interface SuggestedPromptsProps {
+  projects: Array<{ id: string; name: string; color: string }>;
+  userName?: string | null;
+  onSelect?: (prompt: string) => void;
+}
+
+export function SuggestedPrompts({ projects, userName, onSelect }: SuggestedPromptsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const greeting = useMemo(() => getPersonalizedGreeting({ name: userName }), [userName]);
 
-  const handlePromptClick = async (prompt: typeof PROMPTS[number], projectId?: string) => {
+  const handlePromptClick = async (prompt: SuggestedPrompt, projectId?: string) => {
+    if (onSelect && !prompt.needsProject) {
+      onSelect(prompt.initialMessage || prompt.title);
+      return;
+    }
+
     startTransition(async () => {
       try {
         const conversation = await createConversation(
@@ -98,7 +116,7 @@ export function SuggestedPrompts({ projects, userName }: SuggestedPromptsProps) 
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {PROMPTS.map((prompt) => (
+        {SUGGESTED_CHAT_PROMPTS.map((prompt) => (
           <div key={prompt.id} className="h-full">
             {prompt.needsProject ? (
               projects.length > 0 ? (
@@ -178,10 +196,10 @@ export function SuggestedPrompts({ projects, userName }: SuggestedPromptsProps) 
                   </div>
                   
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-all duration-300 group-hover:translate-x-1">
                       {prompt.title}
                     </h3>
-                    <p className="text-muted-foreground/80 leading-relaxed text-sm">
+                    <p className="text-muted-foreground/80 leading-relaxed text-sm group-hover:text-foreground transition-colors duration-300">
                       {prompt.description}
                     </p>
                   </div>

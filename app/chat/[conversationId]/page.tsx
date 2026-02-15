@@ -7,6 +7,7 @@ import { getContacts } from "@/app/actions/network";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { ConversationClient } from "./conversation-client";
+import { useUI } from "@/components/providers/ui-provider";
 
 interface ConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -49,9 +50,9 @@ export default async function ConversationPage({ params }: ConversationPageProps
     <DashboardShell
       chatSidebarData={chatSidebarData}
       header={<DashboardHeader userName={session.user.name} userImage={session.user.image} title={conversation.title} />}
-      className="p-0 overflow-hidden"
+      className="p-0"
     >
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col">
         <ConversationClient
           conversation={conversation}
           userName={session.user.name}

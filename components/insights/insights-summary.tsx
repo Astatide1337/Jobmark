@@ -16,7 +16,7 @@ interface InsightsSummaryProps {
 }
 
 // Consistent card styling applied globally
-const CARD_STYLES = "rounded-2xl border border-border/40 bg-card/60 shadow-sm";
+const CARD_STYLES = "rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-md";
 
 export function InsightsSummary({ data }: InsightsSummaryProps) {
   return (
@@ -24,14 +24,14 @@ export function InsightsSummary({ data }: InsightsSummaryProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           icon={FileText}
-          label="Total Activities"
+          label="Activities"
           value={data.totalActivities}
           subtitle="All time"
           tooltip="Total activities logged since you started"
         />
         <MetricCard
           icon={Flame}
-          label="Current Streak"
+          label="Streak"
           value={data.currentStreak}
           subtitle={data.currentStreak === 1 ? "Day" : "Days"}
           tooltip={`Longest streak: ${data.longestStreak} days`}
@@ -46,7 +46,7 @@ export function InsightsSummary({ data }: InsightsSummaryProps) {
         />
         <MetricCard
           icon={Calendar}
-          label="Active Days"
+          label="Active"
           value={data.activeDaysThisMonth}
           subtitle="This month"
           tooltip="Days with at least one activity logged"
@@ -71,17 +71,17 @@ function MetricCard({ icon: Icon, label, value, subtitle, tooltip, highlight }: 
       <TooltipTrigger asChild>
         <Card className={cn(
           CARD_STYLES,
-          "cursor-default transition-all duration-200",
-          "hover:bg-card/80 hover:border-border/60"
+          "cursor-default transition-all duration-300",
+          "hover:bg-card/60 hover:border-border/60 hover:shadow-xl hover:shadow-primary/5"
         )}>
           <CardContent className="p-5">
             {/* Header row - icon left, label right */}
             <div className="flex items-center justify-between mb-3">
               <Icon className={cn(
-                "h-5 w-5",
+                "h-4 w-4",
                 highlight ? "text-primary" : "text-muted-foreground/70"
               )} />
-              <span className="text-[11px] text-muted-foreground uppercase tracking-widest font-medium">
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">
                 {label}
               </span>
             </div>
@@ -97,11 +97,11 @@ function MetricCard({ icon: Icon, label, value, subtitle, tooltip, highlight }: 
             </div>
             
             {/* Subtitle */}
-            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">{subtitle}</p>
           </CardContent>
         </Card>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="font-medium">
+      <TooltipContent side="bottom" className="rounded-xl border-border/50 shadow-xl backdrop-blur-md font-medium">
         <p>{tooltip}</p>
       </TooltipContent>
     </Tooltip>

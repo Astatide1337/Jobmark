@@ -119,8 +119,9 @@ export function ActivityTimeline({ activities: initialActivities, totalCount }: 
         <button
           onClick={handleLoadMore}
           disabled={isLoadingMore}
-          className="w-full py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+          className="w-full py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-all active:scale-95 group"
         >
+
           {isLoadingMore ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -129,10 +130,11 @@ export function ActivityTimeline({ activities: initialActivities, totalCount }: 
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <div className="h-px w-12 bg-border/50 group-hover:bg-border transition-colors" />
+                <div className="h-px w-12 bg-border/50 group-hover:bg-primary/30 transition-colors" />
                 <span className="text-xs font-medium uppercase tracking-wider">Load More</span>
-                <div className="h-px w-12 bg-border/50 group-hover:bg-border transition-colors" />
+                <div className="h-px w-12 bg-border/50 group-hover:bg-primary/30 transition-colors" />
               </div>
+
               <ChevronDown className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity animate-bounce" />
             </>
           )}
@@ -158,7 +160,7 @@ interface ActivityCardProps {
 
 function ActivityCard({ activity, onOptimisticDelete, onUndoDelete }: ActivityCardProps) {
   return (
-    <Card className="bg-card/50 border-border/50 group hover:bg-card/70 transition-colors">
+    <Card className="bg-card/40 border-border/40 group hover:bg-card/60 transition-all duration-300 hover:shadow-md hover:shadow-primary/5 rounded-xl">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -205,9 +207,9 @@ function ActivityCard({ activity, onOptimisticDelete, onUndoDelete }: ActivityCa
 
 function EmptyState() {
   return (
-    <Card className="bg-card/50 border-border/50 border-dashed">
+    <Card className="bg-card/40 border-border/40 border-dashed rounded-2xl">
       <CardContent className="py-12 text-center">
-        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
           <FileText className="h-6 w-6 text-primary" />
         </div>
         <h3 className="font-semibold text-foreground mb-2">No activities yet</h3>

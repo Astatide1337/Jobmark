@@ -223,7 +223,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
             <div key={i} className="flex flex-col items-center gap-2">
               <div 
                 className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
+                  "h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all duration-300",
                   step >= i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                 )}
               >
@@ -339,7 +339,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
               <Button 
                 onClick={handleNextStep} 
                 size="lg" 
-                className="rounded-full px-8"
+                className="px-8"
                 disabled={!hasValidActivities || isValidating}
               >
                 Next <ArrowRight className="ml-2 h-4 w-4" />
@@ -397,7 +397,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
 
             <div className="flex justify-between mt-8">
               <Button variant="ghost" onClick={prevStep}>Back</Button>
-              <Button onClick={nextStep} size="lg" className="rounded-full px-8">
+              <Button onClick={nextStep} size="lg" className="px-8">
                 Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -441,7 +441,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
 
             <div className="flex justify-between mt-8">
               <Button variant="ghost" onClick={prevStep}>Back</Button>
-              <Button onClick={startGeneration} size="lg" className="rounded-full px-8 bg-primary hover:bg-primary/90">
+              <Button onClick={startGeneration} size="lg" className="px-8 bg-primary hover:bg-primary/90">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate
               </Button>
@@ -470,10 +470,10 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                </div>
 
                {/* Content Layout: Editor (Left) + Actions (Right) */}
-               <div className="flex gap-8 flex-1 min-h-0">
+                <div className="flex gap-8 flex-1 min-h-0">
                  {/* Main Editor Area - Scales with height */}
                  <div className="flex-1 h-full flex flex-col min-h-0">
-                   <div className="flex-1 rounded-2xl border border-border/50 bg-card/30 shadow-2xl shadow-black/40 flex flex-col">
+                   <div className="flex-1 rounded-xl border border-border/50 bg-card/30 shadow-xl flex flex-col">
                        <LiveEditor 
                           value={reportContent} 
                           onChange={setReportContent}

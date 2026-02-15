@@ -7,6 +7,7 @@ import { getContacts } from "@/app/actions/network";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { ChatInterface } from "@/components/chat/chat-interface";
+import { useUI } from "@/components/providers/ui-provider";
 
 export default async function ChatPage() {
   const session = await auth();
@@ -33,7 +34,7 @@ export default async function ChatPage() {
           title="AI Mentor"
         />
       }
-      className="p-0 overflow-hidden"
+      className="p-0"
       chatSidebarData={{
         conversations,
         projects: activeProjects.map((p) => ({
@@ -43,7 +44,7 @@ export default async function ChatPage() {
         })),
       }}
     >
-      <div className="flex-1 flex flex-col min-h-0 h-full">
+      <div className="flex-1 flex flex-col">
         <ChatInterface
           mode="general"
           userName={session.user.name}

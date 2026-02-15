@@ -35,7 +35,7 @@ export function ActivityCharts({ weeklyTrend, projectDistribution }: ActivityCha
 function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
+      <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl backdrop-blur-md">
         <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
         <p className="text-sm font-bold text-foreground">
           {payload[0].value} {payload[0].value === 1 ? 'activity' : 'activities'}
@@ -121,7 +121,7 @@ function PieTooltip({ active, payload }: any) {
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
-      <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
+      <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl backdrop-blur-md">
         <p className="text-sm font-bold text-foreground">{data.name}</p>
         <p className="text-xs text-muted-foreground">
           {data.value} activities ({data.payload.percentage}%)

@@ -3,6 +3,7 @@ import { Inter, Geist_Mono, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { SettingsProvider } from "@/components/providers/settings-provider";
+import { UIProvider } from "@/components/providers/ui-provider";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 import { GrainOverlay } from "@/components/landing/grain-overlay";
 import "./globals.css";
@@ -40,14 +41,16 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased`}
       >
-        <SmoothScrollProvider>
-          <SettingsProvider>
-            {children}
-            <CommandPalette />
-            <Toaster position="bottom-right" />
-          </SettingsProvider>
-          <GrainOverlay />
-        </SmoothScrollProvider>
+        <SettingsProvider>
+          <UIProvider>
+            <SmoothScrollProvider>
+              {children}
+              <CommandPalette />
+              <Toaster position="top-center" richColors />
+              <GrainOverlay />
+            </SmoothScrollProvider>
+          </UIProvider>
+        </SettingsProvider>
       </body>
     </html>
   );

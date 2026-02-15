@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useUI } from "@/components/providers/ui-provider";
 
 interface LiveEditorProps {
   value: string;
@@ -17,6 +18,7 @@ interface LiveEditorProps {
 }
 
 export function LiveEditor({ value, onChange, isStreaming, className }: LiveEditorProps) {
+  const { uiV2 } = useUI();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -112,9 +114,16 @@ export function LiveEditor({ value, onChange, isStreaming, className }: LiveEdit
   return (
     <div 
         ref={containerRef}
-        className={cn("relative w-full h-[500px] bg-card/50 border border-border/50 rounded-lg font-sans text-base leading-relaxed group shadow-sm flex flex-col", className)}
+        className={cn(
+          "relative w-full h-[500px] bg-card/50 border border-border/50 rounded-lg font-sans text-base leading-relaxed group shadow-sm flex flex-col",
+          uiV2 && "h-auto min-h-[400px]",
+          className
+        )}
     >    
-        <div ref={scrollContainerRef} className="relative flex-1 w-full h-full overflow-y-auto overflow-x-hidden">
+        <div ref={scrollContainerRef} className={cn(
+          "relative flex-1 w-full h-full overflow-y-auto overflow-x-hidden",
+          uiV2 && "overflow-visible"
+        )}>
              {/* Wrapper to ensure height matches content */}
              <div className="relative min-h-full">
                 {/* 1. Backdrop Highlight Layer (Mirrors Textarea) - DRIVES HEIGHT */}
@@ -179,8 +188,8 @@ export function LiveEditor({ value, onChange, isStreaming, className }: LiveEdit
             {/* Arrow pointer */}
             <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-popover absolute -top-[6px] left-1/2 -translate-x-1/2 drop-shadow-sm" />
 
-            <div className="bg-popover border border-border shadow-xl rounded-xl p-2 flex items-center gap-3 w-[380px]">
-                <div className="h-8 w-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+            <div className="bg-popover border border-border shadow-xl rounded-xl p-2 flex items-center gap-3 w-[380px] backdrop-blur-md">
+                <div className="h-8 w-8 flex items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
                     <Sparkles className="h-4 w-4" />
                 </div>
                 
@@ -195,11 +204,11 @@ export function LiveEditor({ value, onChange, isStreaming, className }: LiveEdit
                 autoFocus 
                 />
                 
-                <div className="flex items-center gap-1 border-l pl-1 pr-1">
+                <div className="flex items-center gap-1 border-l border-border/50 pl-1 pr-1">
                     <Button 
                     size="icon" 
                     variant="ghost" 
-                    className={cn("h-8 w-8 hover:bg-primary/10 hover:text-primary", instruction && "text-primary")}
+                    className={cn("h-8 w-8 hover:bg-primary/10 hover:text-primary rounded-lg transition-all active:scale-90", instruction && "text-primary")}
                     onClick={handleImprove}
                     disabled={!instruction || isImproving}
                     aria-label="Submit AI improvement"
@@ -209,7 +218,7 @@ export function LiveEditor({ value, onChange, isStreaming, className }: LiveEdit
                     <Button 
                     size="icon" 
                     variant="ghost" 
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-all active:scale-90"
                     onClick={() => {
                         setSelection(null);
                         setMenuPosition(null);

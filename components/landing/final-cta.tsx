@@ -42,7 +42,7 @@ export function FinalCTA() {
             <MagneticButton strength={0.15}>
               <button
                 onClick={openAuthModal}
-                className="group inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground rounded-full font-medium text-lg hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/20"
+                className="group inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground rounded-full font-medium text-lg hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 Get Started Free
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />

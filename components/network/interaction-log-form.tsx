@@ -26,6 +26,7 @@ import { createInteraction } from "@/app/actions/network";
 import { CHANNEL_OPTIONS } from "@/lib/network";
 import { toast } from "sonner";
 import { polishDictation } from "@/app/actions/dictation";
+import { cn } from "@/lib/utils";
 
 interface InteractionLogFormProps {
   contactId: string;
@@ -273,7 +274,7 @@ export function InteractionLogForm({
   };
 
   return (
-    <div className="rounded-lg border bg-card/50 p-4">
+    <div className="rounded-xl border bg-card/50 p-4">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Channel */}
@@ -342,18 +343,19 @@ export function InteractionLogForm({
             <Label htmlFor="interaction-summary">
               Summary <span className="text-destructive">*</span>
             </Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={
-                isListening && activeField === "summary"
-                  ? "border-destructive text-destructive"
-                  : ""
-              }
-              onClick={() => toggleListening("summary")}
-              disabled={isLoading || isPolishing}
-            >
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "rounded-xl transition-all",
+                  isListening && activeField === "summary"
+                    ? "border-destructive text-destructive bg-destructive/5"
+                    : ""
+                )}
+                onClick={() => toggleListening("summary")}
+                disabled={isLoading || isPolishing}
+              >
               {isListening && activeField === "summary" ? (
                 <>
                   <Square className="h-4 w-4 mr-1" /> Stop
@@ -381,18 +383,19 @@ export function InteractionLogForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="interaction-nextStep">Next Step</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={
-                isListening && activeField === "nextStep"
-                  ? "border-destructive text-destructive"
-                  : ""
-              }
-              onClick={() => toggleListening("nextStep")}
-              disabled={isLoading || isPolishing}
-            >
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "rounded-xl transition-all",
+                  isListening && activeField === "nextStep"
+                    ? "border-destructive text-destructive bg-destructive/5"
+                    : ""
+                )}
+                onClick={() => toggleListening("nextStep")}
+                disabled={isLoading || isPolishing}
+              >
               {isListening && activeField === "nextStep" ? (
                 <>
                   <Square className="h-4 w-4 mr-1" /> Stop
@@ -499,11 +502,11 @@ export function InteractionLogForm({
         {/* Actions */}
         <div className="flex items-center justify-end gap-2">
           {onCancel && (
-            <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+            <Button type="button" variant="ghost" size="sm" onClick={onCancel} className="rounded-xl">
               Cancel
             </Button>
           )}
-          <Button type="submit" size="sm" disabled={isLoading}>
+          <Button type="submit" size="sm" disabled={isLoading} className="rounded-xl px-6">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Log Interaction
           </Button>

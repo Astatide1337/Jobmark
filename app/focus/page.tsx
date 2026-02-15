@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { DecompressionWizard } from "@/components/focus/decompression-wizard";
+import { useUI } from "@/components/providers/ui-provider";
 
 export const metadata = {
   title: "Decompress | JobMark",
@@ -57,7 +58,7 @@ export default async function FocusPage() {
   const finalGoal = primaryGoal || "peace of mind";
   
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#1a1412] text-[#f5f0e8] overflow-hidden relative">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-[#1a1412] text-[#f5f0e8] relative overflow-y-auto py-12">
        {/* Background Film Grain Overlay would ideally be here or globally applied */}
        <DecompressionWizard 
           dailyCount={dailyCount}

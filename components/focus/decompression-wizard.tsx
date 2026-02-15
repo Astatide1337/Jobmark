@@ -6,6 +6,7 @@ import { logDecompressionSession } from "@/app/actions/decompress";
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useUI } from "@/components/providers/ui-provider";
 
 interface DecompressionWizardProps {
   dailyCount: number;
@@ -164,9 +165,14 @@ export function DecompressionWizard({
      return quotes[textIndex];
   };
 
+  const { uiV2 } = useUI();
+
   return (
-    <div className="relative w-full h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
-      <Link href="/dashboard" className="fixed top-8 left-8 text-[#a89888] hover:text-[#d4a574] transition-colors flex items-center gap-2 text-sm z-50">
+    <div className={cn(
+      "relative w-full min-h-[60vh] flex flex-col items-center justify-center text-center px-6",
+      uiV2 ? "overflow-visible" : "h-screen overflow-hidden"
+    )}>
+      <Link href="/dashboard" className="fixed top-8 left-8 text-muted-foreground hover:text-primary transition-all flex items-center gap-2 text-sm z-50 focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg px-2 py-1">
         <ArrowLeft className="w-4 h-4" /> Exit
       </Link>
 
@@ -250,7 +256,7 @@ export function DecompressionWizard({
             </div>
             <Link 
               href="/dashboard" 
-              className="text-[#a89888] hover:text-[#d4a574] transition-colors text-sm tracking-[0.2em] uppercase font-medium"
+              className="text-muted-foreground hover:text-primary transition-all text-sm tracking-[0.2em] uppercase font-medium focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg px-3 py-2"
             >
               Return to Dashboard
             </Link>

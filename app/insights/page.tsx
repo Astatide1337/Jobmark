@@ -24,7 +24,9 @@ export default async function InsightsPage() {
         />
       }
     >
-      <InsightsClient initialData={data} />
+      <div className="max-w-(--container-wide) mx-auto w-full">
+        <InsightsClient initialData={data} />
+      </div>
     </DashboardShell>
   );
 }

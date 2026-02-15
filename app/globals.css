@@ -1,12 +1,10 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 /* 
  * Jobmark Design System - Late Night Café Aesthetic
  * Warm, inviting colors inspired by cozy coffee shops
- * No gradients, no emojis - clean and sophisticated
  */
 
 @theme inline {
@@ -14,54 +12,56 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
+  
   --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
-}
 
-/* Hide all scrollbars globally while preserving scroll functionality */
-* {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-*::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  /* Layout Tokens */
+  --container-content: 64rem;
+  --container-wide: 72rem;
 }
 
 /* Late Night Café - Dark Theme Default */
-:root,
-.dark {
+:root, .dark {
   --radius: 0.75rem;
   
   /* Deep warm brown background - like a cozy café at night */
@@ -79,10 +79,6 @@
   --primary: #d4a574;
   --primary-foreground: #1a1412;
   
-  /* Warm Accent - for CTA buttons */
-  --accent-warm: #E3B283;
-  --accent-warm-hover: #d9a370;
-  
   /* Muted warm tones */
   --secondary: #2a2320;
   --secondary-foreground: #e8dfd4;
@@ -94,8 +90,12 @@
   --accent: #c49a6c;
   --accent-foreground: #1a1412;
   
-  /* Soft coral for destructive */
-  --destructive: #c75f5f;
+  /* Soft coral for destructive - adjusted for better contrast on fills */
+  --destructive: #d66b6b;
+  --destructive-foreground: #1a1412;
+  
+  /* Destructive text token for ghost/outline states on dark background */
+  --destructive-text: #ff8a8a;
   
   /* Warm borders */
   --border: #3d332c;
@@ -120,16 +120,33 @@
   --sidebar-ring: #d4a574;
 }
 
+/* Base styles */
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
+  *::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    @apply bg-border/50 rounded-full hover:bg-border;
+  }
 }
 
-/* Custom utilities for Jobmark café aesthetic */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -153,51 +170,6 @@
   /* Soft ambient shadow */
   .ambient-shadow {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  }
-  
-  /* Custom scrollbar utilities */
-  .scrollbar-none {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-none::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .scrollbar-thin {
-    scrollbar-width: thin !important;
-    -ms-overflow-style: auto !important;
-  }
-  
-  .scrollbar-track-transparent {
-    scrollbar-color: transparent transparent;
-  }
-  
-  .scrollbar-thumb-border\/50 {
-    scrollbar-color: hsl(var(--border) / 0.5) transparent;
-  }
-  
-  /* Webkit scrollbar styling - use !important to override global hide */
-  .scrollbar-thin::-webkit-scrollbar {
-    display: block !important;
-    width: 6px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #3d332c;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #d4a574;
-    background-clip: content-box;
   }
 
   /* Editorial typography utilities */
@@ -227,5 +199,99 @@
   /* Magnetic hover effect base */
   .magnetic {
     transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-standard {
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
+  }
+
+  .scrollbar-standard::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border/50 rounded-full hover:bg-primary/50;
+    border: 1px solid transparent;
+    background-clip: content-box;
+  }
+  
+  .scrollbar-track-transparent {
+    scrollbar-color: transparent transparent;
+  }
+
+  /* Support for Shadcn/Radix animations in Tailwind 4 */
+  .animate-in {
+    animation-duration: 150ms;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+    animation-name: enter;
+  }
+  .animate-out {
+    animation-duration: 150ms;
+    animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+    animation-name: exit;
+  }
+
+  .fade-in-0 { --tw-enter-opacity: 0; }
+  .fade-out-0 { --tw-exit-opacity: 0; }
+  .zoom-in-95 { --tw-enter-scale: 0.95; }
+  .zoom-out-95 { --tw-exit-scale: 0.95; }
+
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      scale: var(--tw-enter-scale, 1);
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+  @keyframes exit {
+    from {
+      opacity: 1;
+      scale: 1;
+    }
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      scale: var(--tw-exit-scale, 1);
+    }
+  }
+
+  /* Combined animations for Dialog/Popover 
+     Using !important to ensure they take precedence over transition classes if any
+  */
+  .data-\[state\=open\]\:animate-in {
+    animation: enter 150ms ease-out forwards !important;
+  }
+  .data-\[state\=closed\]\:animate-out {
+    animation: exit 150ms ease-in forwards !important;
   }
 }

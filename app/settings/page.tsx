@@ -32,7 +32,9 @@ export default async function SettingsPage() {
         />
       }
     >
-      <SettingsClient settings={settings} goals={goals} />
+      <div className="max-w-(--container-content) mx-auto w-full">
+        <SettingsClient settings={settings} goals={goals} />
+      </div>
     </DashboardShell>
   );
 }

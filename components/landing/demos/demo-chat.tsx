@@ -44,7 +44,9 @@ export function DemoChat() {
                         selectedGoalId={null} 
                         onProjectSelect={() => {}} 
                         onGoalSelect={() => {}}
+                        onOpenContextModal={() => {}}
                     />
+
                  </div>
 
                  <div className="flex items-end gap-2 pl-4 pr-2 pb-2">

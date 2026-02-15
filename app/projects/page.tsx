@@ -32,13 +32,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
         />
       }
     >
-    <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <p className="text-muted-foreground">
-            Organize your activities by project for focused reporting.
-          </p>
-        </div>
-
+      <div className="max-w-(--container-wide) mx-auto w-full">
         <ProjectList projects={projects} initialFilter={currentFilter} openCreate={openCreate} />
       </div>
     </DashboardShell>

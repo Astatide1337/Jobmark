@@ -12,6 +12,7 @@ import { createGoal, deleteGoal, type GoalData } from "@/app/actions/goals";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SettingsSaveBar } from "./settings-save-bar";
 
 interface GoalsSectionProps {
   settings: UserSettingsData;
@@ -88,6 +89,13 @@ export function GoalsSection({ settings, goals: initialGoals }: GoalsSectionProp
 
   return (
     <div className="space-y-8">
+      {/* Unsaved changes indicator */}
+      <SettingsSaveBar 
+        show={hasTargetChanges && !targetsSaved} 
+        onSave={handleSaveTargets} 
+        isSaving={isSavingTargets} 
+      />
+
       {/* Activity Targets */}
       <Card>
         <CardHeader>
@@ -121,10 +129,21 @@ export function GoalsSection({ settings, goals: initialGoals }: GoalsSectionProp
               />
             </div>
           </div>
-          <div className="flex justify-end pt-2">
+        <div className="flex justify-end pt-2">
              <Button onClick={handleSaveTargets} disabled={isSavingTargets || !hasTargetChanges}>
-                {isSavingTargets && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {targetsSaved ? "Saved" : "Update Targets"}
+                {isSavingTargets ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : targetsSaved ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Saved
+                  </>
+                ) : (
+                  "Update Targets"
+                )}
              </Button>
           </div>
         </CardContent>
@@ -196,7 +215,13 @@ export function GoalsSection({ settings, goals: initialGoals }: GoalsSectionProp
                                 </p>
                             )}
                         </div>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeleteGoal(goal.id)}>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95" 
+                            onClick={() => handleDeleteGoal(goal.id)}
+                        >
+
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </CardContent>

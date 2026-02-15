@@ -10,6 +10,7 @@ import { updateAppearanceSettings, type UserSettingsData } from "@/app/actions/s
 import { themePresets } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { useSettings, applyTheme } from "@/components/providers/settings-provider";
+import { SettingsSaveBar } from "./settings-save-bar";
 
 interface AppearanceSectionProps {
   settings: UserSettingsData;
@@ -60,17 +61,11 @@ export function AppearanceSection({ settings }: AppearanceSectionProps) {
   return (
     <div className="space-y-6">
       {/* Unsaved changes indicator */}
-      {hasChanges && !saved && (
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <div className="flex items-center gap-2 text-amber-500">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">You have unsaved changes</span>
-          </div>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Now"}
-          </Button>
-        </div>
-      )}
+      <SettingsSaveBar 
+        show={hasChanges && !saved} 
+        onSave={handleSave} 
+        isSaving={isSaving} 
+      />
 
       {/* Theme Presets */}
       <Card>

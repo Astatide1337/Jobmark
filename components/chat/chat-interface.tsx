@@ -13,8 +13,18 @@ import { ContextSelector } from "./context-selector";
 import { getPersonalizedGreeting } from "@/lib/chat/greeting";
 
 import { SuggestedPrompts } from "./suggested-prompts";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Users, Target, Briefcase } from "lucide-react";
 
 type StreamEvent =
+
   | { type: "delta"; content: string }
   | { type: "done"; cancelled: boolean }
   | { type: "error"; message: string };
@@ -82,7 +92,9 @@ export function ChatInterface({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const searchParams = useSearchParams();
+
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -300,15 +312,15 @@ export function ChatInterface({
   };
 
   return (
-    <div className="relative flex flex-1 w-full min-h-0 flex-col bg-background text-foreground overflow-hidden">
+    <div className="relative flex flex-1 w-full min-h-0 flex-col bg-background text-foreground">
       {/* 1. Main Conversation Canvas */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent px-4"
-        data-lenis-prevent
+        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent px-4"
       >
         <div className="mx-auto flex w-full max-w-2xl flex-col pt-8 pb-48">
+
           {/* Empty State / Greeting / Prompts */}
           {messages.length === 0 && !streamingContent && (
             showPrompts ? (
@@ -470,7 +482,9 @@ export function ChatInterface({
                     setSelectedContactId(id);
                     onContextChange?.(selectedProjectId, selectedGoalId, id);
                   }}
+                  onOpenContextModal={() => setIsContextModalOpen(true)}
                 />
+
               </div>
               
               <div className="flex shrink-0 items-center gap-2 ml-2">
@@ -479,8 +493,9 @@ export function ChatInterface({
                     onClick={handleStop}
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full bg-primary/10 hover:bg-destructive/20 hover:text-destructive text-primary transition-all duration-300"
+                    className="h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-300"
                   >
+
                     <Square className="h-3.5 w-3.5 fill-current" />
                     <span className="sr-only">Stop</span>
                   </Button>
@@ -511,6 +526,89 @@ export function ChatInterface({
           </div>
         </div>
       </div>
+
+      <CommandDialog
+        open={isContextModalOpen}
+        onOpenChange={setIsContextModalOpen}
+        title="Add Context"
+        description="Select a project, goal, or contact to focus your conversation."
+        className="lg:left-[calc(50%+8rem)]"
+      >
+        <CommandInput placeholder="Search context..." />
+        <CommandList className="scrollbar-none">
+          <CommandEmpty>No results found.</CommandEmpty>
+          
+          <CommandGroup heading="Projects">
+            {projects.map((project) => (
+              <CommandItem
+                key={project.id}
+                onSelect={() => {
+                  setSelectedProjectId(project.id);
+                  onContextChange?.(project.id, selectedGoalId, selectedContactId);
+                  setIsContextModalOpen(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <div 
+                  className="h-2 w-2 rounded-full" 
+                  style={{ backgroundColor: project.color }}
+                />
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <span>{project.name}</span>
+                {selectedProjectId === project.id && (
+                  <span className="ml-auto text-xs text-primary font-medium">Selected</span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+
+          <CommandGroup heading="Goals">
+            {goals.map((goal) => (
+              <CommandItem
+                key={goal.id}
+                onSelect={() => {
+                  setSelectedGoalId(goal.id);
+                  onContextChange?.(selectedProjectId, goal.id, selectedContactId);
+                  setIsContextModalOpen(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Target className="h-4 w-4 text-muted-foreground" />
+                <span>{goal.title}</span>
+                {selectedGoalId === goal.id && (
+                  <span className="ml-auto text-xs text-primary font-medium">Selected</span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+
+          <CommandGroup heading="Network & Contacts">
+            {contacts.map((contact) => (
+              <CommandItem
+                key={contact.id}
+                onSelect={() => {
+                  setSelectedContactId(contact.id);
+                  onContextChange?.(selectedProjectId, selectedGoalId, contact.id);
+                  setIsContextModalOpen(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <div className="flex flex-col">
+                  <span>{contact.fullName}</span>
+                  {contact.relationship && (
+                    <span className="text-[10px] text-muted-foreground">{contact.relationship}</span>
+                  )}
+                </div>
+                {selectedContactId === contact.id && (
+                  <span className="ml-auto text-xs text-primary font-medium">Selected</span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </div>
   );
 }
+

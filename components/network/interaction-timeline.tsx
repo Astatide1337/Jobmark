@@ -157,7 +157,7 @@ export function InteractionTimeline({
                 className="relative pl-10 pb-6 last:pb-0 group"
               >
                 {/* Timeline dot */}
-                <div className="absolute left-[11px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />
+                <div className="absolute left-[11px] top-1.5 h-2.5 w-2.5 rounded-xl bg-primary ring-2 ring-background" />
 
                 <div className="space-y-2">
                   {/* Header: channel + date */}
@@ -206,7 +206,7 @@ export function InteractionTimeline({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95"
                           onClick={() => setConfirmDeleteId(interaction.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -237,7 +237,7 @@ export function InteractionTimeline({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-primary transition-all active:scale-95"
                         onClick={() => toggleRawNotes(interaction.id)}
                       >
                         <ChevronDown
@@ -252,8 +252,8 @@ export function InteractionTimeline({
                       </Button>
 
                       {expandedRawNotes.has(interaction.id) && (
-                        <div className="mt-2 rounded-md border bg-muted/30 p-3">
-                          <p className="text-sm whitespace-pre-wrap">
+                        <div className="mt-2 rounded-xl border bg-muted/30 p-3 shadow-sm animate-in fade-in zoom-in-95 duration-200">
+                          <p className="text-sm whitespace-pre-wrap text-foreground/80 leading-relaxed">
                             {interaction.rawNotes}
                           </p>
                         </div>

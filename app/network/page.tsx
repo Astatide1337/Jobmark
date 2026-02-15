@@ -24,7 +24,9 @@ export default async function NetworkPage() {
         />
       }
     >
-      <ContactsList contacts={contacts} stats={stats} />
+      <div className="max-w-(--container-wide) mx-auto w-full">
+        <ContactsList contacts={contacts} stats={stats} />
+      </div>
     </DashboardShell>
   );
 }

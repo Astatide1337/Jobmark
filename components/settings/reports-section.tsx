@@ -8,6 +8,7 @@ import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 import { updateReportSettings, type UserSettingsData } from "@/app/actions/settings";
 
 import { useSettings } from "@/components/providers/settings-provider";
+import { SettingsSaveBar } from "./settings-save-bar";
 
 interface ReportsSectionProps {
   settings: UserSettingsData;
@@ -48,17 +49,11 @@ export function ReportsSection({ settings: initialSettings }: ReportsSectionProp
   return (
     <div className="space-y-6">
       {/* Unsaved changes indicator */}
-      {hasChanges && !saved && (
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <div className="flex items-center gap-2 text-amber-500">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">You have unsaved changes</span>
-          </div>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Now"}
-          </Button>
-        </div>
-      )}
+      <SettingsSaveBar 
+        show={hasChanges && !saved} 
+        onSave={handleSave} 
+        isSaving={isSaving} 
+      />
 
       {/* Custom Instructions */}
       <Card>

@@ -369,7 +369,7 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Quick Capture</CardTitle>
-          <span className={`text-xs px-2 py-1 rounded-full ${
+          <span className={`text-xs px-2.5 py-1 rounded-xl font-medium ${
             todayCount >= dailyGoal 
               ? "bg-green-500/20 text-green-400" 
               : "bg-primary/20 text-primary"
@@ -403,7 +403,7 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
                   aria-hidden="true"
                   className={cn(
                     "absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-transparent z-0",
-                    "min-h-[100px] w-full rounded-md border border-transparent px-3 py-2 text-sm shadow-sm", // Match Textarea styles
+                    "min-h-[100px] w-full rounded-xl border border-transparent px-3 py-2 text-sm", // Match Textarea styles
                     "bg-transparent"
                   )}
                 >
@@ -469,7 +469,7 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
                 {/* Dictation Polish Overlay/Button */}
                 {isPolishing && (
                     <div className="absolute bottom-2 right-2 z-30">
-                        <div className="bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2 text-xs animate-in fade-in slide-in-from-bottom-2">
+                        <div className="bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-2 text-xs animate-in fade-in slide-in-from-bottom-2">
                             <Sparkles className="h-3 w-3 animate-pulse" />
                             Polishing...
                         </div>
@@ -539,11 +539,12 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
                           size="icon" 
                           variant="ghost" 
                           aria-label="Close AI Toolbar"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-90"
                           onClick={dismissToolbar}
                         >
                           <X className="h-4 w-4" />
                         </Button>
+
                       </div>
                     </div>
                   </motion.div>
@@ -570,11 +571,11 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
                   <button
                     type="button"
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-muted-foreground",
-                      "bg-background/50 hover:bg-background/80 hover:text-foreground",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-muted-foreground",
+                      "bg-background/50 hover:bg-muted/40 hover:text-primary",
                       datePickerOpen 
                         ? "border-primary/50 ring-2 ring-primary/20 text-foreground" 
-                        : "border-border/50 hover:border-border"
+                        : "border-border/50 hover:border-primary/20"
                     )}
                   >
                     <CalendarIcon className="h-4 w-4" />
@@ -605,10 +606,11 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
                 size="sm"
                 className={cn(
                     "h-9 px-3 transition-all duration-300", 
-                    isListening ? "animate-pulse bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 border border-red-500/20" : "text-muted-foreground hover:text-foreground"
+                    isListening ? "animate-pulse bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 border border-red-500/20" : "text-muted-foreground hover:bg-muted/40 hover:text-primary active:scale-95"
                 )}
                 onClick={toggleListening}
               >
+
                 {isListening ? (
                     <>
                         <span className="relative flex h-2 w-2 mr-2">
@@ -638,9 +640,9 @@ export function QuickCapture({ projects = [], todayCount = 0, dailyGoal = 3, dem
 
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                <kbd className="px-1.5 py-0.5 text-[10px] bg-muted rounded">{isMac ? "Cmd" : "Ctrl"}</kbd>
+                <kbd className="px-1.5 py-0.5 text-[10px] bg-muted rounded-md border border-border/50">{isMac ? "⌘" : "Ctrl"}</kbd>
                 {" + "}
-                <kbd className="px-1.5 py-0.5 text-[10px] bg-muted rounded">Enter</kbd>
+                <kbd className="px-1.5 py-0.5 text-[10px] bg-muted rounded-md border border-border/50">Enter</kbd>
                 {" to save"}
               </p>
               
