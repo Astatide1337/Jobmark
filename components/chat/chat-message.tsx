@@ -62,10 +62,10 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
       {/* Avatar */}
       <div
         className={cn(
-          "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-1 shadow-sm",
+          "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-1",
           isUser 
             ? "bg-primary text-primary-foreground" 
-            : "bg-background border border-border/50 text-primary"
+            : "bg-primary/10 text-primary"
         )}
       >
         {isUser ? (
@@ -86,8 +86,8 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
           className={cn(
             "relative",
             isUser
-              ? "bg-muted/80 text-foreground px-5 py-3.5 rounded-3xl rounded-tr-sm border border-border/50"
-              : "px-1 py-1" // minimal wrapper for AI
+              ? "bg-muted text-foreground px-4 py-3 rounded-2xl rounded-tr-sm"
+              : "px-1 py-1"
           )}
         >
           {isUser ? (

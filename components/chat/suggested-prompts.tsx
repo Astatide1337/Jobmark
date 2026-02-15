@@ -85,26 +85,26 @@ export function SuggestedPrompts({ projects }: SuggestedPromptsProps) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
       {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 border border-primary/20">
+        <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
           <Sparkles className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold text-foreground mb-3 tracking-tight">
+        <h1 className="text-2xl font-semibold text-foreground mb-2 tracking-tight">
           AI Career Mentor
         </h1>
-        <p className="text-muted-foreground max-w-md mx-auto leading-relaxed text-lg">
+        <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed text-sm">
           Get personalized guidance for goal-setting, interview practice, and overcoming career challenges.
         </p>
       </motion.div>
 
       {/* Prompt Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {PROMPTS.map((prompt, index) => (
           <motion.div
             key={prompt.id}
@@ -118,16 +118,16 @@ export function SuggestedPrompts({ projects }: SuggestedPromptsProps) {
               projects.length > 0 ? (
                 <Card
                   className={cn(
-                    "group cursor-pointer p-5 transition-all duration-300 border-border/50 bg-card/50 h-full flex flex-col",
+                    "group cursor-pointer p-4 transition-colors border-border/50 bg-card h-full flex flex-col hover:bg-muted/30",
                     prompt.hoverBorder
                   )}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 transition-colors", prompt.bgColor)}>
-                      <prompt.icon className={cn("h-6 w-6", prompt.color)} />
+                    <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", prompt.bgColor)}>
+                      <prompt.icon className={cn("h-5 w-5", prompt.color)} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1 group-hover:text-foreground/90 transition-colors text-lg">
+                      <h3 className="font-medium text-foreground mb-1 transition-colors text-base">
                         {prompt.title}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
@@ -155,13 +155,13 @@ export function SuggestedPrompts({ projects }: SuggestedPromptsProps) {
                 </Card>
               ) : (
                 // No projects - show disabled card
-                <Card className="p-5 border-border/30 opacity-50 bg-muted/20 h-full">
+                <Card className="p-4 border-border/30 opacity-60 bg-muted/20 h-full">
                   <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                      <prompt.icon className="h-6 w-6 text-muted-foreground" />
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <prompt.icon className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-muted-foreground mb-1 text-lg">
+                      <h3 className="font-medium text-muted-foreground mb-1 text-base">
                         {prompt.title}
                       </h3>
                       <p className="text-sm text-muted-foreground">
@@ -176,17 +176,17 @@ export function SuggestedPrompts({ projects }: SuggestedPromptsProps) {
               <Card
                 onClick={() => handlePromptClick(prompt)}
                 className={cn(
-                  "group cursor-pointer p-5 transition-all duration-300 border-border/50 bg-card/50 h-full",
+                  "group cursor-pointer p-4 transition-colors border-border/50 bg-card h-full hover:bg-muted/30",
                   prompt.hoverBorder,
                   isPending && "pointer-events-none opacity-70"
                 )}
               >
                 <div className="flex items-start gap-4">
-                  <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 transition-colors", prompt.bgColor)}>
-                    <prompt.icon className={cn("h-6 w-6", prompt.color)} />
+                  <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", prompt.bgColor)}>
+                    <prompt.icon className={cn("h-5 w-5", prompt.color)} />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground mb-1 group-hover:text-foreground/90 transition-colors text-lg">
+                    <h3 className="font-medium text-foreground mb-1 transition-colors text-base">
                       {prompt.title}
                     </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">

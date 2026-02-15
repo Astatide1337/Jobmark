@@ -165,10 +165,26 @@ export function ChatInterface({
   const welcome = getWelcomeMessage();
 
   return (
-    <div className="flex flex-col h-full relative bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="border-b border-border/50 px-4 py-2">
+        <div className="mx-auto max-w-3xl">
+          <ContextSelector
+            projects={projects}
+            goals={goals}
+            contacts={contacts}
+            selectedProjectId={projectId}
+            selectedGoalId={goalId}
+            selectedContactId={contactId}
+            onProjectSelect={(id) => onContextChange?.(id, goalId, contactId)}
+            onGoalSelect={(id) => onContextChange?.(projectId, id, contactId)}
+            onContactSelect={(id) => onContextChange?.(projectId, goalId, id)}
+          />
+        </div>
+      </div>
+
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto w-full" data-lenis-prevent>
-        <div className="max-w-3xl mx-auto px-4 pt-6 pb-40 min-h-full flex flex-col justify-end">
+      <div className="flex-1 overflow-y-auto overscroll-contain w-full" data-lenis-prevent>
+        <div className="max-w-3xl mx-auto px-4 pt-6 pb-6 flex flex-col">
           {/* Welcome Message */}
           {messages.length === 0 && !streamingContent && (
             <motion.div
@@ -210,78 +226,51 @@ export function ChatInterface({
         </div>
       </div>
 
-      {/* Floating Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-        {/* Gradient Fade */}
-        <div className="absolute inset-0 top-[-50px] bg-gradient-to-t from-background via-background/90 to-transparent h-[200px]" />
-        
-        <div className="pointer-events-auto max-w-3xl mx-auto px-4 pb-6 relative">
-          {/* Scroll to bottom button could go here */}
-          
-          <div className="bg-muted/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-[32px] p-2 transition-all duration-300 focus-within:bg-muted/60 focus-within:shadow-primary/5">
-            {/* Context Chips (Inside top) */}
-            <div className="px-4 py-2 border-b border-white/5 mb-1">
-              <ContextSelector
-                projects={projects}
-                goals={goals}
-                contacts={contacts}
-                selectedProjectId={projectId}
-                selectedGoalId={goalId}
-                selectedContactId={contactId}
-                onProjectSelect={(id) => onContextChange?.(id, goalId)}
-                onGoalSelect={(id) => onContextChange?.(projectId, id)}
-                onContactSelect={(id) => onContextChange?.(projectId, goalId, id)}
-              />
-            </div>
-            
-            <div className="flex items-end gap-2 pl-4 pr-2 pb-2">
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  mode === "goal-coach"
-                    ? "Describe your goal..."
-                    : mode === "interview"
-                    ? "Type your answer..."
-                    : "Ask your mentor..."
-                }
-                className="min-h-[24px] max-h-[200px] w-full resize-none bg-transparent border-none shadow-none focus-visible:ring-0 px-2 py-3 text-base placeholder:text-muted-foreground/50"
-                disabled={isStreaming}
-                rows={1}
-              />
-              
-              {isStreaming ? (
-                <Button
-                  onClick={handleStop}
-                  variant="default"
-                  size="icon"
-                  className="h-10 w-10 rounded-full shrink-0 bg-primary/10 hover:bg-destructive text-primary hover:text-destructive-foreground transition-all duration-300"
-                >
-                  <Square className="h-4 w-4 fill-current" />
-                  <span className="sr-only">Stop generating</span>
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                  size="icon"
-                  className={cn(
-                    "h-10 w-10 rounded-full shrink-0 transition-all duration-300",
-                    input.trim() 
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105" 
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  <ArrowUp className="h-5 w-5" />
-                  <span className="sr-only">Send</span>
-                </Button>
-              )}
-            </div>
+      {/* Composer */}
+      <div className="border-t border-border/50 bg-background px-4 py-3">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-end gap-2 rounded-xl border border-border/50 bg-card p-2">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                mode === "goal-coach"
+                  ? "Describe your goal..."
+                  : mode === "interview"
+                  ? "Type your answer..."
+                  : "Ask your mentor..."
+              }
+              className="min-h-[24px] max-h-[180px] w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 px-2 py-2 text-sm"
+              disabled={isStreaming}
+              rows={1}
+            />
+
+            {isStreaming ? (
+              <Button
+                onClick={handleStop}
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+              >
+                <Square className="h-3.5 w-3.5 fill-current" />
+                <span className="sr-only">Stop generating</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                size="icon"
+                className={cn("h-9 w-9 shrink-0", !input.trim() && "opacity-60")}
+              >
+                <ArrowUp className="h-4 w-4" />
+                <span className="sr-only">Send</span>
+              </Button>
+            )}
           </div>
-          
-          <div className="text-center text-[10px] text-muted-foreground/60 mt-4 font-medium tracking-wide">
+
+          <div className="mt-2 text-center text-[10px] text-muted-foreground">
             AI Mentor can make mistakes. Verify important information.
           </div>
         </div>
