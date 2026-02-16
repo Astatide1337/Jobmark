@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Pen, Settings, LogOut, Calendar, ChevronDown, Menu } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 interface DashboardHeaderProps {
   userName?: string | null;
@@ -22,17 +23,30 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ 
   userName, 
-  userImage, 
+  userImage,
   showDate = false,
   title,
   onMenuClick
 }: DashboardHeaderProps) {
-  const initials = userName
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() || "U";
+  const handleSignOut = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOutUser();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // Generate initials from name, or use first letter of email
+  const initials = userName
+    ? userName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "U";
 
   return (
     <header className="border-b border-border/50 bg-card/30 sticky top-0 z-30 backdrop-blur-md mb-5">
@@ -96,14 +110,14 @@ export function DashboardHeader({
                 Settings
               </Link>
             </DropdownMenuItem>
-            <form action={signOutUser}>
-              <DropdownMenuItem asChild>
-                <button type="submit" className="w-full flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
-              </DropdownMenuItem>
-            </form>
+            <DropdownMenuItem 
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={handleSignOut}
+              disabled={isLoggingOut}
+            >
+              <LogOut className="h-4 w-4" />
+              {isLoggingOut ? "Signing out..." : "Sign out"}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

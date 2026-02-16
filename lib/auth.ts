@@ -1,6 +1,3 @@
-// Force Node.js runtime for Prisma compatibility
-export const runtime = "nodejs";
-
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -23,11 +20,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days per ProductSpec
   },
   callbacks: {
-    async session({ session, user }) {
+    async session({ session, user, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = user?.id ?? token?.sub ?? "";
+        // Add Google profile image if available - check multiple sources
+        const imageUrl = token?.picture as string | undefined || user?.image;
+        if (imageUrl) {
+          session.user.image = imageUrl;
+        }
       }
       return session;
+    },
+    async jwt({ token, account, profile }) {
+      // Persist the OAuth access_token and profile image to the token right after signin
+      if (account && profile) {
+        token.accessToken = account.access_token;
+        // Get profile image from Google account with null checks
+        const profileAny = profile as Record<string, unknown> | null;
+        const picture = profileAny?.picture ?? profileAny?.image ?? null;
+        token.picture = typeof picture === 'string' ? picture : null;
+      }
+      return token;
     },
   },
 });

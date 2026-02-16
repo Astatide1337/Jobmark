@@ -7,5 +7,11 @@ export async function signInWithGoogle() {
 }
 
 export async function signOutUser() {
-  await signOut({ redirectTo: "/" });
+  try {
+    await signOut({ redirect: true, redirectTo: "/" });
+  } catch (error) {
+    console.error("Sign out error:", error);
+    // Force redirect even if there's an error
+    throw error;
+  }
 }
