@@ -37,13 +37,18 @@ export function DemoChat() {
               <div className="bg-muted/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-[32px] p-2 transition-all duration-300">
                  {/* Context Chips */}
                  <div className="px-4 py-2 border-b border-white/5 mb-1">
-                    <ContextSelector 
+                 <ContextSelector 
                         projects={mockProjects} 
                         goals={[]} 
-                        selectedProjectId="1" 
-                        selectedGoalId={null} 
+                        selectedProjectIds={["1"]}
+                        selectedGoalIds={[]}
+                        selectedContactIds={[]}
                         onProjectSelect={() => {}} 
                         onGoalSelect={() => {}}
+                        onContactSelect={() => {}}
+                        onProjectRemove={() => {}}
+                        onGoalRemove={() => {}}
+                        onContactRemove={() => {}}
                         onOpenContextModal={() => {}}
                     />
 

@@ -17,12 +17,15 @@ interface ContextSelectorProps {
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
   contacts?: ContactOption[];
-  selectedProjectId: string | null;
-  selectedGoalId: string | null;
-  selectedContactId?: string | null;
-  onProjectSelect: (projectId: string | null) => void;
-  onGoalSelect: (goalId: string | null) => void;
-  onContactSelect?: (contactId: string | null) => void;
+  selectedProjectIds: string[];
+  selectedGoalIds: string[];
+  selectedContactIds: string[];
+  onProjectSelect: (projectId: string) => void;
+  onProjectRemove: (projectId: string) => void;
+  onGoalSelect: (goalId: string) => void;
+  onGoalRemove: (goalId: string) => void;
+  onContactSelect: (contactId: string) => void;
+  onContactRemove: (contactId: string) => void;
   onOpenContextModal: () => void;
 }
 
@@ -30,12 +33,15 @@ export function ContextSelector({
   projects,
   goals,
   contacts = [],
-  selectedProjectId,
-  selectedGoalId,
-  selectedContactId = null,
+  selectedProjectIds,
+  selectedGoalIds,
+  selectedContactIds,
   onProjectSelect,
+  onProjectRemove,
   onGoalSelect,
+  onGoalRemove,
   onContactSelect,
+  onContactRemove,
   onOpenContextModal,
 }: ContextSelectorProps) {
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -49,17 +55,11 @@ export function ContextSelector({
   });
   const isDraggingRef = useRef(false);
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId);
-  const selectedGoal = goals.find((g) => g.id === selectedGoalId);
-  const selectedContact = contacts.find((c) => c.id === selectedContactId);
+  const selectedProjects = projects.filter((p) => selectedProjectIds.includes(p.id));
+  const selectedGoals = goals.filter((g) => selectedGoalIds.includes(g.id));
+  const selectedContacts = contacts.filter((c) => selectedContactIds.includes(c.id));
 
-  const selectedCount = useMemo(() => {
-    let count = 0;
-    if (selectedProject) count += 1;
-    if (selectedGoal) count += 1;
-    if (selectedContact) count += 1;
-    return count;
-  }, [selectedProject, selectedGoal, selectedContact]);
+  const selectedCount = selectedProjects.length + selectedGoals.length + selectedContacts.length;
 
   const updateFades = () => {
     const el = scrollRef.current;
@@ -94,7 +94,7 @@ export function ContextSelector({
       resizeObserver.disconnect();
       window.removeEventListener("resize", recalc);
     };
-  }, [selectedProjectId, selectedGoalId, selectedContactId]);
+  }, [selectedProjectIds, selectedGoalIds, selectedContactIds, selectedProjects.length, selectedGoals.length, selectedContacts.length]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse") return;
@@ -161,9 +161,9 @@ export function ContextSelector({
         )}
       >
         <AnimatePresence initial={false}>
-        {selectedProject && (
+        {selectedProjects.map((project) => (
           <motion.div
-            key={`project-${selectedProject.id}`}
+            key={`project-${project.id}`}
             initial={{ opacity: 0, scale: 0.9, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -4 }}
@@ -173,15 +173,15 @@ export function ContextSelector({
             <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:bg-muted/50 hover:border-primary/20 group/chip">
               <span
                 className="h-2 w-2 rounded-full ring-1 ring-white/10"
-                style={{ backgroundColor: selectedProject.color }}
+                style={{ backgroundColor: project.color }}
               />
-              <span className="max-w-[140px] truncate text-foreground group-hover/chip:text-primary transition-colors">{selectedProject.name}</span>
+              <span className="max-w-[140px] truncate text-foreground group-hover/chip:text-primary transition-colors">{project.name}</span>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onProjectSelect(null);
+                  onProjectRemove(project.id);
                 }}
                 className="ml-1 text-muted-foreground transition-colors hover:text-destructive"
               >
@@ -189,11 +189,11 @@ export function ContextSelector({
               </button>
             </div>
           </motion.div>
-        )}
+        ))}
 
-        {selectedGoal && (
+        {selectedGoals.map((goal) => (
           <motion.div
-            key={`goal-${selectedGoal.id}`}
+            key={`goal-${goal.id}`}
             initial={{ opacity: 0, scale: 0.9, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -4 }}
@@ -202,13 +202,13 @@ export function ContextSelector({
           >
             <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:bg-muted/50 hover:border-primary/20 group/chip">
               <Target className="h-3 w-3 text-primary" />
-              <span className="max-w-[140px] truncate text-foreground group-hover/chip:text-primary transition-colors">{selectedGoal.title}</span>
+              <span className="max-w-[140px] truncate text-foreground group-hover/chip:text-primary transition-colors">{goal.title}</span>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onGoalSelect(null);
+                  onGoalRemove(goal.id);
                 }}
                 className="ml-1 text-muted-foreground transition-colors hover:text-destructive"
               >
@@ -216,11 +216,11 @@ export function ContextSelector({
               </button>
             </div>
           </motion.div>
-        )}
+        ))}
 
-        {selectedContact && onContactSelect && (
+        {selectedContacts.map((contact) => (
           <motion.div
-            key={`contact-${selectedContact.id}`}
+            key={`contact-${contact.id}`}
             initial={{ opacity: 0, scale: 0.9, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -4 }}
@@ -229,13 +229,13 @@ export function ContextSelector({
           >
             <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:bg-muted/50 hover:border-primary/20 group/chip">
               <Users className="h-3 w-3 text-primary" />
-              <span className="max-w-[150px] truncate text-foreground group-hover/chip:text-primary transition-colors">{selectedContact.fullName}</span>
+              <span className="max-w-[150px] truncate text-foreground group-hover/chip:text-primary transition-colors">{contact.fullName}</span>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onContactSelect(null);
+                  onContactRemove(contact.id);
                 }}
                 className="ml-1 text-muted-foreground transition-colors hover:text-destructive"
               >
@@ -243,7 +243,7 @@ export function ContextSelector({
               </button>
             </div>
           </motion.div>
-        )}
+        ))}
         </AnimatePresence>
 
         <Button

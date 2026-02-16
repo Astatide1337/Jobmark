@@ -467,20 +467,32 @@ export function ChatInterface({
                   projects={projects}
                   goals={goals}
                   contacts={contacts}
-                  selectedProjectId={selectedProjectId}
-                  selectedGoalId={selectedGoalId}
-                  selectedContactId={selectedContactId}
-                  onProjectSelect={(id) => {
-                    setSelectedProjectId(id);
-                    onContextChange?.(id, selectedGoalId, selectedContactId);
+                  selectedProjectIds={selectedProjectId ? [selectedProjectId] : []}
+                  selectedGoalIds={selectedGoalId ? [selectedGoalId] : []}
+                  selectedContactIds={selectedContactId ? [selectedContactId] : []}
+                  onProjectSelect={(ids) => {
+                    setSelectedProjectId(ids[0] || null);
+                    onContextChange?.(ids[0] || null, selectedGoalId, selectedContactId);
                   }}
-                  onGoalSelect={(id) => {
-                    setSelectedGoalId(id);
-                    onContextChange?.(selectedProjectId, id, selectedContactId);
+                  onGoalSelect={(ids) => {
+                    setSelectedGoalId(ids[0] || null);
+                    onContextChange?.(selectedProjectId, ids[0] || null, selectedContactId);
                   }}
-                  onContactSelect={(id) => {
-                    setSelectedContactId(id);
-                    onContextChange?.(selectedProjectId, selectedGoalId, id);
+                  onContactSelect={(ids) => {
+                    setSelectedContactId(ids[0] || null);
+                    onContextChange?.(selectedProjectId, selectedGoalId, ids[0] || null);
+                  }}
+                  onProjectRemove={() => {
+                    setSelectedProjectId(null);
+                    onContextChange?.(null, selectedGoalId, selectedContactId);
+                  }}
+                  onGoalRemove={() => {
+                    setSelectedGoalId(null);
+                    onContextChange?.(selectedProjectId, null, selectedContactId);
+                  }}
+                  onContactRemove={() => {
+                    setSelectedContactId(null);
+                    onContextChange?.(selectedProjectId, selectedGoalId, null);
                   }}
                   onOpenContextModal={() => setIsContextModalOpen(true)}
                 />
