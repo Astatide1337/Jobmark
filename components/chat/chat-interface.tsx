@@ -85,9 +85,9 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const [conversationId, setConversationId] = useState(initialConversationId);
   const [messages, setMessages] = useState<MessageData[]>(initialMessages);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projectId);
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(goalId);
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(contactId);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>(projectId ? [projectId] : []);
+  const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>(goalId ? [goalId] : []);
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>(contactId ? [contactId] : []);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
@@ -129,9 +129,9 @@ export function ChatInterface({
   useEffect(() => {
     setConversationId(initialConversationId);
     setMessages(initialMessages);
-    setSelectedProjectId(projectId);
-    setSelectedGoalId(goalId);
-    setSelectedContactId(contactId);
+    setSelectedProjectIds(projectId ? [projectId] : []);
+    setSelectedGoalIds(goalId ? [goalId] : []);
+    setSelectedContactIds(contactId ? [contactId] : []);
     setStreamingContent("");
     setIsStreaming(false);
     setInput("");
@@ -467,32 +467,32 @@ export function ChatInterface({
                   projects={projects}
                   goals={goals}
                   contacts={contacts}
-                  selectedProjectIds={selectedProjectId ? [selectedProjectId] : []}
-                  selectedGoalIds={selectedGoalId ? [selectedGoalId] : []}
-                  selectedContactIds={selectedContactId ? [selectedContactId] : []}
+                  selectedProjectIds={selectedProjectIds}
+                  selectedGoalIds={selectedGoalIds}
+                  selectedContactIds={selectedContactIds}
                   onProjectSelect={(ids) => {
-                    setSelectedProjectId(ids[0] || null);
-                    onContextChange?.(ids[0] || null, selectedGoalId, selectedContactId);
+                    setSelectedProjectIds(ids);
+                    onContextChange?.(ids[0] || null, selectedGoalIds[0] || null, selectedContactIds[0] || null);
                   }}
                   onGoalSelect={(ids) => {
-                    setSelectedGoalId(ids[0] || null);
-                    onContextChange?.(selectedProjectId, ids[0] || null, selectedContactId);
+                    setSelectedGoalIds(ids);
+                    onContextChange?.(selectedProjectIds[0] || null, ids[0] || null, selectedContactIds[0] || null);
                   }}
                   onContactSelect={(ids) => {
-                    setSelectedContactId(ids[0] || null);
-                    onContextChange?.(selectedProjectId, selectedGoalId, ids[0] || null);
+                    setSelectedContactIds(ids);
+                    onContextChange?.(selectedProjectIds[0] || null, selectedGoalIds[0] || null, ids[0] || null);
                   }}
-                  onProjectRemove={() => {
-                    setSelectedProjectId(null);
-                    onContextChange?.(null, selectedGoalId, selectedContactId);
+                  onProjectRemove={(id) => {
+                    setSelectedProjectIds(selectedProjectIds.filter(p => p !== id));
+                    onContextChange?.(null, selectedGoalIds[0] || null, selectedContactIds[0] || null);
                   }}
-                  onGoalRemove={() => {
-                    setSelectedGoalId(null);
-                    onContextChange?.(selectedProjectId, null, selectedContactId);
+                  onGoalRemove={(id) => {
+                    setSelectedGoalIds(selectedGoalIds.filter(g => g !== id));
+                    onContextChange?.(selectedProjectIds[0] || null, null, selectedContactIds[0] || null);
                   }}
-                  onContactRemove={() => {
-                    setSelectedContactId(null);
-                    onContextChange?.(selectedProjectId, selectedGoalId, null);
+                  onContactRemove={(id) => {
+                    setSelectedContactIds(selectedContactIds.filter(c => c !== id));
+                    onContextChange?.(selectedProjectIds[0] || null, selectedGoalIds[0] || null, null);
                   }}
                   onOpenContextModal={() => setIsContextModalOpen(true)}
                 />
@@ -555,8 +555,11 @@ export function ChatInterface({
               <CommandItem
                 key={project.id}
                 onSelect={() => {
-                  setSelectedProjectId(project.id);
-                  onContextChange?.(project.id, selectedGoalId, selectedContactId);
+                  const newIds = selectedProjectIds.includes(project.id) 
+                    ? selectedProjectIds.filter(id => id !== project.id)
+                    : [...selectedProjectIds, project.id];
+                  setSelectedProjectIds(newIds);
+                  onContextChange?.(newIds[0] || null, selectedGoalIds[0] || null, selectedContactIds[0] || null);
                   setIsContextModalOpen(false);
                 }}
                 className="flex items-center gap-2"
@@ -567,7 +570,7 @@ export function ChatInterface({
                 />
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
                 <span>{project.name}</span>
-                {selectedProjectId === project.id && (
+                {selectedProjectIds.includes(project.id) && (
                   <span className="ml-auto text-xs text-primary font-medium">Selected</span>
                 )}
               </CommandItem>
@@ -579,15 +582,18 @@ export function ChatInterface({
               <CommandItem
                 key={goal.id}
                 onSelect={() => {
-                  setSelectedGoalId(goal.id);
-                  onContextChange?.(selectedProjectId, goal.id, selectedContactId);
+                  const newIds = selectedGoalIds.includes(goal.id)
+                    ? selectedGoalIds.filter(id => id !== goal.id)
+                    : [...selectedGoalIds, goal.id];
+                  setSelectedGoalIds(newIds);
+                  onContextChange?.(selectedProjectIds[0] || null, newIds[0] || null, selectedContactIds[0] || null);
                   setIsContextModalOpen(false);
                 }}
                 className="flex items-center gap-2"
               >
                 <Target className="h-4 w-4 text-muted-foreground" />
                 <span>{goal.title}</span>
-                {selectedGoalId === goal.id && (
+                {selectedGoalIds.includes(goal.id) && (
                   <span className="ml-auto text-xs text-primary font-medium">Selected</span>
                 )}
               </CommandItem>
@@ -599,8 +605,11 @@ export function ChatInterface({
               <CommandItem
                 key={contact.id}
                 onSelect={() => {
-                  setSelectedContactId(contact.id);
-                  onContextChange?.(selectedProjectId, selectedGoalId, contact.id);
+                  const newIds = selectedContactIds.includes(contact.id)
+                    ? selectedContactIds.filter(id => id !== contact.id)
+                    : [...selectedContactIds, contact.id];
+                  setSelectedContactIds(newIds);
+                  onContextChange?.(selectedProjectIds[0] || null, selectedGoalIds[0] || null, newIds[0] || null);
                   setIsContextModalOpen(false);
                 }}
                 className="flex items-center gap-2"
@@ -612,7 +621,7 @@ export function ChatInterface({
                     <span className="text-[10px] text-muted-foreground">{contact.relationship}</span>
                   )}
                 </div>
-                {selectedContactId === contact.id && (
+                {selectedContactIds.includes(contact.id) && (
                   <span className="ml-auto text-xs text-primary font-medium">Selected</span>
                 )}
               </CommandItem>

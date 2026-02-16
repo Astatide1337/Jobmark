@@ -20,11 +20,11 @@ interface ContextSelectorProps {
   selectedProjectIds: string[];
   selectedGoalIds: string[];
   selectedContactIds: string[];
-  onProjectSelect: (projectId: string) => void;
+  onProjectSelect: (projectIds: string[]) => void;
   onProjectRemove: (projectId: string) => void;
-  onGoalSelect: (goalId: string) => void;
+  onGoalSelect: (goalIds: string[]) => void;
   onGoalRemove: (goalId: string) => void;
-  onContactSelect: (contactId: string) => void;
+  onContactSelect: (contactIds: string[]) => void;
   onContactRemove: (contactId: string) => void;
   onOpenContextModal: () => void;
 }
