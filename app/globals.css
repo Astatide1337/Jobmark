@@ -196,6 +196,27 @@
     -webkit-backdrop-filter: blur(20px);
   }
 
+  /* Architect's Abstractions */
+  .glass-card {
+    @apply bg-card/40 border border-border/40 backdrop-blur-sm rounded-2xl transition-all duration-300;
+  }
+
+  .interactive-surface {
+    @apply hover:border-border hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer;
+  }
+
+  .glass-input {
+    @apply bg-background/50 border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 backdrop-blur-md transition-all;
+  }
+
+  .warm-glow-text {
+    @apply text-primary drop-shadow-[0_0_8px_rgba(212,165,116,0.3)];
+  }
+
+  .section-container {
+    @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
+  }
+
   /* Magnetic hover effect base */
   .magnetic {
     transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
