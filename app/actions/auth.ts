@@ -10,8 +10,14 @@ export async function signOutUser() {
   try {
     await signOut({ redirect: true, redirectTo: "/" });
   } catch (error) {
+    // NEXT_REDIRECT is expected - don't log it as an error
+    if (error && typeof error === 'object' && 'digest' in error) {
+      const digest = (error as { digest?: string }).digest;
+      if (digest?.includes('NEXT_REDIRECT')) {
+        return; // This is expected behavior
+      }
+    }
     console.error("Sign out error:", error);
-    // Force redirect even if there's an error
     throw error;
   }
 }
