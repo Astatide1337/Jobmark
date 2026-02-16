@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { DecompressionWizard } from "@/components/focus/decompression-wizard";
+import { DecompressionWizard } from "./_components/decompression-wizard";
 import { useUI } from "@/components/providers/ui-provider";
 
 export const metadata = {
