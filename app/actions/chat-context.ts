@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { revalidatePath } from "next/cache";
-import { formatDate, getChannelLabel } from "@/lib/network";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
+import { formatDate, getChannelLabel } from '@/lib/network';
 
 // Types for conversation context
 export interface ProjectContext {
@@ -68,7 +68,7 @@ export async function buildProjectContext(projectId: string): Promise<ProjectCon
     include: {
       _count: { select: { activities: true } },
       activities: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: 10,
         select: { content: true, createdAt: true },
       },
@@ -115,9 +115,7 @@ export async function buildGoalContext(goalId: string): Promise<GoalContext | nu
 /**
  * Build context about a specific contact for the AI
  */
-export async function buildContactContext(
-  contactId: string
-): Promise<ContactContext | null> {
+export async function buildContactContext(contactId: string): Promise<ContactContext | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
 
@@ -135,7 +133,7 @@ export async function buildContactContext(
       email: true,
       phone: true,
       interactions: {
-        orderBy: { occurredAt: "desc" },
+        orderBy: { occurredAt: 'desc' },
         take: 10,
         select: {
           occurredAt: true,
@@ -179,7 +177,7 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
     prisma.project.count({ where: { userId: session.user.id, archived: false } }),
     prisma.goal.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 5,
     }),
   ]);
@@ -187,13 +185,13 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
   // Calculate current streak from recent activities
   const recentActivities = await prisma.activity.findMany({
     where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
     take: 365,
   });
 
-  const activityDateStrings: string[] = recentActivities.map(
-    (a: { createdAt: Date }) => a.createdAt.toLocaleDateString("en-CA")
+  const activityDateStrings: string[] = recentActivities.map((a: { createdAt: Date }) =>
+    a.createdAt.toLocaleDateString('en-CA')
   );
   const uniqueDates: string[] = [...new Set(activityDateStrings)].sort((a, b) =>
     b.localeCompare(a)
@@ -201,8 +199,8 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
 
   let currentStreak = 0;
   if (uniqueDates.length > 0) {
-    const today = new Date().toLocaleDateString("en-CA");
-    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
+    const today = new Date().toLocaleDateString('en-CA');
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
     const latest = uniqueDates[0];
 
     if (latest >= yesterday) {
@@ -210,10 +208,10 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
       for (let i = 1; i < uniqueDates.length; i++) {
         const current = uniqueDates[i - 1];
         const previous = uniqueDates[i];
-        const currentDate = new Date(current + "T12:00:00");
+        const currentDate = new Date(current + 'T12:00:00');
         const expectedPrevious = new Date(currentDate.getTime() - 86400000)
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         if (previous === expectedPrevious) {
           currentStreak++;
         } else {
@@ -230,15 +228,54 @@ export async function buildUserSummary(): Promise<UserSummary | null> {
     currentStreak,
     goalsCount: goals.length,
     recentGoals: goals.map(
-      (g: { id: string; title: string; deadline: Date | null; why: string | null; createdAt: Date }) => ({
-      id: g.id,
-      title: g.title,
-      deadline: g.deadline,
-      why: g.why,
-      createdAt: g.createdAt,
-    })
+      (g: {
+        id: string;
+        title: string;
+        deadline: Date | null;
+        why: string | null;
+        createdAt: Date;
+      }) => ({
+        id: g.id,
+        title: g.title,
+        deadline: g.deadline,
+        why: g.why,
+        createdAt: g.createdAt,
+      })
     ),
   };
+}
+
+export interface ReportContext {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+}
+
+/**
+ * Build context from one or more saved reports for the AI
+ */
+export async function buildReportsContext(reportIds: string[]): Promise<ReportContext[]> {
+  if (!reportIds.length) return [];
+
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const reports = await prisma.report.findMany({
+    where: {
+      id: { in: reportIds },
+      userId: session.user.id,
+    },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return reports;
 }
 
 /**
@@ -256,7 +293,7 @@ export async function buildInterviewContext(projectId: string) {
     include: {
       _count: { select: { activities: true } },
       activities: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: 20, // More activities for interview context
         select: { content: true, createdAt: true },
       },
@@ -268,13 +305,13 @@ export async function buildInterviewContext(projectId: string) {
   // Format activities as a timeline for the AI
   const timeline = project.activities
     .map((a: { content: string; createdAt: Date }) => {
-      const dateStr = a.createdAt.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
+      const dateStr = a.createdAt.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       });
       return `- [${dateStr}] ${a.content}`;
     })
-    .join("\n");
+    .join('\n');
 
   return {
     projectName: project.name,

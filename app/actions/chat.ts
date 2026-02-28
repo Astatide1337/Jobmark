@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 // Conversation modes
-export type ConversationMode = "general" | "goal-coach" | "interview";
+export type ConversationMode = 'general' | 'goal-coach' | 'interview';
 
 // Types
 export interface ConversationData {
@@ -20,11 +20,12 @@ export interface ConversationData {
   project: { id: string; name: string; color: string } | null;
   goal: { id: string; title: string } | null;
   contact: { id: string; fullName: string } | null;
+  reports: { id: string; title: string; createdAt: Date }[];
 }
 
 export interface MessageData {
   id: string;
-  role: "user" | "assistant" | "system";
+  role: 'user' | 'assistant' | 'system';
   content: string;
   createdAt: Date;
 }
@@ -37,7 +38,7 @@ export interface ConversationWithMessages extends ConversationData {
  * Create a new conversation
  */
 export async function createConversation(
-  mode: ConversationMode = "general",
+  mode: ConversationMode = 'general',
   projectId?: string,
   goalId?: string,
   contactId?: string,
@@ -45,36 +46,41 @@ export async function createConversation(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
-  const conversation = await prisma.conversation.create({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const conversation = await (prisma.conversation as any).create({
     data: {
       userId: session.user.id,
       mode,
       projectId: projectId || null,
       goalId: goalId || null,
       contactId: contactId || null,
-      title: mode === "goal-coach" 
-        ? "Goal Setting Session" 
-        : mode === "interview" 
-        ? "Mock Interview" 
-        : "New Chat",
-      messages: initialMessage ? {
-        create: {
-          role: "user",
-          content: initialMessage,
-        }
-      } : undefined,
+      title:
+        mode === 'goal-coach'
+          ? 'Goal Setting Session'
+          : mode === 'interview'
+            ? 'Mock Interview'
+            : 'New Chat',
+      messages: initialMessage
+        ? {
+            create: {
+              role: 'user',
+              content: initialMessage,
+            },
+          }
+        : undefined,
     },
     include: {
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
       contact: { select: { id: true, fullName: true } },
+      reports: { select: { id: true, title: true, createdAt: true } },
     },
   });
 
-  revalidatePath("/chat");
+  revalidatePath('/chat');
 
   return {
     id: conversation.id,
@@ -88,6 +94,7 @@ export async function createConversation(
     project: conversation.project,
     goal: conversation.goal,
     contact: conversation.contact,
+    reports: conversation.reports ?? [],
     hasInitialMessage: !!initialMessage,
   };
 }
@@ -99,18 +106,21 @@ export async function getConversations(limit = 20): Promise<ConversationData[]> 
   const session = await auth();
   if (!session?.user?.id) return [];
 
-  const conversations = await prisma.conversation.findMany({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const conversations = await (prisma.conversation as any).findMany({
     where: { userId: session.user.id },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { updatedAt: 'desc' },
     take: limit,
     include: {
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
       contact: { select: { id: true, fullName: true } },
+      reports: { select: { id: true, title: true, createdAt: true } },
     },
   });
 
-  return conversations.map((c) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return conversations.map((c: any) => ({
     id: c.id,
     title: c.title,
     mode: c.mode as ConversationMode,
@@ -122,6 +132,7 @@ export async function getConversations(limit = 20): Promise<ConversationData[]> 
     project: c.project,
     goal: c.goal,
     contact: c.contact,
+    reports: c.reports ?? [],
   }));
 }
 
@@ -134,7 +145,8 @@ export async function getConversation(
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const conversation = await prisma.conversation.findUnique({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const conversation = await (prisma.conversation as any).findUnique({
     where: {
       id: conversationId,
       userId: session.user.id,
@@ -143,8 +155,9 @@ export async function getConversation(
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
       contact: { select: { id: true, fullName: true } },
+      reports: { select: { id: true, title: true, createdAt: true } },
       messages: {
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: 'asc' },
       },
     },
   });
@@ -163,12 +176,15 @@ export async function getConversation(
     project: conversation.project,
     goal: conversation.goal,
     contact: conversation.contact,
-    messages: conversation.messages.map((m) => ({
-      id: m.id,
-      role: m.role as "user" | "assistant" | "system",
-      content: m.content,
-      createdAt: m.createdAt,
-    })),
+    reports: conversation.reports ?? [],
+    messages: conversation.messages.map(
+      (m: { id: string; role: string; content: string; createdAt: Date }) => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content,
+        createdAt: m.createdAt,
+      })
+    ),
   };
 }
 
@@ -178,7 +194,7 @@ export async function getConversation(
 export async function deleteConversation(conversationId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
   await prisma.conversation.delete({
@@ -188,7 +204,7 @@ export async function deleteConversation(conversationId: string) {
     },
   });
 
-  revalidatePath("/chat");
+  revalidatePath('/chat');
   return { success: true };
 }
 
@@ -198,7 +214,7 @@ export async function deleteConversation(conversationId: string) {
 export async function renameConversation(conversationId: string, title: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
   await prisma.conversation.update({
@@ -209,34 +225,39 @@ export async function renameConversation(conversationId: string, title: string) 
     data: { title },
   });
 
-  revalidatePath("/chat");
+  revalidatePath('/chat');
   return { success: true };
 }
 
 /**
- * Update conversation context (project, goal, or contact reference)
+ * Update conversation context (project, goal, contact, and/or reports)
  */
 export async function updateConversationContext(
   conversationId: string,
   projectId?: string | null,
   goalId?: string | null,
-  contactId?: string | null
+  contactId?: string | null,
+  reportIds?: string[]
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
-  const data: {
-    projectId?: string | null;
-    goalId?: string | null;
-    contactId?: string | null;
-  } = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any = {};
   if (projectId !== undefined) data.projectId = projectId;
   if (goalId !== undefined) data.goalId = goalId;
   if (contactId !== undefined) data.contactId = contactId;
+  if (reportIds !== undefined) {
+    // Replace the full set of connected reports
+    data.reports = {
+      set: reportIds.map(id => ({ id })),
+    };
+  }
 
-  await prisma.conversation.update({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma.conversation as any).update({
     where: {
       id: conversationId,
       userId: session.user.id,
@@ -244,6 +265,6 @@ export async function updateConversationContext(
     data,
   });
 
-  revalidatePath("/chat");
+  revalidatePath('/chat');
   return { success: true };
 }

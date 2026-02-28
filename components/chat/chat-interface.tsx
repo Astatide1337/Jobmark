@@ -20,6 +20,7 @@ import {
   Brain,
   TrendingUp,
   ArrowRight,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createConversation, type MessageData, type ConversationMode } from '@/app/actions/chat';
@@ -64,13 +65,14 @@ function getModePlaceholder(mode: ConversationMode): string {
 }
 
 interface ChatInterfaceProps {
-  conversationId?: string; // Made optional for landing page
+  conversationId?: string;
   mode: ConversationMode;
   userName?: string | null;
   initialMessages: MessageData[];
   projectId: string | null;
   goalId: string | null;
   contactId: string | null;
+  reportIds?: string[];
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
   contacts: Array<{
@@ -79,12 +81,14 @@ interface ChatInterfaceProps {
     relationship: string | null;
     interactionsCount: number;
   }>;
+  reports?: Array<{ id: string; title: string; createdAt: Date }>;
   isContextPending?: boolean;
   showPrompts?: boolean;
   onContextChange?: (
     projectId?: string | null,
     goalId?: string | null,
-    contactId?: string | null
+    contactId?: string | null,
+    reportIds?: string[]
   ) => void;
 }
 
@@ -96,9 +100,11 @@ export function ChatInterface({
   projectId,
   goalId,
   contactId,
+  reportIds: initialReportIds = [],
   projects,
   goals,
   contacts,
+  reports = [],
   isContextPending = false,
   showPrompts = false,
   onContextChange,
@@ -112,6 +118,7 @@ export function ChatInterface({
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>(
     contactId ? [contactId] : []
   );
+  const [selectedReportIds, setSelectedReportIds] = useState<string[]>(initialReportIds);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
@@ -152,6 +159,7 @@ export function ChatInterface({
     setSelectedProjectIds(projectId ? [projectId] : []);
     setSelectedGoalIds(goalId ? [goalId] : []);
     setSelectedContactIds(contactId ? [contactId] : []);
+    setSelectedReportIds(initialReportIds);
     setStreamingContent('');
     setIsStreaming(false);
     setInput('');
@@ -165,6 +173,8 @@ export function ChatInterface({
     projectId,
     goalId,
     contactId,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    initialReportIds.join(','),
   ]);
 
   useEffect(() => {
@@ -521,15 +531,18 @@ export function ChatInterface({
                   projects={projects}
                   goals={goals}
                   contacts={contacts}
+                  reports={reports}
                   selectedProjectIds={selectedProjectIds}
                   selectedGoalIds={selectedGoalIds}
                   selectedContactIds={selectedContactIds}
+                  selectedReportIds={selectedReportIds}
                   onProjectSelect={ids => {
                     setSelectedProjectIds(ids);
                     onContextChange?.(
                       ids[0] || null,
                       selectedGoalIds[0] || null,
-                      selectedContactIds[0] || null
+                      selectedContactIds[0] || null,
+                      selectedReportIds
                     );
                   }}
                   onGoalSelect={ids => {
@@ -537,7 +550,8 @@ export function ChatInterface({
                     onContextChange?.(
                       selectedProjectIds[0] || null,
                       ids[0] || null,
-                      selectedContactIds[0] || null
+                      selectedContactIds[0] || null,
+                      selectedReportIds
                     );
                   }}
                   onContactSelect={ids => {
@@ -545,31 +559,57 @@ export function ChatInterface({
                     onContextChange?.(
                       selectedProjectIds[0] || null,
                       selectedGoalIds[0] || null,
-                      ids[0] || null
+                      ids[0] || null,
+                      selectedReportIds
+                    );
+                  }}
+                  onReportSelect={ids => {
+                    setSelectedReportIds(ids);
+                    onContextChange?.(
+                      selectedProjectIds[0] || null,
+                      selectedGoalIds[0] || null,
+                      selectedContactIds[0] || null,
+                      ids
                     );
                   }}
                   onProjectRemove={id => {
-                    setSelectedProjectIds(selectedProjectIds.filter(p => p !== id));
+                    const next = selectedProjectIds.filter(p => p !== id);
+                    setSelectedProjectIds(next);
                     onContextChange?.(
-                      null,
+                      next[0] || null,
                       selectedGoalIds[0] || null,
-                      selectedContactIds[0] || null
+                      selectedContactIds[0] || null,
+                      selectedReportIds
                     );
                   }}
                   onGoalRemove={id => {
-                    setSelectedGoalIds(selectedGoalIds.filter(g => g !== id));
+                    const next = selectedGoalIds.filter(g => g !== id);
+                    setSelectedGoalIds(next);
                     onContextChange?.(
                       selectedProjectIds[0] || null,
-                      null,
-                      selectedContactIds[0] || null
+                      next[0] || null,
+                      selectedContactIds[0] || null,
+                      selectedReportIds
                     );
                   }}
                   onContactRemove={id => {
-                    setSelectedContactIds(selectedContactIds.filter(c => c !== id));
+                    const next = selectedContactIds.filter(c => c !== id);
+                    setSelectedContactIds(next);
                     onContextChange?.(
                       selectedProjectIds[0] || null,
                       selectedGoalIds[0] || null,
-                      null
+                      next[0] || null,
+                      selectedReportIds
+                    );
+                  }}
+                  onReportRemove={id => {
+                    const next = selectedReportIds.filter(r => r !== id);
+                    setSelectedReportIds(next);
+                    onContextChange?.(
+                      selectedProjectIds[0] || null,
+                      selectedGoalIds[0] || null,
+                      selectedContactIds[0] || null,
+                      next
                     );
                   }}
                   onOpenContextModal={() => setIsContextModalOpen(true)}
@@ -619,7 +659,7 @@ export function ChatInterface({
         open={isContextModalOpen}
         onOpenChange={setIsContextModalOpen}
         title="Add Context"
-        description="Select a project, goal, or contact to focus your conversation."
+        description="Select a project, goal, contact, or report to focus your conversation."
         className="lg:left-[calc(50%+8rem)]"
       >
         <CommandInput placeholder="Search context..." />
@@ -630,6 +670,7 @@ export function ChatInterface({
             {projects.map(project => (
               <CommandItem
                 key={project.id}
+                value={`project-${project.id}`}
                 onSelect={() => {
                   const newIds = selectedProjectIds.includes(project.id)
                     ? selectedProjectIds.filter(id => id !== project.id)
@@ -638,7 +679,8 @@ export function ChatInterface({
                   onContextChange?.(
                     newIds[0] || null,
                     selectedGoalIds[0] || null,
-                    selectedContactIds[0] || null
+                    selectedContactIds[0] || null,
+                    selectedReportIds
                   );
                   setIsContextModalOpen(false);
                 }}
@@ -658,6 +700,7 @@ export function ChatInterface({
             {goals.map(goal => (
               <CommandItem
                 key={goal.id}
+                value={`goal-${goal.id}`}
                 onSelect={() => {
                   const newIds = selectedGoalIds.includes(goal.id)
                     ? selectedGoalIds.filter(id => id !== goal.id)
@@ -666,7 +709,8 @@ export function ChatInterface({
                   onContextChange?.(
                     selectedProjectIds[0] || null,
                     newIds[0] || null,
-                    selectedContactIds[0] || null
+                    selectedContactIds[0] || null,
+                    selectedReportIds
                   );
                   setIsContextModalOpen(false);
                 }}
@@ -685,6 +729,7 @@ export function ChatInterface({
             {contacts.map(contact => (
               <CommandItem
                 key={contact.id}
+                value={`contact-${contact.id}`}
                 onSelect={() => {
                   const newIds = selectedContactIds.includes(contact.id)
                     ? selectedContactIds.filter(id => id !== contact.id)
@@ -693,7 +738,8 @@ export function ChatInterface({
                   onContextChange?.(
                     selectedProjectIds[0] || null,
                     selectedGoalIds[0] || null,
-                    newIds[0] || null
+                    newIds[0] || null,
+                    selectedReportIds
                   );
                   setIsContextModalOpen(false);
                 }}
@@ -709,6 +755,40 @@ export function ChatInterface({
                   )}
                 </div>
                 {selectedContactIds.includes(contact.id) && (
+                  <span className="text-primary ml-auto text-xs font-medium">Selected</span>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+
+          <CommandGroup heading="Reports">
+            {reports.map(report => (
+              <CommandItem
+                key={report.id}
+                value={`report-${report.id}`}
+                onSelect={() => {
+                  const newIds = selectedReportIds.includes(report.id)
+                    ? selectedReportIds.filter(id => id !== report.id)
+                    : [...selectedReportIds, report.id];
+                  setSelectedReportIds(newIds);
+                  onContextChange?.(
+                    selectedProjectIds[0] || null,
+                    selectedGoalIds[0] || null,
+                    selectedContactIds[0] || null,
+                    newIds
+                  );
+                  setIsContextModalOpen(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <FileText className="text-muted-foreground h-4 w-4" />
+                <div className="flex flex-col">
+                  <span>{report.title}</span>
+                  <span className="text-muted-foreground text-[10px]">
+                    {new Date(report.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                {selectedReportIds.includes(report.id) && (
                   <span className="text-primary ml-auto text-xs font-medium">Selected</span>
                 )}
               </CommandItem>

@@ -1,26 +1,27 @@
-import OpenAI from "openai";
-import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { formatDate, getChannelLabel } from "@/lib/network";
+import OpenAI from 'openai';
+import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { formatDate, getChannelLabel } from '@/lib/network';
 import {
   buildProjectContext,
   buildGoalContext,
   buildContactContext,
   buildUserSummary,
   buildInterviewContext,
-} from "@/app/actions/chat-context";
-import { buildSystemPrompt } from "@/lib/chat/system-prompts";
+  buildReportsContext,
+} from '@/app/actions/chat-context';
+import { buildSystemPrompt } from '@/lib/chat/system-prompts';
 import {
   cleanupStaleChatStreams,
   registerChatStream,
   unregisterChatStream,
-} from "@/lib/chat/stream-registry";
-import type { ConversationMode } from "@/app/actions/chat";
+} from '@/lib/chat/stream-registry';
+import type { ConversationMode } from '@/app/actions/chat';
 
 const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
@@ -31,22 +32,22 @@ type StreamBody = {
 };
 
 type StreamEvent =
-  | { type: "delta"; content: string }
-  | { type: "done"; cancelled: boolean }
-  | { type: "error"; message: string };
+  | { type: 'delta'; content: string }
+  | { type: 'done'; cancelled: boolean }
+  | { type: 'error'; message: string };
 
 function toEventLine(event: StreamEvent): Uint8Array {
   return new TextEncoder().encode(`${JSON.stringify(event)}\n`);
 }
 
 function isAbortError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== 'object') return false;
 
   const maybeError = error as { name?: string; message?: string };
-  if (maybeError.name === "AbortError") return true;
+  if (maybeError.name === 'AbortError') return true;
 
   const message = maybeError.message?.toLowerCase();
-  return Boolean(message && message.includes("abort"));
+  return Boolean(message && message.includes('abort'));
 }
 
 async function buildContextString(conversation: {
@@ -54,16 +55,17 @@ async function buildContextString(conversation: {
   projectId: string | null;
   goalId: string | null;
   contactId: string | null;
+  reportIds: string[];
 }): Promise<string> {
-  let contextString = "";
+  let contextString = '';
 
   const userSummary = await buildUserSummary();
   if (userSummary) {
-    contextString += `\n\nUser Profile:\n- Name: ${userSummary.name || "User"}\n- Total logged activities: ${userSummary.totalActivities}\n- Active projects: ${userSummary.totalProjects}\n- Current streak: ${userSummary.currentStreak} days\n- Goals set: ${userSummary.goalsCount}`;
+    contextString += `\n\nUser Profile:\n- Name: ${userSummary.name || 'User'}\n- Total logged activities: ${userSummary.totalActivities}\n- Active projects: ${userSummary.totalProjects}\n- Current streak: ${userSummary.currentStreak} days\n- Goals set: ${userSummary.goalsCount}`;
   }
 
   if (conversation.projectId) {
-    if (conversation.mode === "interview") {
+    if (conversation.mode === 'interview') {
       const interviewContext = await buildInterviewContext(conversation.projectId);
       if (interviewContext) {
         contextString += `\n\nProject for Interview: "${interviewContext.projectName}"`;
@@ -84,8 +86,8 @@ async function buildContextString(conversation: {
         if (projectContext.recentActivities.length > 0) {
           contextString += `\nRecent work:\n${projectContext.recentActivities
             .slice(0, 5)
-            .map((activity) => `- ${activity.content}`)
-            .join("\n")}`;
+            .map(activity => `- ${activity.content}`)
+            .join('\n')}`;
         }
       }
     }
@@ -119,7 +121,7 @@ async function buildContextString(conversation: {
       }
 
       if (contactContext.recentInteractions.length > 0) {
-        contextString += "\n\nRecent Interactions:";
+        contextString += '\n\nRecent Interactions:';
         for (const interaction of contactContext.recentInteractions) {
           const dateStr = formatDate(interaction.occurredAt);
           const channelStr = getChannelLabel(interaction.channel);
@@ -135,10 +137,20 @@ async function buildContextString(conversation: {
     }
   }
 
-  if (conversation.mode === "goal-coach" && userSummary?.recentGoals.length) {
+  if (conversation.reportIds.length > 0) {
+    const reports = await buildReportsContext(conversation.reportIds);
+    for (const report of reports) {
+      contextString += `\n\nReferenced Report: "${report.title}" (${report.createdAt.toLocaleDateString()})\n${report.content.slice(0, 3000)}`;
+    }
+  }
+
+  if (conversation.mode === 'goal-coach' && userSummary?.recentGoals.length) {
     contextString += `\n\nExisting Goals:\n${userSummary.recentGoals
-      .map((goal) => `- ${goal.title}${goal.deadline ? ` (due ${goal.deadline.toLocaleDateString()})` : ""}`)
-      .join("\n")}`;
+      .map(
+        goal =>
+          `- ${goal.title}${goal.deadline ? ` (due ${goal.deadline.toLocaleDateString()})` : ''}`
+      )
+      .join('\n')}`;
   }
 
   return contextString;
@@ -147,14 +159,14 @@ async function buildContextString(conversation: {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body: StreamBody;
   try {
     body = (await request.json()) as StreamBody;
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
   const conversationId = body.conversationId?.trim();
@@ -163,31 +175,33 @@ export async function POST(request: Request) {
 
   if (!conversationId || !userMessage || !requestId) {
     return NextResponse.json(
-      { error: "conversationId, userMessage, and requestId are required" },
+      { error: 'conversationId, userMessage, and requestId are required' },
       { status: 400 }
     );
   }
 
-  const conversation = await prisma.conversation.findUnique({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const conversation = await (prisma.conversation as any).findUnique({
     where: {
       id: conversationId,
       userId: session.user.id,
     },
     include: {
       messages: {
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: 'asc' },
       },
+      reports: { select: { id: true } },
     },
   });
 
   if (!conversation) {
-    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
   }
 
   await prisma.message.create({
     data: {
       conversationId,
-      role: "user",
+      role: 'user',
       content: userMessage,
     },
   });
@@ -197,17 +211,18 @@ export async function POST(request: Request) {
     projectId: conversation.projectId,
     goalId: conversation.goalId,
     contactId: conversation.contactId,
+    reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
   });
 
-  const chatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+  const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
-      role: "system",
+      role: 'system',
       content: buildSystemPrompt(conversation.mode as ConversationMode, contextString),
     },
   ];
 
   for (const message of conversation.messages.slice(-20)) {
-    if (message.role === "user" || message.role === "assistant") {
+    if (message.role === 'user' || message.role === 'assistant') {
       chatMessages.push({
         role: message.role,
         content: message.content,
@@ -216,19 +231,19 @@ export async function POST(request: Request) {
   }
 
   chatMessages.push({
-    role: "user",
+    role: 'user',
     content: `---\n${userMessage}\n---`,
   });
 
   const upstreamController = new AbortController();
   const handleClientAbort = () => {
-    upstreamController.abort("client-disconnected");
+    upstreamController.abort('client-disconnected');
   };
 
   if (request.signal.aborted) {
     handleClientAbort();
   } else {
-    request.signal.addEventListener("abort", handleClientAbort, { once: true });
+    request.signal.addEventListener('abort', handleClientAbort, { once: true });
   }
 
   cleanupStaleChatStreams();
@@ -242,13 +257,13 @@ export async function POST(request: Request) {
 
   const responseStream = new ReadableStream({
     async start(controller) {
-      let fullResponse = "";
+      let fullResponse = '';
       let wasCancelled = false;
 
       try {
         const completion = await openai.chat.completions.create(
           {
-            model: "z-ai/glm-4.5-air:free",
+            model: 'z-ai/glm-4.5-air:free',
             messages: chatMessages,
             stream: true,
           },
@@ -263,26 +278,26 @@ export async function POST(request: Request) {
             break;
           }
 
-          const content = chunk.choices[0]?.delta?.content || "";
+          const content = chunk.choices[0]?.delta?.content || '';
           if (!content) continue;
 
           fullResponse += content;
-          controller.enqueue(toEventLine({ type: "delta", content }));
+          controller.enqueue(toEventLine({ type: 'delta', content }));
         }
       } catch (error) {
         if (isAbortError(error) || upstreamController.signal.aborted) {
           wasCancelled = true;
         } else {
-          console.error("Chat stream route error:", error);
+          console.error('Chat stream route error:', error);
           controller.enqueue(
             toEventLine({
-              type: "error",
-              message: "Sorry, I encountered an error. Please try again.",
+              type: 'error',
+              message: 'Sorry, I encountered an error. Please try again.',
             })
           );
         }
       } finally {
-        request.signal.removeEventListener("abort", handleClientAbort);
+        request.signal.removeEventListener('abort', handleClientAbort);
         unregisterChatStream(requestId);
 
         try {
@@ -290,7 +305,7 @@ export async function POST(request: Request) {
             await prisma.message.create({
               data: {
                 conversationId,
-                role: "assistant",
+                role: 'assistant',
                 content: fullResponse,
               },
             });
@@ -302,21 +317,21 @@ export async function POST(request: Request) {
 
           if (
             conversation.messages.length === 0 &&
-            (conversation.title === "New Chat" ||
-              conversation.title === "Goal Setting Session" ||
-              conversation.title === "Mock Interview")
+            (conversation.title === 'New Chat' ||
+              conversation.title === 'Goal Setting Session' ||
+              conversation.title === 'Mock Interview')
           ) {
             try {
               const titleCompletion = await openai.chat.completions.create(
                 {
-                  model: "z-ai/glm-4.5-air:free",
+                  model: 'z-ai/glm-4.5-air:free',
                   messages: [
                     {
-                      role: "system",
+                      role: 'system',
                       content:
-                        "Generate a very short title (3-6 words) for this conversation. Return ONLY the title, nothing else.",
+                        'Generate a very short title (3-6 words) for this conversation. Return ONLY the title, nothing else.',
                     },
-                    { role: "user", content: userMessage },
+                    { role: 'user', content: userMessage },
                   ],
                 },
                 {
@@ -330,7 +345,7 @@ export async function POST(request: Request) {
               }
             } catch (titleError) {
               if (!isAbortError(titleError)) {
-                console.error("Failed to generate chat title:", titleError);
+                console.error('Failed to generate chat title:', titleError);
               }
             }
           }
@@ -340,28 +355,28 @@ export async function POST(request: Request) {
             data: updateData,
           });
 
-          revalidatePath("/chat");
+          revalidatePath('/chat');
         } catch (finalizeError) {
-          console.error("Failed to finalize chat stream:", finalizeError);
+          console.error('Failed to finalize chat stream:', finalizeError);
         }
 
-        controller.enqueue(toEventLine({ type: "done", cancelled: wasCancelled }));
+        controller.enqueue(toEventLine({ type: 'done', cancelled: wasCancelled }));
         controller.close();
       }
     },
 
     cancel() {
-      upstreamController.abort("stream-cancelled-by-client");
-      request.signal.removeEventListener("abort", handleClientAbort);
+      upstreamController.abort('stream-cancelled-by-client');
+      request.signal.removeEventListener('abort', handleClientAbort);
       unregisterChatStream(requestId);
     },
   });
 
   return new Response(responseStream, {
     headers: {
-      "Content-Type": "application/x-ndjson; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
     },
   });
 }

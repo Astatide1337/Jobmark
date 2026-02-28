@@ -1,28 +1,30 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { getConversations } from "@/app/actions/chat";
-import { getProjects } from "@/app/actions/projects";
-import { getGoals } from "@/app/actions/goals";
-import { getContacts } from "@/app/actions/network";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { ChatInterface } from "@/components/chat/chat-interface";
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getConversations } from '@/app/actions/chat';
+import { getProjects } from '@/app/actions/projects';
+import { getGoals } from '@/app/actions/goals';
+import { getContacts } from '@/app/actions/network';
+import { getReports } from '@/app/actions/reports';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { ChatInterface } from '@/components/chat/chat-interface';
 
 export default async function ChatPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/");
+    redirect('/');
   }
 
-  const [conversations, projects, goals, contacts] = await Promise.all([
+  const [conversations, projects, goals, contacts, reports] = await Promise.all([
     getConversations(),
     getProjects(),
     getGoals(),
     getContacts(),
+    getReports(),
   ]);
 
-  const activeProjects = projects.filter((p) => !p.archived);
+  const activeProjects = projects.filter(p => !p.archived);
 
   return (
     <DashboardShell
@@ -36,14 +38,14 @@ export default async function ChatPage() {
       className="p-0"
       chatSidebarData={{
         conversations,
-        projects: activeProjects.map((p) => ({
+        projects: activeProjects.map(p => ({
           id: p.id,
           name: p.name,
           color: p.color,
         })),
       }}
     >
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         <ChatInterface
           mode="general"
           userName={session.user.name}
@@ -51,20 +53,26 @@ export default async function ChatPage() {
           projectId={null}
           goalId={null}
           contactId={null}
-          projects={activeProjects.map((p) => ({
+          reportIds={[]}
+          projects={activeProjects.map(p => ({
             id: p.id,
             name: p.name,
             color: p.color,
           }))}
-          goals={goals.map((g) => ({
+          goals={goals.map(g => ({
             id: g.id,
             title: g.title,
           }))}
-          contacts={contacts.map((c) => ({
+          contacts={contacts.map(c => ({
             id: c.id,
             fullName: c.fullName,
             relationship: c.relationship ?? null,
             interactionsCount: c._count?.interactions ?? 0,
+          }))}
+          reports={reports.map(r => ({
+            id: r.id,
+            title: r.title,
+            createdAt: r.createdAt,
           }))}
           showPrompts
         />

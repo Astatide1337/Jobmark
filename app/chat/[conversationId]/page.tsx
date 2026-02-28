@@ -1,13 +1,13 @@
-import { auth } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
-import { getConversation, getConversations } from "@/app/actions/chat";
-import { getProjects } from "@/app/actions/projects";
-import { getGoals } from "@/app/actions/goals";
-import { getContacts } from "@/app/actions/network";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { ConversationClient } from "./conversation-client";
-import { useUI } from "@/components/providers/ui-provider";
+import { auth } from '@/lib/auth';
+import { redirect, notFound } from 'next/navigation';
+import { getConversation, getConversations } from '@/app/actions/chat';
+import { getProjects } from '@/app/actions/projects';
+import { getGoals } from '@/app/actions/goals';
+import { getContacts } from '@/app/actions/network';
+import { getReports } from '@/app/actions/reports';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { ConversationClient } from './conversation-client';
 
 interface ConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -17,29 +17,30 @@ export default async function ConversationPage({ params }: ConversationPageProps
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/");
+    redirect('/');
   }
 
   const { conversationId } = await params;
 
-  const [conversation, conversations, projects, goals, contacts] = await Promise.all([
+  const [conversation, conversations, projects, goals, contacts, reports] = await Promise.all([
     getConversation(conversationId),
     getConversations(),
     getProjects(),
     getGoals(),
     getContacts(),
+    getReports(),
   ]);
 
   if (!conversation) {
     notFound();
   }
 
-  const activeProjects = projects.filter((p) => !p.archived);
+  const activeProjects = projects.filter(p => !p.archived);
 
   const chatSidebarData = {
     conversations,
     activeConversationId: conversation.id,
-    projects: activeProjects.map((p) => ({
+    projects: activeProjects.map(p => ({
       id: p.id,
       name: p.name,
       color: p.color,
@@ -49,27 +50,38 @@ export default async function ConversationPage({ params }: ConversationPageProps
   return (
     <DashboardShell
       chatSidebarData={chatSidebarData}
-      header={<DashboardHeader userName={session.user.name} userImage={session.user.image} title={conversation.title} />}
+      header={
+        <DashboardHeader
+          userName={session.user.name}
+          userImage={session.user.image}
+          title={conversation.title}
+        />
+      }
       className="p-0"
     >
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         <ConversationClient
           conversation={conversation}
           userName={session.user.name}
-          projects={activeProjects.map((p) => ({
+          projects={activeProjects.map(p => ({
             id: p.id,
             name: p.name,
             color: p.color,
           }))}
-          goals={goals.map((g) => ({
+          goals={goals.map(g => ({
             id: g.id,
             title: g.title,
           }))}
-          contacts={contacts.map((c) => ({
+          contacts={contacts.map(c => ({
             id: c.id,
             fullName: c.fullName,
             relationship: c.relationship ?? null,
             interactionsCount: c._count?.interactions ?? 0,
+          }))}
+          reports={reports.map(r => ({
+            id: r.id,
+            title: r.title,
+            createdAt: r.createdAt,
           }))}
         />
       </div>

@@ -129,7 +129,8 @@ model Report {
   metadata  Json?
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
 
   @@index([userId])
 }
@@ -231,6 +232,7 @@ model Conversation {
   goal      Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
   contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
   messages  Message[]
+  reports   Report[]
 
   @@index([userId, updatedAt(sort: Desc)])
   @@index([userId, contactId])

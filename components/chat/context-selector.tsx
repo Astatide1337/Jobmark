@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Target, Users, X, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Target, Users, X, Plus, FileText } from 'lucide-react';
 
 type ContactOption = {
   id: string;
@@ -17,15 +17,19 @@ interface ContextSelectorProps {
   projects: Array<{ id: string; name: string; color: string }>;
   goals: Array<{ id: string; title: string }>;
   contacts?: ContactOption[];
+  reports?: Array<{ id: string; title: string; createdAt: Date }>;
   selectedProjectIds: string[];
   selectedGoalIds: string[];
   selectedContactIds: string[];
+  selectedReportIds: string[];
   onProjectSelect: (projectIds: string[]) => void;
   onProjectRemove: (projectId: string) => void;
   onGoalSelect: (goalIds: string[]) => void;
   onGoalRemove: (goalId: string) => void;
   onContactSelect: (contactIds: string[]) => void;
   onContactRemove: (contactId: string) => void;
+  onReportSelect: (reportIds: string[]) => void;
+  onReportRemove: (reportId: string) => void;
   onOpenContextModal: () => void;
 }
 
@@ -33,15 +37,19 @@ export function ContextSelector({
   projects,
   goals,
   contacts = [],
+  reports = [],
   selectedProjectIds,
   selectedGoalIds,
   selectedContactIds,
+  selectedReportIds,
   onProjectSelect,
   onProjectRemove,
   onGoalSelect,
   onGoalRemove,
   onContactSelect,
   onContactRemove,
+  onReportSelect,
+  onReportRemove,
   onOpenContextModal,
 }: ContextSelectorProps) {
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -55,11 +63,16 @@ export function ContextSelector({
   });
   const isDraggingRef = useRef(false);
 
-  const selectedProjects = projects.filter((p) => selectedProjectIds.includes(p.id));
-  const selectedGoals = goals.filter((g) => selectedGoalIds.includes(g.id));
-  const selectedContacts = contacts.filter((c) => selectedContactIds.includes(c.id));
+  const selectedProjects = projects.filter(p => selectedProjectIds.includes(p.id));
+  const selectedGoals = goals.filter(g => selectedGoalIds.includes(g.id));
+  const selectedContacts = contacts.filter(c => selectedContactIds.includes(c.id));
+  const selectedReports = reports.filter(r => selectedReportIds.includes(r.id));
 
-  const selectedCount = selectedProjects.length + selectedGoals.length + selectedContacts.length;
+  const selectedCount =
+    selectedProjects.length +
+    selectedGoals.length +
+    selectedContacts.length +
+    selectedReports.length;
 
   const updateFades = () => {
     const el = scrollRef.current;
@@ -88,16 +101,25 @@ export function ContextSelector({
 
     const resizeObserver = new ResizeObserver(recalc);
     resizeObserver.observe(el);
-    window.addEventListener("resize", recalc);
+    window.addEventListener('resize', recalc);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", recalc);
+      window.removeEventListener('resize', recalc);
     };
-  }, [selectedProjectIds, selectedGoalIds, selectedContactIds, selectedProjects.length, selectedGoals.length, selectedContacts.length]);
+  }, [
+    selectedProjectIds,
+    selectedGoalIds,
+    selectedContactIds,
+    selectedReportIds,
+    selectedProjects.length,
+    selectedGoals.length,
+    selectedContacts.length,
+    selectedReports.length,
+  ]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType !== "mouse") return;
+    if (event.pointerType !== 'mouse') return;
 
     const el = scrollRef.current;
     if (!el) return;
@@ -118,7 +140,7 @@ export function ContextSelector({
     if (!el) return;
 
     const deltaX = event.clientX - dragRef.current.startX;
-    
+
     if (!isDraggingRef.current && Math.abs(deltaX) > 5) {
       isDraggingRef.current = true;
       setIsDragging(true);
@@ -135,14 +157,14 @@ export function ContextSelector({
     if (el && el.hasPointerCapture(event.pointerId)) {
       el.releasePointerCapture(event.pointerId);
     }
-    
+
     dragRef.current.active = false;
-    
+
     requestAnimationFrame(() => {
       setIsDragging(false);
       isDraggingRef.current = false;
     });
-    
+
     updateFades();
   };
 
@@ -156,112 +178,147 @@ export function ContextSelector({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         className={cn(
-          "flex items-center gap-2 overflow-x-auto whitespace-nowrap pr-1 select-none scrollbar-none",
-          isDragging ? "cursor-grabbing" : "cursor-grab"
+          'scrollbar-none flex items-center gap-2 overflow-x-auto pr-1 whitespace-nowrap select-none',
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
         )}
       >
         <AnimatePresence initial={false}>
-        {selectedProjects.map((project) => (
-          <motion.div
-            key={`project-${project.id}`}
-            initial={{ opacity: 0, scale: 0.9, y: 6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -4 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="shrink-0"
-          >
-            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:bg-muted/50 hover:border-primary/20 group/chip">
-              <span
-                className="h-2 w-2 rounded-full ring-1 ring-white/10"
-                style={{ backgroundColor: project.color }}
-              />
-              <span className="max-w-[140px] truncate text-foreground group-hover/chip:text-primary transition-colors">{project.name}</span>
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onProjectRemove(project.id);
-                }}
-                className="ml-1 text-muted-foreground transition-colors hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+          {selectedProjects.map(project => (
+            <motion.div
+              key={`project-${project.id}`}
+              initial={{ opacity: 0, scale: 0.9, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -4 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="shrink-0"
+            >
+              <div className="border-border/50 bg-card hover:bg-muted/50 hover:border-primary/20 group/chip flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition-all">
+                <span
+                  className="h-2 w-2 rounded-full ring-1 ring-white/10"
+                  style={{ backgroundColor: project.color }}
+                />
+                <span className="text-foreground group-hover/chip:text-primary max-w-[140px] truncate transition-colors">
+                  {project.name}
+                </span>
+                <button
+                  type="button"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onProjectRemove(project.id);
+                  }}
+                  className="text-muted-foreground hover:text-destructive ml-1 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
 
-        {selectedGoals.map((goal) => (
-          <motion.div
-            key={`goal-${goal.id}`}
-            initial={{ opacity: 0, scale: 0.9, y: 6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -4 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="shrink-0"
-          >
-            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:bg-muted/50 hover:border-primary/20 group/chip">
-              <Target className="h-3 w-3 text-primary" />
-              <span className="max-w-[140px] truncate text-foreground group-hover/chip:text-primary transition-colors">{goal.title}</span>
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGoalRemove(goal.id);
-                }}
-                className="ml-1 text-muted-foreground transition-colors hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+          {selectedGoals.map(goal => (
+            <motion.div
+              key={`goal-${goal.id}`}
+              initial={{ opacity: 0, scale: 0.9, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -4 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="shrink-0"
+            >
+              <div className="border-border/50 bg-card hover:bg-muted/50 hover:border-primary/20 group/chip flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition-all">
+                <Target className="text-primary h-3 w-3" />
+                <span className="text-foreground group-hover/chip:text-primary max-w-[140px] truncate transition-colors">
+                  {goal.title}
+                </span>
+                <button
+                  type="button"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onGoalRemove(goal.id);
+                  }}
+                  className="text-muted-foreground hover:text-destructive ml-1 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
 
-        {selectedContacts.map((contact) => (
-          <motion.div
-            key={`contact-${contact.id}`}
-            initial={{ opacity: 0, scale: 0.9, y: 6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -4 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="shrink-0"
-          >
-            <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-xs font-medium shadow-sm transition-all hover:bg-muted/50 hover:border-primary/20 group/chip">
-              <Users className="h-3 w-3 text-primary" />
-              <span className="max-w-[150px] truncate text-foreground group-hover/chip:text-primary transition-colors">{contact.fullName}</span>
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onContactRemove(contact.id);
-                }}
-                className="ml-1 text-muted-foreground transition-colors hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+          {selectedContacts.map(contact => (
+            <motion.div
+              key={`contact-${contact.id}`}
+              initial={{ opacity: 0, scale: 0.9, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -4 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="shrink-0"
+            >
+              <div className="border-border/50 bg-card hover:bg-muted/50 hover:border-primary/20 group/chip flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition-all">
+                <Users className="text-primary h-3 w-3" />
+                <span className="text-foreground group-hover/chip:text-primary max-w-[150px] truncate transition-colors">
+                  {contact.fullName}
+                </span>
+                <button
+                  type="button"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onContactRemove(contact.id);
+                  }}
+                  className="text-muted-foreground hover:text-destructive ml-1 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+
+          {selectedReports.map(report => (
+            <motion.div
+              key={`report-${report.id}`}
+              initial={{ opacity: 0, scale: 0.9, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -4 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="shrink-0"
+            >
+              <div className="border-border/50 bg-card hover:bg-muted/50 hover:border-primary/20 group/chip flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition-all">
+                <FileText className="text-primary h-3 w-3" />
+                <span className="text-foreground group-hover/chip:text-primary max-w-[150px] truncate transition-colors">
+                  {report.title}
+                </span>
+                <button
+                  type="button"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onReportRemove(report.id);
+                  }}
+                  className="text-muted-foreground hover:text-destructive ml-1 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
         </AnimatePresence>
 
         <Button
           variant="ghost"
           size="sm"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => {
             e.preventDefault();
             e.stopPropagation();
             if (isDraggingRef.current) return;
             onOpenContextModal();
           }}
-          className="h-7 shrink-0 gap-1.5 rounded-full border border-dashed border-border/60 px-2.5 text-xs text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+          className="border-border/60 text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary h-7 shrink-0 gap-1.5 rounded-full border border-dashed px-2.5 text-xs"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Context</span>
           {selectedCount > 0 && (
-            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+            <span className="bg-primary/15 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
               {selectedCount}
             </span>
           )}
@@ -269,10 +326,10 @@ export function ContextSelector({
       </div>
 
       {showLeftFade && (
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card/95 to-transparent" />
+        <div className="from-card/95 pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r to-transparent" />
       )}
       {showRightFade && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card/95 to-transparent" />
+        <div className="from-card/95 pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l to-transparent" />
       )}
     </div>
   );
