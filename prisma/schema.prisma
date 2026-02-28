@@ -73,8 +73,9 @@ model User {
   goals         Goal[]
   settings      UserSettings?
   conversations Conversation[]
-  contacts      Contact[]
+  contacts        Contact[]
   interactionLogs InteractionLog[]
+  outreachDrafts  OutreachDraft[]
 }
 
 model Goal {
@@ -183,9 +184,10 @@ model Contact {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  interactions InteractionLog[]
-  conversations Conversation[]
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions   InteractionLog[]
+  conversations  Conversation[]
+  outreachDrafts OutreachDraft[]
 
   @@index([userId, fullName])
   @@index([userId, createdAt(sort: Desc)])
@@ -210,6 +212,21 @@ model InteractionLog {
 
   @@index([userId, contactId, occurredAt(sort: Desc)])
   @@index([userId, followUpDate])
+}
+
+model OutreachDraft {
+  id        String   @id @default(cuid())
+  userId    String
+  contactId String
+  title     String
+  content   String   @db.Text
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([userId, contactId, createdAt(sort: Desc)])
 }
 
 // Chat models for AI Career Coach

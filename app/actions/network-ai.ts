@@ -1,13 +1,22 @@
-"use server";
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { createStreamableValue } from "@ai-sdk/rsc";
-import OpenAI from "openai";
-import { formatDate } from "@/lib/network";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { createStreamableValue } from '@ai-sdk/rsc';
+import OpenAI from 'openai';
+import { formatDate } from '@/lib/network';
+import { format } from 'date-fns';
+
+export type OutreachDraftConfig = {
+  contactId: string;
+  objective: string;
+  tone: string;
+  channel: string;
+  extraContext?: string;
+};
 
 const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
@@ -39,7 +48,7 @@ export async function generateOutreachDraft({
 }) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
   // Fetch contact + recent interactions for context
@@ -47,20 +56,21 @@ export async function generateOutreachDraft({
     where: { id: contactId, userId: session.user.id },
     include: {
       interactions: {
-        orderBy: { occurredAt: "desc" },
+        orderBy: { occurredAt: 'desc' },
         take: 5,
       },
     },
   });
 
   if (!contact) {
-    throw new Error("Contact not found");
+    throw new Error('Contact not found');
   }
 
   // Build context block from real data
   let contactContext = `Contact Profile:\n- Name: ${contact.fullName}`;
   if (contact.relationship) contactContext += `\n- Relationship: ${contact.relationship}`;
-  if (contact.personalityTraits) contactContext += `\n- Personality traits: ${contact.personalityTraits}`;
+  if (contact.personalityTraits)
+    contactContext += `\n- Personality traits: ${contact.personalityTraits}`;
   if (contact.notes) contactContext += `\n- Notes: ${contact.notes}`;
   if (contact.email) contactContext += `\n- Email: ${contact.email}`;
 
@@ -78,31 +88,31 @@ export async function generateOutreachDraft({
 
 Objective: ${objective}
 Tone: ${tone}
-Channel: ${channel}${extraContext ? `\nAdditional context: ${extraContext}` : ""}
+Channel: ${channel}${extraContext ? `\nAdditional context: ${extraContext}` : ''}
 
 Generate the outreach draft now.`;
 
-  const stream = createStreamableValue("");
+  const stream = createStreamableValue('');
 
   (async () => {
     try {
       const completion = await openai.chat.completions.create({
-        model: "z-ai/glm-4.5-air:free",
+        model: 'z-ai/glm-4.5-air:free',
         messages: [
-          { role: "system", content: OUTREACH_SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
+          { role: 'system', content: OUTREACH_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
         ],
         stream: true,
       });
 
       for await (const chunk of completion) {
-        const content = chunk.choices[0]?.delta?.content || "";
+        const content = chunk.choices[0]?.delta?.content || '';
         if (content) {
           stream.update(content);
         }
       }
     } catch (err) {
-      console.error("Outreach draft stream error:", err);
+      console.error('Outreach draft stream error:', err);
       stream.error(err);
     } finally {
       stream.done();
@@ -112,9 +122,70 @@ Generate the outreach draft now.`;
   return { output: stream.value };
 }
 
-// ---------------------------------------------------------------------------
-// Non-streaming draft improvement
-// ---------------------------------------------------------------------------
+export async function saveOutreachDraftToHistory(
+  content: string,
+  config: OutreachDraftConfig
+): Promise<{ success: true }> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const contact = await prisma.contact.findUnique({
+    where: { id: config.contactId, userId: session.user.id },
+    select: { fullName: true },
+  });
+  if (!contact) throw new Error('Contact not found');
+
+  const title = `${contact.fullName} – ${format(new Date(), 'MMM d')}`;
+
+  await prisma.outreachDraft.create({
+    data: {
+      userId: session.user.id,
+      contactId: config.contactId,
+      title,
+      content,
+      metadata: JSON.parse(JSON.stringify(config)),
+    },
+  });
+
+  return { success: true };
+}
+
+export async function getOutreachDraftsByContact(contactId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  return prisma.outreachDraft.findMany({
+    where: { userId: session.user.id, contactId },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function deleteOutreachDraft(draftId: string): Promise<{ success: true }> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  await prisma.outreachDraft.delete({
+    where: { id: draftId, userId: session.user.id },
+  });
+
+  return { success: true };
+}
+
+export async function updateOutreachDraft(
+  draftId: string,
+  content: string,
+  title?: string
+): Promise<{ success: true }> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  await prisma.outreachDraft.update({
+    where: { id: draftId, userId: session.user.id },
+    data: { content, ...(title ? { title } : {}) },
+  });
+
+  return { success: true };
+}
 
 export async function improveOutreachDraft(
   selectedText: string,
@@ -122,20 +193,20 @@ export async function improveOutreachDraft(
 ): Promise<string> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new Error('Unauthorized');
   }
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "z-ai/glm-4.5-air:free",
+      model: 'z-ai/glm-4.5-air:free',
       messages: [
         {
-          role: "system",
+          role: 'system',
           content:
             "You are a writing assistant. Rewrite the provided text according to the user's instruction. Return ONLY the rewritten text, nothing else.",
         },
         {
-          role: "user",
+          role: 'user',
           content: `Original text:\n${selectedText}\n\nInstruction: ${instruction}`,
         },
       ],
@@ -143,7 +214,7 @@ export async function improveOutreachDraft(
 
     return completion.choices[0]?.message?.content?.trim() ?? selectedText;
   } catch (error) {
-    console.error("Failed to improve draft:", error);
-    throw new Error("Failed to improve draft. Please try again.");
+    console.error('Failed to improve draft:', error);
+    throw new Error('Failed to improve draft. Please try again.');
   }
 }

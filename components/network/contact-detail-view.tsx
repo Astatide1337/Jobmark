@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { readStreamableValue } from '@ai-sdk/rsc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -32,16 +32,14 @@ import {
   MessageSquare,
   ChevronDown,
   Sparkles,
-  Copy,
-  ExternalLink,
-  RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { deleteContact, deleteInteraction, createInteraction } from '@/app/actions/network';
 import { polishDictation } from '@/app/actions/dictation';
-import { generateOutreachDraft, improveOutreachDraft } from '@/app/actions/network-ai';
 import { toast } from 'sonner';
 import { ContactDialog } from '@/components/network/contact-dialog';
+import { OutreachWizard } from '@/app/network/[contactId]/outreach-wizard';
+import { OutreachDraftHistory } from '@/components/network/outreach-draft-history';
 import {
   getAgeFromBirthday,
   formatDate,
@@ -49,9 +47,6 @@ import {
   getRelativeDay,
   isDateOnlyOverdue,
   CHANNEL_OPTIONS,
-  OUTREACH_OBJECTIVES,
-  OUTREACH_TONES,
-  OUTREACH_CHANNELS,
 } from '@/lib/network';
 import { cn } from '@/lib/utils';
 
@@ -83,9 +78,19 @@ interface Contact {
 interface ContactDetailViewProps {
   contact: Contact;
   interactions: Interaction[];
+  initialDrafts: Array<{
+    id: string;
+    title: string;
+    content: string;
+    createdAt: Date;
+  }>;
 }
 
-export function ContactDetailView({ contact, interactions }: ContactDetailViewProps) {
+export function ContactDetailView({
+  contact,
+  interactions,
+  initialDrafts,
+}: ContactDetailViewProps) {
   const router = useRouter();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -159,15 +164,38 @@ export function ContactDetailView({ contact, interactions }: ContactDetailViewPr
           <ContactProfileCard contact={contact} />
         </div>
 
-        {/* Right Column: Interactions */}
-        <div className="space-y-6 lg:col-span-2">
-          <InteractionTimeline
-            interactions={interactions}
-            contactId={contact.id}
-            onInteractionAdded={() => router.refresh()}
-          />
+        {/* Right Column: Tabbed */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="interactions">
+            <TabsList className="mb-4 w-full">
+              <TabsTrigger value="interactions" className="flex-1">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Interactions
+              </TabsTrigger>
+              <TabsTrigger value="outreach" className="flex-1">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Outreach Drafts
+              </TabsTrigger>
+            </TabsList>
 
-          <OutreachDraftPanel contact={contact} interactions={interactions} />
+            <TabsContent value="interactions">
+              <InteractionTimeline
+                interactions={interactions}
+                contactId={contact.id}
+                onInteractionAdded={() => router.refresh()}
+              />
+            </TabsContent>
+
+            <TabsContent value="outreach" className="space-y-6">
+              <OutreachWizard contact={contact} />
+              <div className="space-y-3">
+                <h3 className="text-muted-foreground px-1 text-sm font-semibold tracking-widest uppercase">
+                  Saved Drafts
+                </h3>
+                <OutreachDraftHistory initialDrafts={initialDrafts} />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
@@ -875,261 +903,5 @@ function InteractionLogForm({
         </div>
       </form>
     </div>
-  );
-}
-
-function OutreachDraftPanel({ contact }: { contact: Contact; interactions: Interaction[] }) {
-  const [objective, setObjective] = useState<string>(OUTREACH_OBJECTIVES[0].value);
-  const [tone, setTone] = useState<string>(OUTREACH_TONES[0].value);
-  const [channel, setChannel] = useState<string>(OUTREACH_CHANNELS[0].value);
-  const [extraContext, setExtraContext] = useState('');
-  const [draft, setDraft] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isImproving, setIsImproving] = useState(false);
-  const [selectedText, setSelectedText] = useState('');
-  const [selectionRect, setSelectionRect] = useState<{ top: number; left: number } | null>(null);
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseUp = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || !outputRef.current) {
-      setSelectedText('');
-      setSelectionRect(null);
-      return;
-    }
-
-    const text = selection.toString().trim();
-    if (!text) {
-      setSelectedText('');
-      setSelectionRect(null);
-      return;
-    }
-
-    if (!outputRef.current.contains(selection.anchorNode)) return;
-
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    const containerRect = outputRef.current.getBoundingClientRect();
-
-    setSelectedText(text);
-    setSelectionRect({
-      top: rect.top - containerRect.top - 36,
-      left: rect.left - containerRect.left + rect.width / 2,
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (outputRef.current && !outputRef.current.contains(e.target as Node)) {
-        setSelectedText('');
-        setSelectionRect(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setDraft('');
-    try {
-      const { output } = await generateOutreachDraft({
-        contactId: contact.id,
-        objective,
-        tone,
-        channel,
-        extraContext: extraContext.trim() || undefined,
-      });
-
-      for await (const chunk of readStreamableValue(output)) {
-        if (chunk) setDraft(prev => prev + chunk);
-      }
-    } catch (err) {
-      console.error('Failed to generate draft:', err);
-      toast.error('Failed to generate draft. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(draft);
-      toast.success('Draft copied to clipboard');
-    } catch {
-      toast.error('Failed to copy to clipboard');
-    }
-  };
-
-  const handleOpenInEmail = () => {
-    let subject = `Reaching out to ${contact.fullName}`;
-    let body = draft;
-    const subjectMatch = draft.match(/^Subject:\s*(.+)$/m);
-    if (subjectMatch) {
-      subject = subjectMatch[1].trim();
-      body = draft.replace(/^Subject:\s*.+\n?/m, '').trim();
-    }
-
-    if (channel === 'email') {
-      const mailto = `mailto:${contact.email ?? ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(mailto, '_blank');
-    } else {
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email ?? '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.open(gmailUrl, '_blank');
-    }
-  };
-
-  const handleImproveSelection = async () => {
-    if (!selectedText) return;
-    setIsImproving(true);
-    try {
-      const improved = await improveOutreachDraft(
-        selectedText,
-        'Improve this text to be more effective and natural-sounding'
-      );
-      setDraft(prev => prev.replace(selectedText, improved));
-      setSelectedText('');
-      setSelectionRect(null);
-      toast.success('Selection improved');
-    } catch {
-      toast.error('Failed to improve selection');
-    } finally {
-      setIsImproving(false);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Sparkles className="h-4 w-4" />
-          Generate Outreach Draft
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="space-y-2">
-            <Label>Objective</Label>
-            <Select value={objective} onValueChange={setObjective}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {OUTREACH_OBJECTIVES.map(o => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Tone</Label>
-            <Select value={tone} onValueChange={setTone}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {OUTREACH_TONES.map(t => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Channel</Label>
-            <Select value={channel} onValueChange={setChannel}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {OUTREACH_CHANNELS.map(c => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Additional Context (optional)</Label>
-          <Textarea
-            value={extraContext}
-            onChange={e => setExtraContext(e.target.value)}
-            placeholder="e.g. I recently saw they got promoted, mention the conference we both attended..."
-            rows={2}
-          />
-        </div>
-
-        <Button onClick={handleGenerate} disabled={isGenerating} className="w-full">
-          {isGenerating ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate Draft
-            </>
-          )}
-        </Button>
-
-        {draft && (
-          <div className="space-y-3">
-            <Card className="bg-muted/50 relative">
-              <CardContent className="p-4">
-                <div
-                  ref={outputRef}
-                  className="relative text-sm leading-relaxed whitespace-pre-wrap"
-                  onMouseUp={handleMouseUp}
-                >
-                  {draft}
-
-                  {selectionRect && selectedText && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="absolute z-10 text-xs shadow-md"
-                      style={{
-                        top: `${selectionRect.top}px`,
-                        left: `${selectionRect.left}px`,
-                        transform: 'translateX(-50%)',
-                      }}
-                      onClick={handleImproveSelection}
-                      disabled={isImproving}
-                    >
-                      {isImproving ? (
-                        <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="mr-1 h-3 w-3" />
-                      )}
-                      Improve
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
-                <Copy className="mr-2 h-4 w-4" />
-                Copy to Clipboard
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleOpenInEmail}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                {channel === 'email' ? 'Open in Email' : 'Open in Gmail'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }

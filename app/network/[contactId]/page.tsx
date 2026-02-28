@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { getContactById, getInteractionsByContact } from '@/app/actions/network';
+import { getOutreachDraftsByContact } from '@/app/actions/network-ai';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { ContactDetailView } from '@/components/network/contact-detail-view';
@@ -17,9 +18,10 @@ export default async function ContactDetailPage({
 
   const { contactId } = await params;
 
-  const [contact, interactions] = await Promise.all([
+  const [contact, interactions, initialDrafts] = await Promise.all([
     getContactById(contactId),
     getInteractionsByContact(contactId),
+    getOutreachDraftsByContact(contactId),
   ]);
 
   if (!contact) notFound();
@@ -42,7 +44,11 @@ export default async function ContactDetailPage({
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Back to Network
         </Link>
-        <ContactDetailView contact={contact} interactions={interactions} />
+        <ContactDetailView
+          contact={contact}
+          interactions={interactions}
+          initialDrafts={initialDrafts}
+        />
       </div>
     </DashboardShell>
   );
