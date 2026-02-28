@@ -1,25 +1,22 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { getUserSettings } from "@/app/actions/settings";
-import { SettingsClient } from "@/components/settings/settings-client";
-import { getGoals } from "@/app/actions/goals";
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { getUserSettings } from '@/app/actions/settings';
+import { SettingsClient } from './settings-client';
+import { getGoals } from '@/app/actions/goals';
 
 export default async function SettingsPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login');
   }
 
-  const [settings, goals] = await Promise.all([
-    getUserSettings(),
-    getGoals(),
-  ]);
+  const [settings, goals] = await Promise.all([getUserSettings(), getGoals()]);
 
   if (!settings) {
-    redirect("/login");
+    redirect('/login');
   }
 
   return (
@@ -32,7 +29,7 @@ export default async function SettingsPage() {
         />
       }
     >
-      <div className="max-w-(--container-content) mx-auto w-full">
+      <div className="mx-auto w-full max-w-(--container-content)">
         <SettingsClient settings={settings} goals={goals} />
       </div>
     </DashboardShell>

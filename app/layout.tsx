@@ -1,34 +1,40 @@
-import type { Metadata } from "next";
-import { Inter, Geist_Mono, Playfair_Display } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
-import { CommandPalette } from "@/components/ui/command-palette";
-import { SettingsProvider } from "@/components/providers/settings-provider";
-import { UIProvider } from "@/components/providers/ui-provider";
-import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
-import { GrainOverlay } from "@/components/landing/grain-overlay";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter, Geist_Mono, Playfair_Display } from 'next/font/google';
+import { Toaster } from '@/components/ui/sonner';
+import { CommandPalette } from '@/components/ui/command-palette';
+import { SettingsProvider } from '@/components/providers/settings-provider';
+import { UIProvider, SmoothScrollProvider } from '@/components/providers/ui-provider';
+import './globals.css';
 
 const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  display: "swap",
+  variable: '--font-serif',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Jobmark - Never Forget a Win Again",
-  description: "The work journal that writes your reports for you. Capture accomplishments in 30 seconds, generate polished reports with AI.",
-  keywords: ["productivity", "work tracker", "activity log", "AI reports", "accomplishment journal", "work journal"],
+  title: 'Jobmark - Never Forget a Win Again',
+  description:
+    'The work journal that writes your reports for you. Capture accomplishments in 30 seconds, generate polished reports with AI.',
+  keywords: [
+    'productivity',
+    'work tracker',
+    'activity log',
+    'AI reports',
+    'accomplishment journal',
+    'work journal',
+  ],
 };
 
 export default function RootLayout({
@@ -53,5 +59,18 @@ export default function RootLayout({
         </SettingsProvider>
       </body>
     </html>
+  );
+}
+
+function GrainOverlay() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'repeat',
+      }}
+    />
   );
 }

@@ -1,12 +1,12 @@
-import { auth } from "@/lib/auth";
-import { getProjectDetails } from "@/app/actions/projects";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { notFound, redirect } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
-import { Activity, Clock, FolderOpen, ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { ProjectActivityTimeline } from "@/components/projects/project-activity-timeline";
+import { auth } from '@/lib/auth';
+import { getProjectDetails } from '@/app/actions/projects';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { notFound, redirect } from 'next/navigation';
+import { formatDistanceToNow } from 'date-fns';
+import { Activity, Clock, FolderOpen, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { ProjectActivityTimeline } from './project-activity-timeline';
 
 interface ProjectDetailsPageProps {
   params: Promise<{ projectId: string }>;
@@ -15,7 +15,7 @@ interface ProjectDetailsPageProps {
 export default async function ProjectDetailsPage({ params }: ProjectDetailsPageProps) {
   const session = await auth();
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login');
   }
 
   const { projectId } = await params;
@@ -35,62 +35,61 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
         />
       }
     >
-      <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 py-8 space-y-8">
-        
+      <div className="mx-auto w-full max-w-7xl space-y-8 px-6 py-8 lg:px-8">
         {/* Back navigation */}
-        <Link 
-            href="/projects" 
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-all active:scale-95 group"
+        <Link
+          href="/projects"
+          className="text-muted-foreground hover:text-primary group inline-flex items-center gap-2 text-sm transition-all active:scale-95"
         >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            Back to Projects
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          Back to Projects
         </Link>
 
         {/* Header Card */}
-        <div className="bg-card/40 border border-border/40 rounded-2xl p-6 shadow-sm backdrop-blur-sm">
-
-            <div className="flex items-start gap-4">
-                 <div 
-                   className="h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
-                   style={{ backgroundColor: `${project.color}15` }}
-                 >
-                   <FolderOpen className="h-8 w-8" style={{ color: project.color }} />
-                 </div>
-                 
-                 <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-foreground mb-1">{project.name}</h1>
-                    <p className="text-muted-foreground leading-relaxed max-w-2xl">
-                        {project.description || "No description provided."}
-                    </p>
-                    
-                    <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md">
-                            <Activity className="h-3.5 w-3.5" />
-                            <span className="font-medium text-foreground">{project._count.activities}</span> entries
-                        </div>
-                        {project.activities[0] && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md">
-                                <Clock className="h-3.5 w-3.5" />
-                                Updated {formatDistanceToNow(project.activities[0].createdAt)} ago
-                            </div>
-                        )}
-                    </div>
-                 </div>
+        <div className="bg-card/40 border-border/40 rounded-2xl border p-6 shadow-sm backdrop-blur-sm">
+          <div className="flex items-start gap-4">
+            <div
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-inner"
+              style={{ backgroundColor: `${project.color}15` }}
+            >
+              <FolderOpen className="h-8 w-8" style={{ color: project.color }} />
             </div>
+
+            <div className="flex-1">
+              <h1 className="text-foreground mb-1 text-2xl font-bold">{project.name}</h1>
+              <p className="text-muted-foreground max-w-2xl leading-relaxed">
+                {project.description || 'No description provided.'}
+              </p>
+
+              <div className="text-muted-foreground mt-4 flex items-center gap-4 text-sm">
+                <div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2 py-1">
+                  <Activity className="h-3.5 w-3.5" />
+                  <span className="text-foreground font-medium">
+                    {project._count.activities}
+                  </span>{' '}
+                  entries
+                </div>
+                {project.activities[0] && (
+                  <div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2 py-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    Updated {formatDistanceToNow(project.activities[0].createdAt)} ago
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Activity Feed */}
         <div>
-            <h2 className="text-lg font-semibold mb-4 px-1">Activity Timeline</h2>
-            <ProjectActivityTimeline
-              projectId={projectId}
-              initialActivities={project.activities}
-              totalCount={project._count.activities}
-            />
+          <h2 className="mb-4 px-1 text-lg font-semibold">Activity Timeline</h2>
+          <ProjectActivityTimeline
+            projectId={projectId}
+            initialActivities={project.activities}
+            totalCount={project._count.activities}
+          />
         </div>
-
       </div>
     </DashboardShell>
   );
 }
-

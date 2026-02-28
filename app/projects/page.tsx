@@ -1,10 +1,9 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { getProjects } from "@/app/actions/projects";
-import { ProjectList } from "@/components/projects/project-list";
-import { ProjectDialog } from "@/components/projects/project-dialog";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getProjects } from '@/app/actions/projects';
+import { ProjectList } from '@/components/projects/project-list';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 
 interface ProjectsPageProps {
   searchParams: Promise<{ filter?: string; new?: string }>;
@@ -15,11 +14,11 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   const params = await searchParams;
 
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login');
   }
 
-  const currentFilter = params.filter === "archived" ? "archived" : "active";
-  const openCreate = params.new === "true";
+  const currentFilter = params.filter === 'archived' ? 'archived' : 'active';
+  const openCreate = params.new === 'true';
   const projects = await getProjects(currentFilter);
 
   return (
@@ -32,10 +31,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
         />
       }
     >
-      <div className="max-w-(--container-wide) mx-auto w-full">
+      <div className="mx-auto w-full max-w-(--container-wide)">
         <ProjectList projects={projects} initialFilter={currentFilter} openCreate={openCreate} />
       </div>
     </DashboardShell>
   );
 }
-

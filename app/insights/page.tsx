@@ -1,15 +1,15 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { getInsightsData } from "@/app/actions/insights";
-import { InsightsClient } from "@/components/insights/insights-client";
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { getInsightsData } from '@/app/actions/insights';
+import { InsightsClient } from './insights-client';
 
 export default async function InsightsPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login');
   }
 
   const data = await getInsightsData();
@@ -24,7 +24,7 @@ export default async function InsightsPage() {
         />
       }
     >
-      <div className="max-w-(--container-wide) mx-auto w-full">
+      <div className="mx-auto w-full max-w-(--container-wide)">
         <InsightsClient initialData={data} />
       </div>
     </DashboardShell>

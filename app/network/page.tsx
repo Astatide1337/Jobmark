@@ -1,18 +1,15 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { getContacts, getNetworkStats } from "@/app/actions/network";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { ContactsList } from "@/components/network/contacts-list";
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { getContacts, getNetworkStats } from '@/app/actions/network';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { ContactsList } from '@/components/network/contacts-list';
 
 export default async function NetworkPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect('/login');
 
-  const [contacts, stats] = await Promise.all([
-    getContacts(),
-    getNetworkStats(),
-  ]);
+  const [contacts, stats] = await Promise.all([getContacts(), getNetworkStats()]);
 
   return (
     <DashboardShell
@@ -24,7 +21,7 @@ export default async function NetworkPage() {
         />
       }
     >
-      <div className="max-w-(--container-wide) mx-auto w-full">
+      <div className="mx-auto w-full max-w-(--container-wide)">
         <ContactsList contacts={contacts} stats={stats} />
       </div>
     </DashboardShell>
