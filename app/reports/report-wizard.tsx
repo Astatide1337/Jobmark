@@ -109,7 +109,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
       try {
         // Prepare temp config for check
         const tempConfig = { ...config };
-        if (config.dateRange === 'custom') {
+        if (tempConfig.dateRange === 'custom') {
           // Wait until both dates are set
           if (!dateRange?.from || !dateRange?.to) {
             setIsValidating(false);
@@ -135,7 +135,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
     // Debounce slightly to avoid rapid checks
     const timer = setTimeout(validate, 300);
     return () => clearTimeout(timer);
-  }, [config.dateRange, dateRange, step, config.projectId]);
+  }, [config, dateRange, step]);
 
   const handleNextStep = () => {
     if (hasValidActivities && !isValidating) {

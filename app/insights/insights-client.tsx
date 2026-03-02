@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { InsightsSummary } from '@/components/insights/insights-summary';
 import { ContributionHeatmap } from '@/components/insights/contribution-heatmap';
 import { ActivityCharts } from '@/components/insights/activity-charts';
@@ -35,16 +35,12 @@ interface InsightsClientProps {
 
 export function InsightsClient({ initialData }: InsightsClientProps) {
   const [dateRange, setDateRange] = useState<DateRange>('all');
-  const [filteredData, setFilteredData] = useState<InsightsData>(initialData);
 
-  // Filter data based on date range
-  useEffect(() => {
+  const filteredData = useMemo(() => {
     const rangeStart = getDateRangeStart(dateRange);
 
     if (!rangeStart) {
-      // "All time" - use original data
-      setFilteredData(initialData);
-      return;
+      return initialData;
     }
 
     // Filter heatmap data
@@ -76,10 +72,7 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       weeklyTrend = initialData.weeklyTrend.slice(-13);
     }
 
-    // Filter project distribution (can't easily filter without server)
-    // Keep original project distribution for now
-
-    setFilteredData({
+    return {
       ...initialData,
       totalActivities: dateRange === 'all' ? initialData.totalActivities : filteredActivities,
       activeDaysThisMonth:
@@ -87,7 +80,7 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       heatmapData: filteredHeatmap,
       weeklyTrend,
       bestDay,
-    });
+    };
   }, [dateRange, initialData]);
 
   return (

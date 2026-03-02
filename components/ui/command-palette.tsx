@@ -77,7 +77,9 @@ export function CommandPalette() {
   // Debounced search
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
+      // Avoid calling setResults([]) here.
+      // Instead, we just use the memoized 'displayedResults' down below
+      // so it implicitly shows empty results without triggering an effect-driven re-render.
       return;
     }
 
@@ -130,6 +132,9 @@ export function CommandPalette() {
   );
 
   const isSearching = query.trim().length > 0;
+
+  // Use derived state for results to avoid setting state in the effect
+  const displayedResults = isSearching ? results : [];
 
   // Manual filtering logic for static items
   const filteredQuickActions = quickActions.filter(action =>
@@ -241,9 +246,9 @@ export function CommandPalette() {
               )}
 
               {/* Project Results */}
-              {results.filter(r => r.type === 'project').length > 0 && (
+              {displayedResults.filter(r => r.type === 'project').length > 0 && (
                 <CommandGroup heading="Projects">
-                  {results
+                  {displayedResults
                     .filter(r => r.type === 'project')
                     .map(result => (
                       <CommandItem
@@ -265,9 +270,9 @@ export function CommandPalette() {
               )}
 
               {/* Contact Results */}
-              {results.filter(r => r.type === 'contact').length > 0 && (
+              {displayedResults.filter(r => r.type === 'contact').length > 0 && (
                 <CommandGroup heading="Contacts">
-                  {results
+                  {displayedResults
                     .filter(r => r.type === 'contact')
                     .map(result => (
                       <CommandItem
@@ -286,9 +291,9 @@ export function CommandPalette() {
               )}
 
               {/* Interaction Results */}
-              {results.filter(r => r.type === 'interaction').length > 0 && (
+              {displayedResults.filter(r => r.type === 'interaction').length > 0 && (
                 <CommandGroup heading="Interactions">
-                  {results
+                  {displayedResults
                     .filter(r => r.type === 'interaction')
                     .map(result => (
                       <CommandItem
@@ -307,9 +312,9 @@ export function CommandPalette() {
               )}
 
               {/* Report Results */}
-              {results.filter(r => r.type === 'report').length > 0 && (
+              {displayedResults.filter(r => r.type === 'report').length > 0 && (
                 <CommandGroup heading="Reports">
-                  {results
+                  {displayedResults
                     .filter(r => r.type === 'report')
                     .map(result => (
                       <CommandItem

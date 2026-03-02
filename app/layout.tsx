@@ -52,7 +52,7 @@ export default function RootLayout({
             <SmoothScrollProvider>
               {children}
               <CommandPalette />
-              <Toaster position="top-center" richColors />
+              <Toaster position="bottom-right" richColors />
               <GrainOverlay />
             </SmoothScrollProvider>
           </UIProvider>

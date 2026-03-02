@@ -118,6 +118,9 @@ model UserSettings {
   hideArchived    Boolean @default(false)
   showConfetti    Boolean @default(true)
 
+  // Focus Session Configuration
+  focusConfig     Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

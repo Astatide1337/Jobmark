@@ -5,6 +5,7 @@ import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { getUserSettings } from '@/app/actions/settings';
 import { SettingsClient } from './settings-client';
 import { getGoals } from '@/app/actions/goals';
+import { getFocusConfig } from '@/app/actions/focus-config';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -13,7 +14,11 @@ export default async function SettingsPage() {
     redirect('/login');
   }
 
-  const [settings, goals] = await Promise.all([getUserSettings(), getGoals()]);
+  const [settings, goals, focusConfig] = await Promise.all([
+    getUserSettings(),
+    getGoals(),
+    getFocusConfig(),
+  ]);
 
   if (!settings) {
     redirect('/login');
@@ -30,7 +35,7 @@ export default async function SettingsPage() {
       }
     >
       <div className="mx-auto w-full max-w-(--container-content)">
-        <SettingsClient settings={settings} goals={goals} />
+        <SettingsClient settings={settings} goals={goals} focusConfig={focusConfig} />
       </div>
     </DashboardShell>
   );

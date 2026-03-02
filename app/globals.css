@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,7 +12,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -27,7 +27,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -61,54 +61,55 @@
 }
 
 /* Late Night Café - Dark Theme Default */
-:root, .dark {
+:root,
+.dark {
   --radius: 0.75rem;
-  
+
   /* Deep warm brown background - like a cozy café at night */
   --background: #1a1412;
   --foreground: #f5f0e8;
-  
+
   /* Slightly lighter warm cards */
   --card: #241e1a;
   --card-foreground: #f5f0e8;
-  
+
   --popover: #2a2320;
   --popover-foreground: #f5f0e8;
-  
+
   /* Warm Amber Primary - like soft lamp light */
   --primary: #d4a574;
   --primary-foreground: #1a1412;
-  
+
   /* Muted warm tones */
   --secondary: #2a2320;
   --secondary-foreground: #e8dfd4;
-  
+
   --muted: #2a2320;
   --muted-foreground: #a89888;
-  
+
   /* Warm accent - golden amber */
   --accent: #c49a6c;
   --accent-foreground: #1a1412;
-  
+
   /* Soft coral for destructive - adjusted for better contrast on fills */
   --destructive: #d66b6b;
   --destructive-foreground: #1a1412;
-  
+
   /* Destructive text token for ghost/outline states on dark background */
   --destructive-text: #ff8a8a;
-  
+
   /* Warm borders */
   --border: #3d332c;
   --input: #3d332c;
   --ring: #d4a574;
-  
+
   /* Chart colors - warm palette */
   --chart-1: #d4a574;
   --chart-2: #7fb069;
   --chart-3: #e0a458;
   --chart-4: #c49a6c;
   --chart-5: #a89888;
-  
+
   /* Sidebar - darker café corner */
   --sidebar: #1e1814;
   --sidebar-foreground: #f5f0e8;
@@ -143,7 +144,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    @apply bg-border/50 rounded-full hover:bg-border;
+    @apply bg-border/50 hover:bg-border rounded-full;
   }
 }
 
@@ -151,22 +152,22 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Smooth focus for form elements */
   .focus-ring {
-    @apply outline-none ring-2 ring-ring/50 ring-offset-2 ring-offset-background;
+    @apply ring-ring/50 ring-offset-background ring-2 ring-offset-2 outline-none;
   }
-  
+
   /* Subtle card hover - no harsh effects */
   .card-hover {
-    @apply transition-all duration-300 hover:bg-card/80;
+    @apply hover:bg-card/80 transition-all duration-300;
   }
-  
+
   /* Warm glow effect for ambient lighting feel */
   .warm-glow {
     box-shadow: 0 0 40px rgba(212, 165, 116, 0.08);
   }
-  
+
   /* Soft ambient shadow */
   .ambient-shadow {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
@@ -198,15 +199,15 @@
 
   /* Architect's Abstractions */
   .glass-card {
-    @apply bg-card/40 border border-border/40 backdrop-blur-sm rounded-2xl transition-all duration-300;
+    @apply bg-card/40 border-border/40 rounded-2xl border backdrop-blur-sm transition-all duration-300;
   }
 
   .interactive-surface {
-    @apply hover:border-border hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer;
+    @apply hover:border-border hover:shadow-primary/5 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99];
   }
 
   .glass-input {
-    @apply bg-background/50 border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 backdrop-blur-md transition-all;
+    @apply bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/30 backdrop-blur-md transition-all focus:ring-1;
   }
 
   .warm-glow-text {
@@ -214,7 +215,7 @@
   }
 
   .section-container {
-    @apply max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
+    @apply mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8;
   }
 
   /* Magnetic hover effect base */
@@ -257,11 +258,11 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-border/50 rounded-full hover:bg-primary/50;
+    @apply bg-border/50 hover:bg-primary/50 rounded-full;
     border: 1px solid transparent;
     background-clip: content-box;
   }
-  
+
   .scrollbar-track-transparent {
     scrollbar-color: transparent transparent;
   }
@@ -280,10 +281,18 @@
     animation-name: exit;
   }
 
-  .fade-in-0 { --tw-enter-opacity: 0; }
-  .fade-out-0 { --tw-exit-opacity: 0; }
-  .zoom-in-95 { --tw-enter-scale: 0.95; }
-  .zoom-out-95 { --tw-exit-scale: 0.95; }
+  .fade-in-0 {
+    --tw-enter-opacity: 0;
+  }
+  .fade-out-0 {
+    --tw-exit-opacity: 0;
+  }
+  .zoom-in-95 {
+    --tw-enter-scale: 0.95;
+  }
+  .zoom-out-95 {
+    --tw-exit-scale: 0.95;
+  }
 
   @keyframes enter {
     from {

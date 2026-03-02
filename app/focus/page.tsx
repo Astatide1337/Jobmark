@@ -1,70 +1,86 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { redirect } from "next/navigation";
-import { DecompressionWizard } from "./_components/decompression-wizard";
-import { useUI } from "@/components/providers/ui-provider";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { redirect } from 'next/navigation';
+import DecompressionWizard from './_components/decompression-wizard';
+import { getFocusConfig } from '@/app/actions/focus-config';
+import type { ResolvedFocusBlock } from '@/lib/focus/types';
 
 export const metadata = {
-  title: "Decompress | JobMark",
-  description: "End your day with intention.",
+  title: 'Decompress | JobMark',
+  description: 'End your day with intention.',
 };
 
 export default async function FocusPage() {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect("/auth/signin");
+    redirect('/auth/signin');
   }
 
-  // 1. Get today's activity stats
+  const userId = session.user.id;
+
+  // 1. Today's activity stats (still needed for some background context if ever revived, but focus on the blocks)
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   const todaysActivities = await prisma.activity.findMany({
-    where: {
-      userId: session.user.id,
-      logDate: {
-        gte: startOfDay,
-      },
-    },
-    include: {
-      project: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    where: { userId, logDate: { gte: startOfDay } },
+    include: { project: true },
+    orderBy: { createdAt: 'desc' },
   });
 
   const dailyCount = todaysActivities.length;
-  // Get the most recent project name if it exists
   const lastProjectName = todaysActivities[0]?.project?.name || null;
 
-  // 2. Get user's primary goal
-  // First try UserSettings, then fallback to the first Goal
-  const userSettings = await prisma.userSettings.findUnique({
-    where: { userId: session.user.id },
-  });
+  // 2. Load focus config + user data in parallel
+  const [rawBlocks, userSettings, goals] = await Promise.all([
+    getFocusConfig(),
+    prisma.userSettings.findUnique({ where: { userId } }),
+    prisma.goal.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
 
-  let primaryGoal = userSettings?.primaryGoal;
+  // Primary goal resolution chain
+  const primaryGoalText = userSettings?.primaryGoal || goals[0]?.title || 'peace of mind';
+  const primaryWhyText = userSettings?.whyStatement || goals[0]?.why || undefined;
 
-  if (!primaryGoal) {
-    const firstGoal = await prisma.goal.findFirst({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "asc" },
-    });
-    primaryGoal = firstGoal?.title;
-  }
+  // Goal id -> title map
+  const goalMap = new Map<string, string>(goals.map(g => [g.id, g.title]));
 
-  // Fallback if absolutely nothing is found
-  const finalGoal = primaryGoal || "peace of mind";
-  
+  // 3. Resolve blocks (inject goal text + AI affirmations)
+  const resolvedBlocks: ResolvedFocusBlock[] = await Promise.all(
+    rawBlocks.map(async (block): Promise<ResolvedFocusBlock> => {
+      if (block.type === 'goal') {
+        const goalText = block.config.goalId
+          ? (goalMap.get(block.config.goalId) ?? primaryGoalText)
+          : primaryGoalText;
+        return {
+          ...block,
+          config: { ...block.config, resolvedGoalText: goalText },
+        };
+      }
+
+      if (block.type === 'affirmation') {
+        return {
+          ...block,
+          config: {
+            ...block.config,
+            resolvedTexts:
+              block.config.texts.length > 0
+                ? block.config.texts
+                : ['I am capable of great things.'],
+          },
+        };
+      }
+
+      return block;
+    })
+  );
+
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-[#1a1412] text-[#f5f0e8] relative overflow-y-auto py-12">
-       {/* Background Film Grain Overlay would ideally be here or globally applied */}
-       <DecompressionWizard 
-          dailyCount={dailyCount}
-          lastProjectName={lastProjectName}
-          userGoal={finalGoal}
-       />
+    <main className="bg-background text-foreground relative flex min-h-dvh flex-col items-center justify-center overflow-y-auto py-12">
+      <DecompressionWizard blocks={resolvedBlocks} />
     </main>
   );
 }
