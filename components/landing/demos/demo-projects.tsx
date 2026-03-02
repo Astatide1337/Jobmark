@@ -44,32 +44,19 @@ export function DemoProjects() {
   const [viewingId, setViewingId] = useState<string | null>(null);
 
   const handleCreate = async (data: FormData) => {
-    const name = data.get("name") as string;
-    const color = data.get("color") as string;
-    const description = data.get("description") as string;
+    const name = data.get('name') as string;
+    const color = data.get('color') as string;
+    const description = data.get('description') as string;
 
-    setItems([...items, {
-        id: Math.random().toString(36).substring(7),
-        name,
-        color,
-        description,
-        status: "active"
-    }]);
-    toast.success("Project created (Demo)");
-    return { success: true, message: "Created" };
-  };
-
-  const handleUpdate = async (id: string, data: FormData) => {
-    const name = data.get("name") as string;
-    const color = data.get("color") as string;
-    const description = data.get("description") as string;
-
-    setItems(items.map(p => 
-        p.id === id ? { ...p, name, color, description } : p
-    ));
-    toast.success("Project updated (Demo)");
-    return { success: true, message: "Updated" };
-  };
+    const newProject = {
+      id: Math.random().toString(36).substring(7),
+      name,
+      color,
+      description: description || null,
+      archived: false,
+      _count: { activities: 0 },
+      activities: [],
+    };
 
     setItems([newProject, ...items]);
     toast.success('Project created (Demo)');
@@ -81,7 +68,9 @@ export function DemoProjects() {
     const color = data.get('color') as string;
     const description = data.get('description') as string;
 
-    setItems(items.map(p => (p.id === id ? { ...p, name, color, description } : p)));
+    setItems(
+      items.map(p => (p.id === id ? { ...p, name, color, description: description || null } : p))
+    );
     toast.success('Project updated (Demo)');
     return { success: true, message: 'Updated' };
   };
