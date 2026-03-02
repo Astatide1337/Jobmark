@@ -39,9 +39,12 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
+  // Sync internal state if initialDrafts changes (during render phase to avoid cascading effects)
+  const [prevInitialDrafts, setPrevInitialDrafts] = useState(initialDrafts);
+  if (initialDrafts !== prevInitialDrafts) {
     setDrafts(initialDrafts);
-  }, [initialDrafts]);
+    setPrevInitialDrafts(initialDrafts);
+  }
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id));

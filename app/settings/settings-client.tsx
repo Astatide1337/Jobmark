@@ -784,11 +784,13 @@ function FocusSection({
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
-  // Sync with props if they change externally
-  useEffect(() => {
+  // Sync with props if they change externally (during render phase to avoid cascading effects)
+  const [prevInitialBlocks, setPrevInitialBlocks] = useState(initialBlocks);
+  if (initialBlocks !== prevInitialBlocks) {
     setBlocks(initialBlocks);
     setLastSavedBlocks(initialBlocks);
-  }, [initialBlocks]);
+    setPrevInitialBlocks(initialBlocks);
+  }
 
   const hasChanges = JSON.stringify(blocks) !== JSON.stringify(lastSavedBlocks);
 
@@ -1144,12 +1146,12 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    setVisible(true);
     const currentStep = steps[stepIndex];
 
     const fadeOut = setTimeout(() => setVisible(false), (currentStep.duration - 0.8) * 1000);
 
     const advance = setTimeout(() => {
+      setVisible(true);
       setStepIndex(prev => (prev + 1) % steps.length);
     }, currentStep.duration * 1000);
 

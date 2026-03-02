@@ -63,11 +63,13 @@ export interface ProjectListProps {
   projects: Project[];
   initialFilter: 'active' | 'archived';
   openCreate?: boolean;
-  onCreate?: (data: FormData) => Promise<{ success: boolean; message: string; errors?: any }>;
+  onCreate?: (
+    data: FormData
+  ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
   onUpdate?: (
     id: string,
     data: FormData
-  ) => Promise<{ success: boolean; message: string; errors?: any }>;
+  ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
   onArchive?: (id: string) => Promise<void>;
   onUnarchive?: (id: string) => Promise<void>;
   onTabChange?: (value: string) => void;
@@ -281,7 +283,7 @@ interface ProjectCardProps {
   onUpdate?: (
     id: string,
     data: FormData
-  ) => Promise<{ success: boolean; message: string; errors?: any }>;
+  ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
   disableNavigation?: boolean;
   onViewTimeline?: (id: string) => void;
 }
@@ -474,7 +476,9 @@ interface ProjectDialogProps {
     description: string | null;
     color: string;
   };
-  onSubmit?: (data: FormData) => Promise<{ success: boolean; message: string; errors?: any }>;
+  onSubmit?: (
+    data: FormData
+  ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
 }
 
 function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogProps) {
@@ -505,13 +509,17 @@ function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogP
       formData.append('color', color);
       formData.append('description', description);
 
-      let result: any;
+      let result: { success: boolean; message: string; errors?: Record<string, string[]> };
       if (onSubmit) {
         result = await onSubmit(formData);
       } else if (isEditing && project) {
         result = await updateProject(project.id, { name, color, description });
       } else {
-        result = await createProject({ success: false, message: '' }, formData);
+        result = (await createProject({ success: false, message: '' }, formData)) as {
+          success: boolean;
+          message: string;
+          errors?: Record<string, string[]>;
+        };
       }
 
       if (result.success) {

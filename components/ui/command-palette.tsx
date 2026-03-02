@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useTransition } from 'react';
+import { useEffect, useState, useCallback, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import debounce from 'lodash.debounce';
 import {
   CommandDialog,
   CommandInput,
@@ -74,24 +75,29 @@ export function CommandPalette() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Debounced search
+  // Debounced search logic
+  const debouncedSearch = useMemo(
+    () =>
+      debounce(async (searchQuery: string) => {
+        startTransition(async () => {
+          const searchResults = await globalSearch(searchQuery);
+          setResults(searchResults);
+        });
+      }, 200),
+    []
+  );
+
   useEffect(() => {
     if (!query.trim()) {
-      // Avoid calling setResults([]) here.
-      // Instead, we just use the memoized 'displayedResults' down below
-      // so it implicitly shows empty results without triggering an effect-driven re-render.
       return;
     }
 
-    const timer = setTimeout(() => {
-      startTransition(async () => {
-        const searchResults = await globalSearch(query);
-        setResults(searchResults);
-      });
-    }, 200);
+    debouncedSearch(query);
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [query, debouncedSearch]);
 
   const handleSelect = useCallback(
     (item: { href?: string; action?: string }) => {

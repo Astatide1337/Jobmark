@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  SpeechRecognition,
+  SpeechRecognitionEvent,
+  SpeechRecognitionErrorEvent,
+} from '@/lib/types/speech';
 import { useActionState, useEffect, useRef, useState, useMemo, useTransition } from 'react';
 import {
   createActivity,
@@ -144,9 +149,6 @@ export function QuickCapture({
   const handleDemoSubmit = async (formData: FormData) => {
     if (!content && !formData.get('content')) return;
 
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 1000));
-
     setContent('');
     setSelectedDate(new Date());
     triggerConfetti();
@@ -162,6 +164,7 @@ export function QuickCapture({
   const [isMac, setIsMac] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // AI Enhancement state
   const [selection, setSelection] = useState<{ start: number; end: number; text: string } | null>(
@@ -174,7 +177,7 @@ export function QuickCapture({
   // Dictation state
   const [isListening, setIsListening] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
-  const recognitionRef = useRef<any>(null); // Type 'any' because SpeechRecognition is not standard TS yet
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Filter projects based on hideArchived setting
   const visibleProjects = useMemo(() => {
@@ -287,8 +290,8 @@ export function QuickCapture({
         return;
       }
 
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+      const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognitionCtor();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
@@ -297,7 +300,7 @@ export function QuickCapture({
         setIsListening(true);
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         let interimTranscript = '';
         let finalTranscript = '';
 
@@ -339,7 +342,7 @@ export function QuickCapture({
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         if (event.error === 'no-speech') {
           // Ignore no-speech error as it just means the user didn't speak instantly.
           // We can optionally restart or just let it be.
@@ -436,7 +439,7 @@ export function QuickCapture({
             {/* Textarea with selection highlight (Mirrored from LiveEditor) */}
             <div className="group relative">
               {/* Ref for container to calculate positions */}
-              <div ref={textareaRef.current?.parentElement as any} className="relative w-full">
+              <div ref={containerRef} className="relative w-full">
                 {/* 1. Backdrop Highlight Layer */}
                 <div
                   aria-hidden="true"
@@ -719,17 +722,20 @@ export function ActivityTimeline({
     totalCount ? initialActivities.length < totalCount : initialActivities.length === PAGE_SIZE
   );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+  // Sync state with props when they change (during render phase to avoid cascading effects)
+  const [prevInitialActivities, setPrevInitialActivities] = useState(initialActivities);
+  if (initialActivities !== prevInitialActivities) {
     setActivities(initialActivities);
+    setPrevInitialActivities(initialActivities);
     setDeletedIds(new Set());
     setHasMore(
       totalCount ? initialActivities.length < totalCount : initialActivities.length === PAGE_SIZE
     );
-  }, [initialActivities, totalCount]);
+  }
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const visibleActivities = activities.filter(a => !deletedIds.has(a.id));
 

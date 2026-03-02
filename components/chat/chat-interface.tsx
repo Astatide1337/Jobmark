@@ -21,6 +21,7 @@ import {
   TrendingUp,
   ArrowRight,
   FileText,
+  LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createConversation, type MessageData, type ConversationMode } from '@/app/actions/chat';
@@ -153,7 +154,11 @@ export function ChatInterface({
     container.scrollTo({ top: container.scrollHeight, behavior });
   };
 
-  useEffect(() => {
+  // Sync state with props when they change (during render phase to avoid cascading effects)
+  const currentKey = `${initialConversationId}-${initialMessageSignature}-${projectId}-${goalId}-${contactId}-${initialReportIds.join(',')}`;
+  const [prevKey, setPrevKey] = useState(currentKey);
+
+  if (currentKey !== prevKey) {
     setConversationId(initialConversationId);
     setMessages(initialMessages);
     setSelectedProjectIds(projectId ? [projectId] : []);
@@ -166,16 +171,8 @@ export function ChatInterface({
     setShowJumpToLatest(false);
     autoFollowRef.current = true;
     requestAbortRef.current?.abort();
-  }, [
-    initialConversationId,
-    initialMessageSignature,
-    initialMessages,
-    projectId,
-    goalId,
-    contactId,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    initialReportIds.join(','),
-  ]);
+    setPrevKey(currentKey);
+  }
 
   useEffect(() => {
     return () => {
@@ -1038,7 +1035,7 @@ function ChatMessage({ message, isStreaming, isLast, onRegenerate }: ChatMessage
 
 interface SuggestedPrompt {
   id: string;
-  icon: any;
+  icon: LucideIcon;
   title: string;
   description: string;
   mode: ConversationMode;

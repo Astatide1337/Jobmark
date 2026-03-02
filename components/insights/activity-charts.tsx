@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AreaChart,
   Area,
@@ -11,8 +11,10 @@ import {
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
-} from "recharts";
-import type { ProjectDistribution } from "@/app/actions/insights";
+  TooltipProps,
+} from 'recharts';
+import type { ProjectDistribution } from '@/app/actions/insights';
+import { useMemo } from 'react';
 
 interface ActivityChartsProps {
   weeklyTrend: number[];
@@ -20,11 +22,11 @@ interface ActivityChartsProps {
 }
 
 // Consistent card styling
-const CARD_STYLES = "rounded-2xl border border-border/40 bg-card/60 shadow-sm";
+const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
 
 export function ActivityCharts({ weeklyTrend, projectDistribution }: ActivityChartsProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <WeeklyTrendChart data={weeklyTrend} />
       <ProjectDistributionChart data={projectDistribution} />
     </div>
@@ -32,12 +34,22 @@ export function ActivityCharts({ weeklyTrend, projectDistribution }: ActivityCha
 }
 
 // Custom tooltip - consistent styling
-function CustomTooltip({ active, payload, label }: any) {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    payload: Record<string, unknown>;
+  }>;
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl backdrop-blur-md">
-        <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-        <p className="text-sm font-bold text-foreground">
+      <div className="bg-popover border-border rounded-xl border px-3 py-2 shadow-xl backdrop-blur-md">
+        <p className="text-muted-foreground mb-1 text-xs font-medium">{label}</p>
+        <p className="text-foreground text-sm font-bold">
           {payload[0].value} {payload[0].value === 1 ? 'activity' : 'activities'}
         </p>
       </div>
@@ -56,16 +68,16 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
 
   return (
     <Card className={CARD_STYLES}>
-      <CardHeader className="pb-2 px-6 pt-6">
-        <CardTitle className="text-base font-semibold flex items-center gap-2.5">
+      <CardHeader className="px-6 pt-6 pb-2">
+        <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
           Weekly Activity Trend
         </CardTitle>
-        <p className="text-sm text-muted-foreground">Last 12 weeks</p>
+        <p className="text-muted-foreground text-sm">Last 12 weeks</p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="h-52">
           {!hasData ? (
-            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+            <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
               No activity data yet
             </div>
           ) : (
@@ -78,22 +90,22 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
                   </linearGradient>
                 </defs>
                 {/* X Axis - HIGH CONTRAST */}
-                <XAxis 
-                  dataKey="week" 
+                <XAxis
+                  dataKey="week"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: '#c4b5a4', fontSize: 11, fontWeight: 500 }}
                   dy={8}
                 />
                 {/* Y Axis - HIGH CONTRAST */}
-                <YAxis 
+                <YAxis
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: '#c4b5a4', fontSize: 11, fontWeight: 500 }}
                   width={32}
                   allowDecimals={false}
                 />
-                <RechartsTooltip 
+                <RechartsTooltip
                   content={<CustomTooltip />}
                   cursor={{ stroke: '#d4a574', strokeWidth: 1, strokeDasharray: '4 4' }}
                 />
@@ -117,13 +129,24 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
 }
 
 // Pie tooltip
-function PieTooltip({ active, payload }: any) {
+interface PieTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    payload: {
+      percentage: string;
+    };
+  }>;
+}
+
+function PieTooltip({ active, payload }: PieTooltipProps) {
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
-      <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl backdrop-blur-md">
-        <p className="text-sm font-bold text-foreground">{data.name}</p>
-        <p className="text-xs text-muted-foreground">
+      <div className="bg-popover border-border rounded-xl border px-3 py-2 shadow-xl backdrop-blur-md">
+        <p className="text-foreground text-sm font-bold">{data.name}</p>
+        <p className="text-muted-foreground text-xs">
           {data.value} activities ({data.payload.percentage}%)
         </p>
       </div>
@@ -135,7 +158,7 @@ function PieTooltip({ active, payload }: any) {
 function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
   const sortedData = [...data].sort((a, b) => b.count - a.count);
   const total = sortedData.reduce((sum, item) => sum + item.count, 0);
-  
+
   const chartData = sortedData.map(item => ({
     ...item,
     percentage: total > 0 ? ((item.count / total) * 100).toFixed(0) : 0,
@@ -144,12 +167,12 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
   if (chartData.length === 0) {
     return (
       <Card className={CARD_STYLES}>
-        <CardHeader className="pb-2 px-6 pt-6">
-          <CardTitle className="text-base font-semibold flex items-center gap-2.5">
+        <CardHeader className="px-6 pt-6 pb-2">
+          <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
             Activity by Project
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-52 px-6 pb-6">
+        <CardContent className="flex h-52 items-center justify-center px-6 pb-6">
           <p className="text-muted-foreground text-sm">No project data yet</p>
         </CardContent>
       </Card>
@@ -158,40 +181,34 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
 
   return (
     <Card className={CARD_STYLES}>
-      <CardHeader className="pb-2 px-6 pt-6">
-        <CardTitle className="text-base font-semibold">
-          Activity by Project
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">Distribution of all activities</p>
+      <CardHeader className="px-6 pt-6 pb-2">
+        <CardTitle className="text-base font-semibold">Activity by Project</CardTitle>
+        <p className="text-muted-foreground text-sm">Distribution of all activities</p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="flex items-center gap-8">
           {/* Legend - LEFT SIDE */}
-          <div className="flex-1 space-y-3 min-w-0">
+          <div className="min-w-0 flex-1 space-y-3">
             {chartData.slice(0, 5).map((item, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div
-                  className="w-3 h-3 rounded-full shrink-0"
+                  className="h-3 w-3 shrink-0 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-sm text-foreground truncate flex-1">
-                  {item.name}
-                </span>
-                <span className="text-sm font-semibold text-foreground tabular-nums">
+                <span className="text-foreground flex-1 truncate text-sm">{item.name}</span>
+                <span className="text-foreground text-sm font-semibold tabular-nums">
                   {item.count}
                 </span>
               </div>
             ))}
             {chartData.length > 5 && (
-              <p className="text-xs text-muted-foreground pl-6">
-                +{chartData.length - 5} more
-              </p>
+              <p className="text-muted-foreground pl-6 text-xs">+{chartData.length - 5} more</p>
             )}
           </div>
 
           {/* Donut Chart - RIGHT SIDE */}
-          <div className="shrink-0 relative z-0">
-            <div className="h-40 w-40 relative">
+          <div className="relative z-0 shrink-0">
+            <div className="relative h-40 w-40">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -206,14 +223,14 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
                     strokeWidth={0}
                   >
                     {chartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
+                      <Cell
+                        key={`cell-${index}`}
                         fill={entry.color}
-                        className="transition-opacity hover:opacity-80 cursor-pointer"
+                        className="cursor-pointer transition-opacity hover:opacity-80"
                       />
                     ))}
                   </Pie>
-                  <RechartsTooltip 
+                  <RechartsTooltip
                     content={<PieTooltip />}
                     isAnimationActive={false}
                     wrapperStyle={{ zIndex: 50 }}
@@ -221,10 +238,10 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
                 </PieChart>
               </ResponsiveContainer>
               {/* Center label */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-foreground">{total}</p>
-                  <p className="text-xs font-medium text-muted-foreground">Total</p>
+                  <p className="text-foreground text-2xl font-bold">{total}</p>
+                  <p className="text-muted-foreground text-xs font-medium">Total</p>
                 </div>
               </div>
             </div>

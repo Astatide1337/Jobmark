@@ -11,6 +11,8 @@ import {
   buildUserSummary,
   buildInterviewContext,
   buildReportsContext,
+  UserSummary,
+  GoalContext,
 } from '@/app/actions/chat-context';
 import { buildSystemPrompt } from '@/lib/chat/system-prompts';
 import {
@@ -61,99 +63,131 @@ async function buildContextString(conversation: {
 
   const userSummary = await buildUserSummary();
   if (userSummary) {
-    contextString += `\n\nUser Profile:\n- Name: ${userSummary.name || 'User'}\n- Total logged activities: ${userSummary.totalActivities}\n- Active projects: ${userSummary.totalProjects}\n- Current streak: ${userSummary.currentStreak} days\n- Goals set: ${userSummary.goalsCount}`;
+    contextString += buildUserSummaryString(userSummary);
   }
 
   if (conversation.projectId) {
-    if (conversation.mode === 'interview') {
-      const interviewContext = await buildInterviewContext(conversation.projectId);
-      if (interviewContext) {
-        contextString += `\n\nProject for Interview: "${interviewContext.projectName}"`;
-        if (interviewContext.projectDescription) {
-          contextString += `\nDescription: ${interviewContext.projectDescription}`;
-        }
-        contextString += `\nTotal activities: ${interviewContext.activityCount}`;
-        contextString += `\n\nRecent Work (use these for context-specific questions):\n${interviewContext.activityTimeline}`;
-      }
-    } else {
-      const projectContext = await buildProjectContext(conversation.projectId);
-      if (projectContext) {
-        contextString += `\n\nReferenced Project: "${projectContext.name}"`;
-        if (projectContext.description) {
-          contextString += `\nDescription: ${projectContext.description}`;
-        }
-        contextString += `\nActivities logged: ${projectContext.activityCount}`;
-        if (projectContext.recentActivities.length > 0) {
-          contextString += `\nRecent work:\n${projectContext.recentActivities
-            .slice(0, 5)
-            .map(activity => `- ${activity.content}`)
-            .join('\n')}`;
-        }
-      }
-    }
+    contextString += await buildProjectContextString(conversation.projectId, conversation.mode);
   }
 
   if (conversation.goalId) {
-    const goalContext = await buildGoalContext(conversation.goalId);
-    if (goalContext) {
-      contextString += `\n\nReferenced Goal: "${goalContext.title}"`;
-      if (goalContext.deadline) {
-        contextString += `\nDeadline: ${goalContext.deadline.toLocaleDateString()}`;
-      }
-      if (goalContext.why) {
-        contextString += `\nWhy it matters: ${goalContext.why}`;
-      }
-    }
+    contextString += await buildGoalContextString(conversation.goalId);
   }
 
   if (conversation.contactId) {
-    const contactContext = await buildContactContext(conversation.contactId);
-    if (contactContext) {
-      contextString += `\n\nReferenced Contact: "${contactContext.fullName}"`;
-      if (contactContext.relationship) {
-        contextString += `\nRelationship: ${contactContext.relationship}`;
-      }
-      if (contactContext.personalityTraits) {
-        contextString += `\nPersonality/Traits: ${contactContext.personalityTraits}`;
-      }
-      if (contactContext.notes) {
-        contextString += `\nNotes: ${contactContext.notes}`;
-      }
+    contextString += await buildContactContextString(conversation.contactId);
+  }
 
-      if (contactContext.recentInteractions.length > 0) {
-        contextString += '\n\nRecent Interactions:';
-        for (const interaction of contactContext.recentInteractions) {
-          const dateStr = formatDate(interaction.occurredAt);
-          const channelStr = getChannelLabel(interaction.channel);
-          contextString += `\n- ${dateStr} (${channelStr}): ${interaction.summary}`;
-          if (interaction.nextStep) {
-            contextString += `\n  Next: ${interaction.nextStep}`;
-          }
-          if (interaction.followUpDate) {
-            contextString += `\n  Follow-up: ${formatDate(interaction.followUpDate)}`;
-          }
+  if (conversation.reportIds.length > 0) {
+    contextString += await buildReportsContextString(conversation.reportIds);
+  }
+
+  if (conversation.mode === 'goal-coach' && userSummary?.recentGoals.length) {
+    contextString += buildGoalCoachContextString(userSummary.recentGoals);
+  }
+
+  return contextString;
+}
+
+function buildUserSummaryString(userSummary: UserSummary): string {
+  return `\n\nUser Profile:\n- Name: ${userSummary.name || 'User'}\n- Total logged activities: ${userSummary.totalActivities}\n- Active projects: ${userSummary.totalProjects}\n- Current streak: ${userSummary.currentStreak} days\n- Goals set: ${userSummary.goalsCount}`;
+}
+
+async function buildProjectContextString(projectId: string, mode: string): Promise<string> {
+  let context = '';
+  if (mode === 'interview') {
+    const interviewContext = await buildInterviewContext(projectId);
+    if (interviewContext) {
+      context += `\n\nProject for Interview: "${interviewContext.projectName}"`;
+      if (interviewContext.projectDescription) {
+        context += `\nDescription: ${interviewContext.projectDescription}`;
+      }
+      context += `\nTotal activities: ${interviewContext.activityCount}`;
+      context += `\n\nRecent Work (use these for context-specific questions):\n${interviewContext.activityTimeline}`;
+    }
+  } else {
+    const projectContext = await buildProjectContext(projectId);
+    if (projectContext) {
+      context += `\n\nReferenced Project: "${projectContext.name}"`;
+      if (projectContext.description) {
+        context += `\nDescription: ${projectContext.description}`;
+      }
+      context += `\nActivities logged: ${projectContext.activityCount}`;
+      if (projectContext.recentActivities.length > 0) {
+        context += `\nRecent work:\n${projectContext.recentActivities
+          .slice(0, 5)
+          .map(activity => `- ${activity.content}`)
+          .join('\n')}`;
+      }
+    }
+  }
+  return context;
+}
+
+async function buildGoalContextString(goalId: string): Promise<string> {
+  let context = '';
+  const goalContext = await buildGoalContext(goalId);
+  if (goalContext) {
+    context += `\n\nReferenced Goal: "${goalContext.title}"`;
+    if (goalContext.deadline) {
+      context += `\nDeadline: ${goalContext.deadline.toLocaleDateString()}`;
+    }
+    if (goalContext.why) {
+      context += `\nWhy it matters: ${goalContext.why}`;
+    }
+  }
+  return context;
+}
+
+async function buildContactContextString(contactId: string): Promise<string> {
+  let context = '';
+  const contactContext = await buildContactContext(contactId);
+  if (contactContext) {
+    context += `\n\nReferenced Contact: "${contactContext.fullName}"`;
+    if (contactContext.relationship) {
+      context += `\nRelationship: ${contactContext.relationship}`;
+    }
+    if (contactContext.personalityTraits) {
+      context += `\nPersonality/Traits: ${contactContext.personalityTraits}`;
+    }
+    if (contactContext.notes) {
+      context += `\nNotes: ${contactContext.notes}`;
+    }
+
+    if (contactContext.recentInteractions.length > 0) {
+      context += '\n\nRecent Interactions:';
+      for (const interaction of contactContext.recentInteractions) {
+        const dateStr = formatDate(interaction.occurredAt);
+        const channelStr = getChannelLabel(interaction.channel);
+        context += `\n- ${dateStr} (${channelStr}): ${interaction.summary}`;
+        if (interaction.nextStep) {
+          context += `\n  Next: ${interaction.nextStep}`;
+        }
+        if (interaction.followUpDate) {
+          context += `\n  Follow-up: ${formatDate(interaction.followUpDate)}`;
         }
       }
     }
   }
+  return context;
+}
 
-  if (conversation.reportIds.length > 0) {
-    const reports = await buildReportsContext(conversation.reportIds);
-    for (const report of reports) {
-      contextString += `\n\nReferenced Report: "${report.title}" (${report.createdAt.toLocaleDateString()})\n${report.content.slice(0, 3000)}`;
-    }
+async function buildReportsContextString(reportIds: string[]): Promise<string> {
+  let context = '';
+  const reports = await buildReportsContext(reportIds);
+  for (const report of reports) {
+    context += `\n\nReferenced Report: "${report.title}" (${report.createdAt.toLocaleDateString()})\n${report.content.slice(0, 3000)}`;
   }
+  return context;
+}
 
-  if (conversation.mode === 'goal-coach' && userSummary?.recentGoals.length) {
-    contextString += `\n\nExisting Goals:\n${userSummary.recentGoals
-      .map(
-        goal =>
-          `- ${goal.title}${goal.deadline ? ` (due ${goal.deadline.toLocaleDateString()})` : ''}`
-      )
-      .join('\n')}`;
-  }
-
-  return contextString;
+function buildGoalCoachContextString(recentGoals: GoalContext[]): string {
+  return `\n\nExisting Goals:\n${recentGoals
+    .map(
+      goal =>
+        `- ${goal.title}${goal.deadline ? ` (due ${goal.deadline.toLocaleDateString()})` : ''}`
+    )
+    .join('\n')}`;
 }
 
 export async function POST(request: Request) {

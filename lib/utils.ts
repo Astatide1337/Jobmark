@@ -1,6 +1,6 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { format, formatDistanceToNow, isAfter, parseISO } from "date-fns";
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns';
 
 /**
  * UI Utilities
@@ -13,7 +13,7 @@ export function cn(...inputs: ClassValue[]) {
  * Date & Time Utilities
  */
 export const dateUtils = {
-  format: (date: Date | string | number, formatStr: string = "MMM d, yyyy") => {
+  format: (date: Date | string | number, formatStr: string = 'MMM d, yyyy') => {
     return format(new Date(date), formatStr);
   },
 
@@ -43,7 +43,7 @@ export const dateUtils = {
 export const textUtils = {
   truncate: (str: string, length: number) => {
     if (str.length <= length) return str;
-    return str.slice(0, length) + "...";
+    return str.slice(0, length) + '...';
   },
 
   capitalize: (str: string) => {
@@ -53,8 +53,8 @@ export const textUtils = {
   slugify: (str: string) => {
     return str
       .toLowerCase()
-      .replace(/[^\w ]+/g, "")
-      .replace(/ +/g, "-");
+      .replace(/[^\w ]+/g, '')
+      .replace(/ +/g, '-');
   },
 };
 
@@ -62,26 +62,23 @@ export const textUtils = {
  * Number & Currency Utilities
  */
 export const numUtils = {
-  formatCurrency: (amount: number, currency: string = "USD") => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
+  formatCurrency: (amount: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
       currency,
     }).format(amount);
   },
 
   formatPercent: (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "percent",
+    return new Intl.NumberFormat('en-US', {
+      style: 'percent',
       minimumFractionDigits: 1,
     }).format(value);
   },
 };
 
-/**
- * Misc Utilities
- */
-export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export function generateId(length: number = 8) {
-  return Math.random().toString(36).substring(2, 2 + length);
+  return Math.random()
+    .toString(36)
+    .substring(2, 2 + length);
 }

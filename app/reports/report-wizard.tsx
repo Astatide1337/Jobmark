@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ReportConfig,
   streamReport,
@@ -9,6 +9,7 @@ import {
 } from '@/app/actions/reports';
 import { updateReportSettings } from '@/app/actions/settings';
 import { readStreamableValue } from '@ai-sdk/rsc';
+import debounce from 'lodash.debounce';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -64,12 +65,13 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   const [config, setConfig] = useState<ReportConfig>({
     dateRange: '7d',
     projectId: undefined, // All projects
-    tone: 'professional', // Will be updated by useEffect
+    tone: 'professional',
     notes: '', // Placeholder for custom instructions
   });
 
-  // Apply user's default settings when they load
-  useEffect(() => {
+  // Apply user's default settings when they load (during render phase to avoid cascading effects)
+  const [prevSettings, setPrevSettings] = useState(settings);
+  if (settings !== prevSettings) {
     if (settings) {
       setConfig(prev => ({
         ...prev,
@@ -77,7 +79,8 @@ export function ReportWizard({ projects }: ReportWizardProps) {
         notes: settings.customInstructions || prev.notes,
       }));
     }
-  }, [settings]);
+    setPrevSettings(settings);
+  }
 
   // Custom date selection state
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -97,45 +100,52 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
+  // Debounced validation logic
+  const debouncedValidate = useMemo(
+    () =>
+      debounce(async (currentConfig: ReportConfig, currentRange: DateRange | undefined) => {
+        setIsValidating(true);
+        setValidationMessage(null);
+
+        try {
+          // Prepare temp config for check
+          const tempConfig = { ...currentConfig };
+          if (tempConfig.dateRange === 'custom') {
+            // Wait until both dates are set
+            if (!currentRange?.from || !currentRange?.to) {
+              setIsValidating(false);
+              setHasValidActivities(false);
+              return;
+            }
+
+            tempConfig.customStartDate = currentRange.from;
+            tempConfig.customEndDate = currentRange.to || currentRange.from;
+          }
+
+          const result = await checkActivityCount(tempConfig);
+          const isValid = result.count > 0;
+          setHasValidActivities(isValid);
+          if (!isValid) setValidationMessage('No activities found in this range.');
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsValidating(false);
+        }
+      }, 300),
+    []
+  );
+
   // Re-validate when dateRange or presets change
   useEffect(() => {
     // Only validate if we are in Step 1
     if (step !== 1) return;
 
-    const validate = async () => {
-      setIsValidating(true);
-      setValidationMessage(null);
+    debouncedValidate(config, dateRange);
 
-      try {
-        // Prepare temp config for check
-        const tempConfig = { ...config };
-        if (tempConfig.dateRange === 'custom') {
-          // Wait until both dates are set
-          if (!dateRange?.from || !dateRange?.to) {
-            setIsValidating(false);
-            setHasValidActivities(false);
-            return;
-          }
-
-          tempConfig.customStartDate = dateRange.from;
-          tempConfig.customEndDate = dateRange.to || dateRange.from;
-        }
-
-        const result = await checkActivityCount(tempConfig);
-        const isValid = result.count > 0;
-        setHasValidActivities(isValid);
-        if (!isValid) setValidationMessage('No activities found in this range.');
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsValidating(false);
-      }
+    return () => {
+      debouncedValidate.cancel();
     };
-
-    // Debounce slightly to avoid rapid checks
-    const timer = setTimeout(validate, 300);
-    return () => clearTimeout(timer);
-  }, [config, dateRange, step]);
+  }, [config, dateRange, step, debouncedValidate]);
 
   const handleNextStep = () => {
     if (hasValidActivities && !isValidating) {
@@ -150,8 +160,8 @@ export function ReportWizard({ projects }: ReportWizardProps) {
 
     // Auto-save the selected tone as future default
     if (config.tone) {
-      updateReportSettings({ defaultTone: config.tone }).catch((err: any) =>
-        console.error('Failed to auto-save tone preference', err)
+      updateReportSettings({ defaultTone: config.tone }).catch((err: Error) =>
+        console.error('Failed to update default tone:', err)
       );
     }
 
@@ -411,7 +421,9 @@ export function ReportWizard({ projects }: ReportWizardProps) {
               <Input
                 placeholder="E.g. Focus on the API refactor, or mention the outage on Tuesday..."
                 value={config.notes || ''}
-                onChange={(e: any) => setConfig({ ...config, notes: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setConfig({ ...config, notes: e.target.value })
+                }
                 className="bg-muted/30 h-12"
               />
             </div>

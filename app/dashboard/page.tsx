@@ -74,6 +74,7 @@ export default async function DashboardPage() {
             dates={stats.recentDates}
             projects={stats.projects}
             monthlyGoal={stats.monthlyGoal}
+            serverDate={new Date().toISOString()}
           />
         </div>
 

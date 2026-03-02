@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { ReactLenis } from 'lenis/react';
 import { usePathname } from 'next/navigation';
 
@@ -21,25 +21,28 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { uiV2 } = useUI();
-  const [enabled, setEnabled] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine if smooth scroll should be enabled
+  // 1. Must be mounted (client-side)
+  // 2. Must NOT prefer reduced motion
+  // 3. Either uiV2 is off, or we are on the landing page
+  const isEnabled = useMemo(() => {
+    if (!mounted) return false;
+
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return false;
 
-    if (prefersReducedMotion) {
-      setEnabled(false);
-      return;
-    }
+    if (uiV2 && pathname !== '/') return false;
 
-    if (uiV2 && pathname !== '/') {
-      setEnabled(false);
-      return;
-    }
+    return true;
+  }, [mounted, uiV2, pathname]);
 
-    setEnabled(true);
-  }, [pathname, uiV2]);
-
-  if (!enabled) {
+  if (!isEnabled) {
     return <>{children}</>;
   }
 

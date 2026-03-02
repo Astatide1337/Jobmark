@@ -49,7 +49,11 @@ export async function createConversation(
     throw new Error('Unauthorized');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const titles: Record<string, string> = {
+    'goal-coach': 'Goal Setting Session',
+    interview: 'Mock Interview',
+  };
+
   const conversation = await (prisma.conversation as any).create({
     data: {
       userId: session.user.id,
@@ -57,12 +61,7 @@ export async function createConversation(
       projectId: projectId || null,
       goalId: goalId || null,
       contactId: contactId || null,
-      title:
-        mode === 'goal-coach'
-          ? 'Goal Setting Session'
-          : mode === 'interview'
-            ? 'Mock Interview'
-            : 'New Chat',
+      title: titles[mode] || 'New Chat',
       messages: initialMessage
         ? {
             create: {
@@ -119,11 +118,10 @@ export async function getConversations(limit = 20): Promise<ConversationData[]> 
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return conversations.map((c: any) => ({
+  return conversations.map((c: ConversationData) => ({
     id: c.id,
     title: c.title,
-    mode: c.mode as ConversationMode,
+    mode: c.mode,
     projectId: c.projectId,
     goalId: c.goalId,
     contactId: c.contactId,
@@ -244,8 +242,12 @@ export async function updateConversationContext(
     throw new Error('Unauthorized');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = {};
+  const data: {
+    projectId?: string | null;
+    goalId?: string | null;
+    contactId?: string | null;
+    reports?: { set: { id: string }[] };
+  } = {};
   if (projectId !== undefined) data.projectId = projectId;
   if (goalId !== undefined) data.goalId = goalId;
   if (contactId !== undefined) data.contactId = contactId;

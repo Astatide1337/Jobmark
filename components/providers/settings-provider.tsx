@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { getUserSettings, type UserSettingsData } from "@/app/actions/settings";
-import { getThemePreset } from "@/lib/themes";
+import { createContext, useContext, useEffect, useState } from 'react';
+import { getUserSettings, type UserSettingsData } from '@/app/actions/settings';
+import { getThemePreset } from '@/lib/themes';
 
 interface SettingsContextType {
   settings: UserSettingsData | null;
@@ -30,14 +30,22 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
   const [isLoading, setIsLoading] = useState(!initialSettings);
 
   const refreshSettings = async () => {
-    setIsLoading(true);
-    const newSettings = await getUserSettings();
-    setSettings(newSettings);
-    setIsLoading(false);
-    
-    // Apply theme when settings refresh
-    if (newSettings) {
-      applyTheme(newSettings.themePreset, newSettings.themeMode);
+    // Only set loading if we're not already in the initial loading state
+    setSettings(prev => {
+      if (prev === null) setIsLoading(true);
+      return prev;
+    });
+
+    try {
+      const newSettings = await getUserSettings();
+      setSettings(newSettings);
+
+      // Apply theme when settings refresh
+      if (newSettings) {
+        applyTheme(newSettings.themePreset, newSettings.themeMode);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,9 +58,25 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
 
   // Fetch settings on mount if not provided
   useEffect(() => {
+    let mounted = true;
+
     if (!initialSettings) {
-      refreshSettings();
+      const init = async () => {
+        const newSettings = await getUserSettings();
+        if (mounted) {
+          setSettings(newSettings);
+          setIsLoading(false);
+          if (newSettings) {
+            applyTheme(newSettings.themePreset, newSettings.themeMode);
+          }
+        }
+      };
+      void init();
     }
+
+    return () => {
+      mounted = false;
+    };
   }, [initialSettings]);
 
   return (
@@ -69,24 +93,24 @@ function applyTheme(presetId: string, mode: string) {
   const root = document.documentElement;
 
   // Apply color variables using hex values
-  root.style.setProperty("--primary", preset.colors.primary);
-  root.style.setProperty("--primary-foreground", preset.colors.primaryForeground);
-  root.style.setProperty("--accent", preset.colors.accent);
-  root.style.setProperty("--accent-warm", preset.colors.accentWarm);
-  root.style.setProperty("--accent-warm-hover", preset.colors.accentWarmHover);
-  root.style.setProperty("--ring", preset.colors.ring);
-  root.style.setProperty("--sidebar-primary", preset.colors.sidebarPrimary);
-  root.style.setProperty("--sidebar-ring", preset.colors.sidebarRing);
-  root.style.setProperty("--chart-1", preset.colors.chart1);
+  root.style.setProperty('--primary', preset.colors.primary);
+  root.style.setProperty('--primary-foreground', preset.colors.primaryForeground);
+  root.style.setProperty('--accent', preset.colors.accent);
+  root.style.setProperty('--accent-warm', preset.colors.accentWarm);
+  root.style.setProperty('--accent-warm-hover', preset.colors.accentWarmHover);
+  root.style.setProperty('--ring', preset.colors.ring);
+  root.style.setProperty('--sidebar-primary', preset.colors.sidebarPrimary);
+  root.style.setProperty('--sidebar-ring', preset.colors.sidebarRing);
+  root.style.setProperty('--chart-1', preset.colors.chart1);
 
   // Apply theme mode (light/dark)
-  if (mode === "system") {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    root.classList.toggle("dark", prefersDark);
-    root.classList.toggle("light", !prefersDark);
+  if (mode === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.classList.toggle('dark', prefersDark);
+    root.classList.toggle('light', !prefersDark);
   } else {
-    root.classList.toggle("dark", mode === "dark");
-    root.classList.toggle("light", mode === "light");
+    root.classList.toggle('dark', mode === 'dark');
+    root.classList.toggle('light', mode === 'light');
   }
 }
 
