@@ -1,3 +1,10 @@
+/**
+ * AI Reports Workspace
+ *
+ * Why: The primary engine for generating performance summaries.
+ * This page uses a tabbed interface to switch between the interactive
+ * "Report Wizard" and the "Report History" view.
+ */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getProjects } from '@/app/actions/projects';
@@ -17,12 +24,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const session = await auth();
   const { tab } = await searchParams;
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login');
   }
 
-  const projects = await getProjects();
-  const reports = await getReports();
+  const userId = session.user.id;
+
+  const [projects, reports] = await Promise.all([
+    getProjects('active', userId),
+    getReports(userId),
+  ]);
 
   const defaultTab = tab === 'history' ? 'history' : 'new';
 

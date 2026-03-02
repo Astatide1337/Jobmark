@@ -1,3 +1,18 @@
+/**
+ * AI-Augmented Live Editor
+ *
+ * Why: Standard textareas are static. This component provides a specialized
+ * "Copilot" experience where users can highlight text and ask the AI
+ * to rewrite, shorten, or professionalize specific sections.
+ *
+ * Technical Implementation:
+ * - Mirroring: Overlays a transparent `textarea` on top of a "Backdrop"
+ *   div. This allows us to use standard browser selection behavior while
+ *   visually rendering high-quality highlights and floating menus.
+ * - Absolute Positioning: The floating toolbar calculates its position
+ *   relative to the viewport selection, ensuring it always appears
+ *   right where the user is working.
+ */
 'use client';
 
 import { useEffect, useState, useRef, useMemo } from 'react';

@@ -1,3 +1,16 @@
+/**
+ * Core Utilities Module
+ *
+ * Why: Centralizing common logic for styling, date formatting, and string
+ * manipulation reduces code duplication and ensures a consistent developer
+ * experience across the project.
+ *
+ * Highlights:
+ * - `cn`: Combines tailwind classes using `clsx` and `twMerge` to handle
+ *   conditional styles and class priority correctly.
+ * - `dateUtils`: Standardized wrappers around `date-fns` for consistent
+ *   date display.
+ */
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns';

@@ -1,3 +1,14 @@
+/**
+ * Focus Configuration Actions
+ *
+ * Why: jobmark allows users to customize their "Deep Work" ritual. This
+ * module handles the persistence of those custom sequences (e.g.,
+ * 2 mins Breathing -> 5 mins Goal Review).
+ *
+ * Technical Implementation:
+ * We store the entire sequence as a JSONB array in the `userSettings` table.
+ * This avoids a separate table for "blocks" while remaining highly flexible.
+ */
 'use server';
 
 import { auth } from '@/lib/auth';
@@ -34,13 +45,18 @@ function parseFocusConfig(raw: unknown): FocusBlock[] {
 // getFocusConfig
 // ---------------------------------------------------------------------------
 
-export async function getFocusConfig(): Promise<FocusBlock[]> {
-  const session = await auth();
-  if (!session?.user?.id) return getDefaultFocusConfig();
+export async function getFocusConfig(userId?: string): Promise<FocusBlock[]> {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return getDefaultFocusConfig();
+    targetUserId = session.user.id;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const settings = await (prisma.userSettings as any).findUnique({
-    where: { userId: session.user.id },
+    where: { userId: targetUserId },
     select: { focusConfig: true },
   });
 

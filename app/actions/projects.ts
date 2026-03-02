@@ -1,14 +1,25 @@
-"use server";
+/**
+ * Project Management Actions
+ *
+ * Why: Projects allow users to group their activities into logical workstreams.
+ * This module handles the CRUD lifecycle and project archiving.
+ *
+ * Performance Note:
+ * `getProjects` includes an activity count and the timestamp of the last
+ * activity. This allows the UI to show "Last activity: X days ago" without
+ * fetching the entire activity history for every project.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { projectColors } from "@/lib/constants";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { projectColors } from '@/lib/constants';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const projectSchema = z.object({
-  name: z.string().min(1, "Project name is required").max(50),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format"),
+  name: z.string().min(1, 'Project name is required').max(50),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
   description: z.string().max(200).optional(),
 });
 
@@ -27,15 +38,15 @@ export async function createProject(
   formData: FormData
 ): Promise<ProjectFormState> {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
-    return { success: false, message: "You must be signed in" };
+    return { success: false, message: 'You must be signed in' };
   }
 
   const rawData = {
-    name: formData.get("name") as string,
-    color: formData.get("color") as string || projectColors[0],
-    description: formData.get("description") as string || undefined,
+    name: formData.get('name') as string,
+    color: (formData.get('color') as string) || projectColors[0],
+    description: (formData.get('description') as string) || undefined,
   };
 
   const result = projectSchema.safeParse(rawData);
@@ -43,7 +54,7 @@ export async function createProject(
   if (!result.success) {
     return {
       success: false,
-      message: "Validation failed",
+      message: 'Validation failed',
       errors: result.error.flatten().fieldErrors,
     };
   }
@@ -58,35 +69,37 @@ export async function createProject(
       },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/projects");
-    
-    return { success: true, message: "Project created" };
+    revalidatePath('/dashboard');
+    revalidatePath('/projects');
+
+    return { success: true, message: 'Project created' };
   } catch (error) {
-    console.error("Failed to create project:", error);
-    return { success: false, message: "Failed to create project" };
+    console.error('Failed to create project:', error);
+    return { success: false, message: 'Failed to create project' };
   }
 }
 
-export async function getProjects(filter: "active" | "archived" = "active") {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return [];
+export async function getProjects(filter: 'active' | 'archived' = 'active', userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    targetUserId = session.user.id;
   }
 
   const projects = await prisma.project.findMany({
-    where: { 
-      userId: session.user.id,
-      archived: filter === "archived",
+    where: {
+      userId: targetUserId,
+      archived: filter === 'archived',
     },
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
     include: {
       _count: {
         select: { activities: true },
       },
       activities: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: 1,
         select: {
           createdAt: true,
@@ -103,94 +116,96 @@ export async function updateProject(
   data: { name?: string; color?: string; description?: string }
 ) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
     await prisma.project.update({
-      where: { 
+      where: {
         id: projectId,
         userId: session.user.id,
       },
       data,
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/projects");
-    return { success: true, message: "Project updated" };
+    revalidatePath('/dashboard');
+    revalidatePath('/projects');
+    return { success: true, message: 'Project updated' };
   } catch (error) {
-    console.error("Failed to update project:", error);
-    return { success: false, message: "Failed to update project" };
+    console.error('Failed to update project:', error);
+    return { success: false, message: 'Failed to update project' };
   }
 }
 
 export async function archiveProject(projectId: string) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
     await prisma.project.update({
-      where: { 
+      where: {
         id: projectId,
         userId: session.user.id,
       },
       data: { archived: true },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/projects");
-    return { success: true, message: "Project archived" };
+    revalidatePath('/dashboard');
+    revalidatePath('/projects');
+    return { success: true, message: 'Project archived' };
   } catch (error) {
-    console.error("Failed to archive project:", error);
-    return { success: false, message: "Failed to archive project" };
+    console.error('Failed to archive project:', error);
+    return { success: false, message: 'Failed to archive project' };
   }
 }
 
 export async function unarchiveProject(projectId: string) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
     await prisma.project.update({
-      where: { 
+      where: {
         id: projectId,
         userId: session.user.id,
       },
       data: { archived: false },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/projects");
-    return { success: true, message: "Project restored" };
+    revalidatePath('/dashboard');
+    revalidatePath('/projects');
+    return { success: true, message: 'Project restored' };
   } catch (error) {
-    console.error("Failed to restore project:", error);
-    return { success: false, message: "Failed to restore project" };
+    console.error('Failed to restore project:', error);
+    return { success: false, message: 'Failed to restore project' };
   }
 }
 
-export async function getProjectDetails(projectId: string, activityLimit = 20) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return null;
+export async function getProjectDetails(projectId: string, activityLimit = 20, userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return null;
+    targetUserId = session.user.id;
   }
 
   const project = await prisma.project.findUnique({
-    where: { 
+    where: {
       id: projectId,
-      userId: session.user.id,
+      userId: targetUserId,
     },
     include: {
       activities: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: activityLimit,
       },
       _count: {
@@ -205,19 +220,22 @@ export async function getProjectDetails(projectId: string, activityLimit = 20) {
 export async function getProjectActivities(
   projectId: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  userId?: string
 ) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return [];
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    targetUserId = session.user.id;
   }
 
   // Verify project belongs to user
   const project = await prisma.project.findUnique({
-    where: { 
+    where: {
       id: projectId,
-      userId: session.user.id,
+      userId: targetUserId,
     },
     select: { id: true },
   });
@@ -228,7 +246,7 @@ export async function getProjectActivities(
 
   const activities = await prisma.activity.findMany({
     where: { projectId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,
   });

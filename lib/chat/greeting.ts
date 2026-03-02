@@ -1,9 +1,20 @@
-export type GreetingPeriod = "morning" | "afternoon" | "evening";
+/**
+ * Chat Greeting Logic
+ *
+ * Why: jobmark aims to feel like a "Personal Mentor". A simple, time-aware
+ * greeting makes the AI interactions feel more human and welcoming.
+ *
+ * Pattern:
+ * - Shows "Morning", "Afternoon", or "Evening" based on the user's local time.
+ * - Extracts the first name to keep the tone informal and friendly.
+ * - Used only in new conversation states to avoid cluttering ongoing threads.
+ */
+export type GreetingPeriod = 'morning' | 'afternoon' | 'evening';
 
 function toGreetingPeriod(hour: number): GreetingPeriod {
-  if (hour < 12) return "morning";
-  if (hour < 18) return "afternoon";
-  return "evening";
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
 }
 
 function getHourInTimeZone(date: Date, timeZone?: string): number {
@@ -11,31 +22,31 @@ function getHourInTimeZone(date: Date, timeZone?: string): number {
     return date.getHours();
   }
 
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
     hour12: false,
     timeZone,
   });
 
   const parts = formatter.formatToParts(date);
-  const hourPart = parts.find((part) => part.type === "hour")?.value;
+  const hourPart = parts.find(part => part.type === 'hour')?.value;
   const parsed = hourPart ? Number.parseInt(hourPart, 10) : Number.NaN;
   return Number.isFinite(parsed) ? parsed : date.getHours();
 }
 
 export function getFirstName(name?: string | null): string {
-  if (!name) return "";
-  return name.trim().split(/\s+/)[0] ?? "";
+  if (!name) return '';
+  return name.trim().split(/\s+/)[0] ?? '';
 }
 
 export function getGreetingLabel(period: GreetingPeriod): string {
   switch (period) {
-    case "morning":
-      return "Good Morning";
-    case "afternoon":
-      return "Good Afternoon";
+    case 'morning':
+      return 'Good Morning';
+    case 'afternoon':
+      return 'Good Afternoon';
     default:
-      return "Good Evening";
+      return 'Good Evening';
   }
 }
 

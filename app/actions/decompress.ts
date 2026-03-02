@@ -1,13 +1,20 @@
-"use server";
+/**
+ * Decompression Server Actions
+ *
+ * Why: Part of the "Focus & Well-being" subsystem. This action automatically
+ * categorizes a user's decompression session into a dedicated "Decompress"
+ * project, ensuring their rest time is tracked alongside their work accomplishments.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 export async function logDecompressionSession() {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "Not authenticated" };
+    return { error: 'Not authenticated' };
   }
 
   try {
@@ -15,7 +22,7 @@ export async function logDecompressionSession() {
     let project = await prisma.project.findFirst({
       where: {
         userId: session.user.id,
-        name: "Decompress",
+        name: 'Decompress',
       },
     });
 
@@ -23,9 +30,9 @@ export async function logDecompressionSession() {
       project = await prisma.project.create({
         data: {
           userId: session.user.id,
-          name: "Decompress",
-          color: "#d4a574", // Warm amber
-          description: "Sessions for psychological detachment and rest.",
+          name: 'Decompress',
+          color: '#d4a574', // Warm amber
+          description: 'Sessions for psychological detachment and rest.',
         },
       });
     }
@@ -35,14 +42,14 @@ export async function logDecompressionSession() {
       data: {
         userId: session.user.id,
         projectId: project.id,
-        content: "Completed a decompression ritual.",
+        content: 'Completed a decompression ritual.',
       },
     });
 
-    revalidatePath("/dashboard");
+    revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
-    console.error("Failed to log decompression session:", error);
-    return { error: "Failed to log session" };
+    console.error('Failed to log decompression session:', error);
+    return { error: 'Failed to log session' };
   }
 }

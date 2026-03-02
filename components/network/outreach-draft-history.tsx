@@ -1,3 +1,13 @@
+/**
+ * Outreach Draft History
+ *
+ * Why: Allows users to review, edit, and export previously generated AI
+ * outreach messages. This preserves "the best" drafts for future reuse.
+ *
+ * Integration:
+ * - LiveEditor: Wraps each draft in an interactive editor for manual polish.
+ * - Export: Connects to the PDF/Word generation utilities in `lib/report-export`.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';

@@ -1,8 +1,18 @@
-"use server";
+/**
+ * User Settings & Data Governance Actions
+ *
+ * Why: This is the central hub for user personalization and privacy.
+ * It manages everything from UI themes to data export/account deletion.
+ *
+ * Key Responsibility:
+ * Ensures "Data Portability" (GDPR compliance) by providing the `exportUserData`
+ * action, which bundles a user's entire history into a single JSON object.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 export type UserSettingsData = {
   // Goals
@@ -26,21 +36,23 @@ export type UserSettingsData = {
   showConfetti: boolean;
 };
 
-export async function getUserSettings(): Promise<UserSettingsData | null> {
-  const session = await auth();
+export async function getUserSettings(userId?: string): Promise<UserSettingsData | null> {
+  let targetUserId = userId;
 
-  if (!session?.user?.id) {
-    return null;
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return null;
+    targetUserId = session.user.id;
   }
 
   let settings = await prisma.userSettings.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: targetUserId },
   });
 
   // Create default settings if none exist
   if (!settings) {
     settings = await prisma.userSettings.create({
-      data: { userId: session.user.id },
+      data: { userId: targetUserId },
     });
   }
 
@@ -58,7 +70,7 @@ export async function updateGoalSettings(data: {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
@@ -77,12 +89,12 @@ export async function updateGoalSettings(data: {
       });
     }
 
-    revalidatePath("/settings");
-    revalidatePath("/dashboard");
-    return { success: true, message: "Goals updated" };
+    revalidatePath('/settings');
+    revalidatePath('/dashboard');
+    return { success: true, message: 'Goals updated' };
   } catch (error) {
-    console.error("Failed to update goal settings:", error);
-    return { success: false, message: "Failed to update settings" };
+    console.error('Failed to update goal settings:', error);
+    return { success: false, message: 'Failed to update settings' };
   }
 }
 
@@ -93,7 +105,7 @@ export async function updateReportSettings(data: {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
@@ -103,12 +115,12 @@ export async function updateReportSettings(data: {
       create: { userId: session.user.id, ...data },
     });
 
-    revalidatePath("/settings");
-    revalidatePath("/reports");
-    return { success: true, message: "Report settings updated" };
+    revalidatePath('/settings');
+    revalidatePath('/reports');
+    return { success: true, message: 'Report settings updated' };
   } catch (error) {
-    console.error("Failed to update report settings:", error);
-    return { success: false, message: "Failed to update settings" };
+    console.error('Failed to update report settings:', error);
+    return { success: false, message: 'Failed to update settings' };
   }
 }
 
@@ -121,7 +133,7 @@ export async function updateAppearanceSettings(data: {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
@@ -131,12 +143,12 @@ export async function updateAppearanceSettings(data: {
       create: { userId: session.user.id, ...data },
     });
 
-    revalidatePath("/settings");
-    revalidatePath("/");
-    return { success: true, message: "Appearance updated" };
+    revalidatePath('/settings');
+    revalidatePath('/');
+    return { success: true, message: 'Appearance updated' };
   } catch (error) {
-    console.error("Failed to update appearance settings:", error);
-    return { success: false, message: "Failed to update settings" };
+    console.error('Failed to update appearance settings:', error);
+    return { success: false, message: 'Failed to update settings' };
   }
 }
 
@@ -165,12 +177,12 @@ export async function exportUserData() {
     prisma.activity.findMany({
       where: { userId: session.user.id },
       include: { project: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     }),
     prisma.report.findMany({
       where: { userId: session.user.id },
       select: { title: true, content: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     }),
     prisma.userSettings.findUnique({
       where: { userId: session.user.id },
@@ -182,7 +194,7 @@ export async function exportUserData() {
     user,
     settings,
     projects,
-    activities: activities.map((a) => ({
+    activities: activities.map(a => ({
       content: a.content,
       logDate: a.logDate,
       createdAt: a.createdAt,
@@ -196,7 +208,7 @@ export async function clearAllActivities() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
@@ -204,13 +216,13 @@ export async function clearAllActivities() {
       where: { userId: session.user.id },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/insights");
-    revalidatePath("/projects");
-    return { success: true, message: "All activities cleared" };
+    revalidatePath('/dashboard');
+    revalidatePath('/insights');
+    revalidatePath('/projects');
+    return { success: true, message: 'All activities cleared' };
   } catch (error) {
-    console.error("Failed to clear activities:", error);
-    return { success: false, message: "Failed to clear activities" };
+    console.error('Failed to clear activities:', error);
+    return { success: false, message: 'Failed to clear activities' };
   }
 }
 
@@ -218,7 +230,7 @@ export async function deleteUserAccount() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
@@ -227,9 +239,9 @@ export async function deleteUserAccount() {
       where: { id: session.user.id },
     });
 
-    return { success: true, message: "Account deleted" };
+    return { success: true, message: 'Account deleted' };
   } catch (error) {
-    console.error("Failed to delete account:", error);
-    return { success: false, message: "Failed to delete account" };
+    console.error('Failed to delete account:', error);
+    return { success: false, message: 'Failed to delete account' };
   }
 }

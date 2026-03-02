@@ -1,6 +1,9 @@
 /**
- * Web Speech API Types
- * Based on W3C Speech API
+ * Web Speech API Type Definitions
+ *
+ * Why: The standard TypeScript `lib.dom.d.ts` does not yet include robust
+ * definitions for the W3C Web Speech API (specifically `webkitSpeechRecognition`).
+ * This file provides type-safety for the Quick Capture dictation feature.
  */
 
 export interface SpeechRecognitionEvent extends Event {

@@ -1,3 +1,19 @@
+/**
+ * AI Career Mentor Interface
+ *
+ * Why: This is the centerpiece of the "Career Intelligence" subsystem.
+ * It provides a specialized, context-aware chat experience that handles
+ * real-time streaming and multi-source data injection.
+ *
+ * Key Features:
+ * - Real-time Streaming: Uses `ReadableStream` with a custom event parser
+ *   to handle chunked LLM responses.
+ * - Context Orchestration: Bridges the `ContextSelector` and the server-side
+ *   Strategy Pattern.
+ * - Performance: Implements "Render-Phase State Syncing" to ensure that
+ *   switching between conversations (or projects/goals) is instant and
+ *   free of cascading double-renders.
+ */
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react';

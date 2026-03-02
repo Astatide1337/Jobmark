@@ -14,14 +14,15 @@ export default async function ContactDetailPage({
   params: Promise<{ contactId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect('/login');
+  if (!session?.user?.id) redirect('/login');
 
   const { contactId } = await params;
+  const userId = session.user.id;
 
   const [contact, interactions, initialDrafts] = await Promise.all([
-    getContactById(contactId),
-    getInteractionsByContact(contactId),
-    getOutreachDraftsByContact(contactId),
+    getContactById(contactId, userId),
+    getInteractionsByContact(contactId, 20, userId),
+    getOutreachDraftsByContact(contactId, userId),
   ]);
 
   if (!contact) notFound();

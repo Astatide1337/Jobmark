@@ -14,12 +14,12 @@ interface ProjectDetailsPageProps {
 
 export default async function ProjectDetailsPage({ params }: ProjectDetailsPageProps) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login');
   }
 
   const { projectId } = await params;
-  const project = await getProjectDetails(projectId);
+  const project = await getProjectDetails(projectId, 20, session.user.id);
 
   if (!project) {
     notFound();

@@ -1,3 +1,10 @@
+/**
+ * Default Focus & Meditation Configurations
+ *
+ * Why: Provides a set of science-backed breathing patterns (Huberman, Weil)
+ * and affirmations to ensure the Focus feature is immediately valuable for
+ * new users.
+ */
 import { nanoid } from 'nanoid';
 import type { FocusBlock, BreathingPatternDef, BreathingPattern } from './types';
 

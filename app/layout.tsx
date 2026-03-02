@@ -1,3 +1,18 @@
+/**
+ * Root Application Layout
+ *
+ * Why: This is the entry point for the entire application's UI. It
+ * initializes the global design system (fonts, grid, overlays) and
+ * wraps the app in the necessary React Providers.
+ *
+ * Design Details:
+ * - Font Parity: Combines Inter (sans), Geist Mono (code), and
+ *   Playfair Display (serif) to achieve the "Premium Editorial" look.
+ * - Grain Overlay: Adds a subtle SVG noise texture to the background
+ *   to give the dark UI a physical, high-quality "paper" feel.
+ * - Global Shortcuts: Hosts the `CommandPalette` to ensure search
+ *   is available from every page.
+ */
 import type { Metadata } from 'next';
 import { Inter, Geist_Mono, Playfair_Display } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';

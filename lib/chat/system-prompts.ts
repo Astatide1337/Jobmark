@@ -1,4 +1,15 @@
-import type { ConversationMode } from "@/app/actions/chat";
+/**
+ * AI System Prompts & Guardrails
+ *
+ * Why: jobmark features specialized AI modes (Coach, Interviewer, Mentor).
+ * This module defines the personas and instructions that govern LLM behavior
+ * for each mode.
+ *
+ * Security: Triple-dash delimiters and a strict security warning are
+ * injected into every prompt to prevent prompt injection attacks and
+ * ensure the AI stays within its mentorship boundaries.
+ */
+import type { ConversationMode } from '@/app/actions/chat';
 
 export const CHAT_SYSTEM_PROMPTS: Record<ConversationMode, string> = {
   general: `You are a supportive AI career mentor inside Jobmark, a professional activity tracker. You help users:
@@ -14,7 +25,7 @@ Use a warm, encouraging tone. Address limiting beliefs directly but compassionat
 
 CRITICAL: Do NOT include any internal thought process, scratchpad, or drafts. Output ONLY the final response to the user.`,
 
-  "goal-coach": `You are a goal-setting mentor following Brian Tracy's proven 7-step method. Your role is to walk the user through each step:
+  'goal-coach': `You are a goal-setting mentor following Brian Tracy's proven 7-step method. Your role is to walk the user through each step:
 
 1. DECIDE exactly what you want - Help them articulate a specific, clear goal
 2. WRITE it down - Encourage documenting the goal (they can add it in Jobmark)

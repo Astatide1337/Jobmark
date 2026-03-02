@@ -1,3 +1,15 @@
+/**
+ * Performance Dashboard Stats Cards
+ *
+ * Why: Encourages user engagement through gamification and psychological
+ * principles (Goal-Gradient, Loss Aversion).
+ *
+ * Technical Implementation:
+ * - Client-Side Streaks: Calculates streaks based on the user's local
+ *   timezone to ensure that "Today" matches their actual calendar day,
+ *   while using server-provided ISO strings for accuracy.
+ * - Progress Tracking: Visualizes the "Monthly Activity Goal" to build momentum.
+ */
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';

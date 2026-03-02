@@ -1,25 +1,27 @@
+/**
+ * AI Chat Streaming Route
+ *
+ * Why: Providing a "real-time" feel is critical for the AI Mentor experience.
+ * This route handles the persistent connection between the user and the
+ * LLM (via OpenRouter).
+ *
+ * Complex Logic:
+ * - Context Injection: Uses the Strategy Pattern to build a specialized
+ *   prompt based on the user's selected projects, goals, or reports.
+ * - Stream Management: Tracks every active request in the `StreamManager`
+ *   to handle manual cancellations and browser disconnects.
+ * - Auto-Titling: If it's a new conversation, it triggers a secondary
+ *   AI call to generate a relevant title based on the first message.
+ */
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { formatDate, getChannelLabel } from '@/lib/network';
-import {
-  buildProjectContext,
-  buildGoalContext,
-  buildContactContext,
-  buildUserSummary,
-  buildInterviewContext,
-  buildReportsContext,
-  UserSummary,
-  GoalContext,
-} from '@/app/actions/chat-context';
+import { buildContextString } from '@/lib/chat/context-providers';
 import { buildSystemPrompt } from '@/lib/chat/system-prompts';
-import {
-  cleanupStaleChatStreams,
-  registerChatStream,
-  unregisterChatStream,
-} from '@/lib/chat/stream-registry';
+import { streamManager } from '@/lib/chat/stream-manager';
 import type { ConversationMode } from '@/app/actions/chat';
 
 const openai = new OpenAI({
@@ -50,144 +52,6 @@ function isAbortError(error: unknown): boolean {
 
   const message = maybeError.message?.toLowerCase();
   return Boolean(message && message.includes('abort'));
-}
-
-async function buildContextString(conversation: {
-  mode: string;
-  projectId: string | null;
-  goalId: string | null;
-  contactId: string | null;
-  reportIds: string[];
-}): Promise<string> {
-  let contextString = '';
-
-  const userSummary = await buildUserSummary();
-  if (userSummary) {
-    contextString += buildUserSummaryString(userSummary);
-  }
-
-  if (conversation.projectId) {
-    contextString += await buildProjectContextString(conversation.projectId, conversation.mode);
-  }
-
-  if (conversation.goalId) {
-    contextString += await buildGoalContextString(conversation.goalId);
-  }
-
-  if (conversation.contactId) {
-    contextString += await buildContactContextString(conversation.contactId);
-  }
-
-  if (conversation.reportIds.length > 0) {
-    contextString += await buildReportsContextString(conversation.reportIds);
-  }
-
-  if (conversation.mode === 'goal-coach' && userSummary?.recentGoals.length) {
-    contextString += buildGoalCoachContextString(userSummary.recentGoals);
-  }
-
-  return contextString;
-}
-
-function buildUserSummaryString(userSummary: UserSummary): string {
-  return `\n\nUser Profile:\n- Name: ${userSummary.name || 'User'}\n- Total logged activities: ${userSummary.totalActivities}\n- Active projects: ${userSummary.totalProjects}\n- Current streak: ${userSummary.currentStreak} days\n- Goals set: ${userSummary.goalsCount}`;
-}
-
-async function buildProjectContextString(projectId: string, mode: string): Promise<string> {
-  let context = '';
-  if (mode === 'interview') {
-    const interviewContext = await buildInterviewContext(projectId);
-    if (interviewContext) {
-      context += `\n\nProject for Interview: "${interviewContext.projectName}"`;
-      if (interviewContext.projectDescription) {
-        context += `\nDescription: ${interviewContext.projectDescription}`;
-      }
-      context += `\nTotal activities: ${interviewContext.activityCount}`;
-      context += `\n\nRecent Work (use these for context-specific questions):\n${interviewContext.activityTimeline}`;
-    }
-  } else {
-    const projectContext = await buildProjectContext(projectId);
-    if (projectContext) {
-      context += `\n\nReferenced Project: "${projectContext.name}"`;
-      if (projectContext.description) {
-        context += `\nDescription: ${projectContext.description}`;
-      }
-      context += `\nActivities logged: ${projectContext.activityCount}`;
-      if (projectContext.recentActivities.length > 0) {
-        context += `\nRecent work:\n${projectContext.recentActivities
-          .slice(0, 5)
-          .map(activity => `- ${activity.content}`)
-          .join('\n')}`;
-      }
-    }
-  }
-  return context;
-}
-
-async function buildGoalContextString(goalId: string): Promise<string> {
-  let context = '';
-  const goalContext = await buildGoalContext(goalId);
-  if (goalContext) {
-    context += `\n\nReferenced Goal: "${goalContext.title}"`;
-    if (goalContext.deadline) {
-      context += `\nDeadline: ${goalContext.deadline.toLocaleDateString()}`;
-    }
-    if (goalContext.why) {
-      context += `\nWhy it matters: ${goalContext.why}`;
-    }
-  }
-  return context;
-}
-
-async function buildContactContextString(contactId: string): Promise<string> {
-  let context = '';
-  const contactContext = await buildContactContext(contactId);
-  if (contactContext) {
-    context += `\n\nReferenced Contact: "${contactContext.fullName}"`;
-    if (contactContext.relationship) {
-      context += `\nRelationship: ${contactContext.relationship}`;
-    }
-    if (contactContext.personalityTraits) {
-      context += `\nPersonality/Traits: ${contactContext.personalityTraits}`;
-    }
-    if (contactContext.notes) {
-      context += `\nNotes: ${contactContext.notes}`;
-    }
-
-    if (contactContext.recentInteractions.length > 0) {
-      context += '\n\nRecent Interactions:';
-      for (const interaction of contactContext.recentInteractions) {
-        const dateStr = formatDate(interaction.occurredAt);
-        const channelStr = getChannelLabel(interaction.channel);
-        context += `\n- ${dateStr} (${channelStr}): ${interaction.summary}`;
-        if (interaction.nextStep) {
-          context += `\n  Next: ${interaction.nextStep}`;
-        }
-        if (interaction.followUpDate) {
-          context += `\n  Follow-up: ${formatDate(interaction.followUpDate)}`;
-        }
-      }
-    }
-  }
-  return context;
-}
-
-async function buildReportsContextString(reportIds: string[]): Promise<string> {
-  let context = '';
-  const reports = await buildReportsContext(reportIds);
-  for (const report of reports) {
-    context += `\n\nReferenced Report: "${report.title}" (${report.createdAt.toLocaleDateString()})\n${report.content.slice(0, 3000)}`;
-  }
-  return context;
-}
-
-function buildGoalCoachContextString(recentGoals: GoalContext[]): string {
-  return `\n\nExisting Goals:\n${recentGoals
-    .map(
-      goal =>
-        `- ${goal.title}${goal.deadline ? ` (due ${goal.deadline.toLocaleDateString()})` : ''}`
-    )
-    .join('\n')}`;
 }
 
 export async function POST(request: Request) {
@@ -240,13 +104,16 @@ export async function POST(request: Request) {
     },
   });
 
-  const contextString = await buildContextString({
-    mode: conversation.mode,
-    projectId: conversation.projectId,
-    goalId: conversation.goalId,
-    contactId: conversation.contactId,
-    reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
-  });
+  const contextString = await buildContextString(
+    {
+      mode: conversation.mode,
+      projectId: conversation.projectId,
+      goalId: conversation.goalId,
+      contactId: conversation.contactId,
+      reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
+    },
+    session.user.id
+  );
 
   const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
@@ -280,8 +147,8 @@ export async function POST(request: Request) {
     request.signal.addEventListener('abort', handleClientAbort, { once: true });
   }
 
-  cleanupStaleChatStreams();
-  registerChatStream({
+  streamManager.cleanupStale();
+  streamManager.register({
     requestId,
     userId: session.user.id,
     conversationId,
@@ -332,7 +199,7 @@ export async function POST(request: Request) {
         }
       } finally {
         request.signal.removeEventListener('abort', handleClientAbort);
-        unregisterChatStream(requestId);
+        streamManager.unregister(requestId);
 
         try {
           if (fullResponse.trim().length > 0) {
@@ -402,7 +269,7 @@ export async function POST(request: Request) {
     cancel() {
       upstreamController.abort('stream-cancelled-by-client');
       request.signal.removeEventListener('abort', handleClientAbort);
-      unregisterChatStream(requestId);
+      streamManager.unregister(requestId);
     },
   });
 

@@ -1,3 +1,13 @@
+/**
+ * Interactive Reports Demo
+ *
+ * Why: Showcases the end-result of using jobmark. It visualizes the
+ * professional formatting and AI-driven structure of the generated reports.
+ *
+ * Implementation: Reuses the production `ReportHistory` component with
+ * pre-written examples that demonstrate the "Note-to-Narrative"
+ * transformation.
+ */
 'use client';
 
 import { DashboardFrame } from './dashboard-frame';

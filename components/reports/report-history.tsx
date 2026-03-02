@@ -1,3 +1,12 @@
+/**
+ * Report History & Management
+ *
+ * Why: Provides a repository of past performance reviews and summaries.
+ * Users can revisit, edit, or re-export historical data at any time.
+ *
+ * Key Pattern: Uses a collapsible list to keep the interface clean while
+ * allowing deep-dives into specific report contents via the `LiveEditor`.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';

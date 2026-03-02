@@ -1,3 +1,16 @@
+/**
+ * Decompression & Focus Ritual Page
+ *
+ * Why: jobmark isn't just for logging work; it's for mental well-being.
+ * This page hosts the interactive "End-of-Day" wizard.
+ *
+ * Technical Implementation:
+ * - Goal Resolution: This Server Component resolves "Dynamic Goal IDs"
+ *   into actual text strings *before* passing them to the wizard. This
+ *   ensures the wizard doesn't need to know about the database or Prisma.
+ * - Affirmation Injection: If a user hasn't set custom affirmations,
+ *   we inject sane defaults here to ensure the UI remains functional.
+ */
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
@@ -33,7 +46,7 @@ export default async function FocusPage() {
 
   // 2. Load focus config + user data in parallel
   const [rawBlocks, userSettings, goals] = await Promise.all([
-    getFocusConfig(),
+    getFocusConfig(userId),
     prisma.userSettings.findUnique({ where: { userId } }),
     prisma.goal.findMany({
       where: { userId },

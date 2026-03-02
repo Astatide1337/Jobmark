@@ -1,3 +1,18 @@
+/**
+ * AI Context Selector (Horizontal Scroll)
+ *
+ * Why: LLMs are only as good as the context they are given. This component
+ * provides a gesture-friendly "Chip" interface for users to attach
+ * Projects, Goals, Reports, or Contacts to their conversation.
+ *
+ * Interaction Design:
+ * - Mouse Dragging: Implements custom pointer event listeners to allow
+ *   horizontal dragging on desktop (overflow-x).
+ * - Animated Transitions: Uses `Framer Motion` for high-quality entry/exit
+ *   of context chips.
+ * - Dynamic Fades: Intelligently calculates edge-gradients to signal
+ *   hidden content in the scroll area.
+ */
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';

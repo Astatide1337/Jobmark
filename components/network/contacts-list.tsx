@@ -1,3 +1,14 @@
+/**
+ * Contacts List & Toolbar
+ *
+ * Why: Provides the high-level view of a user's professional network.
+ * It includes real-time search, multi-criteria sorting, and key metrics.
+ *
+ * Feature Highlight:
+ * - Search: Deep-filters through names, emails, and relationship descriptions.
+ * - Sorting: Allows prioritizing by "Most Recent" or "Most Interactions"
+ *   to help users identify relationships that need nurturing.
+ */
 'use client';
 
 import { useState, useMemo } from 'react';

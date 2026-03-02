@@ -1,12 +1,25 @@
-"use server";
+/**
+ * Activity Server Actions
+ *
+ * Why: Activities are the "heartbeat" of the application. These actions handle
+ * creating, retrieving, and calculating statistics for everything a user logs.
+ *
+ * Optimization:
+ * - `getActivities` and `getActivityStats` now support an optional `userId`.
+ *   This allows parent Server Components to fetch the session ONCE and pass
+ *   the ID down, preventing "Session Waterfalls" (multiple redundant DB lookups).
+ * - `getActivityStats` uses `Promise.all` to execute 7 independent Prisma
+ *   queries in parallel, drastically reducing page load latency.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const activitySchema = z.object({
-  content: z.string().min(10, "Activity must be at least 10 characters").max(1000),
+  content: z.string().min(10, 'Activity must be at least 10 characters').max(1000),
   projectId: z.string().optional().nullable(),
   logDate: z.date().optional(),
 });
@@ -25,17 +38,15 @@ export async function createActivity(
   formData: FormData
 ): Promise<ActivityFormState> {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
-    return { success: false, message: "You must be signed in to log activities" };
+    return { success: false, message: 'You must be signed in to log activities' };
   }
 
   const rawData = {
-    content: formData.get("content") as string,
-    projectId: formData.get("projectId") as string | null,
-    logDate: formData.get("logDate") 
-      ? new Date(formData.get("logDate") as string) 
-      : new Date(),
+    content: formData.get('content') as string,
+    projectId: formData.get('projectId') as string | null,
+    logDate: formData.get('logDate') ? new Date(formData.get('logDate') as string) : new Date(),
   };
 
   const result = activitySchema.safeParse(rawData);
@@ -43,7 +54,7 @@ export async function createActivity(
   if (!result.success) {
     return {
       success: false,
-      message: "Validation failed",
+      message: 'Validation failed',
       errors: result.error.flatten().fieldErrors,
     };
   }
@@ -58,25 +69,27 @@ export async function createActivity(
       },
     });
 
-    revalidatePath("/dashboard");
-    
-    return { success: true, message: "Activity logged successfully" };
+    revalidatePath('/dashboard');
+
+    return { success: true, message: 'Activity logged successfully' };
   } catch (error) {
-    console.error("Failed to create activity:", error);
-    return { success: false, message: "Failed to save activity. Please try again." };
+    console.error('Failed to create activity:', error);
+    return { success: false, message: 'Failed to save activity. Please try again.' };
   }
 }
 
-export async function getActivities(limit = 20, offset = 0, hideArchived = false) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return [];
+export async function getActivities(limit = 20, offset = 0, hideArchived = false, userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    targetUserId = session.user.id;
   }
 
   const activities = await prisma.activity.findMany({
-    where: { 
-      userId: session.user.id,
+    where: {
+      userId: targetUserId,
       ...(hideArchived && {
         OR: [
           { projectId: null }, // Activities without a project
@@ -84,7 +97,7 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
         ],
       }),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,
     include: {
@@ -97,104 +110,115 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
   return activities;
 }
 
-export async function getActivityCount() {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return 0;
+export async function getActivityCount(userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return 0;
+    targetUserId = session.user.id;
   }
 
   return prisma.activity.count({
-    where: { userId: session.user.id },
+    where: { userId: targetUserId },
   });
 }
 
 export async function deleteActivity(activityId: string) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+    return { success: false, message: 'Unauthorized' };
   }
 
   try {
     await prisma.activity.delete({
-      where: { 
+      where: {
         id: activityId,
         userId: session.user.id, // Ensure user owns this activity
       },
     });
 
-    revalidatePath("/dashboard");
-    return { success: true, message: "Activity deleted" };
+    revalidatePath('/dashboard');
+    return { success: true, message: 'Activity deleted' };
   } catch (error) {
-    console.error("Failed to delete activity:", error);
-    return { success: false, message: "Failed to delete activity" };
+    console.error('Failed to delete activity:', error);
+    return { success: false, message: 'Failed to delete activity' };
   }
 }
 
-export async function getActivityStats() {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return { 
-      thisMonth: 0, 
-      today: 0,
-      thisWeek: 0,
-      recentDates: [], 
-      projects: 0, 
-      monthlyGoal: 20,
-      dailyGoal: 3,
-      weeklyGoal: 15,
-    };
+export async function getActivityStats(userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return {
+        thisMonth: 0,
+        today: 0,
+        thisWeek: 0,
+        recentDates: [],
+        projects: 0,
+        monthlyGoal: 20,
+        dailyGoal: 3,
+        weeklyGoal: 15,
+        totalCount: 0,
+      };
+    }
+    targetUserId = session.user.id;
   }
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   // Get start of week (Sunday = 0)
   const dayOfWeek = now.getDay();
   const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
 
-  const [user, settings, thisMonthCount, todayCount, thisWeekCount, projectCount] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { monthlyActivityGoal: true },
-    }),
-    prisma.userSettings.findUnique({
-      where: { userId: session.user.id },
-      select: { dailyTarget: true, weeklyTarget: true },
-    }),
-    prisma.activity.count({
-      where: {
-        userId: session.user.id,
-        logDate: { gte: startOfMonth },
-      },
-    }),
-    prisma.activity.count({
-      where: {
-        userId: session.user.id,
-        logDate: { gte: startOfDay },
-      },
-    }),
-    prisma.activity.count({
-      where: {
-        userId: session.user.id,
-        logDate: { gte: startOfWeek },
-      },
-    }),
-    prisma.project.count({
-      where: {
-        userId: session.user.id,
-        archived: false,
-      },
-    }),
-  ]);
+  const [user, settings, thisMonthCount, todayCount, thisWeekCount, projectCount, totalCount] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { monthlyActivityGoal: true },
+      }),
+      prisma.userSettings.findUnique({
+        where: { userId: targetUserId },
+        select: { dailyTarget: true, weeklyTarget: true },
+      }),
+      prisma.activity.count({
+        where: {
+          userId: targetUserId,
+          logDate: { gte: startOfMonth },
+        },
+      }),
+      prisma.activity.count({
+        where: {
+          userId: targetUserId,
+          logDate: { gte: startOfDay },
+        },
+      }),
+      prisma.activity.count({
+        where: {
+          userId: targetUserId,
+          logDate: { gte: startOfWeek },
+        },
+      }),
+      prisma.project.count({
+        where: {
+          userId: targetUserId,
+          archived: false,
+        },
+      }),
+      prisma.activity.count({
+        where: { userId: targetUserId },
+      }),
+    ]);
 
   // Use createdAt (actual creation timestamp) for streak - more reliable than logDate
   const recentActivities = await prisma.activity.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
+    where: { userId: targetUserId },
+    orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
     take: 365,
   });
@@ -211,5 +235,6 @@ export async function getActivityStats() {
     monthlyGoal: user?.monthlyActivityGoal ?? 20,
     dailyGoal: settings?.dailyTarget ?? 3,
     weeklyGoal: settings?.weeklyTarget ?? 15,
+    totalCount,
   };
 }

@@ -1,3 +1,15 @@
+/**
+ * Global Settings & Theme Provider
+ *
+ * Why: Manages user-specific configuration (Themes, Goals, UI Prefs)
+ * across the entire application lifecycle.
+ *
+ * Theme Engine:
+ * - Dynamic Injection: Manually injects CSS variables into the `:root`
+ *   based on the selected preset from `lib/themes.ts`.
+ * - Persistence: Automatically fetches and applies the latest settings
+ *   on mount if they aren't provided via props.
+ */
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';

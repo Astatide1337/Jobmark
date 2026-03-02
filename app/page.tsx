@@ -1,3 +1,14 @@
+/**
+ * jobmark Public Landing Page
+ *
+ * Why: This is the high-conversion entrance for the product. It uses
+ * a "Scrollytelling" approach with editorial-style layouts to
+ * communicate the value proposition.
+ *
+ * Pattern: Purely aesthetic Server Component that wraps everything in
+ * the `AuthModalProvider` to allow "Sign In" triggers from any CTA
+ * section without extra page reloads.
+ */
 import Link from 'next/link';
 import { Pen } from 'lucide-react';
 import { AuthModalProvider } from '@/components/auth';

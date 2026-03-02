@@ -1,3 +1,19 @@
+/**
+ * jobmark Database Schema
+ * 
+ * Why: This schema defines the professional relationship between Users, 
+ * their Accomplishments (Activities), and their Career Assets (Projects, Reports).
+ * 
+ * Key Design Decisions:
+ * - Soft Links in Conversations: The `Conversation` model uses optional IDs 
+ *   (`projectId`, `goalId`, etc.) instead of hard relations to allow AI 
+ *   context to be highly fluid without database integrity constraints 
+ *   blocking the user experience.
+ * - Normalized Dates: `logDate` in `Activity` uses `@db.Date` (YYYY-MM-DD) 
+ *   to ensure statistics are calculated based on calendar days, while 
+ *   `createdAt` remains a full timestamp for ordering and audit logs.
+ */
+
 // Jobmark Database Schema
 // PostgreSQL with Neon Serverless
 

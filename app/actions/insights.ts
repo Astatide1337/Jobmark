@@ -1,17 +1,40 @@
-"use server";
+/**
+ * Insights & Analytics Actions
+ *
+ * Why: To stay motivated, users need to see their progress visualized.
+ * This action performs heavy data aggregation to build the "Yearly Heatmap"
+ * and "Project Distribution" charts.
+ *
+ * Performance Strategy (Server-Side Crunching):
+ * We perform the complex grid calculations (mapping 365 days of activities
+ * to week-based arrays) on the server. This ensures the client receives
+ * a lightweight "ready-to-render" object, preventing lag on low-power devices.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+
+export interface ProjectDistribution {
+  name: string;
+  count: number;
+  color: string;
+}
 
 export interface HeatmapDataPoint {
   date: string; // YYYY-MM-DD
   count: number;
 }
 
-export interface ProjectDistribution {
-  name: string;
+export interface HeatmapDay {
+  date: string; // YYYY-MM-DD
   count: number;
-  color: string;
+  dayOfWeek: number;
+}
+
+export interface MonthLabel {
+  month: string;
+  weekIndex: number;
 }
 
 export interface InsightsData {
@@ -20,110 +43,160 @@ export interface InsightsData {
   longestStreak: number;
   bestDay: { date: string; count: number } | null;
   activeDaysThisMonth: number;
-  heatmapData: HeatmapDataPoint[];
+  heatmapData: HeatmapDataPoint[]; // Raw data for client-side filtering
+  heatmapGrid: HeatmapDay[][]; // Pre-calculated grid for the UI component
+  monthLabels: MonthLabel[];
   weeklyTrend: number[];
   projectDistribution: ProjectDistribution[];
   totalReports: number;
 }
 
-export async function getInsightsData(): Promise<InsightsData> {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+export async function getInsightsData(userId?: string): Promise<InsightsData> {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error('Unauthorized');
+    targetUserId = session.user.id;
   }
 
-  const userId = session.user.id;
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   // Parallel queries for performance
-  const [
-    totalActivities,
-    totalReports,
-    thisMonthActivities,
-    allActivities,
-    projectsWithCounts,
-  ] = await Promise.all([
-    // Total activities count
-    prisma.activity.count({
-      where: { userId },
-    }),
-    // Total reports count
-    prisma.report.count({
-      where: { userId },
-    }),
-    // This month's activities (for active days)
-    prisma.activity.findMany({
-      where: {
-        userId,
-        logDate: { gte: startOfMonth },
-      },
-      select: { logDate: true },
-    }),
-    // All activities in the last year (for heatmap and streaks)
-    prisma.activity.findMany({
-      where: {
-        userId,
-        logDate: { gte: oneYearAgo },
-      },
-      select: { logDate: true, createdAt: true },
-      orderBy: { logDate: "desc" },
-    }),
-    // Project distribution
-    prisma.activity.groupBy({
-      by: ["projectId"],
-      where: { userId },
-      _count: true,
-    }),
-  ]);
+  const [totalActivities, totalReports, thisMonthActivities, allActivities, projectsWithCounts] =
+    await Promise.all([
+      // Total activities count
+      prisma.activity.count({
+        where: { userId: targetUserId },
+      }),
+      // Total reports count
+      prisma.report.count({
+        where: { userId: targetUserId },
+      }),
+      // This month's activities (for active days)
+      prisma.activity.findMany({
+        where: {
+          userId: targetUserId,
+          logDate: { gte: startOfMonth },
+        },
+        select: { logDate: true },
+      }),
+      // All activities in the last year (for heatmap and streaks)
+      prisma.activity.findMany({
+        where: {
+          userId: targetUserId,
+          logDate: { gte: oneYearAgo },
+        },
+        select: { logDate: true, createdAt: true },
+        orderBy: { logDate: 'desc' },
+      }),
+      // Project distribution
+      prisma.activity.groupBy({
+        by: ['projectId'],
+        where: { userId: targetUserId },
+        _count: true,
+      }),
+    ]);
 
   // Get project details for distribution
   const projectIds = projectsWithCounts
-    .map((p) => p.projectId)
+    .map(p => p.projectId)
     .filter((id): id is string => id !== null);
-  
+
   const projects = await prisma.project.findMany({
     where: { id: { in: projectIds } },
     select: { id: true, name: true, color: true },
   });
 
-  const projectMap = new Map(projects.map((p) => [p.id, p]));
+  const projectMap = new Map(projects.map(p => [p.id, p]));
 
   // Calculate project distribution
-  const projectDistribution: ProjectDistribution[] = projectsWithCounts.map((item) => {
+  const projectDistribution: ProjectDistribution[] = projectsWithCounts.map(item => {
     const project = item.projectId ? projectMap.get(item.projectId) : null;
     return {
-      name: project?.name || "Unassigned",
+      name: project?.name || 'Unassigned',
       count: item._count,
-      color: project?.color || "#6b7280",
+      color: project?.color || '#6b7280',
     };
   });
 
   // Calculate heatmap data
   const heatmapMap = new Map<string, number>();
-  allActivities.forEach((activity) => {
-    const dateStr = activity.logDate.toISOString().split("T")[0];
+  allActivities.forEach(activity => {
+    const dateStr = activity.logDate.toISOString().split('T')[0];
     heatmapMap.set(dateStr, (heatmapMap.get(dateStr) || 0) + 1);
   });
 
-  const heatmapData: HeatmapDataPoint[] = Array.from(heatmapMap.entries()).map(
-    ([date, count]) => ({ date, count })
-  );
+  // Calculate grid (weeks of days)
+  const days: HeatmapDay[] = [];
+  const today = new Date();
+  for (let i = 364; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    days.push({
+      date: dateStr,
+      count: heatmapMap.get(dateStr) || 0,
+      dayOfWeek: date.getDay(),
+    });
+  }
+
+  const heatmapData: HeatmapDataPoint[] = Array.from(heatmapMap.entries()).map(([date, count]) => ({
+    date,
+    count,
+  }));
+
+  const heatmapGrid: HeatmapDay[][] = [];
+  let currentWeek: HeatmapDay[] = [];
+  const firstDayOfWeek = days[0]?.dayOfWeek ?? 0;
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    currentWeek.push({ date: '', count: -1, dayOfWeek: i });
+  }
+
+  days.forEach(day => {
+    currentWeek.push(day);
+    if (currentWeek.length === 7) {
+      heatmapGrid.push(currentWeek);
+      currentWeek = [];
+    }
+  });
+
+  if (currentWeek.length > 0) {
+    heatmapGrid.push(currentWeek);
+  }
+
+  // Calculate month labels
+  const monthLabels: MonthLabel[] = [];
+  let lastMonth = -1;
+  heatmapGrid.forEach((week, weekIndex) => {
+    const validDays = week.filter(d => d.date);
+    if (validDays.length > 0) {
+      const firstDay = new Date(validDays[0].date);
+      const month = firstDay.getMonth();
+      if (month !== lastMonth) {
+        monthLabels.push({
+          month: firstDay.toLocaleDateString('en-US', { month: 'short' }),
+          weekIndex,
+        });
+        lastMonth = month;
+      }
+    }
+  });
 
   // Find best day
   let bestDay: { date: string; count: number } | null = null;
-  heatmapData.forEach((day) => {
-    if (!bestDay || day.count > bestDay.count) {
-      bestDay = { date: day.date, count: day.count };
+  heatmapMap.forEach((count, date) => {
+    if (!bestDay || count > bestDay.count) {
+      bestDay = { date, count };
     }
   });
 
   // Calculate active days this month
   const thisMonthDates = new Set(
-    thisMonthActivities.map((a) => a.logDate.toISOString().split("T")[0])
+    thisMonthActivities.map(a => a.logDate.toISOString().split('T')[0])
   );
   const activeDaysThisMonth = thisMonthDates.size;
 
@@ -135,7 +208,7 @@ export async function getInsightsData(): Promise<InsightsData> {
     const weekEnd = new Date();
     weekEnd.setDate(weekEnd.getDate() - i * 7);
 
-    const count = allActivities.filter((a) => {
+    const count = allActivities.filter(a => {
       const date = a.logDate;
       return date >= weekStart && date < weekEnd;
     }).length;
@@ -145,13 +218,13 @@ export async function getInsightsData(): Promise<InsightsData> {
 
   // Calculate current streak using createdAt for reliability
   const uniqueDates = Array.from(
-    new Set(allActivities.map((a) => a.createdAt.toLocaleDateString("en-CA")))
+    new Set(allActivities.map(a => a.createdAt.toLocaleDateString('en-CA')))
   ).sort((a, b) => b.localeCompare(a));
 
   let currentStreak = 0;
   if (uniqueDates.length > 0) {
-    const today = new Date().toLocaleDateString("en-CA");
-    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
+    const today = new Date().toLocaleDateString('en-CA');
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
     const latest = uniqueDates[0];
 
     if (latest >= yesterday) {
@@ -159,10 +232,10 @@ export async function getInsightsData(): Promise<InsightsData> {
       for (let i = 1; i < uniqueDates.length; i++) {
         const current = uniqueDates[i - 1];
         const previous = uniqueDates[i];
-        const currentDate = new Date(current + "T12:00:00");
+        const currentDate = new Date(current + 'T12:00:00');
         const expectedPrevious = new Date(currentDate.getTime() - 86400000)
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         if (previous === expectedPrevious) {
           currentStreak++;
         } else {
@@ -176,13 +249,13 @@ export async function getInsightsData(): Promise<InsightsData> {
   let longestStreak = currentStreak;
   let tempStreak = 0;
   const sortedDates = [...uniqueDates].sort();
-  
+
   for (let i = 0; i < sortedDates.length; i++) {
     if (i === 0) {
       tempStreak = 1;
     } else {
-      const prev = new Date(sortedDates[i - 1] + "T12:00:00");
-      const curr = new Date(sortedDates[i] + "T12:00:00");
+      const prev = new Date(sortedDates[i - 1] + 'T12:00:00');
+      const curr = new Date(sortedDates[i] + 'T12:00:00');
       const diff = (curr.getTime() - prev.getTime()) / 86400000;
       if (diff === 1) {
         tempStreak++;
@@ -200,6 +273,8 @@ export async function getInsightsData(): Promise<InsightsData> {
     bestDay,
     activeDaysThisMonth,
     heatmapData,
+    heatmapGrid,
+    monthLabels,
     weeklyTrend,
     projectDistribution,
     totalReports,

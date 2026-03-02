@@ -1,3 +1,10 @@
+/**
+ * User Settings Hub
+ *
+ * Why: The central point for user configuration. It fetches all
+ * necessary data (User Preferences, Goals, Focus Config) in parallel
+ * before handing off to the `SettingsClient` for interactive management.
+ */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';

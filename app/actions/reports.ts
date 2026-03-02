@@ -1,3 +1,17 @@
+/**
+ * Report Generation & Management Actions
+ *
+ * Why: The core value of jobmark is transforming raw activity logs into
+ * professional summaries for performance reviews. These actions handle
+ * streaming AI generation and historical report management.
+ *
+ * Technical Implementation:
+ * - `streamReport`: Uses the Vercel AI SDK (`createStreamableValue`) to pipe
+ *   LLM chunks to the client. It automatically builds a formatted activity
+ *   log from the database to serve as the prompt context.
+ * - `improveText`: A "Copilot" style action that rewrites specific selections
+ *   within the Live Editor.
+ */
 'use server';
 
 import { auth } from '@/lib/auth';
@@ -229,12 +243,17 @@ export async function saveReportToHistory(content: string, config: ReportConfig)
 }
 
 // Get saved reports
-export async function getReports() {
-  const session = await auth();
-  if (!session?.user?.id) return [];
+export async function getReports(userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    targetUserId = session.user.id;
+  }
 
   const reports = await prisma.report.findMany({
-    where: { userId: session.user.id },
+    where: { userId: targetUserId },
     orderBy: { createdAt: 'desc' },
   });
 

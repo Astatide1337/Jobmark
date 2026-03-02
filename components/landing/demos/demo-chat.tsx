@@ -1,3 +1,14 @@
+/**
+ * Interactive Chat Demo
+ *
+ * Why: Visualizes the AI Mentor's value proposition. It showcases
+ * how the mentor uses logged activities to provide specific,
+ * evidence-based coaching.
+ *
+ * Implementation: Uses static "Mock" messages and a non-functional
+ * version of the `ContextSelector` to ensure the landing page stays
+ * lightweight and fast.
+ */
 import { DashboardFrame } from './dashboard-frame';
 import { cn } from '@/lib/utils';
 import { Bot, User, ArrowUp } from 'lucide-react';

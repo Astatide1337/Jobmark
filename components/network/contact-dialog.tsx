@@ -1,6 +1,15 @@
-"use client";
+/**
+ * Contact Creation & Edit Dialog
+ *
+ * Why: A unified form for adding or updating professional contacts.
+ * It handles field validation and server-side persistence.
+ *
+ * Pattern: Reuses the same form for both "Create" and "Edit" modes,
+ * controlled by the presence of an initial `contact` prop.
+ */
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,15 +17,15 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
-import { createContact, updateContact } from "@/app/actions/network";
-import { parseUTCDate } from "@/lib/network";
-import { toast } from "sonner";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2 } from 'lucide-react';
+import { createContact, updateContact } from '@/app/actions/network';
+import { parseUTCDate } from '@/lib/network';
+import { toast } from 'sonner';
 
 interface ContactDialogProps {
   open: boolean;
@@ -34,39 +43,30 @@ interface ContactDialogProps {
   onSuccess?: () => void;
 }
 
-export function ContactDialog({
-  open,
-  onOpenChange,
-  contact,
-  onSuccess,
-}: ContactDialogProps) {
+export function ContactDialog({ open, onOpenChange, contact, onSuccess }: ContactDialogProps) {
   const isEditing = !!contact;
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form fields
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [birthday, setBirthday] = useState("");
-  const [relationship, setRelationship] = useState("");
-  const [personalityTraits, setPersonalityTraits] = useState("");
-  const [notes, setNotes] = useState("");
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [relationship, setRelationship] = useState('');
+  const [personalityTraits, setPersonalityTraits] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (open) {
-      setFullName(contact?.fullName ?? "");
-      setEmail(contact?.email ?? "");
-      setPhone(contact?.phone ?? "");
-      setBirthday(
-        contact?.birthday
-          ? new Date(contact.birthday).toISOString().split("T")[0]
-          : ""
-      );
-      setRelationship(contact?.relationship ?? "");
-      setPersonalityTraits(contact?.personalityTraits ?? "");
-      setNotes(contact?.notes ?? "");
+      setFullName(contact?.fullName ?? '');
+      setEmail(contact?.email ?? '');
+      setPhone(contact?.phone ?? '');
+      setBirthday(contact?.birthday ? new Date(contact.birthday).toISOString().split('T')[0] : '');
+      setRelationship(contact?.relationship ?? '');
+      setPersonalityTraits(contact?.personalityTraits ?? '');
+      setNotes(contact?.notes ?? '');
       setErrors({});
     }
   }, [open, contact]);
@@ -89,7 +89,7 @@ export function ContactDialog({
         });
 
         if (result.success) {
-          toast.success("Contact updated");
+          toast.success('Contact updated');
           onSuccess?.();
           onOpenChange(false);
         } else {
@@ -97,21 +97,18 @@ export function ContactDialog({
         }
       } else {
         const formData = new FormData();
-        formData.append("fullName", fullName);
-        formData.append("email", email);
-        formData.append("phone", phone);
-        formData.append("birthday", birthday);
-        formData.append("relationship", relationship);
-        formData.append("personalityTraits", personalityTraits);
-        formData.append("notes", notes);
+        formData.append('fullName', fullName);
+        formData.append('email', email);
+        formData.append('phone', phone);
+        formData.append('birthday', birthday);
+        formData.append('relationship', relationship);
+        formData.append('personalityTraits', personalityTraits);
+        formData.append('notes', notes);
 
-        const result = await createContact(
-          { success: false, message: "" },
-          formData
-        );
+        const result = await createContact({ success: false, message: '' }, formData);
 
         if (result.success) {
-          toast.success("Contact added");
+          toast.success('Contact added');
           onSuccess?.();
           onOpenChange(false);
         } else if (result.errors) {
@@ -127,8 +124,8 @@ export function ContactDialog({
         }
       }
     } catch (error) {
-      console.error("Contact dialog error:", error);
-      toast.error("Something went wrong. Please try again.");
+      console.error('Contact dialog error:', error);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -138,13 +135,11 @@ export function ContactDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Contact" : "Add Contact"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Contact' : 'Add Contact'}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update your contact's information."
-              : "Add someone to your professional network."}
+              : 'Add someone to your professional network.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,13 +152,11 @@ export function ContactDialog({
             <Input
               id="contact-fullName"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={e => setFullName(e.target.value)}
               placeholder="e.g. Jane Smith"
               maxLength={150}
             />
-            {errors.fullName && (
-              <p className="text-xs text-destructive">{errors.fullName}</p>
-            )}
+            {errors.fullName && <p className="text-destructive text-xs">{errors.fullName}</p>}
           </div>
 
           {/* Email */}
@@ -173,12 +166,10 @@ export function ContactDialog({
               id="contact-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               placeholder="jane@example.com"
             />
-            {errors.email && (
-              <p className="text-xs text-destructive">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
           </div>
 
           {/* Phone */}
@@ -187,12 +178,10 @@ export function ContactDialog({
             <Input
               id="contact-phone"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={e => setPhone(e.target.value)}
               placeholder="+1 (555) 123-4567"
             />
-            {errors.phone && (
-              <p className="text-xs text-destructive">{errors.phone}</p>
-            )}
+            {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
           </div>
 
           {/* Birthday */}
@@ -202,11 +191,9 @@ export function ContactDialog({
               id="contact-birthday"
               type="date"
               value={birthday}
-              onChange={(e) => setBirthday(e.target.value)}
+              onChange={e => setBirthday(e.target.value)}
             />
-            {errors.birthday && (
-              <p className="text-xs text-destructive">{errors.birthday}</p>
-            )}
+            {errors.birthday && <p className="text-destructive text-xs">{errors.birthday}</p>}
           </div>
 
           {/* Relationship */}
@@ -215,30 +202,26 @@ export function ContactDialog({
             <Input
               id="contact-relationship"
               value={relationship}
-              onChange={(e) => setRelationship(e.target.value)}
+              onChange={e => setRelationship(e.target.value)}
               placeholder="e.g. Former Manager, Mentor, Colleague"
             />
             {errors.relationship && (
-              <p className="text-xs text-destructive">{errors.relationship}</p>
+              <p className="text-destructive text-xs">{errors.relationship}</p>
             )}
           </div>
 
           {/* Personality Traits */}
           <div className="space-y-2">
-            <Label htmlFor="contact-personalityTraits">
-              Personality Traits
-            </Label>
+            <Label htmlFor="contact-personalityTraits">Personality Traits</Label>
             <Textarea
               id="contact-personalityTraits"
               value={personalityTraits}
-              onChange={(e) => setPersonalityTraits(e.target.value)}
+              onChange={e => setPersonalityTraits(e.target.value)}
               placeholder="Key personality traits or communication style..."
-              className="resize-none h-16"
+              className="h-16 resize-none"
             />
             {errors.personalityTraits && (
-              <p className="text-xs text-destructive">
-                {errors.personalityTraits}
-              </p>
+              <p className="text-destructive text-xs">{errors.personalityTraits}</p>
             )}
           </div>
 
@@ -248,26 +231,20 @@ export function ContactDialog({
             <Textarea
               id="contact-notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Anything else to remember about this person..."
-              className="resize-none h-20"
+              className="h-20 resize-none"
             />
-            {errors.notes && (
-              <p className="text-xs text-destructive">{errors.notes}</p>
-            )}
+            {errors.notes && <p className="text-destructive text-xs">{errors.notes}</p>}
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? "Save Changes" : "Add Contact"}
+              {isEditing ? 'Save Changes' : 'Add Contact'}
             </Button>
           </DialogFooter>
         </form>

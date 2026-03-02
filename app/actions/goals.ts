@@ -1,8 +1,14 @@
-"use server";
+/**
+ * Goal Server Actions
+ *
+ * Why: Career growth is driven by clear, time-bound objectives. These
+ * actions handle the lifecycle of a user's professional goals.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 export type GoalData = {
   id: string;
@@ -13,13 +19,18 @@ export type GoalData = {
   updatedAt: string;
 };
 
-export async function getGoals(): Promise<GoalData[]> {
-  const session = await auth();
-  if (!session?.user?.id) return [];
+export async function getGoals(userId?: string): Promise<GoalData[]> {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    targetUserId = session.user.id;
+  }
 
   const goals = await prisma.goal.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
+    where: { userId: targetUserId },
+    orderBy: { createdAt: 'desc' },
   });
 
   return goals.map(goal => ({
@@ -30,13 +41,9 @@ export async function getGoals(): Promise<GoalData[]> {
   }));
 }
 
-export async function createGoal(data: {
-  title: string;
-  deadline?: Date | null;
-  why?: string;
-}) {
+export async function createGoal(data: { title: string; deadline?: Date | null; why?: string }) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: "Unauthorized" };
+  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
 
   try {
     const goal = await prisma.goal.create({
@@ -55,12 +62,12 @@ export async function createGoal(data: {
       updatedAt: goal.updatedAt.toISOString(),
     };
 
-    revalidatePath("/dashboard");
-    revalidatePath("/settings");
+    revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true, goal: goalData };
   } catch (error) {
-    console.error("Failed to create goal:", error);
-    return { success: false, message: "Failed to create goal" };
+    console.error('Failed to create goal:', error);
+    return { success: false, message: 'Failed to create goal' };
   }
 }
 
@@ -73,7 +80,7 @@ export async function updateGoal(
   }
 ) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: "Unauthorized" };
+  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
 
   try {
     const existing = await prisma.goal.findUnique({
@@ -81,7 +88,7 @@ export async function updateGoal(
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: "Goal not found" };
+      return { success: false, message: 'Goal not found' };
     }
 
     const goal = await prisma.goal.update({
@@ -96,18 +103,18 @@ export async function updateGoal(
       updatedAt: goal.updatedAt.toISOString(),
     };
 
-    revalidatePath("/dashboard");
-    revalidatePath("/settings");
+    revalidatePath('/dashboard');
+    revalidatePath('/settings');
     return { success: true, goal: goalData };
   } catch (error) {
-    console.error("Failed to update goal:", error);
-    return { success: false, message: "Failed to update goal" };
+    console.error('Failed to update goal:', error);
+    return { success: false, message: 'Failed to update goal' };
   }
 }
 
 export async function deleteGoal(id: string) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: "Unauthorized" };
+  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
 
   try {
     // Verify ownership
@@ -116,18 +123,18 @@ export async function deleteGoal(id: string) {
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: "Goal not found" };
+      return { success: false, message: 'Goal not found' };
     }
 
     await prisma.goal.delete({
       where: { id },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/settings");
-    return { success: true, message: "Goal deleted" };
+    revalidatePath('/dashboard');
+    revalidatePath('/settings');
+    return { success: true, message: 'Goal deleted' };
   } catch (error) {
-    console.error("Failed to delete goal:", error);
-    return { success: false, message: "Failed to delete goal" };
+    console.error('Failed to delete goal:', error);
+    return { success: false, message: 'Failed to delete goal' };
   }
 }

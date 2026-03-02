@@ -1,17 +1,28 @@
-"use client";
+/**
+ * Intelligent Floating Navigation
+ *
+ * Why: Maintains access to primary CTAs without occupying permanent
+ * vertical space. It follows a "Scroll-Aware" pattern.
+ *
+ * Behavior:
+ * - Hidden on Scroll Down: To give the user more focus on the content.
+ * - Shown on Scroll Up: Anticipates the user's desire to navigate or sign up.
+ * - Glassmorphism: Uses `backdrop-blur` to stay legible over any background.
+ */
+'use client';
 
-import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-import { Pen } from "lucide-react";
-import { MagneticButton } from "@/components/ui/magnetic-button";
-import { useAuthModal } from "@/components/auth";
-import { cn } from "@/lib/utils";
+import { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { Pen } from 'lucide-react';
+import { MagneticButton } from '@/components/ui/magnetic-button';
+import { useAuthModal } from '@/components/auth';
+import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: "Features", href: "#product-tour" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
+  { label: 'Features', href: '#product-tour' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'FAQ', href: '#faq' },
 ];
 
 export function FloatingNav() {
@@ -27,7 +38,7 @@ export function FloatingNav() {
         window.requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
           const scrollDelta = currentScrollY - lastScrollY.current;
-          
+
           // Only change visibility if scroll delta is significant (prevents flicker)
           if (Math.abs(scrollDelta) > 5) {
             if (scrollDelta < 0 || currentScrollY < 100) {
@@ -36,7 +47,7 @@ export function FloatingNav() {
               setIsVisible(false);
             }
           }
-          
+
           setIsAtTop(currentScrollY < 50);
           lastScrollY.current = currentScrollY;
           ticking.current = false;
@@ -45,8 +56,8 @@ export function FloatingNav() {
       }
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -57,17 +68,17 @@ export function FloatingNav() {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -100, opacity: 0 }}
-          transition={{ 
-            duration: 0.2, 
-            ease: [0.4, 0, 0.2, 1]
+          transition={{
+            duration: 0.2,
+            ease: [0.4, 0, 0.2, 1],
           }}
           className={cn(
-            "fixed top-6 left-1/2 -translate-x-1/2 z-50",
-            "px-2 py-2 rounded-full",
-            "border border-border/20",
-            "backdrop-blur-xl",
-            "shadow-lg shadow-black/10",
-            isAtTop ? "bg-background/60" : "bg-background/90"
+            'fixed top-6 left-1/2 z-50 -translate-x-1/2',
+            'rounded-full px-2 py-2',
+            'border-border/20 border',
+            'backdrop-blur-xl',
+            'shadow-lg shadow-black/10',
+            isAtTop ? 'bg-background/60' : 'bg-background/90'
           )}
         >
           <div className="flex items-center gap-1">
@@ -75,27 +86,27 @@ export function FloatingNav() {
             <MagneticButton as="div" strength={0.2}>
               <Link
                 href="/"
-                className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-primary/10 transition-colors"
+                className="hover:bg-primary/10 flex items-center gap-2 rounded-full px-3 py-2 transition-colors"
               >
-                <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center border border-primary/20">
-                  <Pen className="h-3 w-3 text-primary" />
+                <div className="bg-primary/10 border-primary/20 flex h-6 w-6 items-center justify-center rounded-md border">
+                  <Pen className="text-primary h-3 w-3" />
                 </div>
-                <span className="text-sm font-serif font-semibold text-foreground hidden sm:inline">
+                <span className="text-foreground hidden font-serif text-sm font-semibold sm:inline">
                   Jobmark
                 </span>
               </Link>
             </MagneticButton>
 
             {/* Divider */}
-            <div className="w-px h-6 bg-border/30 mx-1 hidden sm:block" />
+            <div className="bg-border/30 mx-1 hidden h-6 w-px sm:block" />
 
             {/* Nav Items */}
-            <div className="hidden sm:flex items-center gap-1">
-              {navItems.map((item) => (
+            <div className="hidden items-center gap-1 sm:flex">
+              {navItems.map(item => (
                 <MagneticButton key={item.label} as="div" strength={0.15}>
                   <Link
                     href={item.href}
-                    className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-all rounded-full hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:text-foreground"
+                    className="text-muted-foreground hover:text-foreground hover:bg-primary/5 focus-visible:ring-ring/50 focus-visible:text-foreground rounded-full px-3 py-2 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {item.label}
                   </Link>
@@ -104,13 +115,13 @@ export function FloatingNav() {
             </div>
 
             {/* Divider */}
-            <div className="w-px h-6 bg-border/30 mx-1" />
+            <div className="bg-border/30 mx-1 h-6 w-px" />
 
             {/* CTA */}
             <MagneticButton as="div" strength={0.2}>
               <button
                 onClick={openAuthModal}
-                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
               >
                 Get Started
               </button>

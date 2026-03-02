@@ -98,7 +98,7 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       <AiInsights data={filteredData} />
 
       {/* Contribution Heatmap */}
-      <ContributionHeatmap data={filteredData.heatmapData} />
+      <ContributionHeatmap weeks={initialData.heatmapGrid} monthLabels={initialData.monthLabels} />
 
       {/* Charts Section */}
       <ActivityCharts

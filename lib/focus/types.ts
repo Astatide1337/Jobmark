@@ -1,3 +1,11 @@
+/**
+ * Focus Subsystem Type Definitions
+ *
+ * Why: Defines the "Domain Model" for the decompression ritual. It supports
+ * a polymorphic `FocusBlock` structure that allows the wizard to render
+ * disparate activities (Breathing, Goals, Affirmations) through a unified
+ * sequence interface.
+ */
 export type BreathingPattern = 'box' | '4-7-8' | 'physiological-sigh' | 'resonance';
 export type FocusBlockType = 'affirmation' | 'breathing' | 'goal';
 

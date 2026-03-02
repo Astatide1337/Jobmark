@@ -1,3 +1,17 @@
+/**
+ * Main User Dashboard
+ *
+ * Why: The central landing spot for logged-in users. It provides a
+ * "bird's-eye view" of recent wins, current goals, and productivity stats.
+ *
+ * Logic:
+ * - Session Lifting: Fetches the session once and passes `userId` to
+ *   all subsequent data calls to avoid DB waterfalls.
+ * - Dynamic Greeting: Calculates a time-of-day greeting (Morning/Afternoon/Evening)
+ *   server-side to ensure it's correct on first paint.
+ * - Hydration Safety: Passes `serverDate` to the `StatsCards` to prevent
+ *   mismatches between server-rendered and client-calculated streaks.
+ */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getActivities, getActivityStats, getActivityCount } from '@/app/actions/activities';
@@ -13,21 +27,24 @@ import { getGoals } from '@/app/actions/goals';
 export default async function DashboardPage() {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login');
   }
 
+  const userId = session.user.id;
+
   // Get user settings first to know if we should hide archived
-  const settings = await getUserSettings();
+  const settings = await getUserSettings(userId);
   const hideArchived = settings?.hideArchived ?? false;
 
-  const [activities, stats, projects, totalCount, goals] = await Promise.all([
-    getActivities(20, 0, hideArchived),
-    getActivityStats(),
-    getProjects(),
-    getActivityCount(),
-    getGoals(),
+  const [activities, stats, projects, goals] = await Promise.all([
+    getActivities(20, 0, hideArchived, userId),
+    getActivityStats(userId),
+    getProjects('active', userId),
+    getGoals(userId),
   ]);
+
+  const totalCount = stats.totalCount;
 
   // Get time-appropriate greeting
   const hour = new Date().getHours();

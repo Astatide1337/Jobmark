@@ -1,8 +1,18 @@
-"use client";
+/**
+ * Animated Section Divider
+ *
+ * Why: Provides a high-quality visual separation between landing
+ * page sections. Instead of a hard line, it "draws" itself into view
+ * using `useInView`.
+ *
+ * Design: Features an optional "Glow" effect to emphasize the
+ * "Physical UI" aesthetic.
+ */
+'use client';
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface SectionDividerProps {
   className?: string;
@@ -13,46 +23,42 @@ interface SectionDividerProps {
 
 export function SectionDivider({
   className,
-  maxWidth = "max-w-4xl",
+  maxWidth = 'max-w-4xl',
   delay = 0,
   glow = false,
 }: SectionDividerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: '-50px' });
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative w-full flex items-center justify-center py-8 md:py-12 px-6",
+        'relative flex w-full items-center justify-center px-6 py-8 md:py-12',
         className
       )}
     >
       {/* Optional glow effect */}
       {glow && (
         <motion.div
-          className={cn("absolute h-px", maxWidth, "w-full")}
+          className={cn('absolute h-px', maxWidth, 'w-full')}
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.8, delay: delay + 0.4 }}
         >
-          <div className="absolute inset-0 bg-primary/20 blur-md" />
+          <div className="bg-primary/20 absolute inset-0 blur-md" />
         </motion.div>
       )}
 
       {/* Left line - draws from left edge toward center */}
       <motion.div
         className={cn(
-          "flex-1 h-px bg-gradient-to-r from-transparent to-border/40",
-          maxWidth ? `${maxWidth.replace('max-w-', 'max-w-[')}` : ""
+          'to-border/40 h-px flex-1 bg-gradient-to-r from-transparent',
+          maxWidth ? `${maxWidth.replace('max-w-', 'max-w-[')}` : ''
         )}
-        style={{ maxWidth: "50%" }}
+        style={{ maxWidth: '50%' }}
         initial={{ scaleX: 0, opacity: 0, originX: 0 }}
-        animate={
-          isInView
-            ? { scaleX: 1, opacity: 1 }
-            : { scaleX: 0, opacity: 0 }
-        }
+        animate={isInView ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
         transition={{
           duration: 0.6,
           delay,
@@ -62,14 +68,10 @@ export function SectionDivider({
 
       {/* Right line - draws from right edge toward center */}
       <motion.div
-        className="flex-1 h-px bg-gradient-to-l from-transparent to-border/40"
-        style={{ maxWidth: "50%" }}
+        className="to-border/40 h-px flex-1 bg-gradient-to-l from-transparent"
+        style={{ maxWidth: '50%' }}
         initial={{ scaleX: 0, opacity: 0, originX: 1 }}
-        animate={
-          isInView
-            ? { scaleX: 1, opacity: 1 }
-            : { scaleX: 0, opacity: 0 }
-        }
+        animate={isInView ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
         transition={{
           duration: 0.6,
           delay,

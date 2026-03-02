@@ -1,3 +1,10 @@
+/**
+ * Projects Hub Page
+ *
+ * Why: Allows users to manage their workstreams. This page supports
+ * filtering between "Active" and "Archived" projects to keep the
+ * interface decluttered.
+ */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getProjects } from '@/app/actions/projects';
@@ -13,13 +20,13 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   const session = await auth();
   const params = await searchParams;
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login');
   }
 
   const currentFilter = params.filter === 'archived' ? 'archived' : 'active';
   const openCreate = params.new === 'true';
-  const projects = await getProjects(currentFilter);
+  const projects = await getProjects(currentFilter, session.user.id);
 
   return (
     <DashboardShell

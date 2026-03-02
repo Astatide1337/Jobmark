@@ -1,3 +1,13 @@
+/**
+ * Chat Server Actions
+ *
+ * Why: Manages the lifecycle of AI Mentor conversations.
+ *
+ * Key Pattern (Soft Linking):
+ * Conversations aren't just text; they link to Projects, Goals, and Reports.
+ * We use `projectId`, `goalId`, etc., to dynamically pull context into the
+ * LLM's prompt via the Strategy Pattern in `lib/chat/context-providers`.
+ */
 'use server';
 
 import { auth } from '@/lib/auth';
@@ -101,13 +111,18 @@ export async function createConversation(
 /**
  * Get list of user's conversations
  */
-export async function getConversations(limit = 20): Promise<ConversationData[]> {
-  const session = await auth();
-  if (!session?.user?.id) return [];
+export async function getConversations(limit = 20, userId?: string): Promise<ConversationData[]> {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    targetUserId = session.user.id;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const conversations = await (prisma.conversation as any).findMany({
-    where: { userId: session.user.id },
+    where: { userId: targetUserId },
     orderBy: { updatedAt: 'desc' },
     take: limit,
     include: {

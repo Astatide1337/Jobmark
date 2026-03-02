@@ -1,12 +1,25 @@
-"use client";
+/**
+ * Editorial Hero Section
+ *
+ * Why: This is the high-impact visual "hook" of the landing page. It
+ * uses advanced Motion physics to communicate a premium, technical brand.
+ *
+ * Motion Architecture:
+ * - Parallax: Headlines and the 3D dashboard move at different speeds during
+ *   scroll to create depth.
+ * - 3D Tilt: The dashboard mockup uses real-time mouse tracking (spring-loaded)
+ *   to follow the user's cursor, making the UI feel physical and interactive.
+ * - Perspective: Uses `perspective-1200` to anchor the 3D transforms.
+ */
+'use client';
 
-import { useRef, useEffect, useState } from "react";
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { DemoDashboard } from "./demos/demo-dashboard";
-import { RotatingHeadline, jobmarkHeadlines } from "@/components/ui/rotating-headline";
-import { useAuthModal } from "@/components/auth";
+import { useRef, useEffect, useState } from 'react';
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { DemoDashboard } from './demos/demo-dashboard';
+import { RotatingHeadline, jobmarkHeadlines } from '@/components/ui/rotating-headline';
+import { useAuthModal } from '@/components/auth';
 
 export function EditorialHero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,7 +30,7 @@ export function EditorialHero() {
   // Scroll-based animations
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end start"],
+    offset: ['start start', 'end start'],
   });
 
   // Text parallax
@@ -53,12 +66,12 @@ export function EditorialHero() {
       const y = (e.clientY - centerY) / (rect.height / 2);
 
       // Apply subtle tilt based on mouse position (max 3 degrees)
-      mouseX.set(y * 3);  // Inverted for natural feel
+      mouseX.set(y * 3); // Inverted for natural feel
       mouseY.set(-x * 3);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [isHovering, mouseX, mouseY]);
 
   // Reset tilt when not hovering
@@ -70,19 +83,16 @@ export function EditorialHero() {
   }, [isHovering, mouseX, mouseY]);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative min-h-screen flex items-center py-20 lg:py-0"
-    >
+    <section ref={containerRef} className="relative flex min-h-screen items-center py-20 lg:py-0">
       {/* Ambient background gradient */}
-      <div className="absolute inset-0 bg-linear-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+      <div className="from-primary/5 pointer-events-none absolute inset-0 bg-linear-to-b via-transparent to-transparent" />
 
       <div className="mx-auto w-full max-w-[1400px] px-6 lg:px-10">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-16 lg:gap-24 xl:gap-32">
+        <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:justify-between lg:gap-24 xl:gap-32">
           {/* Left Side - Editorial Typography */}
           <motion.div
             style={{ y: textY, opacity: textOpacity }}
-            className="lg:max-w-xl space-y-8 relative z-10"
+            className="relative z-10 space-y-8 lg:max-w-xl"
           >
             {/* Eyebrow */}
             <motion.div
@@ -91,26 +101,24 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="flex items-center gap-3"
             >
-              <div className="h-px w-12 bg-primary/50" />
-              <span className="text-sm font-mono text-primary tracking-wide uppercase">
+              <div className="bg-primary/50 h-px w-12" />
+              <span className="text-primary font-mono text-sm tracking-wide uppercase">
                 Work Journal
               </span>
             </motion.div>
 
             {/* Main Headline - Rotating Headlines */}
-            <RotatingHeadline
-              headlines={jobmarkHeadlines}
-              interval={3000}
-            />
+            <RotatingHeadline headlines={jobmarkHeadlines} interval={3000} />
 
             {/* Subheadline */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-xl text-muted-foreground leading-relaxed max-w-lg"
+              className="text-muted-foreground max-w-lg text-xl leading-relaxed"
             >
-              The work journal that writes your reports for you. Capture accomplishments in 30 seconds, generate polished reports with AI.
+              The work journal that writes your reports for you. Capture accomplishments in 30
+              seconds, generate polished reports with AI.
             </motion.p>
 
             {/* CTAs */}
@@ -118,19 +126,19 @@ export function EditorialHero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2"
+              className="flex flex-col items-start gap-4 pt-2 sm:flex-row sm:items-center"
             >
               <button
                 onClick={openAuthModal}
-                className="group inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-full font-medium text-base hover:bg-primary/90 transition-colors"
+                className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
                 Start Your Journal
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
               <Link
                 href="#product-tour"
-                className="inline-flex items-center gap-2 px-6 py-4 text-muted-foreground hover:text-foreground transition-colors text-base"
+                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 px-6 py-4 text-base transition-colors"
               >
                 See how it works
               </Link>
@@ -141,7 +149,7 @@ export function EditorialHero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-sm text-muted-foreground/60"
+              className="text-muted-foreground/60 text-sm"
             >
               Free to start. No credit card required.
             </motion.p>
@@ -153,7 +161,7 @@ export function EditorialHero() {
               y: dashboardY,
               opacity: dashboardOpacity,
             }}
-            className="lg:flex-1 lg:max-w-[1000px] perspective-1200"
+            className="perspective-1200 lg:max-w-[1000px] lg:flex-1"
           >
             <motion.div
               ref={dashboardRef}
@@ -163,7 +171,7 @@ export function EditorialHero() {
               animate={{ opacity: 1, y: 0, rotateX: 12, rotateY: -6 }}
               transition={{ duration: 1.4, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               style={{
-                transformStyle: "preserve-3d",
+                transformStyle: 'preserve-3d',
                 rotateX: scrollRotateX,
                 rotateY: scrollRotateY,
                 scale: scrollScale,
@@ -175,71 +183,76 @@ export function EditorialHero() {
                 style={{
                   rotateX: tiltX,
                   rotateY: tiltY,
-                  transformStyle: "preserve-3d",
+                  transformStyle: 'preserve-3d',
                 }}
                 className="relative"
               >
                 {/* Aurora glow effect - animated gradient behind dashboard */}
-                <div className="absolute -inset-12 lg:-inset-16 opacity-60">
+                <div className="absolute -inset-12 opacity-60 lg:-inset-16">
                   {/* Primary aurora layer */}
                   <motion.div
                     animate={{
                       background: [
-                        "radial-gradient(ellipse 80% 50% at 50% 50%, rgba(212, 165, 116, 0.4) 0%, transparent 70%)",
-                        "radial-gradient(ellipse 60% 60% at 40% 50%, rgba(212, 165, 116, 0.3) 0%, transparent 70%)",
-                        "radial-gradient(ellipse 70% 50% at 60% 50%, rgba(212, 165, 116, 0.35) 0%, transparent 70%)",
-                        "radial-gradient(ellipse 80% 50% at 50% 50%, rgba(212, 165, 116, 0.4) 0%, transparent 70%)",
+                        'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(212, 165, 116, 0.4) 0%, transparent 70%)',
+                        'radial-gradient(ellipse 60% 60% at 40% 50%, rgba(212, 165, 116, 0.3) 0%, transparent 70%)',
+                        'radial-gradient(ellipse 70% 50% at 60% 50%, rgba(212, 165, 116, 0.35) 0%, transparent 70%)',
+                        'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(212, 165, 116, 0.4) 0%, transparent 70%)',
                       ],
                     }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
                     className="absolute inset-0 blur-3xl"
                   />
                   {/* Secondary warm layer */}
                   <motion.div
                     animate={{
                       background: [
-                        "radial-gradient(ellipse 50% 80% at 60% 40%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)",
-                        "radial-gradient(ellipse 60% 70% at 50% 50%, rgba(227, 178, 131, 0.2) 0%, transparent 60%)",
-                        "radial-gradient(ellipse 50% 80% at 40% 60%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)",
-                        "radial-gradient(ellipse 50% 80% at 60% 40%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)",
+                        'radial-gradient(ellipse 50% 80% at 60% 40%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)',
+                        'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(227, 178, 131, 0.2) 0%, transparent 60%)',
+                        'radial-gradient(ellipse 50% 80% at 40% 60%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)',
+                        'radial-gradient(ellipse 50% 80% at 60% 40%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)',
                       ],
                     }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
                     className="absolute inset-0 blur-2xl"
                   />
                 </div>
 
                 {/* Dashboard container with border glow */}
-                <div className="relative group">
+                <div className="group relative">
                   {/* Animated border glow */}
-                  <div className="absolute -inset-px rounded-xl bg-linear-to-br from-primary/50 via-primary/20 to-primary/50 opacity-50 group-hover:opacity-70 transition-opacity duration-500 blur-sm" />
-                  
+                  <div className="from-primary/50 via-primary/20 to-primary/50 absolute -inset-px rounded-xl bg-linear-to-br opacity-50 blur-sm transition-opacity duration-500 group-hover:opacity-70" />
+
                   {/* Subtle animated shine on border */}
                   <motion.div
                     animate={{
                       background: [
-                        "linear-gradient(90deg, transparent 0%, rgba(212, 165, 116, 0.3) 50%, transparent 100%)",
-                        "linear-gradient(90deg, transparent 100%, rgba(212, 165, 116, 0.3) 150%, transparent 200%)",
+                        'linear-gradient(90deg, transparent 0%, rgba(212, 165, 116, 0.3) 50%, transparent 100%)',
+                        'linear-gradient(90deg, transparent 100%, rgba(212, 165, 116, 0.3) 150%, transparent 200%)',
                       ],
-                      backgroundPosition: ["-100% 0%", "200% 0%"],
+                      backgroundPosition: ['-100% 0%', '200% 0%'],
                     }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                      repeatDelay: 2,
+                    }}
                     className="absolute -inset-px rounded-xl opacity-40"
-                    style={{ backgroundSize: "200% 100%" }}
+                    style={{ backgroundSize: '200% 100%' }}
                   />
 
                   {/* Main dashboard */}
-                  <div 
-                    className="relative rounded-xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden shadow-2xl shadow-black/30"
-                    style={{ transform: "translateZ(20px)" }}
+                  <div
+                    className="border-border/40 bg-card/80 relative overflow-hidden rounded-xl border shadow-2xl shadow-black/30 backdrop-blur-sm"
+                    style={{ transform: 'translateZ(20px)' }}
                   >
                     <DemoDashboard />
                   </div>
 
                   {/* Reflection effect at bottom */}
-                  <div 
-                    className="absolute -bottom-8 left-4 right-4 h-16 bg-linear-to-b from-card/10 to-transparent rounded-xl blur-xl opacity-30"
-                    style={{ transform: "rotateX(180deg) translateZ(-10px)" }}
+                  <div
+                    className="from-card/10 absolute right-4 -bottom-8 left-4 h-16 rounded-xl bg-linear-to-b to-transparent opacity-30 blur-xl"
+                    style={{ transform: 'rotateX(180deg) translateZ(-10px)' }}
                   />
                 </div>
               </motion.div>
@@ -247,7 +260,6 @@ export function EditorialHero() {
           </motion.div>
         </div>
       </div>
-
     </section>
   );
 }

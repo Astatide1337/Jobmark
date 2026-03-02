@@ -1,3 +1,15 @@
+/**
+ * AI Mentor Page (The Chat Hub)
+ *
+ * Why: This is the primary interface for users to interact with their
+ * AI Career Mentor. It handles the server-side preparation of all
+ * potential context sources.
+ *
+ * Performance: Uses `Promise.all` to fetch conversations, projects,
+ * goals, contacts, and reports in parallel. This ensures the chat
+ * interface has everything it needs to offer smart suggested prompts
+ * immediately on load.
+ */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getConversations } from '@/app/actions/chat';
@@ -12,16 +24,18 @@ import { ChatInterface } from '@/components/chat/chat-interface';
 export default async function ChatPage() {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/');
   }
 
+  const userId = session.user.id;
+
   const [conversations, projects, goals, contacts, reports] = await Promise.all([
-    getConversations(),
-    getProjects(),
-    getGoals(),
-    getContacts(),
-    getReports(),
+    getConversations(20, userId),
+    getProjects('active', userId),
+    getGoals(userId),
+    getContacts(undefined, userId),
+    getReports(userId),
   ]);
 
   const activeProjects = projects.filter(p => !p.archived);

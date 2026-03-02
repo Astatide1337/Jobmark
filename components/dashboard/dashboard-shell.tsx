@@ -1,3 +1,15 @@
+/**
+ * Dashboard Shell (Root Layout Wrapper)
+ *
+ * Why: This is the primary structural component for the entire app. It
+ * coordinates the Sidebar, Header, and Main content area.
+ *
+ * Responsibilities:
+ * - Mobile Navigation: Manages the `isMobileOpen` state for the slide-over sidebar.
+ * - Layout Switching: Seamlessly toggles between "Full Height" (v1) and
+ *   "Scrollable Document" (v2) layouts based on user settings.
+ * - Transitions: Wraps children in `PageTransition` for smooth route changes.
+ */
 'use client';
 
 import React, { useState } from 'react';

@@ -1,3 +1,15 @@
+/**
+ * Contact Detail View
+ *
+ * Why: This is the primary profile page for a professional contact.
+ * It consolidates CRM data (email, phone, notes) with the user's
+ * specific interaction history and AI-generated outreach drafts.
+ *
+ * Sub-components:
+ * - ContactProfileCard: Displays the static "who is this" info.
+ * - InteractionTimeline: A vertically-aligned list of past meetings/chats.
+ * - OutreachWizard & History: The interface for generating new drafts.
+ */
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';

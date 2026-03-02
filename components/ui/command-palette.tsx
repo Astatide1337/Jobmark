@@ -1,3 +1,16 @@
+/**
+ * Global Command Palette (Cmd+K)
+ *
+ * Why: Power users need a way to navigate and search without taking
+ * their hands off the keyboard. This is the "Omnisearch" for jobmark.
+ *
+ * Features:
+ * - Multi-source Search: Queries Activities, Projects, Contacts, and Reports.
+ * - Quick Actions: Immediate triggers for logging wins or creating reports.
+ * - Recent Items: Automatically suggests your most recently active projects.
+ * - Debouncing: Uses `lodash.debounce` to ensure server search only triggers
+ *   after the user pauses typing.
+ */
 'use client';
 
 import { useEffect, useState, useCallback, useTransition, useMemo } from 'react';

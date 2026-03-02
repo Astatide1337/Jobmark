@@ -1,3 +1,9 @@
+/**
+ * Global Notification Toaster
+ *
+ * Why: Provides non-intrusive feedback (Success/Error/Info) for
+ * background actions like saving data or generating reports.
+ */
 'use client';
 
 import {

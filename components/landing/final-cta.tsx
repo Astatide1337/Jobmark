@@ -1,19 +1,28 @@
-"use client";
+/**
+ * Final Call-to-Action (CTA) Section
+ *
+ * Why: The "closing argument" of the landing page. It provides
+ * one last high-impact invitation to start a journal.
+ *
+ * Components: Uses the `MagneticButton` for a playful interaction
+ * that increases the click-through rate.
+ */
+'use client';
 
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { MagneticButton } from "@/components/ui/magnetic-button";
-import { useAuthModal } from "@/components/auth";
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import { MagneticButton } from '@/components/ui/magnetic-button';
+import { useAuthModal } from '@/components/auth';
 
 export function FinalCTA() {
   const { openAuthModal } = useAuthModal();
 
   return (
-    <section className="relative py-32 md:py-48 overflow-hidden">
+    <section className="relative overflow-hidden py-32 md:py-48">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-primary/10 via-transparent to-transparent" />
+      <div className="from-primary/10 absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
 
-      <div className="mx-auto max-w-4xl px-6 text-center relative">
+      <div className="relative mx-auto max-w-4xl px-6 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -21,13 +30,13 @@ export function FinalCTA() {
           className="space-y-8"
         >
           {/* Headline */}
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold leading-tight">
+          <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl md:text-6xl">
             Start your work journal
-            <span className="block text-primary">today.</span>
+            <span className="text-primary block">today.</span>
           </h2>
 
           {/* Subtext */}
-          <p className="text-xl text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground mx-auto max-w-xl text-xl">
             It's free. No credit card. Just you and your wins.
           </p>
 
@@ -42,10 +51,10 @@ export function FinalCTA() {
             <MagneticButton strength={0.15}>
               <button
                 onClick={openAuthModal}
-                className="group inline-flex items-center gap-3 px-10 py-5 bg-primary text-primary-foreground rounded-full font-medium text-lg hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 focus-visible:ring-primary inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-medium transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 Get Started Free
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </button>
             </MagneticButton>
           </motion.div>

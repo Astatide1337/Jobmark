@@ -1,3 +1,15 @@
+/**
+ * AI Networking Actions
+ *
+ * Why: Professional outreach is stressful and time-consuming. These
+ * actions leverage LLMs to generate personalized message drafts based
+ * on real relationship history.
+ *
+ * Security & Accuracy:
+ * The `OUTREACH_SYSTEM_PROMPT` explicitly forbids the AI from fabricating
+ * details. It is instructed to only use the facts provided in the
+ * `contactContext` to maintain professional integrity.
+ */
 'use server';
 
 import { auth } from '@/lib/auth';
@@ -150,12 +162,17 @@ export async function saveOutreachDraftToHistory(
   return { success: true };
 }
 
-export async function getOutreachDraftsByContact(contactId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
+export async function getOutreachDraftsByContact(contactId: string, userId?: string) {
+  let targetUserId = userId;
+
+  if (!targetUserId) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error('Unauthorized');
+    targetUserId = session.user.id;
+  }
 
   return prisma.outreachDraft.findMany({
-    where: { userId: session.user.id, contactId },
+    where: { userId: targetUserId, contactId },
     orderBy: { createdAt: 'desc' },
   });
 }

@@ -1,3 +1,18 @@
+/**
+ * Productivity Visualization Charts
+ *
+ * Why: Users need to see high-level trends that individual logs don't reveal.
+ * This module transforms raw server-side counts into meaningful visual
+ * patterns using Recharts.
+ *
+ * Design Details:
+ * - Weekly Trend: Uses a customized `AreaChart` with a custom SVG gradient
+ *   to align with the "Café" aesthetic.
+ * - Project Distribution: A Donut chart with a "Total" center-label to
+ *   show exactly where a user is spending their time.
+ * - Custom Tooltips: Overrides standard Recharts tooltips with premium
+ *   glassmorphism styling for consistency.
+ */
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

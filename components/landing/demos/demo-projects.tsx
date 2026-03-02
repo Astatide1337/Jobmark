@@ -1,3 +1,13 @@
+/**
+ * Interactive Projects Demo
+ *
+ * Why: Demonstrates how users can organize their work into specific
+ * workstreams. It allows visitors to experience the "Project Details"
+ * drill-down and creation flows without a database.
+ *
+ * Implementation: Reuses the production `ProjectList` component but
+ * provides local state-based CRUD handlers to simulate a real backend.
+ */
 'use client';
 
 import { useState } from 'react';

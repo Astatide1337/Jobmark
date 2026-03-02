@@ -1,3 +1,15 @@
+/**
+ * Project Management List & Cards
+ *
+ * Why: The primary interface for organizing activities into logical buckets.
+ * It supports high-level overview metrics and archival states.
+ *
+ * Design Decision:
+ * - "Café" Aesthetic: Each project card utilizes its specific `color` property
+ *   to drive the background and icon accents, making the UI feel personal.
+ * - Archival: Projects are never truly "deleted" (to preserve activity history),
+ *   but are moved to an archived state to declutter the active view.
+ */
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';

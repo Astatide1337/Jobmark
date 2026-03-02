@@ -1,3 +1,16 @@
+/**
+ * UI State & Smooth Scrolling Provider
+ *
+ * Why: Handles specialized interface states that don't belong in
+ * persistent database settings (like the "v2" UI toggle and Lenis
+ * smooth scrolling).
+ *
+ * Performance:
+ * - Mounted Guard: Ensures smooth scrolling only initializes on the
+ *   client to prevent hydration mismatches.
+ * - Conditional Lenis: Intelligently disables smooth scrolling for
+ *   advanced dashboard routes where native scroll performance is preferred.
+ */
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';

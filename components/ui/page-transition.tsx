@@ -1,16 +1,20 @@
-"use client";
-
-import { motion, useReducedMotion } from "framer-motion";
-import { ReactNode } from "react";
-import { cn } from "@/lib/utils";
-
 /**
  * Page Transition Wrapper
- * Provides smooth fade-slide animations between pages
- * 
- * Psychology: Smooth transitions reduce cognitive load
- * and make navigation feel more natural and premium
+ *
+ * Why: Standard route changes in SPAs can feel jarring. This component
+ * provides a smooth fade-and-slide animation during navigation.
+ *
+ * Psychology: Reduces perceived latency and cognitive load by
+ * providing a visual bridge between the "Old" and "New" pages.
+ *
+ * Accessibility: Automatically disables animations if the user has
+ * enabled "Reduced Motion" in their OS settings.
  */
+'use client';
+
+import { motion, useReducedMotion } from 'framer-motion';
+import { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -36,8 +40,8 @@ export function PageTransition({ children, className }: PageTransitionProps) {
   };
 
   const pageTransition = {
-    type: "tween" as const,
-    ease: "easeOut" as const,
+    type: 'tween' as const,
+    ease: 'easeOut' as const,
     duration: 0.2,
   };
 
@@ -48,7 +52,7 @@ export function PageTransition({ children, className }: PageTransitionProps) {
       exit="exit"
       variants={pageVariants}
       transition={pageTransition}
-      className={cn("flex-1 min-h-0 flex flex-col", className)}
+      className={cn('flex min-h-0 flex-1 flex-col', className)}
     >
       {children}
     </motion.div>

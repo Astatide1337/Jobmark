@@ -1,14 +1,26 @@
-"use server";
+/**
+ * Global Search Actions
+ *
+ * Why: As users log hundreds of activities and contacts, they need a fast
+ * way to find specific information. This unified search queries 5 different
+ * tables in parallel.
+ *
+ * Smart Features:
+ * - Date Parsing: Queries like "today" or "yesterday" are recognized and
+ *   automatically converted into Prisma date filters.
+ * - Multi-table Parallelism: Executes queries for Activities, Projects,
+ *   Reports, Contacts, and Interactions simultaneously using `Promise.all`.
+ */
+'use server';
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
-import { formatDate, getChannelLabel } from "@/lib/network";
-
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
+import { formatDate, getChannelLabel } from '@/lib/network';
 
 export interface SearchResult {
   id: string;
-  type: "activity" | "project" | "report" | "contact" | "interaction";
+  type: 'activity' | 'project' | 'report' | 'contact' | 'interaction';
   title: string;
   subtitle?: string;
   url: string;
@@ -19,7 +31,7 @@ export interface SearchResult {
 
 export async function globalSearch(query: string): Promise<SearchResult[]> {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     return [];
   }
@@ -30,7 +42,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
 
   const searchTerm = query.trim();
   let searchDate: Date | null = null;
-  
+
   // Try to parse common date terms
   const lowerQuery = searchTerm.toLowerCase();
   if (lowerQuery === 'today') {
@@ -50,9 +62,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   // Construct Activity where clause
   const activityWhere: Prisma.ActivityWhereInput = {
     userId: session.user.id,
-    OR: [
-      { content: { contains: searchTerm, mode: "insensitive" } },
-    ],
+    OR: [{ content: { contains: searchTerm, mode: 'insensitive' } }],
   };
 
   if (searchDate) {
@@ -60,14 +70,14 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(searchDate);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
     // Add date filter to OR clause
     if (activityWhere.OR && Array.isArray(activityWhere.OR)) {
       activityWhere.OR.push({
         logDate: {
           gte: startOfDay,
           lte: endOfDay,
-        }
+        },
       });
     }
   }
@@ -76,7 +86,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const [activities, projects, reports, contacts, interactions] = await Promise.all([
     prisma.activity.findMany({
       where: activityWhere,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 5,
       include: {
         project: { select: { name: true, color: true } },
@@ -87,27 +97,27 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
         userId: session.user.id,
         archived: false,
         OR: [
-          { name: { contains: searchTerm, mode: "insensitive" } },
-          { description: { contains: searchTerm, mode: "insensitive" } },
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { description: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updatedAt: 'desc' },
       take: 5,
     }),
     prisma.report.findMany({
       where: {
         userId: session.user.id,
-        title: { contains: searchTerm, mode: "insensitive" },
+        title: { contains: searchTerm, mode: 'insensitive' },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 5,
     }),
     prisma.contact.findMany({
       where: {
         userId: session.user.id,
         OR: [
-          { fullName: { contains: searchTerm, mode: "insensitive" } },
-          { email: { contains: searchTerm, mode: "insensitive" } },
+          { fullName: { contains: searchTerm, mode: 'insensitive' } },
+          { email: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       take: 5,
@@ -116,7 +126,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     prisma.interactionLog.findMany({
       where: {
         userId: session.user.id,
-        summary: { contains: searchTerm, mode: "insensitive" },
+        summary: { contains: searchTerm, mode: 'insensitive' },
       },
       take: 5,
       include: {
@@ -128,17 +138,16 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
 
   // Add activity results
-  activities.forEach((activity) => {
+  activities.forEach(activity => {
     const dateStr = formatDate(activity.logDate);
-    const projectStr = activity.project?.name || "No Project";
+    const projectStr = activity.project?.name || 'No Project';
 
-    
     results.push({
       id: activity.id,
-      type: "activity",
-      title: activity.content.substring(0, 80) + (activity.content.length > 80 ? "..." : ""),
+      type: 'activity',
+      title: activity.content.substring(0, 80) + (activity.content.length > 80 ? '...' : ''),
       subtitle: `${projectStr} • ${dateStr}`,
-      url: "#", // URL handled by modal
+      url: '#', // URL handled by modal
       color: activity.project?.color,
       fullContent: activity.content,
       createdAt: activity.createdAt.toISOString(),
@@ -146,33 +155,33 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   });
 
   // Add project results
-  projects.forEach((project) => {
+  projects.forEach(project => {
     results.push({
       id: project.id,
-      type: "project",
+      type: 'project',
       title: project.name,
-      subtitle: project.description || `${project.archived ? "Archived" : "Active"} project`,
+      subtitle: project.description || `${project.archived ? 'Archived' : 'Active'} project`,
       url: `/projects/${project.id}`,
       color: project.color,
     });
   });
 
   // Add report results
-  reports.forEach((report) => {
+  reports.forEach(report => {
     results.push({
       id: report.id,
-      type: "report",
+      type: 'report',
       title: report.title,
       subtitle: formatDate(report.createdAt),
-      url: "/reports?tab=history",
+      url: '/reports?tab=history',
     });
   });
 
   // Add contact results
-  contacts.forEach((contact) => {
+  contacts.forEach(contact => {
     results.push({
       id: contact.id,
-      type: "contact",
+      type: 'contact',
       title: contact.fullName,
       subtitle: contact.relationship || contact.email || undefined,
       url: `/network/${contact.id}`,
@@ -180,16 +189,16 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   });
 
   // Add interaction results
-  interactions.forEach((interaction) => {
+  interactions.forEach(interaction => {
     const truncatedSummary =
       interaction.summary.length > 80
-        ? interaction.summary.substring(0, 80) + "..."
+        ? interaction.summary.substring(0, 80) + '...'
         : interaction.summary;
     const dateStr = formatDate(interaction.occurredAt);
     const channelStr = getChannelLabel(interaction.channel);
     results.push({
       id: interaction.id,
-      type: "interaction",
+      type: 'interaction',
       title: truncatedSummary,
       subtitle: `${interaction.contact.fullName} • ${channelStr} • ${dateStr}`,
       url: `/network/${interaction.contactId}`,
@@ -202,14 +211,14 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
 // Get recent projects for default view
 export async function getRecentProjects(limit = 3) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     return [];
   }
 
   return prisma.project.findMany({
     where: { userId: session.user.id, archived: false },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { updatedAt: 'desc' },
     take: limit,
     select: { id: true, name: true, color: true },
   });
@@ -218,14 +227,14 @@ export async function getRecentProjects(limit = 3) {
 // Get recent reports for default view
 export async function getRecentReports(limit = 3) {
   const session = await auth();
-  
+
   if (!session?.user?.id) {
     return [];
   }
 
   return prisma.report.findMany({
     where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: limit,
     select: { id: true, title: true },
   });
