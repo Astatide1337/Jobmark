@@ -36,6 +36,7 @@ import {
   Users,
   MessageSquare,
   Calendar,
+  Newspaper,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,7 @@ const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
   { id: 'projects', label: 'Projects', icon: FolderOpen, href: '/projects' },
   { id: 'network', label: 'Network', icon: Users, href: '/network' },
+  { id: 'articles', label: 'Articles', icon: Newspaper, href: '/articles' },
 ];
 
 export function CommandPalette() {

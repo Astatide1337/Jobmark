@@ -34,6 +34,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Newspaper,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +60,7 @@ const navItems = [
   { href: '/insights', icon: BarChart3, label: 'Insights', demoId: 'feature-insights' },
   { href: '/focus', icon: Coffee, label: 'Focus', demoId: 'feature-focus' },
   { href: '/network', icon: Users, label: 'Network', demoId: 'feature-network' },
+  { href: '/articles', icon: Newspaper, label: 'Articles', demoId: 'feature-articles' },
 ];
 
 const settingsItem = { href: '/settings', icon: Settings, label: 'Settings', demoId: 'settings' };

@@ -48,14 +48,11 @@ export function FinalCTA() {
             transition={{ delay: 0.2 }}
             className="pt-4"
           >
-            <MagneticButton strength={0.15}>
-              <button
-                onClick={openAuthModal}
-                className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 focus-visible:ring-primary inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-medium transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
+            <MagneticButton strength={0.15} onClick={openAuthModal}>
+              <span className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 focus-visible:ring-primary inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-medium transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none">
                 Get Started Free
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </button>
+              </span>
             </MagneticButton>
           </motion.div>
         </motion.div>
