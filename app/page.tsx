@@ -94,11 +94,14 @@ export default function Home() {
               <span>© {new Date().getFullYear()}</span>
             </div>
             <div className="flex items-center gap-8">
-              <Link href="#" className="hover:text-foreground transition-colors">
+              <Link href="/privacy" className="hover:text-foreground transition-colors">
                 Privacy
               </Link>
-              <Link href="#" className="hover:text-foreground transition-colors">
+              <Link href="/terms" className="hover:text-foreground transition-colors">
                 Terms
+              </Link>
+              <Link href="/articles" className="hover:text-foreground transition-colors">
+                Articles
               </Link>
               <span className="text-muted-foreground/50">Made with ❤️</span>
             </div>

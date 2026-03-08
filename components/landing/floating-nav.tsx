@@ -23,6 +23,7 @@ const navItems = [
   { label: 'Features', href: '#product-tour' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'FAQ', href: '#faq' },
+  { label: 'Articles', href: '/articles' },
 ];
 
 export function FloatingNav() {
