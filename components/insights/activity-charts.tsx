@@ -29,7 +29,7 @@ import {
   TooltipProps,
 } from 'recharts';
 import type { ProjectDistribution } from '@/app/actions/insights';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 interface ActivityChartsProps {
   weeklyTrend: number[];
@@ -74,6 +74,17 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 }
 
 function WeeklyTrendChart({ data }: { data: number[] }) {
+  /**
+   * Defer chart rendering until mounted in the browser.
+   *
+   * Why: Recharts' ResponsiveContainer uses ResizeObserver to measure its
+   * parent. During SSR that API doesn't exist, so it reports width/height
+   * of -1 and emits a console warning. Rendering only after mount means
+   * the DOM is ready and dimensions are real.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const chartData = data.map((value, index) => ({
     week: `W${index + 1}`,
     activities: value,
@@ -95,7 +106,7 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
             <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
               No activity data yet
             </div>
-          ) : (
+          ) : !mounted ? null : (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -171,6 +182,10 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
 }
 
 function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
+  // Same SSR-guard as WeeklyTrendChart — see comment there for rationale.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const sortedData = [...data].sort((a, b) => b.count - a.count);
   const total = sortedData.reduce((sum, item) => sum + item.count, 0);
 
@@ -224,7 +239,7 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
           {/* Donut Chart - RIGHT SIDE */}
           <div className="relative z-0 shrink-0">
             <div className="relative h-40 w-40">
-              <ResponsiveContainer width="100%" height="100%">
+              {mounted && <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={chartData}
@@ -251,7 +266,7 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
                     wrapperStyle={{ zIndex: 50 }}
                   />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
               {/* Center label */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="text-center">

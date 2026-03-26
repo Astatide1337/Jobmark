@@ -27,10 +27,13 @@ export type OutreachDraftConfig = {
   extraContext?: string;
 };
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+// Lazy factory — avoids module-level throw when OPENROUTER_API_KEY is absent
+function getOpenAI(): OpenAI {
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
+}
 
 const OUTREACH_SYSTEM_PROMPT = `You are a professional networking assistant. Generate a draft message ONLY. Never fabricate details about the contact. Use only the facts provided. If information is insufficient, note what's missing. This is a DRAFT for the user to review and send themselves.
 
@@ -108,7 +111,7 @@ Generate the outreach draft now.`;
 
   (async () => {
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAI().chat.completions.create({
         model: 'z-ai/glm-4.5-air:free',
         messages: [
           { role: 'system', content: OUTREACH_SYSTEM_PROMPT },
@@ -214,7 +217,7 @@ export async function improveOutreachDraft(
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'z-ai/glm-4.5-air:free',
       messages: [
         {

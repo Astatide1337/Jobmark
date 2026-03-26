@@ -13,10 +13,13 @@
 import { auth } from '@/lib/auth';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+// Lazy factory — avoids module-level throw when OPENROUTER_API_KEY is absent
+function getOpenAI(): OpenAI {
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
+}
 
 /**
  * Polishes raw dictation text using a free LLM.
@@ -31,7 +34,7 @@ export async function polishDictation(text: string) {
   if (!text || text.trim().length === 0) return '';
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'z-ai/glm-4.5-air:free',
       messages: [
         {

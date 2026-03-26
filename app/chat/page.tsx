@@ -17,6 +17,7 @@ import { getProjects } from '@/app/actions/projects';
 import { getGoals } from '@/app/actions/goals';
 import { getContacts } from '@/app/actions/network';
 import { getReports } from '@/app/actions/reports';
+import { getVaultProjects } from '@/app/actions/project-lock';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { ChatInterface } from '@/components/chat/chat-interface';
@@ -30,15 +31,17 @@ export default async function ChatPage() {
 
   const userId = session.user.id;
 
-  const [conversations, projects, goals, contacts, reports] = await Promise.all([
+  const [conversations, projects, goals, contacts, reports, vaultProjects] = await Promise.all([
     getConversations(20, userId),
     getProjects('active', userId),
     getGoals(userId),
     getContacts(undefined, userId),
     getReports(userId),
+    getVaultProjects(userId), // Returns [] when vault is locked; included when unlocked so they appear in context picker
   ]);
 
-  const activeProjects = projects.filter(p => !p.archived);
+  // Merge regular active projects with vault projects (vault projects only present when unlocked)
+  const activeProjects = [...projects.filter(p => !p.archived), ...vaultProjects];
 
   return (
     <DashboardShell

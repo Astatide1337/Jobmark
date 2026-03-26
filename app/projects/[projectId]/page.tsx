@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { getProjectDetails } from '@/app/actions/projects';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { Activity, Clock, FolderOpen, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -22,7 +22,8 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
   const project = await getProjectDetails(projectId, 20, session.user.id);
 
   if (!project) {
-    notFound();
+    // Project not found or locked — redirect to projects list
+    redirect('/projects');
   }
 
   return (

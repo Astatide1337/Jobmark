@@ -15,6 +15,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -59,6 +60,13 @@ export async function createActivity(
     };
   }
 
+  if (result.data.projectId) {
+    const lockedIds = await getLockedProjectIds(session.user.id);
+    if (lockedIds.includes(result.data.projectId)) {
+      return { success: false, message: 'Cannot add activities to a locked project' };
+    }
+  }
+
   try {
     await prisma.activity.create({
       data: {
@@ -87,15 +95,35 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
     targetUserId = session.user.id;
   }
 
+  const lockedIds = await getLockedProjectIds(targetUserId);
+
   const activities = await prisma.activity.findMany({
     where: {
       userId: targetUserId,
-      ...(hideArchived && {
-        OR: [
-          { projectId: null }, // Activities without a project
-          { project: { archived: false } }, // Activities from non-archived projects
-        ],
-      }),
+      AND: [
+        // Filter archived projects if requested
+        ...(hideArchived
+          ? [
+              {
+                OR: [
+                  { projectId: null },
+                  { project: { archived: false } },
+                ],
+              },
+            ]
+          : []),
+        // Filter locked projects when vault is closed
+        ...(lockedIds.length > 0
+          ? [
+              {
+                OR: [
+                  { projectId: null },
+                  { projectId: { notIn: lockedIds } },
+                ],
+              },
+            ]
+          : []),
+      ],
     },
     orderBy: { createdAt: 'desc' },
     take: limit,
@@ -119,8 +147,18 @@ export async function getActivityCount(userId?: string) {
     targetUserId = session.user.id;
   }
 
+  const lockedIds = await getLockedProjectIds(targetUserId);
+
   return prisma.activity.count({
-    where: { userId: targetUserId },
+    where: {
+      userId: targetUserId,
+      ...(lockedIds.length > 0 && {
+        OR: [
+          { projectId: null },
+          { projectId: { notIn: lockedIds } },
+        ],
+      }),
+    },
   });
 }
 
@@ -176,6 +214,9 @@ export async function getActivityStats(userId?: string) {
   const dayOfWeek = now.getDay();
   const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
 
+  const lockedIds = await getLockedProjectIds(targetUserId);
+  const lockedFilter = buildLockedActivityFilter(lockedIds);
+
   const [user, settings, thisMonthCount, todayCount, thisWeekCount, projectCount, totalCount] =
     await Promise.all([
       prisma.user.findUnique({
@@ -190,34 +231,45 @@ export async function getActivityStats(userId?: string) {
         where: {
           userId: targetUserId,
           logDate: { gte: startOfMonth },
+          ...lockedFilter,
         },
       }),
       prisma.activity.count({
         where: {
           userId: targetUserId,
           logDate: { gte: startOfDay },
+          ...lockedFilter,
         },
       }),
       prisma.activity.count({
         where: {
           userId: targetUserId,
           logDate: { gte: startOfWeek },
+          ...lockedFilter,
         },
       }),
       prisma.project.count({
         where: {
           userId: targetUserId,
           archived: false,
+          locked: false,
+          ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
         },
       }),
       prisma.activity.count({
-        where: { userId: targetUserId },
+        where: {
+          userId: targetUserId,
+          ...lockedFilter,
+        },
       }),
     ]);
 
   // Use createdAt (actual creation timestamp) for streak - more reliable than logDate
   const recentActivities = await prisma.activity.findMany({
-    where: { userId: targetUserId },
+    where: {
+      userId: targetUserId,
+      ...lockedFilter,
+    },
     orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
     take: 365,

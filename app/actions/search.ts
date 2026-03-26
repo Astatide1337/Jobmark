@@ -15,6 +15,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 import { Prisma } from '@prisma/client';
 import { formatDate, getChannelLabel } from '@/lib/network';
 
@@ -59,10 +60,13 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     }
   }
 
+  const lockedIds = await getLockedProjectIds(session.user.id);
+
   // Construct Activity where clause
   const activityWhere: Prisma.ActivityWhereInput = {
     userId: session.user.id,
     OR: [{ content: { contains: searchTerm, mode: 'insensitive' } }],
+    ...(lockedIds.length > 0 && { AND: [buildLockedActivityFilter(lockedIds)] }),
   };
 
   if (searchDate) {
@@ -96,6 +100,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       where: {
         userId: session.user.id,
         archived: false,
+        locked: false,
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { description: { contains: searchTerm, mode: 'insensitive' } },
@@ -166,8 +171,12 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     });
   });
 
-  // Add report results
+  // Add report results (post-filter locked project reports)
   reports.forEach(report => {
+    const metadata = report.metadata as Record<string, unknown> | null;
+    const reportProjectId = metadata?.projectId as string | null | undefined;
+    if (reportProjectId && lockedIds.includes(reportProjectId)) return;
+
     results.push({
       id: report.id,
       type: 'report',
@@ -217,7 +226,11 @@ export async function getRecentProjects(limit = 3) {
   }
 
   return prisma.project.findMany({
-    where: { userId: session.user.id, archived: false },
+    where: {
+      userId: session.user.id,
+      archived: false,
+      locked: false,
+    },
     orderBy: { updatedAt: 'desc' },
     take: limit,
     select: { id: true, name: true, color: true },

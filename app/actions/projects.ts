@@ -14,6 +14,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { projectColors } from '@/lib/constants';
+import { getLockedProjectIds } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -92,6 +93,7 @@ export async function getProjects(filter: 'active' | 'archived' = 'active', user
     where: {
       userId: targetUserId,
       archived: filter === 'archived',
+      locked: false,
     },
     orderBy: { name: 'asc' },
     include: {
@@ -198,21 +200,19 @@ export async function getProjectDetails(projectId: string, activityLimit = 20, u
     targetUserId = session.user.id;
   }
 
-  const project = await prisma.project.findUnique({
-    where: {
-      id: projectId,
-      userId: targetUserId,
-    },
-    include: {
-      activities: {
-        orderBy: { createdAt: 'desc' },
-        take: activityLimit,
+  const [project, lockedIds] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: projectId, userId: targetUserId },
+      include: {
+        activities: { orderBy: { createdAt: 'desc' }, take: activityLimit },
+        _count: { select: { activities: true } },
       },
-      _count: {
-        select: { activities: true },
-      },
-    },
-  });
+    }),
+    getLockedProjectIds(targetUserId),
+  ]);
+
+  if (!project) return null;
+  if (project.locked && lockedIds.includes(project.id)) return null;
 
   return project;
 }
@@ -231,18 +231,16 @@ export async function getProjectActivities(
     targetUserId = session.user.id;
   }
 
-  // Verify project belongs to user
-  const project = await prisma.project.findUnique({
-    where: {
-      id: projectId,
-      userId: targetUserId,
-    },
-    select: { id: true },
-  });
+  const [project, lockedIds] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: projectId, userId: targetUserId },
+      select: { id: true, locked: true },
+    }),
+    getLockedProjectIds(targetUserId),
+  ]);
 
-  if (!project) {
-    return [];
-  }
+  if (!project) return [];
+  if (project.locked && lockedIds.includes(project.id)) return [];
 
   const activities = await prisma.activity.findMany({
     where: { projectId },

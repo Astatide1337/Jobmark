@@ -12,6 +12,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 
 export type UserSettingsData = {
@@ -159,13 +160,19 @@ export async function exportUserData() {
     return null;
   }
 
+  const lockedIds = await getLockedProjectIds(session.user.id);
+
   const [user, projects, activities, reports, settings] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { name: true, email: true, createdAt: true },
     }),
     prisma.project.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        // Exclude locked projects from export when vault is closed
+        ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
+      },
       select: {
         name: true,
         color: true,
@@ -175,19 +182,29 @@ export async function exportUserData() {
       },
     }),
     prisma.activity.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        ...(lockedIds.length > 0 && {
+          OR: [
+            { projectId: null },
+            { projectId: { notIn: lockedIds } },
+          ],
+        }),
+      },
       include: { project: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.report.findMany({
       where: { userId: session.user.id },
-      select: { title: true, content: true, createdAt: true },
+      select: { title: true, content: true, createdAt: true, metadata: true },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.userSettings.findUnique({
       where: { userId: session.user.id },
     }),
   ]);
+
+  const filteredReports = filterLockedReports(reports, lockedIds);
 
   return {
     exportedAt: new Date().toISOString(),
@@ -200,7 +217,7 @@ export async function exportUserData() {
       createdAt: a.createdAt,
       project: a.project?.name || null,
     })),
-    reports,
+    reports: filteredReports,
   };
 }
 

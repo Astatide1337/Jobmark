@@ -134,6 +134,9 @@ model UserSettings {
   hideArchived    Boolean @default(false)
   showConfetti    Boolean @default(true)
 
+  // Vault (Password-Locked Projects)
+  vaultPasswordHash  String?  @db.Text
+
   // Focus Session Configuration
   focusConfig     Json?
 
@@ -162,6 +165,7 @@ model Project {
   color       String   @default("#6366f1")
   description String?  @db.VarChar(200)
   archived    Boolean  @default(false)
+  locked      Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -171,6 +175,7 @@ model Project {
 
   @@index([userId])
   @@index([userId, archived])
+  @@index([userId, locked])
 }
 
 model Activity {

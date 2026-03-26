@@ -8,6 +8,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getProjects } from '@/app/actions/projects';
+import { getVaultStatus, getVaultProjects } from '@/app/actions/project-lock';
 import { ProjectList } from '@/components/projects/project-list';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
@@ -24,9 +25,20 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     redirect('/login');
   }
 
-  const currentFilter = params.filter === 'archived' ? 'archived' : 'active';
+  const currentFilter =
+    params.filter === 'archived'
+      ? 'archived'
+      : params.filter === 'locked'
+        ? 'locked'
+        : 'active';
   const openCreate = params.new === 'true';
-  const projects = await getProjects(currentFilter, session.user.id);
+
+  // Fetch projects and vault state in parallel
+  const [projects, vaultStatus, lockedProjects] = await Promise.all([
+    currentFilter !== 'locked' ? getProjects(currentFilter as 'active' | 'archived', session.user.id) : Promise.resolve([]),
+    getVaultStatus(),
+    getVaultProjects(session.user.id),
+  ]);
 
   return (
     <DashboardShell
@@ -39,7 +51,14 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
       }
     >
       <div className="mx-auto w-full max-w-(--container-wide)">
-        <ProjectList projects={projects} initialFilter={currentFilter} openCreate={openCreate} />
+        <ProjectList
+          projects={projects}
+          initialFilter={currentFilter}
+          openCreate={openCreate}
+          vaultHasPassword={vaultStatus.hasPassword}
+          vaultIsUnlocked={vaultStatus.isUnlocked}
+          lockedProjects={lockedProjects}
+        />
       </div>
     </DashboardShell>
   );

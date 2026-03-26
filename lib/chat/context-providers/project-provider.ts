@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds } from '@/lib/project-lock';
 import { ContextStrategy, ConversationContext } from './types';
 
 /**
@@ -23,6 +24,9 @@ export class ProjectContextProvider implements ContextStrategy {
 
   async provide(conversation: ConversationContext, userId: string): Promise<string> {
     if (!conversation.projectId) return '';
+
+    const lockedIds = await getLockedProjectIds(userId);
+    if (lockedIds.includes(conversation.projectId)) return '';
 
     const project = await prisma.project.findUnique({
       where: {

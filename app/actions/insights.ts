@@ -14,6 +14,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 
 export interface ProjectDistribution {
   name: string;
@@ -65,12 +66,15 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
+  const lockedIds = await getLockedProjectIds(targetUserId);
+  const lockedFilter = buildLockedActivityFilter(lockedIds);
+
   // Parallel queries for performance
   const [totalActivities, totalReports, thisMonthActivities, allActivities, projectsWithCounts] =
     await Promise.all([
       // Total activities count
       prisma.activity.count({
-        where: { userId: targetUserId },
+        where: { userId: targetUserId, ...lockedFilter },
       }),
       // Total reports count
       prisma.report.count({
@@ -81,6 +85,7 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
         where: {
           userId: targetUserId,
           logDate: { gte: startOfMonth },
+          ...lockedFilter,
         },
         select: { logDate: true },
       }),
@@ -89,6 +94,7 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
         where: {
           userId: targetUserId,
           logDate: { gte: oneYearAgo },
+          ...lockedFilter,
         },
         select: { logDate: true, createdAt: true },
         orderBy: { logDate: 'desc' },
@@ -96,7 +102,7 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
       // Project distribution
       prisma.activity.groupBy({
         by: ['projectId'],
-        where: { userId: targetUserId },
+        where: { userId: targetUserId, ...lockedFilter },
         _count: true,
       }),
     ]);

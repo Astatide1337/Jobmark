@@ -24,10 +24,20 @@ import { buildSystemPrompt } from '@/lib/chat/system-prompts';
 import { streamManager } from '@/lib/chat/stream-manager';
 import type { ConversationMode } from '@/app/actions/chat';
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+/**
+ * Lazy OpenAI client factory.
+ *
+ * Why: Module-level `new OpenAI()` throws at import time when
+ * `OPENROUTER_API_KEY` is absent (build, cold boot, test environments).
+ * Deferring to call-time means the module loads cleanly and only fails
+ * when an actual AI request is made.
+ */
+function getOpenAI(): OpenAI {
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
+}
 
 type StreamBody = {
   conversationId?: string;
@@ -162,7 +172,7 @@ export async function POST(request: Request) {
       let wasCancelled = false;
 
       try {
-        const completion = await openai.chat.completions.create(
+        const completion = await getOpenAI().chat.completions.create(
           {
             model: 'z-ai/glm-4.5-air:free',
             messages: chatMessages,
@@ -223,7 +233,7 @@ export async function POST(request: Request) {
               conversation.title === 'Mock Interview')
           ) {
             try {
-              const titleCompletion = await openai.chat.completions.create(
+              const titleCompletion = await getOpenAI().chat.completions.create(
                 {
                   model: 'z-ai/glm-4.5-air:free',
                   messages: [

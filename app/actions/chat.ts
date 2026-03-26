@@ -12,6 +12,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 
 // Conversation modes
@@ -120,9 +121,14 @@ export async function getConversations(limit = 20, userId?: string): Promise<Con
     targetUserId = session.user.id;
   }
 
+  const lockedIds = await getLockedProjectIds(targetUserId);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const conversations = await (prisma.conversation as any).findMany({
-    where: { userId: targetUserId },
+    where: {
+      userId: targetUserId,
+      ...buildLockedActivityFilter(lockedIds),
+    },
     orderBy: { updatedAt: 'desc' },
     take: limit,
     include: {
@@ -176,6 +182,12 @@ export async function getConversation(
   });
 
   if (!conversation) return null;
+
+  // Guard: if conversation is linked to a locked project and vault is closed, hide it
+  if (conversation.projectId) {
+    const lockedIds = await getLockedProjectIds(session.user.id);
+    if (lockedIds.includes(conversation.projectId)) return null;
+  }
 
   return {
     id: conversation.id,

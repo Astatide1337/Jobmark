@@ -69,7 +69,27 @@ export function DemoInsights() {
   );
 }
 
+/**
+ * Seeded pseudo-random number generator (Mulberry32 algorithm).
+ *
+ * Why: `Math.random()` produces different values on server (SSR) vs client
+ * (hydration), causing React hydration mismatches. A seeded PRNG with a
+ * fixed seed always produces the same sequence — same on server and client.
+ */
+function makePrng(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function generateMockHeatmapData() {
+  // Fixed seed → identical data on every render (server + client)
+  const random = makePrng(0xdeadbeef);
+
   const rawData = [];
   const today = new Date();
   for (let i = 364; i >= 0; i--) {
@@ -79,9 +99,9 @@ function generateMockHeatmapData() {
 
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
     let count = 0;
-    if (Math.random() > 0.4) {
-      count = Math.floor(Math.random() * 5);
-      if (!isWeekend && Math.random() > 0.3) count += 2;
+    if (random() > 0.4) {
+      count = Math.floor(random() * 5);
+      if (!isWeekend && random() > 0.3) count += 2;
     }
 
     rawData.push({

@@ -31,7 +31,13 @@ import {
   unarchiveProject,
   updateProject,
 } from '@/app/actions/projects';
+import {
+  moveProjectToVault,
+  moveProjectFromVault,
+  lockVault,
+} from '@/app/actions/project-lock';
 import { projectColors } from '@/lib/constants';
+import { VaultPasswordDialog } from './vault-password-dialog';
 import {
   FolderPlus,
   Plus,
@@ -45,6 +51,10 @@ import {
   Activity,
   RotateCcw,
   Loader2,
+  Lock,
+  LockOpen,
+  ShieldCheck,
+  Unlock,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
@@ -65,6 +75,7 @@ interface Project {
   color: string;
   description: string | null;
   archived: boolean;
+  locked?: boolean;
   _count: {
     activities: number;
   };
@@ -73,7 +84,7 @@ interface Project {
 
 export interface ProjectListProps {
   projects: Project[];
-  initialFilter: 'active' | 'archived';
+  initialFilter: 'active' | 'archived' | 'locked';
   openCreate?: boolean;
   onCreate?: (
     data: FormData
@@ -87,6 +98,10 @@ export interface ProjectListProps {
   onTabChange?: (value: string) => void;
   disableNavigation?: boolean;
   onViewTimeline?: (id: string) => void;
+  // Vault state
+  vaultHasPassword?: boolean;
+  vaultIsUnlocked?: boolean;
+  lockedProjects?: Project[];
 }
 
 export function ProjectList({
@@ -100,11 +115,46 @@ export function ProjectList({
   onTabChange,
   disableNavigation,
   onViewTimeline,
+  vaultHasPassword = false,
+  vaultIsUnlocked = false,
+  lockedProjects = [],
 }: ProjectListProps) {
   const [showCreate, setShowCreate] = useState(openCreate);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'recent' | 'activity' | 'name'>('recent');
+  const [showVaultDialog, setShowVaultDialog] = useState(false);
+  const [vaultDialogMode, setVaultDialogMode] = useState<'setup' | 'unlock'>('unlock');
+  const [isLocking, startLockTransition] = useTransition();
+  const [isMovingToVault, startMoveToVaultTransition] = useTransition();
+  const [isMovingFromVault, startMoveFromVaultTransition] = useTransition();
+
+  const handleMoveToVault = (projectId: string) => {
+    if (!vaultHasPassword) {
+      // Need to set up password first
+      setVaultDialogMode('setup');
+      setShowVaultDialog(true);
+      return;
+    }
+    startMoveToVaultTransition(async () => {
+      await moveProjectToVault(projectId);
+      router.refresh();
+    });
+  };
+
+  const handleMoveFromVault = (projectId: string) => {
+    startMoveFromVaultTransition(async () => {
+      await moveProjectFromVault(projectId);
+      router.refresh();
+    });
+  };
+
+  const handleLockVault = () => {
+    startLockTransition(async () => {
+      await lockVault();
+      router.refresh();
+    });
+  };
 
   // Clear ?new param from URL when modal closes
   useEffect(() => {
@@ -151,6 +201,136 @@ export function ProjectList({
       return 0;
     });
 
+  const tabsNav = (
+    <Tabs value={initialFilter} onValueChange={handleTabChange} className="w-full sm:w-auto">
+      <TabsList>
+        <TabsTrigger value="active">Active Projects</TabsTrigger>
+        <TabsTrigger value="archived">Archived</TabsTrigger>
+        <TabsTrigger value="locked" className="gap-1.5">
+          <Lock className="h-3 w-3" /> Locked
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+
+  if (initialFilter === 'locked') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          {tabsNav}
+        </div>
+
+        {/* No vault password set yet → show setup prompt */}
+        {!vaultHasPassword && (
+          <Card className="bg-card/40 border-border/40 rounded-2xl border-dashed">
+            <CardContent className="py-12 text-center">
+              <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+                <ShieldCheck className="text-primary h-6 w-6" />
+              </div>
+              <h3 className="text-foreground mb-2 font-semibold">Set Up Your Vault</h3>
+              <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
+                Protect sensitive projects behind a password. Locked projects are hidden from all views until you unlock the vault.
+              </p>
+              <Button
+                onClick={() => {
+                  setVaultDialogMode('setup');
+                  setShowVaultDialog(true);
+                }}
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Set Up Vault Password
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Password exists but vault is locked → show unlock prompt */}
+        {vaultHasPassword && !vaultIsUnlocked && (
+          <Card className="bg-card/40 border-border/40 rounded-2xl border-dashed">
+            <CardContent className="py-12 text-center">
+              <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+                <Lock className="text-primary h-6 w-6" />
+              </div>
+              <h3 className="text-foreground mb-2 font-semibold">Vault is Locked</h3>
+              <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
+                Enter your vault password to view and manage locked projects.
+              </p>
+              <Button
+                onClick={() => {
+                  setVaultDialogMode('unlock');
+                  setShowVaultDialog(true);
+                }}
+              >
+                <Unlock className="mr-2 h-4 w-4" />
+                Enter Password
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Vault is unlocked → show locked projects */}
+        {vaultHasPassword && vaultIsUnlocked && (
+          <>
+            {/* Unlocked banner */}
+            <div className="bg-primary/5 border-primary/20 flex items-center justify-between rounded-xl border px-4 py-3">
+              <div className="flex items-center gap-2 text-sm">
+                <LockOpen className="text-primary h-4 w-4" />
+                <span className="text-foreground font-medium">Vault is unlocked</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLockVault}
+                disabled={isLocking}
+              >
+                {isLocking ? (
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Lock className="mr-2 h-3.5 w-3.5" />
+                )}
+                Re-lock
+              </Button>
+            </div>
+
+            {lockedProjects.length === 0 ? (
+              <Card className="bg-card/40 border-border/40 rounded-2xl border-dashed">
+                <CardContent className="py-12 text-center">
+                  <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+                    <Lock className="text-muted-foreground h-6 w-6" />
+                  </div>
+                  <h3 className="text-foreground mb-2 font-semibold">No locked projects</h3>
+                  <p className="text-muted-foreground mx-auto max-w-sm text-sm">
+                    Move projects here from the Active or Archived tab to hide them behind your vault password.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {lockedProjects.map(project => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    disableNavigation={disableNavigation}
+                    onViewTimeline={onViewTimeline}
+                    isVaultView
+                    onMoveFromVault={handleMoveFromVault}
+                    isMovingFromVault={isMovingFromVault}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        <VaultPasswordDialog
+          open={showVaultDialog}
+          onOpenChange={setShowVaultDialog}
+          mode={vaultDialogMode}
+        />
+      </div>
+    );
+  }
+
   if (projects.length === 0 && initialFilter === 'active') {
     return (
       <>
@@ -185,12 +365,7 @@ export function ProjectList({
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Tabs value={initialFilter} onValueChange={handleTabChange} className="w-full sm:w-auto">
-            <TabsList>
-              <TabsTrigger value="active">Active Projects</TabsTrigger>
-              <TabsTrigger value="archived">Archived</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {tabsNav}
         </div>
 
         <Card className="bg-card/40 border-border/40 rounded-2xl border-dashed">
@@ -212,12 +387,7 @@ export function ProjectList({
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <Tabs value={initialFilter} onValueChange={handleTabChange} className="w-full sm:w-auto">
-            <TabsList>
-              <TabsTrigger value="active">Active Projects</TabsTrigger>
-              <TabsTrigger value="archived">Archived</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {tabsNav}
 
           {initialFilter === 'active' && (
             <Button onClick={() => setShowCreate(true)} size="sm" className="w-full sm:w-auto">
@@ -278,12 +448,20 @@ export function ProjectList({
               onUpdate={onUpdate}
               disableNavigation={disableNavigation}
               onViewTimeline={onViewTimeline}
+              onMoveToVault={handleMoveToVault}
+              isMovingToVault={isMovingToVault}
             />
           ))
         )}
       </div>
 
       <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
+
+      <VaultPasswordDialog
+        open={showVaultDialog}
+        onOpenChange={setShowVaultDialog}
+        mode={vaultDialogMode}
+      />
     </div>
   );
 }
@@ -298,6 +476,12 @@ interface ProjectCardProps {
   ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
   disableNavigation?: boolean;
   onViewTimeline?: (id: string) => void;
+  // Vault props
+  onMoveToVault?: (id: string) => void;
+  onMoveFromVault?: (id: string) => void;
+  isMovingToVault?: boolean;
+  isMovingFromVault?: boolean;
+  isVaultView?: boolean;
 }
 
 function ProjectCard({
@@ -307,6 +491,11 @@ function ProjectCard({
   onUpdate,
   disableNavigation,
   onViewTimeline,
+  onMoveToVault,
+  onMoveFromVault,
+  isMovingToVault,
+  isMovingFromVault,
+  isVaultView,
 }: ProjectCardProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -452,17 +641,35 @@ function ProjectCard({
                 </DropdownMenuItem>
               )}
 
-              {project.archived ? (
+              {isVaultView ? (
                 <DropdownMenuItem
-                  onClick={handleUnarchive}
+                  onClick={() => onMoveFromVault?.(project.id)}
+                  disabled={isMovingFromVault}
                   className="text-primary focus:text-primary focus:bg-primary/10 font-medium"
                 >
-                  <RotateCcw className="mr-2 h-4 w-4" /> Restore Project
+                  <LockOpen className="mr-2 h-4 w-4" /> Move to Active
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem variant="destructive" onClick={handleArchive}>
-                  <Archive className="mr-2 h-4 w-4" /> Archive Project
-                </DropdownMenuItem>
+                <>
+                  {project.archived ? (
+                    <DropdownMenuItem
+                      onClick={handleUnarchive}
+                      className="text-primary focus:text-primary focus:bg-primary/10 font-medium"
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" /> Restore Project
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem variant="destructive" onClick={handleArchive}>
+                      <Archive className="mr-2 h-4 w-4" /> Archive Project
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => onMoveToVault?.(project.id)}
+                    disabled={isMovingToVault}
+                  >
+                    <Lock className="mr-2 h-4 w-4" /> Move to Locked
+                  </DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

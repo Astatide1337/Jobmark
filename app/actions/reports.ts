@@ -16,13 +16,25 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { createStreamableValue } from '@ai-sdk/rsc';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+/**
+ * Lazy OpenAI client factory.
+ *
+ * Why: Instantiating `new OpenAI()` at module-level throws immediately
+ * when `OPENROUTER_API_KEY` is not set (e.g. during build or cold boot),
+ * crashing every route that imports this module — even ones that never call
+ * the AI. Deferring construction to call-time limits the failure to the
+ * specific functions that actually need it.
+ */
+function getOpenAI(): OpenAI {
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
+}
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -65,7 +77,15 @@ export async function streamReport(config: ReportConfig) {
     }
   }
 
-  // 2. Fetch activities
+  // 2. Guard locked projects
+  const lockedIds = await getLockedProjectIds(session.user.id);
+
+  // If specific project is locked and vault is closed, block
+  if (config.projectId && lockedIds.includes(config.projectId)) {
+    throw new Error('This project is locked.');
+  }
+
+  // 2b. Fetch activities
   const activities = await prisma.activity.findMany({
     where: {
       userId: session.user.id,
@@ -75,6 +95,13 @@ export async function streamReport(config: ReportConfig) {
       },
       // Handle "Unassigned" (null) vs specific project vs All (undefined in typical filter logic, but here we expect explicit selection)
       projectId: config.projectId === undefined ? undefined : config.projectId,
+      // Exclude locked project activities when generating "all projects" report
+      ...(config.projectId === undefined && lockedIds.length > 0 && {
+        OR: [
+          { projectId: null },
+          { projectId: { notIn: lockedIds } },
+        ],
+      }),
     },
     orderBy: { createdAt: 'asc' },
     include: {
@@ -132,7 +159,7 @@ export async function streamReport(config: ReportConfig) {
 
   (async () => {
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAI().chat.completions.create({
         model: 'z-ai/glm-4.5-air:free',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -163,7 +190,7 @@ export async function improveText(selection: string, instruction: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAI().chat.completions.create({
     model: 'z-ai/glm-4.5-air:free',
     messages: [
       {
@@ -210,11 +237,24 @@ export async function checkActivityCount(config: ReportConfig) {
     }
   }
 
+  const lockedIds = await getLockedProjectIds(session.user.id);
+
+  // If specific project is locked, return 0
+  if (config.projectId && lockedIds.includes(config.projectId)) {
+    return { count: 0 };
+  }
+
   const count = await prisma.activity.count({
     where: {
       userId: session.user.id,
       createdAt: { gte: startDate, lte: endDate },
       projectId: config.projectId === undefined ? undefined : config.projectId,
+      ...(config.projectId === undefined && lockedIds.length > 0 && {
+        OR: [
+          { projectId: null },
+          { projectId: { notIn: lockedIds } },
+        ],
+      }),
     },
   });
 
@@ -252,12 +292,14 @@ export async function getReports(userId?: string) {
     targetUserId = session.user.id;
   }
 
+  const lockedIds = await getLockedProjectIds(targetUserId);
+
   const reports = await prisma.report.findMany({
     where: { userId: targetUserId },
     orderBy: { createdAt: 'desc' },
   });
 
-  return reports;
+  return filterLockedReports(reports, lockedIds);
 }
 
 // Delete a report
