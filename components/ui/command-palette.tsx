@@ -5,7 +5,7 @@
  * their hands off the keyboard. This is the "Omnisearch" for jobmark.
  *
  * Features:
- * - Multi-source Search: Queries Activities, Projects, Contacts, and Reports.
+ * - Multi-source Search: Queries Activities, Projects, Contacts, and Reviews.
  * - Quick Actions: Immediate triggers for logging wins or creating reports.
  * - Recent Items: Automatically suggests your most recently active projects.
  * - Debouncing: Uses `lodash.debounce` to ensure server search only triggers
@@ -46,8 +46,9 @@ import { format } from 'date-fns';
 // Quick action definitions
 const quickActions = [
   { id: 'log', label: 'Log New Activity', icon: Plus, action: 'focus-capture' },
-  { id: 'view-reports', label: 'View Reports', icon: FileBarChart, href: '/reports?tab=history' },
-  { id: 'create-report', label: 'Create Report', icon: Sparkles, href: '/reports?tab=new' },
+  { id: 'open-coach', label: 'Open Coach', icon: MessageSquare, href: '/chat' },
+  { id: 'view-reports', label: 'View Reviews', icon: FileBarChart, href: '/reports?tab=history' },
+  { id: 'create-report', label: 'Create Summary', icon: Sparkles, href: '/reports?tab=new' },
   { id: 'project', label: 'Create Project', icon: FolderOpen, href: '/projects?new=true' },
 ];
 
@@ -334,7 +335,7 @@ export function CommandPalette() {
 
               {/* Report Results */}
               {displayedResults.filter(r => r.type === 'report').length > 0 && (
-                <CommandGroup heading="Reports">
+                <CommandGroup heading="Reviews">
                   {displayedResults
                     .filter(r => r.type === 'report')
                     .map(result => (

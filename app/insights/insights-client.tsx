@@ -87,7 +87,12 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
     <div className="space-y-6">
       {/* Header with filter */}
       <div className="flex items-center justify-between">
-        <h2 className="text-foreground text-lg font-semibold">Your Activity</h2>
+        <div>
+          <h2 className="text-foreground text-lg font-semibold">Record Health</h2>
+          <p className="text-muted-foreground text-sm">
+            See how complete, reusable, and balanced your work record is.
+          </p>
+        </div>
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 

@@ -15,6 +15,11 @@ featured: true
 difficulty: starter
 series: Evidence Operating System
 ctaVariant: checklist
+bestFor: weekly updates
+primaryAction: Open dashboard
+primaryHref: /dashboard
+secondaryAction: Build weekly summary
+secondaryHref: /reports?tab=new
 ---
 
 Here's the uncomfortable truth: a lot of strong performers look average on paper.

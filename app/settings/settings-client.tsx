@@ -107,32 +107,63 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
         <TabsList className="mb-8 grid w-full grid-cols-5">
           <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="focus">Focus</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="reports">Reviews</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="goals">
+          <SettingsIntro
+            title="Record"
+            description="Set the targets and defaults that shape how you capture work and turn it into usable summaries."
+          />
           <GoalsSection settings={settings} goals={goals} />
         </TabsContent>
 
         <TabsContent value="focus">
+          <SettingsIntro
+            title="Reflection"
+            description="Configure the end-of-day flow that helps you step back, reset, and stay intentional."
+          />
           <FocusSection initialBlocks={focusConfig} goals={goals} />
         </TabsContent>
 
         <TabsContent value="reports">
+          <SettingsIntro
+            title="Review Defaults"
+            description="Choose the instructions and writing defaults Jobmark should use when shaping your record into drafts."
+          />
           <ReportsSection settings={settings} />
         </TabsContent>
 
         <TabsContent value="appearance">
+          <SettingsIntro
+            title="Appearance"
+            description="Adjust theme and interface preferences without changing how the product works."
+          />
           <AppearanceSection settings={settings} />
         </TabsContent>
 
         <TabsContent value="data">
+          <SettingsIntro
+            title="Data"
+            description="Export your record, manage retention, and handle irreversible account actions separately from everyday settings."
+          />
           <DataSection />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function SettingsIntro({ title, description }: { title: string; description: string }) {
+  return (
+    <Card className="mb-6 border-border/50 bg-card/45">
+      <CardContent className="p-5">
+        <p className="text-primary text-xs font-semibold tracking-widest uppercase">{title}</p>
+        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{description}</p>
+      </CardContent>
+    </Card>
   );
 }
 

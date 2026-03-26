@@ -9,6 +9,7 @@
  */
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
@@ -112,12 +113,12 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
 
       // Update local state
       setReports(reports.map(r => (r.id === reportId ? { ...r, content: editContent } : r)));
-      toast.success('Report saved!');
+      toast.success('Draft saved');
       setEditingId(null);
       setEditContent('');
     } catch (error) {
       console.error('Failed to save report:', error);
-      toast.error('Failed to save report');
+      toast.error('Failed to save draft');
     } finally {
       setIsSaving(false);
     }
@@ -127,8 +128,13 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
     return (
       <div className="text-muted-foreground py-12 text-center">
         <FileText className="mx-auto mb-4 h-12 w-12 opacity-20" />
-        <p>No saved reports yet.</p>
-        <p className="text-sm">Generate one to see it here!</p>
+        <p className="text-foreground text-sm font-medium">No summaries yet.</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Generate a review draft to turn your work record into a clear narrative.
+        </p>
+        <Button variant="link" size="sm" asChild className="mt-3">
+          <Link href="/reports?tab=new">Build your first summary</Link>
+        </Button>
       </div>
     );
   }
@@ -153,6 +159,9 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                 <h3 className="text-base font-semibold">{report.title}</h3>
                 <p className="text-muted-foreground text-xs">
                   {format(new Date(report.createdAt), 'MMM d, yyyy • h:mm a')}
+                </p>
+                <p className="text-muted-foreground/80 mt-1 text-xs">
+                  Reopen, refine, export, or reuse in your next review cycle.
                 </p>
               </div>
             </div>
@@ -285,7 +294,7 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                         toast.success('Copied to clipboard!');
                       }}
                     >
-                      Copy
+                      Copy for Review
                     </Button>
                   </div>
                 </div>

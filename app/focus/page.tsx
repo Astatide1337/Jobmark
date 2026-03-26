@@ -19,8 +19,8 @@ import { getFocusConfig } from '@/app/actions/focus-config';
 import type { ResolvedFocusBlock } from '@/lib/focus/types';
 
 export const metadata = {
-  title: 'Decompress | JobMark',
-  description: 'End your day with intention.',
+  title: 'Focus | Jobmark',
+  description: 'Reset and reflect at the end of the day.',
 };
 
 export default async function FocusPage() {

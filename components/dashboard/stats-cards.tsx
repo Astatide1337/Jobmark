@@ -33,6 +33,7 @@ interface StatsProps {
   dates?: string[];
   projects: number;
   monthlyGoal: number;
+  summaries?: number;
   serverDate?: string;
 }
 
@@ -40,6 +41,7 @@ export function StatsCards({
   thisMonth,
   projects,
   monthlyGoal,
+  summaries = 0,
   dates = [],
   serverDate,
 }: StatsProps) {
@@ -86,14 +88,14 @@ export function StatsCards({
     }
 
     return streak;
-  }, [dates]);
+  }, [dates, serverDate]);
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ActivityStatCard count={thisMonth} goal={monthlyGoal} />
-        <StreakStatCard streak={currentStreak} />
-        <ProjectStatCard count={projects} />
+        <CoverageStatCard streak={currentStreak} />
+        <ProjectStatCard count={projects} summaries={summaries} />
       </div>
     </TooltipProvider>
   );
@@ -104,10 +106,10 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
   const remaining = Math.max(goal - count, 0);
 
   const getMessage = () => {
-    if (count === 0) return 'Log your first win today';
-    if (count >= goal) return 'Goal achieved! Keep going';
-    if (remaining <= 3) return `Almost there! ${remaining} to go`;
-    return `${remaining} more to reach your goal`;
+    if (count === 0) return 'Capture one concrete piece of work to start your record.';
+    if (count >= goal) return 'Your record is in good shape this month.';
+    if (remaining <= 3) return `${remaining} more entries would round out the month well.`;
+    return `${remaining} more entries would make this month easier to summarize later.`;
   };
 
   return (
@@ -134,23 +136,20 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
       <TooltipContent side="top">
         <p className="font-medium">{getMessage()}</p>
         <p className="text-muted-foreground">
-          {count}/{goal} monthly goal
+          {count}/{goal} monthly target
         </p>
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function StreakStatCard({ streak }: { streak: number }) {
-  const isAtRisk = streak > 0;
-
+function CoverageStatCard({ streak }: { streak: number }) {
   const getMessage = () => {
-    if (streak === 0) return 'Log today to start a streak';
-    if (streak === 1) return 'Streak started! Come back tomorrow';
-    if (streak < 7) return 'Building a habit';
-    if (streak < 14) return 'One week strong';
-    if (streak < 30) return 'Two weeks of consistency';
-    return 'Unstoppable';
+    if (streak === 0) return 'No recent documentation streak yet.';
+    if (streak === 1) return 'You captured work today. Keep the record alive tomorrow.';
+    if (streak < 7) return 'You are building documentation consistency.';
+    if (streak < 14) return 'This is becoming a reliable record, not a catch-up exercise.';
+    return 'You have a strong habit of capturing evidence while it is fresh.';
   };
 
   return (
@@ -163,7 +162,7 @@ function StreakStatCard({ streak }: { streak: number }) {
                 className={`h-4 w-4 ${streak > 0 ? 'text-primary' : 'text-muted-foreground/70'}`}
               />
               <span className="text-muted-foreground/60 text-[10px] font-bold tracking-widest uppercase">
-                Streak
+                Coverage
               </span>
             </div>
             <div className="flex items-baseline gap-2">
@@ -172,32 +171,25 @@ function StreakStatCard({ streak }: { streak: number }) {
               </p>
               {streak > 3 && <TrendingUp className="text-primary h-4 w-4" />}
             </div>
-            <p className="text-muted-foreground/80 text-xs">{streak === 1 ? 'Day' : 'Days'}</p>
-
-            {isAtRisk && (
-              <div className="mt-3 flex items-center gap-1.5">
-                <div className="bg-primary h-1.5 w-1.5 animate-pulse rounded-full" />
-                <span className="text-primary text-[10px] font-bold tracking-wider uppercase">
-                  Active
-                </span>
-              </div>
-            )}
+            <p className="text-muted-foreground/80 text-xs">
+              {streak === 1 ? 'Documented day' : 'Documented days'}
+            </p>
           </CardContent>
         </Card>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[180px]">
         <p className="font-medium">{getMessage()}</p>
-        <p className="text-muted-foreground">Don't break the chain</p>
+        <p className="text-muted-foreground">Consistency improves recall and review quality.</p>
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function ProjectStatCard({ count }: { count: number }) {
+function ProjectStatCard({ count, summaries }: { count: number; summaries: number }) {
   const getMessage = () => {
-    if (count === 0) return 'Create a project to organize activities';
-    if (count === 1) return 'Great start!';
-    return 'Well organized';
+    if (count === 0) return 'Create a project so entries stay specific and reusable.';
+    if (summaries === 0) return 'Your work is organized. Next step: turn it into a summary.';
+    return 'Projects and summaries are working together as intended.';
   };
 
   return (
@@ -214,7 +206,7 @@ function ProjectStatCard({ count }: { count: number }) {
             <p className="text-foreground text-3xl font-bold tracking-tight tabular-nums">
               {count}
             </p>
-            <p className="text-muted-foreground/80 text-xs">Active</p>
+            <p className="text-muted-foreground/80 text-xs">Active projects</p>
           </CardContent>
         </Card>
       </TooltipTrigger>

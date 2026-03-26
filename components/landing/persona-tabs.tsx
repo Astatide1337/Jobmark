@@ -39,46 +39,46 @@ interface Tab {
 const tabs: Tab[] = [
   {
     id: 'track',
-    label: 'Track Your Wins',
+    label: 'Build Your Record',
     icon: <Trophy className="h-4 w-4" />,
-    headline: 'Capture every accomplishment',
+    headline: 'Capture proof while it is fresh',
     description:
-      "Log your work in 30 seconds. Build a comprehensive timeline of everything you've achieved, so nothing slips through the cracks.",
+      'Log work in seconds and build a durable record of impact that is easy to search and reuse.',
     features: [
-      'Quick daily logging',
-      'Smart categorization',
-      'Searchable history',
-      'Timeline view',
+      'Fast daily capture',
+      'Evidence timeline',
+      'Search by project',
+      'Lightweight tagging',
     ],
     visual: <TrackVisual />,
   },
   {
     id: 'prove',
-    label: 'Prove Your Impact',
+    label: 'Prepare Reviews',
     icon: <TrendingUp className="h-4 w-4" />,
-    headline: 'Turn logs into proof',
+    headline: 'Turn evidence into reviews and promotion cases',
     description:
-      "When it's time for performance reviews or promotion discussions, generate compelling reports that showcase your contributions with specific examples.",
+      'When review time arrives, you already have structured proof to pull from and refine.',
     features: [
-      'AI-generated summaries',
+      'Review-ready summaries',
+      'Promotion case drafts',
       'Impact highlights',
-      'Metric extraction',
-      'Custom report templates',
+      'Exportable formats',
     ],
     visual: <ProveVisual />,
   },
   {
     id: 'share',
-    label: 'Share Your Progress',
+    label: 'Stay Visible',
     icon: <Share2 className="h-4 w-4" />,
-    headline: 'Keep everyone in the loop',
+    headline: 'Send updates without scrambling',
     description:
-      'Create polished updates for standups, team meetings, or stakeholder reports. No more scrambling to remember what you worked on.',
+      'Turn your record into weekly updates, standups, and status notes in minutes.',
     features: [
       'Weekly summaries',
-      'Standup reports',
-      'Export to PDF/Markdown',
-      'Team-ready formatting',
+      'Standup-ready notes',
+      'Copy and share drafts',
+      'Consistent visibility',
     ],
     visual: <ShareVisual />,
   },
@@ -258,7 +258,7 @@ export function PersonaTabs() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-6 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
           >
-            Built for how you <span className="text-primary">actually work</span>
+            Built for how careers <span className="text-primary">actually work</span>
           </motion.h2>
         </div>
 

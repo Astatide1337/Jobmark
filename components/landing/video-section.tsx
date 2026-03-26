@@ -28,26 +28,26 @@ export function VideoSection() {
               <span className="text-primary font-mono text-sm tracking-wide uppercase">Demo</span>
             </motion.div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
-            >
-              See Jobmark <span className="text-primary">in action</span>
-            </motion.h2>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
+          >
+            Product <span className="text-primary">walkthrough</span>
+          </motion.h2>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-muted-foreground max-w-lg text-lg leading-relaxed"
-            >
-              Watch how easy it is to log your daily wins and generate polished reports in minutes,
-              not hours.
-            </motion.p>
+            className="text-muted-foreground max-w-lg text-lg leading-relaxed"
+          >
+            A quick, concrete look at how the career record flows from capture to review-ready
+            output.
+          </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -58,7 +58,7 @@ export function VideoSection() {
             >
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span>2 min watch</span>
+                <span>2 min overview</span>
               </div>
             </motion.div>
           </div>
@@ -86,22 +86,25 @@ export function VideoSection() {
               />
 
               {/* Center content */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                {/* Play button */}
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  className="bg-primary/10 border-primary/30 flex h-20 w-20 cursor-not-allowed items-center justify-center rounded-full border"
-                >
-                  <div className="bg-primary/20 flex h-14 w-14 items-center justify-center rounded-full">
-                    <Play className="text-primary ml-1 h-6 w-6" />
+              <div className="absolute inset-0 flex flex-col justify-center px-8">
+                <div className="bg-card/70 border-border/40 rounded-2xl border p-6 backdrop-blur-sm">
+                  <div className="text-primary mb-3 text-xs font-medium tracking-wide uppercase">
+                    What you will see
                   </div>
-                </motion.div>
-
-                <div className="text-center">
-                  <p className="text-muted-foreground font-medium">Demo Coming Soon</p>
-                  <p className="text-muted-foreground/60 mt-1 text-sm">
-                    We're putting the finishing touches on it
-                  </p>
+                  <ul className="text-muted-foreground space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                      <Play className="text-primary mt-0.5 h-4 w-4" />
+                      Capture a week of work in minutes, not hours.
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Play className="text-primary mt-0.5 h-4 w-4" />
+                      Turn evidence into updates and review drafts.
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Play className="text-primary mt-0.5 h-4 w-4" />
+                      Keep a portable career record you control.
+                    </li>
+                  </ul>
                 </div>
               </div>
 

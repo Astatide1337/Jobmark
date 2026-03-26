@@ -402,7 +402,7 @@ export function QuickCapture({
     <Card className="bg-card border-border/50 warm-glow">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Quick Capture</CardTitle>
+          <CardTitle className="text-lg">Capture to Record</CardTitle>
           <span
             className={`rounded-xl px-2.5 py-1 text-xs font-medium ${
               todayCount >= dailyGoal
@@ -424,7 +424,7 @@ export function QuickCapture({
           </span>
         </div>
         <CardDescription>
-          What did you accomplish{' '}
+          What work should be part of your record{' '}
           {isToday(selectedDate)
             ? 'today'
             : isYesterday(selectedDate)
@@ -493,7 +493,7 @@ export function QuickCapture({
                     }
                   }}
                   onSelect={handleSelect}
-                  placeholder="I completed the quarterly report and presented findings to the team..."
+                  placeholder="Shipped the dashboard polish, reviewed two PRs, and clarified scope for the API work."
                   className="border-border/50 focus:bg-background/50 relative z-10 min-h-[100px] resize-none bg-transparent pr-16 transition-colors"
                   disabled={isPending}
                   data-quick-capture="true"
@@ -597,6 +597,11 @@ export function QuickCapture({
               </AnimatePresence>
             </div>
 
+            <div className="text-muted-foreground space-y-1 text-xs leading-relaxed">
+              <p>Good entries are short and specific.</p>
+              <p>Try: shipped, resolved, reviewed, coordinated, decided.</p>
+            </div>
+
             {/* Project chips + Date picker row */}
             <div className="flex flex-wrap items-center gap-3">
               {projects.length > 0 && (
@@ -654,7 +659,9 @@ export function QuickCapture({
             </div>
 
             {state.errors?.content && (
-              <p className="text-destructive text-sm">{state.errors.content[0]}</p>
+              <p className="text-destructive text-sm">
+                {state.errors.content[0]} Add one concrete action or outcome so this entry is useful later.
+              </p>
             )}
 
             {!state.success && state.message && !state.errors && (
@@ -670,7 +677,7 @@ export function QuickCapture({
                 <kbd className="bg-muted border-border/50 rounded-md border px-1.5 py-0.5 text-[10px]">
                   Enter
                 </kbd>
-                {' to save'}
+                {' to save to your record'}
               </p>
 
               {/* Send selected date */}
@@ -689,13 +696,161 @@ export function QuickCapture({
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Save Activity
+                    Save to Record
                   </>
                 )}
               </Button>
             </div>
+
+            {state.success && (
+              <div className="border-border/50 bg-background/40 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3">
+                <div>
+                  <p className="text-foreground text-sm font-medium">Added to your record.</p>
+                  <p className="text-muted-foreground text-xs">
+                    Keep capturing, assign this work to a project, or turn the week into a summary.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => textareaRef.current?.focus()}
+                  >
+                    Add Another
+                  </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href="/projects?new=true">Create Project</Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href="/reports?tab=new">Generate Summary</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function WorkflowStarter({
+  activityCount,
+  projectCount,
+  summaryCount,
+}: {
+  activityCount: number;
+  projectCount: number;
+  summaryCount: number;
+}) {
+  const steps = [
+    {
+      title: 'Log your first activity',
+      done: activityCount > 0,
+      href: '/dashboard',
+      cta: 'Start capturing',
+    },
+    {
+      title: 'Create your first project',
+      done: projectCount > 0,
+      href: '/projects?new=true',
+      cta: 'Create project',
+    },
+    {
+      title: 'Generate your first weekly summary',
+      done: summaryCount > 0,
+      href: '/reports?tab=new',
+      cta: 'Build summary',
+    },
+  ];
+
+  return (
+    <Card className="border-border/50 bg-card/60 mb-8 rounded-2xl">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg">How Jobmark works</CardTitle>
+        <CardDescription>
+          Capture the work, organize it into evidence, and reuse it when reviews or updates matter.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3 md:grid-cols-3">
+        {steps.map(step => (
+          <div
+            key={step.title}
+            className="border-border/50 bg-background/40 flex flex-col gap-3 rounded-xl border p-4"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
+                  step.done ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {step.done ? <Check className="h-3.5 w-3.5" /> : steps.indexOf(step) + 1}
+              </span>
+              <p className="text-sm font-medium">{step.title}</p>
+            </div>
+            <Button size="sm" variant={step.done ? 'outline' : 'default'} asChild>
+              <Link href={step.href}>{step.done ? 'Open' : step.cta}</Link>
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function NextBestAction({
+  activityCount,
+  projectCount,
+  summaryCount,
+}: {
+  activityCount: number;
+  projectCount: number;
+  summaryCount: number;
+}) {
+  const suggestion =
+    activityCount === 0
+      ? {
+          title: 'Start by capturing one concrete piece of work.',
+          body: 'A short, specific entry is enough to begin building a useful record.',
+          href: '/dashboard',
+          cta: 'Capture Work',
+        }
+      : projectCount === 0
+        ? {
+            title: 'Create a project so your evidence stays organized.',
+            body: 'Projects help turn scattered entries into review-ready material.',
+            href: '/projects?new=true',
+            cta: 'Create Project',
+          }
+        : summaryCount === 0
+          ? {
+              title: 'Turn recent work into your first reusable summary.',
+              body: 'A draft summary makes weekly updates and reviews much easier later.',
+              href: '/reports?tab=new',
+              cta: 'Build Summary',
+            }
+          : {
+              title: 'Use your record to prepare the next move.',
+              body: 'Review your summaries, then use the coach or insights to sharpen the story.',
+              href: '/chat',
+              cta: 'Open Coach',
+            };
+
+  return (
+    <Card className="border-border/50 bg-card/60 rounded-2xl">
+      <CardContent className="flex flex-col items-start justify-between gap-4 p-5 md:flex-row md:items-center">
+        <div>
+          <p className="text-primary text-xs font-semibold tracking-widest uppercase">
+            Next Best Action
+          </p>
+          <h3 className="text-foreground mt-1 text-lg font-semibold">{suggestion.title}</h3>
+          <p className="text-muted-foreground mt-1 text-sm">{suggestion.body}</p>
+        </div>
+        <Button asChild>
+          <Link href={suggestion.href}>{suggestion.cta}</Link>
+        </Button>
       </CardContent>
     </Card>
   );
@@ -957,7 +1112,7 @@ function TimelineEmptyState() {
         </div>
         <h3 className="text-foreground mb-2 font-semibold">No activities yet</h3>
         <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-          Start logging your daily accomplishments using the Quick Capture above.
+          Capture one concrete action so your record has something real to build on.
         </p>
       </CardContent>
     </Card>
@@ -1061,7 +1216,9 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
           </div>
           <div>
             <h3 className="text-lg font-semibold">No goals set yet</h3>
-            <p className="text-muted-foreground text-sm">Define what you want to achieve.</p>
+            <p className="text-muted-foreground text-sm">
+              Goals help connect daily evidence to the direction you want to move in.
+            </p>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/settings">
@@ -1096,7 +1253,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
               <div className="border-primary/10 flex gap-2 border-t pt-3">
                 <Quote className="text-primary/60 mt-0.5 h-3 w-3 shrink-0" />
                 <p className="text-foreground/80 text-sm leading-relaxed font-medium italic">
-                  "{settings.whyStatement}"
+                  &ldquo;{settings.whyStatement}&rdquo;
                 </p>
               </div>
             )}
@@ -1170,7 +1327,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
                 <div className="flex gap-2">
                   <Quote className="text-primary/60 mt-0.5 h-3 w-3 shrink-0" />
                   <p className="text-foreground/80 line-clamp-2 text-sm leading-relaxed font-medium italic">
-                    "{currentGoal.why}"
+                    &ldquo;{currentGoal.why}&rdquo;
                   </p>
                 </div>
               )}

@@ -103,7 +103,7 @@ export function EditorialHero() {
             >
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Work Journal
+                Career OS
               </span>
             </motion.div>
 
@@ -117,8 +117,8 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-muted-foreground max-w-lg text-xl leading-relaxed"
             >
-              The work journal that writes your reports for you. Capture accomplishments in 30
-              seconds, generate polished reports with AI.
+              Capture what you did, organize it into evidence, and turn it into updates, reviews,
+              and promotion-ready summaries.
             </motion.p>
 
             {/* CTAs */}
@@ -132,7 +132,7 @@ export function EditorialHero() {
                 onClick={openAuthModal}
                 className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
-                Start Your Journal
+                Start Building
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
@@ -140,7 +140,7 @@ export function EditorialHero() {
                 href="#product-tour"
                 className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 px-6 py-4 text-base transition-colors"
               >
-                See how it works
+                See the workflow
               </Link>
             </motion.div>
 
@@ -151,7 +151,7 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"
             >
-              Free to start. No credit card required.
+              Free to start. Export-ready. BYOK support planned.
             </motion.p>
           </motion.div>
 

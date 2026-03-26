@@ -24,37 +24,37 @@ import { DemoInsights } from './demos/demo-insights';
 const steps = [
   {
     id: 'capture',
-    title: 'Capture in seconds',
-    subtitle: 'Not another task list.',
+    title: 'Capture the work',
+    subtitle: 'Fast, low friction.',
     description:
-      "Type what you accomplished. That's it. No categories to choose, no forms to fill out.",
+      'Log what you shipped or solved in seconds. No rigid templates or busywork.',
   },
   {
     id: 'timeline',
-    title: 'Your timeline builds itself',
-    subtitle: 'Organized automatically.',
+    title: 'Organize into evidence',
+    subtitle: 'Structured by default.',
     description:
-      'Every entry lands on your timeline. AI detects projects and themes without manual tagging.',
+      'Your record becomes searchable proof of impact, grouped by project and theme.',
   },
   {
     id: 'reports',
-    title: 'Generate polished reports',
-    subtitle: 'From notes to narrative.',
+    title: 'Generate career-ready output',
+    subtitle: 'From evidence to narrative.',
     description:
-      'Select a date range and tone. AI transforms your entries into professional reports.',
+      'Produce reviews, updates, and promotion summaries from the work you already captured.',
   },
   {
     id: 'mentor',
-    title: 'Chat with AI Mentor',
-    subtitle: 'Your career coach, 24/7.',
-    description: 'Stuck on a goal? Chat with an AI trained on proven productivity methods.',
+    title: 'Reflect with a coach',
+    subtitle: 'Support, not replacement.',
+    description: 'Use your record to think through goals, tradeoffs, and next steps.',
   },
   {
     id: 'insights',
-    title: 'Discover your patterns',
-    subtitle: 'Data-driven self-awareness.',
+    title: 'Grow over time',
+    subtitle: 'Patterns you can act on.',
     description:
-      "Streak tracking, heatmaps, project distribution. See when you're most productive.",
+      'See patterns in your work and focus on the habits that move your career forward.',
   },
 ];
 

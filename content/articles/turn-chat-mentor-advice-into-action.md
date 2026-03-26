@@ -15,6 +15,11 @@ featured: false
 difficulty: intermediate
 series: Mentor to Execution
 ctaVariant: default
+bestFor: turning advice into action
+primaryAction: Open coach
+primaryHref: /chat
+secondaryAction: Log recent work
+secondaryHref: /dashboard
 ---
 
 Most mentor conversations feel great in the moment.

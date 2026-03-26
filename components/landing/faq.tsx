@@ -19,49 +19,43 @@ const faqs = [
     id: 'what-is',
     question: 'What is Jobmark exactly?',
     answer:
-      "Jobmark is a work journal—a place to log what you've accomplished each day. Think of it as a reverse TODO list. Instead of tracking what you need to do, you track what you've done. AI then helps you turn these notes into polished reports for standups, performance reviews, or your own records.",
+      'Jobmark is a career OS for documenting your work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
   },
   {
     id: 'different',
-    question: 'How is this different from a notes app or TODO list?',
+    question: 'Is this just a notes app?',
     answer:
-      'Notes apps are unstructured—great for capturing ideas, but hard to search and report on. TODO lists create pressure and anxiety about uncompleted tasks. Jobmark is purpose-built for accomplishments: structured enough to be useful, but simple enough that logging takes seconds. Plus, AI transforms your raw notes into professional narratives.',
+      'Notes capture raw thoughts, but they do not organize evidence or turn it into career-ready output. Jobmark is structured for impact, not just storage.',
   },
   {
-    id: 'data-safe',
-    question: 'Is my data safe?',
+    id: 'notion',
+    question: 'Why not just use Notion or Docs?',
     answer:
-      "Yes. Your data is encrypted at rest and in transit. We don't sell your data, and we don't train AI models on your entries without explicit consent. You can export all your data anytime, and you can delete your account completely—we don't keep shadow copies.",
+      'Generic tools are flexible, but they do not build a career record for you. Jobmark is built around evidence, timelines, and review-ready output from the start.',
   },
   {
     id: 'ai-work',
-    question: 'How does the AI work?',
+    question: 'What exactly does AI do here?',
     answer:
-      'When you generate a report, the AI reads your journal entries for the selected time period and synthesizes them into a coherent narrative. You choose the tone (professional, casual, bullet points) and the AI adapts. The AI Mentor uses the same context to give you personalized productivity advice based on your actual work patterns.',
+      'AI helps synthesize your record into summaries, drafts, and rewrites. It is an assistant layer, not the source of your work.',
   },
   {
-    id: 'free',
-    question: 'Is Jobmark free?',
+    id: 'byok',
+    question: 'What does BYOK mean here?',
     answer:
-      'Yes, you can start for free with generous limits. We may introduce paid tiers in the future for power users who want unlimited AI generations, team features, or advanced analytics—but there will always be a free tier for individual use.',
+      'Bring-your-own-key support is planned so you can use your own model access over time. We are designing toward user-controlled AI without promising a timeline.',
   },
   {
-    id: 'time',
-    question: 'How much time does this take each day?',
+    id: 'export',
+    question: 'Can I export everything?',
     answer:
-      "Most users spend 30 seconds to 2 minutes per entry. The goal is to capture wins while they're fresh, not to write essays. A quick 'Shipped the login feature' is enough. The AI fills in the narrative later when you need a polished report.",
+      'Yes. Your work record should remain portable so you can reuse it wherever you need.',
   },
   {
-    id: 'mobile',
-    question: 'Is there a mobile app?',
+    id: 'who',
+    question: 'Who is this for?',
     answer:
-      'The web app is fully responsive and works great on mobile browsers. A native mobile app is on our roadmap for quick capture on the go, but the current web experience is designed to be fast and thumb-friendly.',
-  },
-  {
-    id: 'import',
-    question: 'Can I import data from other tools?',
-    answer:
-      "Not yet, but it's on our roadmap. We're planning integrations with common tools like Notion, Todoist, and calendar apps to auto-capture completed tasks. For now, manual entry keeps things simple and intentional.",
+      'People who want stronger reviews, clearer promotion cases, and better weekly visibility without keeping a separate system of record.',
   },
 ];
 

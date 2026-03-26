@@ -14,15 +14,22 @@
  */
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { getActivities, getActivityStats, getActivityCount } from '@/app/actions/activities';
+import { getActivities, getActivityStats } from '@/app/actions/activities';
 import { getProjects } from '@/app/actions/projects';
 import { getUserSettings } from '@/app/actions/settings';
-import { QuickCapture, ActivityTimeline, GoalMotivator } from './dashboard-client';
+import {
+  QuickCapture,
+  ActivityTimeline,
+  GoalMotivator,
+  WorkflowStarter,
+  NextBestAction,
+} from './dashboard-client';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 
 import { getGoals } from '@/app/actions/goals';
+import { getReports } from '@/app/actions/reports';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -37,11 +44,12 @@ export default async function DashboardPage() {
   const settings = await getUserSettings(userId);
   const hideArchived = settings?.hideArchived ?? false;
 
-  const [activities, stats, projects, goals] = await Promise.all([
+  const [activities, stats, projects, goals, reports] = await Promise.all([
     getActivities(20, 0, hideArchived, userId),
     getActivityStats(userId),
     getProjects('active', userId),
     getGoals(userId),
+    getReports(userId),
   ]);
 
   const totalCount = stats.totalCount;
@@ -62,8 +70,16 @@ export default async function DashboardPage() {
           <h1 className="text-foreground mb-1 text-2xl font-bold">
             {greeting}, {session.user.name?.split(' ')[0]}.
           </h1>
-          <p className="text-muted-foreground">Ready to capture your wins?</p>
+          <p className="text-muted-foreground">Document today&apos;s work while it is still fresh.</p>
         </div>
+
+        {stats.totalCount < 5 && (
+          <WorkflowStarter
+            activityCount={stats.totalCount}
+            projectCount={projects.length}
+            summaryCount={reports.length}
+          />
+        )}
 
         {/* Goal Motivator (Carousel) */}
         <GoalMotivator goals={goals} settings={settings} />
@@ -91,7 +107,16 @@ export default async function DashboardPage() {
             dates={stats.recentDates}
             projects={stats.projects}
             monthlyGoal={stats.monthlyGoal}
+            summaries={reports.length}
             serverDate={new Date().toISOString()}
+          />
+        </div>
+
+        <div className="mb-8">
+          <NextBestAction
+            activityCount={stats.totalCount}
+            projectCount={projects.length}
+            summaryCount={reports.length}
           />
         </div>
 
@@ -100,7 +125,7 @@ export default async function DashboardPage() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-foreground text-lg font-semibold">Recent Activity</h2>
             <span className="text-muted-foreground text-sm">
-              This week:{' '}
+              Evidence captured this week:{' '}
               <span className="text-foreground font-medium">
                 {stats.thisWeek}/{stats.weeklyGoal}
               </span>

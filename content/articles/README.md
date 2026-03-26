@@ -52,6 +52,11 @@ series: Performance Reviews
 difficulty: starter # starter | intermediate | advanced
 heroTone: strategy
 ctaVariant: checklist
+bestFor: Weekly updates
+primaryAction: Open dashboard
+primaryHref: /dashboard
+secondaryAction: Build a summary
+secondaryHref: /reports?tab=new
 ```
 
 ## Writing Guidelines
@@ -60,3 +65,4 @@ ctaVariant: checklist
 - Use clear headings and scannable bullets.
 - Include actionable examples.
 - Link to relevant Jobmark pages when useful.
+- Prefer one concrete next step inside Jobmark by the end of the article.

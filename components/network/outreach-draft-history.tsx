@@ -108,9 +108,9 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
     return (
       <div className="py-10 text-center">
         <FileText className="mx-auto mb-4 h-12 w-12 opacity-20" />
-        <p className="text-muted-foreground text-sm">No saved drafts yet.</p>
+        <p className="text-foreground text-sm font-medium">No saved outreach drafts yet.</p>
         <p className="text-muted-foreground mt-1 text-xs">
-          Generate a draft and hit &ldquo;Save to History&rdquo; to keep it here.
+          Save a strong draft here when you want a reusable starting point for future outreach.
         </p>
       </div>
     );

@@ -386,7 +386,10 @@ function InteractionTimeline({
         {interactions.length === 0 ? (
           <div className="py-8 text-center">
             <MessageSquare className="text-muted-foreground/50 mx-auto mb-3 h-8 w-8" />
-            <p className="text-muted-foreground text-sm">No interactions logged yet.</p>
+            <p className="text-foreground text-sm font-medium">No interactions logged yet.</p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Keep a light record of meaningful touchpoints so this relationship stays useful and current.
+            </p>
             {!showForm && (
               <Button variant="link" size="sm" className="mt-2" onClick={() => setShowForm(true)}>
                 Log your first interaction

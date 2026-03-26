@@ -6,6 +6,7 @@ import { z } from 'zod';
 const contentDirectory = path.join(process.cwd(), 'content', 'articles');
 
 export const articleCategorySchema = z.enum(['help', 'career-development']);
+const articleDifficultySchema = z.enum(['starter', 'intermediate', 'advanced']);
 
 const articleFrontmatterSchema = z.object({
   title: z.string().min(1),
@@ -21,9 +22,17 @@ const articleFrontmatterSchema = z.object({
   featured: z.boolean().default(false),
   heroTone: z.string().min(1).optional(),
   ctaVariant: z.string().min(1).optional(),
+  series: z.string().min(1).optional(),
+  difficulty: articleDifficultySchema.optional().default('starter'),
+  bestFor: z.string().min(1).optional(),
+  primaryAction: z.string().min(1).optional(),
+  primaryHref: z.string().min(1).optional(),
+  secondaryAction: z.string().min(1).optional(),
+  secondaryHref: z.string().min(1).optional(),
 });
 
 export type ArticleCategory = z.infer<typeof articleCategorySchema>;
+export type ArticleDifficulty = z.infer<typeof articleDifficultySchema>;
 
 export interface ArticleSummary {
   title: string;
@@ -39,6 +48,13 @@ export interface ArticleSummary {
   featured: boolean;
   heroTone?: string;
   ctaVariant?: string;
+  series?: string;
+  difficulty?: ArticleDifficulty;
+  bestFor?: string;
+  primaryAction?: string;
+  primaryHref?: string;
+  secondaryAction?: string;
+  secondaryHref?: string;
   readingTimeMinutes: number;
 }
 

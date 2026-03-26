@@ -12,7 +12,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileText, Flame, Trophy, Calendar, TrendingUp } from 'lucide-react';
+import { FileText, Calendar, FolderOpen, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { InsightsData } from '@/app/actions/insights';
 
@@ -29,32 +29,32 @@ export function InsightsSummary({ data }: InsightsSummaryProps) {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
           icon={FileText}
-          label="Activities"
+          label="Entries"
           value={data.totalActivities}
-          subtitle="All time"
-          tooltip="Total activities logged since you started"
-        />
-        <MetricCard
-          icon={Flame}
-          label="Streak"
-          value={data.currentStreak}
-          subtitle={data.currentStreak === 1 ? 'Day' : 'Days'}
-          tooltip={`Longest streak: ${data.longestStreak} days`}
-          highlight={data.currentStreak > 0}
-        />
-        <MetricCard
-          icon={Trophy}
-          label="Best Day"
-          value={data.bestDay?.count ?? 0}
-          subtitle={data.bestDay ? formatDate(data.bestDay.date) : 'No data yet'}
-          tooltip="Your most productive day"
+          subtitle="Captured in record"
+          tooltip="Total entries captured in your work record"
         />
         <MetricCard
           icon={Calendar}
-          label="Active"
+          label="Coverage"
           value={data.activeDaysThisMonth}
-          subtitle="This month"
-          tooltip="Days with at least one activity logged"
+          subtitle="Active days this month"
+          tooltip="Days this month where you documented at least one concrete piece of work"
+          highlight={data.activeDaysThisMonth > 5}
+        />
+        <MetricCard
+          icon={FolderOpen}
+          label="Projects"
+          value={data.projectDistribution.length}
+          subtitle="Represented in record"
+          tooltip="How many projects are represented in your captured work"
+        />
+        <MetricCard
+          icon={Sparkles}
+          label="Summaries"
+          value={data.totalReports}
+          subtitle="Saved drafts"
+          tooltip="Saved summaries you can reuse for updates, reviews, or promotion prep"
         />
       </div>
     </TooltipProvider>
@@ -97,7 +97,6 @@ function MetricCard({ icon: Icon, label, value, subtitle, tooltip, highlight }: 
               <p className="text-foreground text-3xl font-bold tracking-tight tabular-nums">
                 {value}
               </p>
-              {highlight && value > 3 && <TrendingUp className="text-primary h-4 w-4" />}
             </div>
 
             {/* Subtitle */}
@@ -113,9 +112,4 @@ function MetricCard({ icon: Icon, label, value, subtitle, tooltip, highlight }: 
       </TooltipContent>
     </Tooltip>
   );
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

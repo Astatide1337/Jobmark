@@ -46,8 +46,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             ),
             strong: ({ ...props }) => <strong className="text-foreground font-bold" {...props} />,
             ul: ({ ...props }) => <ul className="ml-4 list-disc space-y-2 pl-4" {...props} />,
-            ol: ({ ...props }) => <ol className="ml-4 list-decimal space-y-2 pl-4" {...props} />,
-            li: ({ ...props }) => <li className="mt-1" {...props} />,
+            ol: ({ ...props }) => (
+              <ol className="text-foreground ml-4 list-decimal space-y-3 pl-4" {...props} />
+            ),
+            li: ({ ...props }) => <li className="mt-1 leading-relaxed" {...props} />,
             table: ({ ...props }) => (
               <table className="mt-5 mb-5 w-full border-collapse text-sm" {...props} />
             ),
@@ -94,7 +96,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             },
             blockquote: ({ ...props }) => (
               <blockquote
-                className="border-primary/60 text-foreground/95 my-8 border-l-2 pl-5 font-serif text-xl leading-relaxed"
+                className="border-primary/60 bg-primary/5 text-foreground/95 my-8 rounded-r-2xl border-l-2 px-5 py-4 font-serif text-xl leading-relaxed"
                 {...props}
               />
             ),

@@ -53,10 +53,10 @@ import {
 } from '@/app/actions/chat';
 
 const navItems = [
-  { href: '/dashboard', icon: Pen, label: 'Journal', demoId: 'journal' },
-  { href: '/chat', icon: MessageSquare, label: 'Mentor', demoId: 'feature-mentor' },
+  { href: '/dashboard', icon: Pen, label: 'Capture', demoId: 'journal' },
+  { href: '/chat', icon: MessageSquare, label: 'Coach', demoId: 'feature-mentor' },
   { href: '/projects', icon: FolderOpen, label: 'Projects', demoId: 'feature-projects' },
-  { href: '/reports', icon: FileText, label: 'Reports', demoId: 'feature-reports' },
+  { href: '/reports', icon: FileText, label: 'Reviews', demoId: 'feature-reports' },
   { href: '/insights', icon: BarChart3, label: 'Insights', demoId: 'feature-insights' },
   { href: '/focus', icon: Coffee, label: 'Focus', demoId: 'feature-focus' },
   { href: '/network', icon: Users, label: 'Network', demoId: 'feature-network' },
@@ -359,8 +359,9 @@ export function Sidebar({
                 isActive={
                   mode === 'app'
                     ? currentPath === item.href || currentPath?.startsWith(item.href + '/')
-                    : (item.label === 'Journal' && currentPath === '/dashboard') ||
-                      (item.label === 'Mentor' && currentPath === '/mentor') ||
+                    : (item.label === 'Capture' && currentPath === '/dashboard') ||
+                      (item.label === 'Coach' && currentPath === '/mentor') ||
+                      (item.label === 'Articles' && currentPath === '/articles') ||
                       currentPath?.includes(item.label.toLowerCase())
                 }
                 onClick={

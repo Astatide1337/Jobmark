@@ -2,7 +2,7 @@
  * AI Mentor Page (The Chat Hub)
  *
  * Why: This is the primary interface for users to interact with their
- * AI Career Mentor. It handles the server-side preparation of all
+ * career coach. It handles the server-side preparation of all
  * potential context sources.
  *
  * Performance: Uses `Promise.all` to fetch conversations, projects,
@@ -49,7 +49,7 @@ export default async function ChatPage() {
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="AI Mentor"
+          title="Career Coach"
         />
       }
       className="p-0"

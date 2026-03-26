@@ -6,6 +6,7 @@ import { getAllArticleSlugs, getArticleBySlug, getRelatedArticles } from '@/lib/
 import {
   ArticleHeader,
   ReadingProgress,
+  HowToUseArticle,
   CareerSignalCallout,
   RelatedStories,
 } from '../_components/article-detail';
@@ -104,12 +105,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </Link>
 
       <ArticleHeader article={article} />
+      <HowToUseArticle article={article} />
 
       <MarkdownRenderer content={article.content} className="article-prose max-w-none" />
 
-      <CareerSignalCallout variant={article.ctaVariant} />
+      <CareerSignalCallout article={article} />
 
-      <RelatedStories articles={related} title="Related posts" />
+      <RelatedStories articles={related} title="Read next" />
     </div>
   );
 }

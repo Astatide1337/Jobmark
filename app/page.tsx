@@ -18,7 +18,7 @@ import { ProblemStatement } from '@/components/landing/problem-statement';
 import { PersonaTabs } from '@/components/landing/persona-tabs';
 import { ProductTour } from '@/components/landing/product-tour';
 import { VideoSection } from '@/components/landing/video-section';
-import { PricingSection } from '@/components/landing/pricing-section';
+import { AccessSection } from '@/components/landing/pricing-section';
 import { ProductValues } from '@/components/landing/product-values';
 import { FAQ } from '@/components/landing/faq';
 import { FinalCTA } from '@/components/landing/final-cta';
@@ -61,8 +61,8 @@ export default function Home() {
         {/* Divider */}
         <SectionDivider delay={0.1} />
 
-        {/* Pricing Section */}
-        <PricingSection />
+        {/* Access Section */}
+        <AccessSection />
 
         {/* Divider */}
         <SectionDivider delay={0.1} />

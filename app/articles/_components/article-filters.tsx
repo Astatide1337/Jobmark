@@ -141,7 +141,7 @@ export function SortAndSearchBar({ topic, query, sort }: SortAndSearchBarProps) 
         type="search"
         value={queryValue}
         onChange={event => setQueryValue(event.target.value)}
-        placeholder="Search articles"
+        placeholder="Search articles by problem or workflow"
         className="h-10 w-full"
       />
 

@@ -13,6 +13,13 @@ author: Jobmark
 draft: false
 featured: true
 ctaVariant: default
+difficulty: starter
+series: Career Visibility
+bestFor: networking follow-through
+primaryAction: Open network
+primaryHref: /network
+secondaryAction: Open dashboard
+secondaryHref: /dashboard
 ---
 
 Networking feels fake. You meet someone, exchange pleasantries, pretend to care about their job, hope something useful comes of it.

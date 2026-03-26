@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import {
   ReportConfig,
   streamReport,
@@ -99,6 +100,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   const [hasValidActivities, setHasValidActivities] = useState(true); // default true to avoid flicker on load
   const [isValidating, setIsValidating] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [activityCount, setActivityCount] = useState(0);
 
   // Debounced validation logic
   const debouncedValidate = useMemo(
@@ -125,6 +127,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
           const result = await checkActivityCount(tempConfig);
           const isValid = result.count > 0;
           setHasValidActivities(isValid);
+          setActivityCount(result.count);
           if (!isValid) setValidationMessage('No activities found in this range.');
         } catch (e) {
           console.error(e);
@@ -202,14 +205,14 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   };
 
   const handleEmail = () => {
-    const subject = `Work Report - ${format(new Date(), 'MMM dd, yyyy')}`;
+    const subject = `Work Summary - ${format(new Date(), 'MMM dd, yyyy')}`;
     const body = getCleanEmailBody();
     const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   };
 
   const handleGmail = () => {
-    const subject = `Work Report - ${format(new Date(), 'MMM dd, yyyy')}`;
+    const subject = `Work Summary - ${format(new Date(), 'MMM dd, yyyy')}`;
     const body = getCleanEmailBody();
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(gmailUrl, '_blank');
@@ -243,9 +246,19 @@ export function ReportWizard({ projects }: ReportWizardProps) {
   return (
     <div className={cn('h-full py-8', step < 4 ? 'mx-auto max-w-2xl' : 'w-full')}>
       {/* Progress Indicator */}
-      {step < 4 && (
+      <div className="mb-8">
+        <div className="mb-3">
+          <h1 className="text-foreground text-2xl font-bold">Build a review draft</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Scope the period, choose the right focus, and turn your record into something you can
+            reuse for updates, reviews, or promotion prep.
+          </p>
+        </div>
+      </div>
+
+      {step <= 4 && (
         <div className="mb-12 flex items-center justify-between px-2">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="flex flex-col items-center gap-2">
               <div
                 className={cn(
@@ -258,7 +271,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                 {i}
               </div>
               <span className="text-muted-foreground text-[10px] tracking-wider uppercase">
-                {i === 1 ? 'Time' : i === 2 ? 'Focus' : 'Style'}
+                {i === 1 ? 'Scope' : i === 2 ? 'Notes' : i === 3 ? 'Tone' : 'Draft'}
               </span>
             </div>
           ))}
@@ -276,8 +289,10 @@ export function ReportWizard({ projects }: ReportWizardProps) {
             className="space-y-6"
           >
             <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold">When?</h2>
-              <p className="text-muted-foreground">Select the time period for this report.</p>
+              <h2 className="mb-2 text-2xl font-bold">Scope the draft</h2>
+              <p className="text-muted-foreground">
+                Choose the period you want this summary to reflect.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -371,7 +386,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                 className="px-8"
                 disabled={!hasValidActivities || isValidating}
               >
-                Next <ArrowRight className="ml-2 h-4 w-4" />
+                Continue <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </motion.div>
@@ -387,8 +402,10 @@ export function ReportWizard({ projects }: ReportWizardProps) {
             className="space-y-6"
           >
             <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold">Focus?</h2>
-              <p className="text-muted-foreground">Filter by project and add context.</p>
+              <h2 className="mb-2 text-2xl font-bold">Add focus notes</h2>
+              <p className="text-muted-foreground">
+                Narrow the draft to the work and context you want emphasized.
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -419,7 +436,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
             <div className="space-y-4">
               <Label>Extra Instructions (Optional)</Label>
               <Input
-                placeholder="E.g. Focus on the API refactor, or mention the outage on Tuesday..."
+                placeholder="Focus on the API refactor, mention stakeholder coordination, or call out a visible outcome."
                 value={config.notes || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setConfig({ ...config, notes: e.target.value })
@@ -433,7 +450,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                 Back
               </Button>
               <Button onClick={nextStep} size="lg" className="px-8">
-                Next <ArrowRight className="ml-2 h-4 w-4" />
+                Continue <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </motion.div>
@@ -449,8 +466,8 @@ export function ReportWizard({ projects }: ReportWizardProps) {
             className="space-y-6"
           >
             <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold">Style?</h2>
-              <p className="text-muted-foreground">How should it sound?</p>
+              <h2 className="mb-2 text-2xl font-bold">Choose the tone</h2>
+              <p className="text-muted-foreground">Match the draft to how you plan to use it.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -474,6 +491,39 @@ export function ReportWizard({ projects }: ReportWizardProps) {
               />
             </div>
 
+            <div className="border-border/50 bg-card/40 space-y-3 rounded-2xl border p-5">
+              <div>
+                <p className="text-primary text-xs font-semibold tracking-widest uppercase">
+                  Draft Summary
+                </p>
+                <h3 className="text-foreground mt-1 font-semibold">What this draft will use</h3>
+              </div>
+              <div className="grid gap-3 text-sm md:grid-cols-2">
+                <div>
+                  <p className="text-muted-foreground">Period</p>
+                  <p className="text-foreground font-medium">
+                    {getDateRangeLabel(config.dateRange, dateRange)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Project scope</p>
+                  <p className="text-foreground font-medium">
+                    {getProjectScopeLabel(config.projectId, projects)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Tone</p>
+                  <p className="text-foreground font-medium">
+                    {getToneLabel(config.tone)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Estimated entries</p>
+                  <p className="text-foreground font-medium">{activityCount}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={prevStep}>
                 Back
@@ -484,7 +534,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                 className="bg-primary hover:bg-primary/90 px-8"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate
+                Build Review Draft
               </Button>
             </div>
           </motion.div>
@@ -510,13 +560,21 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <h2 className="flex items-center gap-2 text-xl font-bold">
-                  Your Report
+                  Review Draft
                   {isStreaming && (
                     <span className="text-muted-foreground animate-pulse text-xs font-normal">
                       (Generating...)
                     </span>
                   )}
                 </h2>
+              </div>
+
+              <div className="border-border/50 bg-card/35 rounded-2xl border p-4">
+                <p className="text-foreground text-sm font-medium">Where this is useful</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Use this draft for a weekly update, manager sync, self-review, or the first pass
+                  of a promotion narrative.
+                </p>
               </div>
 
               {/* Content Layout: Editor (Left) + Actions (Right) */}
@@ -629,7 +687,17 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                     ) : (
                       <Save className="mr-2 h-4 w-4" />
                     )}
-                    {saved ? 'Saved to History' : 'Save to History'}
+                    {saved ? 'Saved Draft' : 'Save Draft'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+                    asChild
+                  >
+                    <Link href="/chat">
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      Open in Coach
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -639,6 +707,31 @@ export function ReportWizard({ projects }: ReportWizardProps) {
       </AnimatePresence>
     </div>
   );
+}
+
+function getDateRangeLabel(range: ReportConfig['dateRange'], customRange?: DateRange) {
+  if (range === '7d') return 'Last 7 days';
+  if (range === '30d') return 'Last 30 days';
+  if (range === 'month') return 'This month';
+  if (range === 'custom' && customRange?.from) {
+    if (customRange.to) {
+      return `${format(customRange.from, 'MMM d')} - ${format(customRange.to, 'MMM d')}`;
+    }
+    return format(customRange.from, 'MMM d');
+  }
+  return 'Custom range';
+}
+
+function getProjectScopeLabel(projectId: string | null | undefined, projects: Project[]) {
+  if (projectId === undefined) return 'All projects';
+  if (projectId === null) return 'Unassigned work only';
+  return projects.find(project => project.id === projectId)?.name ?? 'Selected project';
+}
+
+function getToneLabel(tone: ReportConfig['tone']) {
+  if (tone === 'professional') return 'Professional';
+  if (tone === 'casual') return 'Casual update';
+  return 'Bullet points';
 }
 
 function OptionCard({

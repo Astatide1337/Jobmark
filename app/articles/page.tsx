@@ -17,11 +17,11 @@ const validCategories = new Set<CategoryFilter>(['all', 'help', 'career-developm
 export const metadata: Metadata = {
   title: 'Articles | Jobmark',
   description:
-    'Browse practical guides for Jobmark and career development playbooks to improve reviews, promotions, and long-term growth.',
+    'Browse practical articles for Jobmark and career development playbooks to improve reviews, promotions, and long-term growth.',
   openGraph: {
     title: 'Articles | Jobmark',
     description:
-      'Browse practical guides for Jobmark and career development playbooks to improve reviews, promotions, and long-term growth.',
+      'Browse practical articles for Jobmark and career development playbooks to improve reviews, promotions, and long-term growth.',
     type: 'website',
   },
 };
@@ -64,39 +64,69 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
   });
 
   const leadArticle = filteredArticles.find(article => article.featured) ?? filteredArticles[0];
+  const useShelfFirstLayout = Boolean(query) || topic !== 'all' || filteredArticles.length <= 4;
   const remainingArticles = leadArticle
     ? filteredArticles.filter(article => article.slug !== leadArticle.slug)
     : filteredArticles;
-  const secondaryArticles = remainingArticles.slice(0, 3);
-  const sectionArticles = remainingArticles.slice(3);
+  const secondaryArticles = useShelfFirstLayout ? [] : remainingArticles.slice(0, 3);
+  const displayedSlugs = new Set([
+    ...(leadArticle ? [leadArticle.slug] : []),
+    ...secondaryArticles.map(article => article.slug),
+  ]);
+  const shelfArticles = filteredArticles.filter(article => !displayedSlugs.has(article.slug));
 
   const sectioned = [
     {
-      key: 'career-development',
-      title: 'Career Development Desk',
-      description: 'Playbooks for promotion trajectories and long-term growth.',
-      items: sectionArticles
-        .filter(article => article.category === 'career-development')
+      key: 'build-record',
+      title: 'Build Your Record',
+      description: 'Capture better evidence so future reviews do not rely on memory.',
+      items: shelfArticles
+        .filter(
+          article =>
+            article.tags.includes('accomplishments') ||
+            article.tags.includes('weekly-routine') ||
+            article.tags.includes('planning')
+        )
         .slice(0, 4),
     },
     {
-      key: 'help',
-      title: 'Jobmark Help Desk',
-      description: 'Practical workflows to log wins, build reports, and stay consistent.',
-      items: sectionArticles.filter(article => article.category === 'help').slice(0, 4),
+      key: 'reviews',
+      title: 'Write Better Reviews',
+      description: 'Turn your work into clear summaries, self-reviews, and promotion material.',
+      items: shelfArticles
+        .filter(
+          article =>
+            article.tags.includes('performance-review') ||
+            article.tags.includes('promotion') ||
+            article.tags.includes('impact')
+        )
+        .slice(0, 4),
+    },
+    {
+      key: 'visibility',
+      title: 'Improve Career Visibility',
+      description: 'Use communication, networking, and consistent follow-through to stay visible.',
+      items: shelfArticles
+        .filter(
+          article =>
+            article.tags.includes('networking') ||
+            article.tags.includes('relationships') ||
+            article.tags.includes('career-growth')
+        )
+        .slice(0, 4),
     },
   ].filter(section => section.items.length > 0);
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <section className="border-border/60 border-b pb-6 sm:pb-8">
-        <p className="text-muted-foreground text-sm">Jobmark Editorial Desk</p>
+        <p className="text-muted-foreground text-sm">Practical Articles</p>
         <h1 className="text-foreground mt-2 font-serif text-3xl leading-tight font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-          Career journalism for your next review cycle
+          Practical articles for building a stronger work record
         </h1>
         <p className="text-muted-foreground mt-4 max-w-3xl text-sm sm:text-base">
-          Read practical guides that help you capture evidence, communicate impact, and stay
-          visible. Built for people who want stronger reviews and faster promotion momentum.
+          Read practical playbooks that help you capture better evidence, write clearer updates,
+          and prepare stronger reviews inside Jobmark.
         </p>
       </section>
 
@@ -108,6 +138,14 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       />
 
       <SortAndSearchBar topic={topic} query={query} sort={sort} />
+
+      <section className="border-border/60 bg-card/35 rounded-2xl border p-4 sm:p-5">
+        <p className="text-primary text-[11px] tracking-[0.16em] uppercase">How To Use This Desk</p>
+        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+          Pick the problem you want to solve next, read one article, then apply a single action in
+          Jobmark before moving on.
+        </p>
+      </section>
 
       {filteredArticles.length === 0 ? (
         <p className="text-muted-foreground text-sm">No articles matched your filters.</p>
@@ -148,18 +186,23 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
             <section className="border-border/60 bg-card/45 rounded-2xl border p-5">
               <p className="text-foreground font-serif text-lg leading-snug font-semibold">
-                Build your promotion narrative as you read.
+                Reading should end in action.
               </p>
               <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-                Pick one idea from an article and apply it immediately in Jobmark by logging a win,
-                updating a goal, or drafting a review summary.
+                Use one article to improve how you capture work, then take the next step immediately
+                in Jobmark.
               </p>
-              <Link
-                href="/dashboard"
-                className="text-primary mt-4 inline-flex text-sm font-medium hover:underline"
-              >
-                Open Jobmark dashboard
-              </Link>
+              <div className="mt-4 space-y-2 text-sm">
+                <Link href="/dashboard" className="text-primary inline-flex font-medium hover:underline">
+                  Open dashboard
+                </Link>
+                <Link href="/reports?tab=new" className="text-primary block font-medium hover:underline">
+                  Build a summary
+                </Link>
+                <Link href="/chat" className="text-primary block font-medium hover:underline">
+                  Open coach
+                </Link>
+              </div>
             </section>
           </aside>
         </section>

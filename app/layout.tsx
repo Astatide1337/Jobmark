@@ -39,16 +39,16 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Jobmark - Never Forget a Win Again',
+  title: 'Jobmark - Build Your Career Record',
   description:
-    'The work journal that writes your reports for you. Capture accomplishments in 30 seconds, generate polished reports with AI.',
+    'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
   keywords: [
-    'productivity',
-    'work tracker',
-    'activity log',
-    'AI reports',
-    'accomplishment journal',
-    'work journal',
+    'career record',
+    'work evidence',
+    'performance review',
+    'promotion prep',
+    'work log',
+    'impact tracking',
   ],
 };
 

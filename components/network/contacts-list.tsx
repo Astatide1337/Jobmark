@@ -162,8 +162,8 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No contacts yet</h3>
             <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-              Start building your professional network. Add contacts to track interactions and
-              nurture relationships.
+              Keep a simple record of key people and touchpoints to support long-term career
+              visibility.
             </p>
             <Button onClick={() => setShowCreateDialog(true)}>
               <UserPlus className="mr-2 h-4 w-4" />

@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { getProjectActivities } from '@/app/actions/projects';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Activity, Calendar, Loader2, ChevronDown } from 'lucide-react';
 
@@ -44,10 +46,13 @@ export function ProjectActivityTimeline({
       <Card className="bg-muted/30 border-muted-foreground/30 border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <Activity className="text-muted-foreground/30 mb-3 h-10 w-10" />
-          <p className="text-muted-foreground font-medium">No activities yet</p>
+          <p className="text-muted-foreground font-medium">No project evidence yet</p>
           <p className="text-muted-foreground/70 mt-1 max-w-xs text-xs">
-            Start logging activities or assign logs to this project to see them here.
+            Assign work to this project so its record becomes specific enough to summarize later.
           </p>
+          <Button variant="link" size="sm" asChild className="mt-3">
+            <Link href="/dashboard">Log work from the dashboard</Link>
+          </Button>
         </CardContent>
       </Card>
     );

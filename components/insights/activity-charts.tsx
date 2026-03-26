@@ -96,15 +96,15 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
     <Card className={CARD_STYLES}>
       <CardHeader className="px-6 pt-6 pb-2">
         <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
-          Weekly Activity Trend
+          Weekly Record Trend
         </CardTitle>
-        <p className="text-muted-foreground text-sm">Last 12 weeks</p>
+        <p className="text-muted-foreground text-sm">How consistently you are capturing usable work</p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="h-52">
           {!hasData ? (
             <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-              No activity data yet
+              No record trend yet. Capture a few entries to see whether coverage is holding up week to week.
             </div>
           ) : !mounted ? null : (
             <ResponsiveContainer width="100%" height="100%">
@@ -199,11 +199,13 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
       <Card className={CARD_STYLES}>
         <CardHeader className="px-6 pt-6 pb-2">
           <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
-            Activity by Project
+            Record by Project
           </CardTitle>
         </CardHeader>
         <CardContent className="flex h-52 items-center justify-center px-6 pb-6">
-          <p className="text-muted-foreground text-sm">No project data yet</p>
+          <p className="text-muted-foreground text-sm">
+            No project coverage yet. Create or assign a project so your record stays specific.
+          </p>
         </CardContent>
       </Card>
     );
@@ -212,8 +214,8 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
   return (
     <Card className={CARD_STYLES}>
       <CardHeader className="px-6 pt-6 pb-2">
-        <CardTitle className="text-base font-semibold">Activity by Project</CardTitle>
-        <p className="text-muted-foreground text-sm">Distribution of all activities</p>
+        <CardTitle className="text-base font-semibold">Record by Project</CardTitle>
+        <p className="text-muted-foreground text-sm">How your captured evidence is distributed</p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="flex items-center gap-8">

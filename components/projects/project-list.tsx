@@ -341,7 +341,7 @@ export function ProjectList({
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No projects yet</h3>
             <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-              Create projects to organize your activities and generate focused reports.
+              Group your work into streams so your evidence and summaries stay clear.
             </p>
             <Button onClick={() => setShowCreate(true)}>
               <FolderPlus className="mr-2 h-4 w-4" />

@@ -15,6 +15,11 @@ featured: true
 difficulty: intermediate
 series: Promotion Readiness
 ctaVariant: default
+bestFor: promotion evidence
+primaryAction: Build review draft
+primaryHref: /reports?tab=new
+secondaryAction: Open dashboard
+secondaryHref: /dashboard
 ---
 
 Ever sat down to write a self-review and thought, "I know I did good work, but I can't prove it"?

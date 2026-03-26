@@ -1,7 +1,7 @@
 /**
  * AI Career Mentor Interface
  *
- * Why: This is the centerpiece of the "Career Intelligence" subsystem.
+ * Why: This is the centerpiece of the coaching and synthesis experience.
  * It provides a specialized, context-aware chat experience that handles
  * real-time streaming and multi-source data injection.
  *
@@ -77,7 +77,7 @@ function getModePlaceholder(mode: ConversationMode): string {
     case 'interview':
       return 'Type your interview answer...';
     default:
-      return 'Ask your mentor anything...';
+      return 'Ask your coach anything...';
   }
 }
 
@@ -402,7 +402,7 @@ export function ChatInterface({
                   {greeting}
                 </h2>
                 <p className="text-muted-foreground/80 max-w-[400px] text-base leading-relaxed font-medium">
-                  Your career mentor is ready. What project or goal should we focus on?
+                  Your coach is ready. What project or goal should we focus on?
                 </p>
               </div>
             ))}
@@ -540,6 +540,9 @@ export function ChatInterface({
                   isContextPending && 'pointer-events-none opacity-50'
                 )}
               >
+                <p className="text-muted-foreground mb-2 px-1 text-[11px]">
+                  Attach the evidence you want the coach to work from.
+                </p>
                 <ContextSelector
                   projects={projects}
                   goals={goals}
@@ -662,7 +665,10 @@ export function ChatInterface({
 
           <div className="mt-3 text-center">
             <p className="text-muted-foreground/20 text-[9px] font-bold tracking-[0.2em] uppercase">
-              Jobmark Career Intelligence
+              Jobmark Coach
+            </p>
+            <p className="text-muted-foreground/50 mt-1 text-[11px]">
+              AI can help synthesize your record, but you remain the source of truth.
             </p>
           </div>
         </div>
@@ -671,11 +677,11 @@ export function ChatInterface({
       <CommandDialog
         open={isContextModalOpen}
         onOpenChange={setIsContextModalOpen}
-        title="Add Context"
-        description="Select a project, goal, contact, or report to focus your conversation."
+        title="Add Evidence"
+        description="Select the projects, goals, contacts, or summaries you want the coach to use."
         className="lg:left-[calc(50%+8rem)]"
       >
-        <CommandInput placeholder="Search context..." />
+        <CommandInput placeholder="Search evidence..." />
         <CommandList className="scrollbar-none">
           <CommandEmpty>No results found.</CommandEmpty>
 
@@ -774,7 +780,7 @@ export function ChatInterface({
             ))}
           </CommandGroup>
 
-          <CommandGroup heading="Reports">
+          <CommandGroup heading="Summaries">
             {reports.map(report => (
               <CommandItem
                 key={report.id}
@@ -1065,8 +1071,8 @@ const SUGGESTED_CHAT_PROMPTS: SuggestedPrompt[] = [
   {
     id: 'goal-setting',
     icon: Target,
-    title: 'Set a New Goal',
-    description: 'Break down a big ambition into a 7-step actionable plan',
+    title: 'Clarify a Goal',
+    description: 'Turn a vague ambition into something concrete you can actually follow',
     mode: 'goal-coach' as ConversationMode,
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10',
@@ -1082,26 +1088,37 @@ const SUGGESTED_CHAT_PROMPTS: SuggestedPrompt[] = [
     bgColor: 'bg-blue-500/10',
   },
   {
-    id: 'imposter',
-    icon: Brain,
-    title: 'Overcome Self-Doubt',
-    description: 'Work through imposter syndrome and build career confidence',
+    id: 'manager-update',
+    icon: FileText,
+    title: 'Draft Manager Update',
+    description: 'Turn recent work into a concise update you can send or say out loud',
     mode: 'general' as ConversationMode,
     initialMessage:
-      "I've been struggling with imposter syndrome at work. I feel like I don't belong and that people will find out I'm not as capable as they think. Can you help me work through these feelings?",
-    color: 'text-rose-500',
-    bgColor: 'bg-rose-500/10',
+      'Use my recent work record to draft a concise manager update with the most relevant progress and outcomes.',
+    color: 'text-sky-500',
+    bgColor: 'bg-sky-500/10',
   },
   {
-    id: 'clarity',
+    id: 'self-review',
     icon: TrendingUp,
-    title: 'Career Direction',
-    description: 'Get clarity on your path and figure out your next big move',
+    title: 'Prepare Self-Review',
+    description: 'Pull the strongest evidence from recent work and frame it clearly',
     mode: 'general' as ConversationMode,
     initialMessage:
-      'I feel stuck in my career and unsure where I want to go next. Can you help me think through my options and figure out a direction that aligns with my values?',
+      'Help me prepare a self-review from my recent work. Pull out the strongest examples of impact, ownership, and momentum.',
     color: 'text-emerald-500',
     bgColor: 'bg-emerald-500/10',
+  },
+  {
+    id: 'project-patterns',
+    icon: Brain,
+    title: 'Review Project Patterns',
+    description: 'Look at where my effort is concentrated and where the record still feels thin',
+    mode: 'general' as ConversationMode,
+    initialMessage:
+      'What patterns do you see in my project focus, and where is my record still too thin to support a strong review?',
+    color: 'text-rose-500',
+    bgColor: 'bg-rose-500/10',
   },
 ];
 
@@ -1147,7 +1164,7 @@ function SuggestedPrompts({ projects, userName, onSelect }: SuggestedPromptsProp
           {greeting}
         </h1>
         <p className="text-muted-foreground/70 mx-auto max-w-xl text-base leading-relaxed font-medium">
-          Your AI career partner. How shall we begin today?
+          Use your work record to draft updates, prepare reviews, and spot the gaps that still need evidence.
         </p>
       </div>
 
@@ -1210,7 +1227,7 @@ function SuggestedPrompts({ projects, userName, onSelect }: SuggestedPromptsProp
                     {prompt.title}
                   </h3>
                   <p className="text-muted-foreground/40 text-xs leading-relaxed">
-                    Set up your first project to unlock this mode.
+                    Add a project first so the coach has something concrete to work from.
                   </p>
                 </Card>
               )

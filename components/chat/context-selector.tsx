@@ -331,7 +331,7 @@ export function ContextSelector({
           className="border-border/60 text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-primary h-7 shrink-0 gap-1.5 rounded-full border border-dashed px-2.5 text-xs"
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Context</span>
+          <span>Add Evidence</span>
           {selectedCount > 0 && (
             <span className="bg-primary/15 text-primary rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
               {selectedCount}

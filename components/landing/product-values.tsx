@@ -18,10 +18,10 @@ import { ChevronDown } from 'lucide-react';
 const values = [
   {
     id: 'private',
-    title: 'Private by Design',
-    subtitle: 'Your data stays yours',
+    title: 'Evidence Over Memory',
+    subtitle: 'Build a durable record',
     description:
-      "Everything you write is encrypted and stored securely. We never sell your data, never train AI on your entries without consent, and you can export or delete everything anytime. Privacy isn't a feature—it's foundational.",
+      'Work fades fast. Jobmark helps you capture what you did while it is still fresh so you can use it later with confidence.',
     // Custom SVG for lock - warm amber
     icon: (
       <svg
@@ -41,10 +41,10 @@ const values = [
   },
   {
     id: 'no-pressure',
-    title: 'No TODO Pressure',
-    subtitle: "This isn't a task list",
+    title: 'Ownership by Default',
+    subtitle: 'Your record stays portable',
     description:
-      "Most productivity tools create anxiety—endless lists of things you haven't done. Jobmark flips the script. You only log what you've accomplished. Every entry is a small celebration, not a nagging reminder. It's a done list, not a to-do list.",
+      'Your work record should be yours. Export it, reuse it, and keep control of your evidence over time.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -63,10 +63,10 @@ const values = [
   },
   {
     id: 'ai-helps',
-    title: 'AI That Helps, Not Replaces',
-    subtitle: 'You write. AI polishes.',
+    title: 'AI As An Assistant',
+    subtitle: 'You lead, AI refines',
     description:
-      "The AI in Jobmark doesn't generate fake accomplishments or put words in your mouth. You capture the raw notes, and AI helps transform them into polished reports. It's a writing assistant, not a ghostwriter. Your voice, elevated.",
+      'AI helps synthesize and polish your record, but the substance stays yours. Jobmark elevates your voice, not replace it.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -85,10 +85,10 @@ const values = [
   },
   {
     id: 'real-people',
-    title: 'Built for Real People',
-    subtitle: 'By a developer who needed this',
+    title: 'Career Clarity Over Time',
+    subtitle: 'A system, not a sprint',
     description:
-      "This isn't a VC-funded growth machine optimized for engagement metrics. It's a tool built by someone who struggled to remember their own wins during performance reviews. Simple, honest, and designed to solve a real problem.",
+      'Jobmark is designed for the long game: consistent visibility, better reviews, and a clearer path forward.',
     icon: (
       <svg
         className="h-5 w-5"

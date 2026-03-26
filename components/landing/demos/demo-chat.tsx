@@ -27,15 +27,15 @@ export function DemoChat() {
         <div className="w-full flex-1 space-y-6 overflow-y-auto p-4 pb-40">
           <MockChatMessage
             role="user"
-            content="I feel like I'm not making enough progress on the big project."
+            content="I need a clearer summary for my weekly update."
           />
           <MockChatMessage
             role="assistant"
-            content="It looks like you've logged 12 activities this week related to the project. That's actually consistent progress! \n\nTry breaking down the next milestone into smaller tasks to feel that sense of completion more often."
+            content="Based on your record, you shipped the dashboard polish, closed three bugs, and led sprint planning. I can turn that into a concise update or a review-ready paragraph."
           />
           <MockChatMessage
             role="user"
-            content="That's a good point. I'll break down the API work."
+            content="Draft the weekly update, then."
           />
         </div>
 
@@ -77,7 +77,7 @@ export function DemoChat() {
               </div>
             </div>
             <div className="text-muted-foreground/60 mt-4 text-center text-[10px] font-medium tracking-wide">
-              AI Mentor can make mistakes. Verify important information.
+              AI assistant can make mistakes. Verify important information.
             </div>
           </div>
         </div>

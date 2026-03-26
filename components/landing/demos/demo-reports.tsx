@@ -35,8 +35,8 @@ export function DemoReports() {
     <DashboardFrame activePath="/reports">
       <div className="space-y-6">
         <div>
-          <h2 className="mb-2 text-3xl font-bold tracking-tight">Reports</h2>
-          <p className="text-muted-foreground">Generate summaries instantly.</p>
+          <h2 className="mb-2 text-3xl font-bold tracking-tight">Reviews & Summaries</h2>
+          <p className="text-muted-foreground">Turn your record into review-ready drafts.</p>
         </div>
         <ReportHistory
           initialReports={reports}
