@@ -25,13 +25,13 @@ export default function OGImage() {
           width: '100%',
           height: '100%',
           display: 'flex',
+          flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '80px',
           position: 'relative',
         }}
       >
-        {/* Subtle radial gradient accent top-left */}
         <div
           style={{
             position: 'absolute',
@@ -41,11 +41,17 @@ export default function OGImage() {
             height: 500,
             background:
               'radial-gradient(circle at top left, rgba(168,139,100,0.18), transparent 65%)',
+            display: 'flex',
           }}
         />
-
-        {/* Left: icon + wordmark */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, zIndex: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
+            zIndex: 1,
+          }}
+        >
           <div
             style={{
               display: 'flex',
@@ -81,8 +87,6 @@ export default function OGImage() {
             Jobmark
           </div>
         </div>
-
-        {/* Right: tagline */}
         <div
           style={{
             display: 'flex',

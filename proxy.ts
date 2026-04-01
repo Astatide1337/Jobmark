@@ -20,6 +20,11 @@ export function proxy(request: NextRequest) {
     route => pathname === route || pathname.startsWith(route + '/')
   );
 
+  // OG image needs special handling - let it through the middleware
+  if (pathname.startsWith('/opengraph-image')) {
+    return NextResponse.next();
+  }
+
   // Static assets and API routes
   const isStaticAsset =
     pathname.startsWith('/_next') || pathname.startsWith('/favicon') || pathname.includes('.');
