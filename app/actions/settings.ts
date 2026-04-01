@@ -14,6 +14,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
+import { encryptApiKey, decryptApiKey } from '@/lib/ai-key';
 
 export type UserSettingsData = {
   // Goals
@@ -35,6 +36,9 @@ export type UserSettingsData = {
   // Preferences
   hideArchived: boolean;
   showConfetti: boolean;
+
+  // BYOK
+  hasGeminiApiKey: boolean;
 };
 
 export async function getUserSettings(userId?: string): Promise<UserSettingsData | null> {
@@ -57,7 +61,21 @@ export async function getUserSettings(userId?: string): Promise<UserSettingsData
     });
   }
 
-  return settings;
+  return {
+    primaryGoal: settings.primaryGoal,
+    goalDeadline: settings.goalDeadline,
+    whyStatement: settings.whyStatement,
+    dailyTarget: settings.dailyTarget,
+    weeklyTarget: settings.weeklyTarget,
+    monthlyTarget: settings.monthlyTarget,
+    defaultTone: settings.defaultTone,
+    customInstructions: settings.customInstructions,
+    themePreset: settings.themePreset,
+    themeMode: settings.themeMode,
+    hideArchived: settings.hideArchived,
+    showConfetti: settings.showConfetti,
+    hasGeminiApiKey: !!settings.geminiApiKey,
+  };
 }
 
 export async function updateGoalSettings(data: {
@@ -261,4 +279,69 @@ export async function deleteUserAccount() {
     console.error('Failed to delete account:', error);
     return { success: false, message: 'Failed to delete account' };
   }
+}
+
+/**
+ * saveUserApiKey
+ *
+ * Why: Stores the user's personal Gemini API key, encrypted at rest,
+ * so AI features run under their own quota rather than the shared server key.
+ */
+export async function saveUserApiKey(
+  rawKey: string
+): Promise<{ success: boolean; message: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!rawKey.trim()) return { success: false, message: 'Key cannot be empty' };
+
+  const encrypted = encryptApiKey(rawKey.trim());
+
+  await prisma.userSettings.upsert({
+    where: { userId: session.user.id },
+    update: { geminiApiKey: encrypted },
+    create: { userId: session.user.id, geminiApiKey: encrypted },
+  });
+
+  revalidatePath('/settings');
+  return { success: true, message: 'API key saved' };
+}
+
+/**
+ * deleteUserApiKey
+ *
+ * Why: Allows users to remove their personal key and revert to the shared server key.
+ */
+export async function deleteUserApiKey(): Promise<{ success: boolean; message: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+
+  await prisma.userSettings.upsert({
+    where: { userId: session.user.id },
+    update: { geminiApiKey: null },
+    create: { userId: session.user.id },
+  });
+
+  revalidatePath('/settings');
+  return { success: true, message: 'API key removed' };
+}
+
+/**
+ * getUserApiKey
+ *
+ * Why: Decrypts and returns the user's stored API key for use in AI call sites.
+ * Returns null if no key is stored, triggering the server-key fallback.
+ * Accepts an optional userId so Route Handlers (which aren't server actions)
+ * can pass the session userId directly.
+ */
+export async function getUserApiKey(userId?: string): Promise<string | null> {
+  const targetId = userId ?? (await auth())?.user?.id;
+  if (!targetId) return null;
+
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: targetId },
+    select: { geminiApiKey: true },
+  });
+
+  if (!settings?.geminiApiKey) return null;
+  return decryptApiKey(settings.geminiApiKey);
 }
