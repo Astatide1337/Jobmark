@@ -58,6 +58,8 @@ import {
   exportUserData,
   clearAllActivities,
   deleteUserAccount,
+  saveUserApiKey,
+  deleteUserApiKey,
   type UserSettingsData,
 } from '@/app/actions/settings';
 import { createGoal, deleteGoal, type GoalData } from '@/app/actions/goals';
@@ -68,6 +70,7 @@ import { cn } from '@/lib/utils';
 import { themePresets } from '@/lib/themes';
 import { useSettings, applyTheme } from '@/components/providers/settings-provider';
 import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import type { FocusBlock, BreathingPattern, FocusBlockType } from '@/lib/focus/types';
 import { BREATHING_PATTERNS, BLOCK_LABELS, getDefaultFocusConfig } from '@/lib/focus/defaults';
 import { nanoid } from 'nanoid';
@@ -104,11 +107,12 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
   return (
     <div className="mx-auto max-w-4xl">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-8 grid w-full grid-cols-5">
+        <TabsList className="mb-8 grid w-full grid-cols-6">
           <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="focus">Focus</TabsTrigger>
           <TabsTrigger value="reports">Reviews</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="ai">AI</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
 
@@ -142,6 +146,14 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
             description="Adjust theme and interface preferences without changing how the product works."
           />
           <AppearanceSection settings={settings} />
+        </TabsContent>
+
+        <TabsContent value="ai">
+          <SettingsIntro
+            title="AI"
+            description="Manage your personal API key for AI features. Using your own key gives you dedicated quota."
+          />
+          <AISection hasKey={settings.hasGeminiApiKey} />
         </TabsContent>
 
         <TabsContent value="data">
@@ -1562,5 +1574,94 @@ function AffirmationEditor({
         </Button>
       </div>
     </div>
+  );
+}
+
+function AISection({ hasKey }: { hasKey: boolean }) {
+  const [keyInput, setKeyInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const result = await saveUserApiKey(keyInput);
+    if (result.success) {
+      toast.success(result.message);
+      setKeyInput('');
+      router.refresh();
+    } else {
+      toast.error(result.message);
+    }
+    setIsSaving(false);
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    const result = await deleteUserApiKey();
+    if (result.success) {
+      toast.success(result.message);
+      router.refresh();
+    } else {
+      toast.error(result.message);
+    }
+    setIsDeleting(false);
+  };
+
+  return (
+    <Card className="border-border/50 bg-card/45">
+      <CardHeader>
+        <CardTitle className="text-sm font-medium">Gemini API Key</CardTitle>
+        <CardDescription className="text-muted-foreground text-xs">
+          {hasKey
+            ? 'A personal key is saved. AI uses your quota. Enter a new one to replace it.'
+            : 'No personal key saved — using the shared server key.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {hasKey && (
+          <div className="border-border/40 bg-muted/20 flex items-center justify-between rounded-lg border px-3 py-2">
+            <span className="text-muted-foreground font-mono text-sm">••••••••••••••••</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="text-destructive hover:text-destructive"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Input
+            type="password"
+            placeholder="AIza..."
+            value={keyInput}
+            onChange={e => setKeyInput(e.target.value)}
+            className="font-mono"
+          />
+          <Button onClick={handleSave} disabled={isSaving || !keyInput.trim()} size="sm">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+          </Button>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Get a free key at{' '}
+          <a
+            href="https://aistudio.google.com/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Google AI Studio
+          </a>
+          . Your key is encrypted at rest.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
