@@ -18,10 +18,10 @@
 
 import OpenAI from 'openai';
 
-const GEMINI_BASE_URL = 'https://generativeai.googleapis.com/v1beta/openai/';
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/';
 
 /** The default Gemini model used for all AI calls unless a site overrides it. */
-export const DEFAULT_MODEL = 'gemini-2.0-flash-lite';
+export const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 /**
  * Create an OpenAI-compatible client pointed at Google Gemini.
@@ -31,9 +31,12 @@ export const DEFAULT_MODEL = 'gemini-2.0-flash-lite';
  * @returns A configured OpenAI client instance ready for chat completions.
  */
 export function createAIClient(apiKey?: string | null): OpenAI {
-  const key = apiKey ?? process.env.GEMINI_API_KEY ?? '';
+  const key = apiKey ?? process.env.GEMINI_API_KEY;
+  if (!key) {
+    console.warn('[jobmark] No Gemini API key available — AI calls will fail with 401. Set GEMINI_API_KEY in your environment or save a key in Settings.');
+  }
   return new OpenAI({
     baseURL: GEMINI_BASE_URL,
-    apiKey: key,
+    apiKey: key ?? '',
   });
 }

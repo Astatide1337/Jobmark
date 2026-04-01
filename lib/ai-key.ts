@@ -22,12 +22,13 @@ import crypto from 'crypto';
 
 /**
  * Derive a 32-byte AES key from AUTH_SECRET using SHA-256.
- * Mirrors the key derivation in lib/project-lock.ts for consistency.
+ * Uses `AUTH_SECRET` (same algorithm as `lib/project-lock.ts`, includes the
+ * `NEXTAUTH_SECRET` legacy fallback for true consistency with the vault pattern).
  */
 function getEncryptionKey(): Buffer {
   return crypto
     .createHash('sha256')
-    .update(process.env.AUTH_SECRET ?? 'fallback-dev-secret')
+    .update(process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret')
     .digest();
 }
 
