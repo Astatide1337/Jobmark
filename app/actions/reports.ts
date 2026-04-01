@@ -18,23 +18,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { createStreamableValue } from '@ai-sdk/rsc';
-import OpenAI from 'openai';
-
-/**
- * Lazy OpenAI client factory.
- *
- * Why: Instantiating `new OpenAI()` at module-level throws immediately
- * when `OPENROUTER_API_KEY` is not set (e.g. during build or cold boot),
- * crashing every route that imports this module — even ones that never call
- * the AI. Deferring construction to call-time limits the failure to the
- * specific functions that actually need it.
- */
-function getOpenAI(): OpenAI {
-  return new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY,
-  });
-}
+import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
+import { getUserApiKey } from '@/app/actions/settings';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -155,12 +140,15 @@ export async function streamReport(config: ReportConfig) {
   `;
 
   // 5. Stream
+  // Key must be fetched before createStreamableValue to satisfy 'use server' constraints
+  const userKey = await getUserApiKey();
+  const ai = createAIClient(userKey);
   const stream = createStreamableValue('');
 
   (async () => {
     try {
-      const completion = await getOpenAI().chat.completions.create({
-        model: 'z-ai/glm-4.5-air:free',
+      const completion = await ai.chat.completions.create({
+        model: DEFAULT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
@@ -190,8 +178,10 @@ export async function improveText(selection: string, instruction: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  const completion = await getOpenAI().chat.completions.create({
-    model: 'z-ai/glm-4.5-air:free',
+  const userKey = await getUserApiKey();
+  const ai = createAIClient(userKey);
+  const completion = await ai.chat.completions.create({
+    model: DEFAULT_MODEL,
     messages: [
       {
         role: 'system',

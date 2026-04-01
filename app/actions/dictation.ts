@@ -2,24 +2,17 @@
  * Dictation AI Actions
  *
  * Why: Speech-to-text is often messy and lacks punctuation. This action
- * provides a "Polish" layer using a fast, free LLM (via OpenRouter) to
+ * provides a "Polish" layer using an LLM (via Google Gemini) to
  * transform raw voice transcripts into professional written accomplishments.
  *
- * Model Choice: `glm-4.5-air:free` is used for high throughput and zero cost,
- * as the task (punctuation/grammar) doesn't require a high-reasoning model.
+ * Model Choice: `DEFAULT_MODEL` is used for consistent model management
+ * across all AI call sites, with BYOK support for user-supplied keys.
  */
 'use server';
 
 import { auth } from '@/lib/auth';
-import OpenAI from 'openai';
-
-// Lazy factory — avoids module-level throw when OPENROUTER_API_KEY is absent
-function getOpenAI(): OpenAI {
-  return new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY,
-  });
-}
+import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
+import { getUserApiKey } from '@/app/actions/settings';
 
 /**
  * Polishes raw dictation text using a free LLM.
@@ -34,8 +27,10 @@ export async function polishDictation(text: string) {
   if (!text || text.trim().length === 0) return '';
 
   try {
-    const completion = await getOpenAI().chat.completions.create({
-      model: 'z-ai/glm-4.5-air:free',
+    const userKey = await getUserApiKey();
+    const ai = createAIClient(userKey);
+    const completion = await ai.chat.completions.create({
+      model: DEFAULT_MODEL,
       messages: [
         {
           role: 'system',

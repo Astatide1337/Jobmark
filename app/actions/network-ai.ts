@@ -15,7 +15,8 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createStreamableValue } from '@ai-sdk/rsc';
-import OpenAI from 'openai';
+import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
+import { getUserApiKey } from '@/app/actions/settings';
 import { formatDate } from '@/lib/network';
 import { format } from 'date-fns';
 
@@ -26,14 +27,6 @@ export type OutreachDraftConfig = {
   channel: string;
   extraContext?: string;
 };
-
-// Lazy factory — avoids module-level throw when OPENROUTER_API_KEY is absent
-function getOpenAI(): OpenAI {
-  return new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY,
-  });
-}
 
 const OUTREACH_SYSTEM_PROMPT = `You are a professional networking assistant. Generate a draft message ONLY. Never fabricate details about the contact. Use only the facts provided. If information is insufficient, note what's missing. This is a DRAFT for the user to review and send themselves.
 
@@ -107,12 +100,15 @@ Channel: ${channel}${extraContext ? `\nAdditional context: ${extraContext}` : ''
 
 Generate the outreach draft now.`;
 
+  // Key must be fetched before createStreamableValue to satisfy 'use server' constraints
+  const userKey = await getUserApiKey();
+  const ai = createAIClient(userKey);
   const stream = createStreamableValue('');
 
   (async () => {
     try {
-      const completion = await getOpenAI().chat.completions.create({
-        model: 'z-ai/glm-4.5-air:free',
+      const completion = await ai.chat.completions.create({
+        model: DEFAULT_MODEL,
         messages: [
           { role: 'system', content: OUTREACH_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt },
@@ -217,8 +213,10 @@ export async function improveOutreachDraft(
   }
 
   try {
-    const completion = await getOpenAI().chat.completions.create({
-      model: 'z-ai/glm-4.5-air:free',
+    const userKey = await getUserApiKey();
+    const ai = createAIClient(userKey);
+    const completion = await ai.chat.completions.create({
+      model: DEFAULT_MODEL,
       messages: [
         {
           role: 'system',

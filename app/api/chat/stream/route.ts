@@ -13,7 +13,6 @@
  * - Auto-Titling: If it's a new conversation, it triggers a secondary
  *   AI call to generate a relevant title based on the first message.
  */
-import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
@@ -22,22 +21,9 @@ import { formatDate, getChannelLabel } from '@/lib/network';
 import { buildContextString } from '@/lib/chat/context-providers';
 import { buildSystemPrompt } from '@/lib/chat/system-prompts';
 import { streamManager } from '@/lib/chat/stream-manager';
+import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
+import { getUserApiKey } from '@/app/actions/settings';
 import type { ConversationMode } from '@/app/actions/chat';
-
-/**
- * Lazy OpenAI client factory.
- *
- * Why: Module-level `new OpenAI()` throws at import time when
- * `OPENROUTER_API_KEY` is absent (build, cold boot, test environments).
- * Deferring to call-time means the module loads cleanly and only fails
- * when an actual AI request is made.
- */
-function getOpenAI(): OpenAI {
-  return new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: process.env.OPENROUTER_API_KEY,
-  });
-}
 
 type StreamBody = {
   conversationId?: string;
@@ -146,6 +132,10 @@ export async function POST(request: Request) {
     content: `---\n${userMessage}\n---`,
   });
 
+  // Resolve user key for BYOK support — must happen before ReadableStream construction
+  const userKey = await getUserApiKey();
+  const ai = createAIClient(userKey);
+
   const upstreamController = new AbortController();
   const handleClientAbort = () => {
     upstreamController.abort('client-disconnected');
@@ -172,9 +162,9 @@ export async function POST(request: Request) {
       let wasCancelled = false;
 
       try {
-        const completion = await getOpenAI().chat.completions.create(
+        const completion = await ai.chat.completions.create(
           {
-            model: 'z-ai/glm-4.5-air:free',
+            model: DEFAULT_MODEL,
             messages: chatMessages,
             stream: true,
           },
@@ -233,9 +223,9 @@ export async function POST(request: Request) {
               conversation.title === 'Mock Interview')
           ) {
             try {
-              const titleCompletion = await getOpenAI().chat.completions.create(
+              const titleCompletion = await ai.chat.completions.create(
                 {
-                  model: 'z-ai/glm-4.5-air:free',
+                  model: DEFAULT_MODEL,
                   messages: [
                     {
                       role: 'system',
