@@ -26,9 +26,15 @@ import crypto from 'crypto';
  * `NEXTAUTH_SECRET` legacy fallback for true consistency with the vault pattern).
  */
 function getEncryptionKey(): Buffer {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.warn(
+      '[jobmark] AUTH_SECRET is not set — API keys are encrypted with a predictable fallback key. Set AUTH_SECRET in your environment for production use.'
+    );
+  }
   return crypto
     .createHash('sha256')
-    .update(process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret')
+    .update(secret ?? 'fallback-dev-secret')
     .digest();
 }
 

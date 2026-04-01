@@ -225,7 +225,7 @@ export async function exportUserData() {
   const filteredReports = filterLockedReports(reports, lockedIds);
 
   // Exclude the encrypted API key from the export — it must never leave the server.
-  const { geminiApiKey: _omitted, ...safeSettings } = settings ?? {};
+  const { geminiApiKey: _, ...safeSettings } = settings ?? {};
 
   return {
     exportedAt: new Date().toISOString(),
@@ -297,16 +297,28 @@ export async function saveUserApiKey(
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
   if (!rawKey.trim()) return { success: false, message: 'Key cannot be empty' };
 
-  const encrypted = encryptApiKey(rawKey.trim());
+  const trimmedKey = rawKey.trim();
 
-  await prisma.userSettings.upsert({
-    where: { userId: session.user.id },
-    update: { geminiApiKey: encrypted },
-    create: { userId: session.user.id, geminiApiKey: encrypted },
-  });
+  // Basic format validation — Gemini API keys always start with 'AIza' and are at least 20 chars.
+  if (!trimmedKey.startsWith('AIza') || trimmedKey.length < 20) {
+    return { success: false, message: 'Invalid API key format. Gemini keys start with "AIza".' };
+  }
 
-  revalidatePath('/settings');
-  return { success: true, message: 'API key saved' };
+  try {
+    const encrypted = encryptApiKey(trimmedKey);
+
+    await prisma.userSettings.upsert({
+      where: { userId: session.user.id },
+      update: { geminiApiKey: encrypted },
+      create: { userId: session.user.id, geminiApiKey: encrypted },
+    });
+
+    revalidatePath('/settings');
+    return { success: true, message: 'API key saved' };
+  } catch (error) {
+    console.error('Failed to save API key:', error);
+    return { success: false, message: 'Failed to save API key' };
+  }
 }
 
 /**
@@ -318,14 +330,19 @@ export async function deleteUserApiKey(): Promise<{ success: boolean; message: s
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
 
-  await prisma.userSettings.upsert({
-    where: { userId: session.user.id },
-    update: { geminiApiKey: null },
-    create: { userId: session.user.id },
-  });
+  try {
+    await prisma.userSettings.upsert({
+      where: { userId: session.user.id },
+      update: { geminiApiKey: null },
+      create: { userId: session.user.id },
+    });
 
-  revalidatePath('/settings');
-  return { success: true, message: 'API key removed' };
+    revalidatePath('/settings');
+    return { success: true, message: 'API key removed' };
+  } catch (error) {
+    console.error('Failed to delete API key:', error);
+    return { success: false, message: 'Failed to delete API key' };
+  }
 }
 
 /**
@@ -333,15 +350,15 @@ export async function deleteUserApiKey(): Promise<{ success: boolean; message: s
  *
  * Why: Decrypts and returns the user's stored API key for use in AI call sites.
  * Returns null if no key is stored, triggering the server-key fallback.
- * Accepts an optional userId so Route Handlers (which aren't server actions)
- * can pass the session userId directly.
+ * Always derives the user ID from the authenticated session to prevent IDOR —
+ * callers must not supply a userId; the function enforces its own auth check.
  */
-export async function getUserApiKey(userId?: string): Promise<string | null> {
-  const targetId = userId ?? (await auth())?.user?.id;
-  if (!targetId) return null;
+export async function getUserApiKey(): Promise<string | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
 
   const settings = await prisma.userSettings.findUnique({
-    where: { userId: targetId },
+    where: { userId: session.user.id },
     select: { geminiApiKey: true },
   });
 
