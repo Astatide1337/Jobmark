@@ -137,6 +137,9 @@ model UserSettings {
   // Vault (Password-Locked Projects)
   vaultPasswordHash  String?  @db.Text
 
+  // BYOK: User-supplied Gemini API key (AES-256-GCM encrypted, null = use server key)
+  geminiApiKey  String?  @db.Text   // AES-256-GCM encrypted, null = use server key
+
   // Focus Session Configuration
   focusConfig     Json?
 
