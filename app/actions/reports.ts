@@ -140,7 +140,7 @@ export async function streamReport(config: ReportConfig) {
   `;
 
   // 5. Stream
-  // Key must be fetched before createStreamableValue to satisfy 'use server' constraints
+  // Key must be resolved before ReadableStream construction so ai is captured in the stream closure.
   const userKey = await getUserApiKey();
   const ai = createAIClient(userKey);
   const stream = createStreamableValue('');
@@ -163,7 +163,7 @@ export async function streamReport(config: ReportConfig) {
         }
       }
     } catch (err) {
-      console.error('OpenAI Stream Error:', err);
+      console.error('AI Stream Error:', err);
       stream.error(err);
     } finally {
       stream.done();

@@ -11,7 +11,7 @@ jobmark is a personal career management platform that allows users to log accomp
 - **Database:** PostgreSQL via Prisma ORM
 - **Auth:** Auth.js (NextAuth) with Google Provider
 - **UI:** Tailwind CSS, Radix UI, Framer Motion, Lucide Icons, Recharts (Insights)
-- **AI:** OpenRouter (OpenAI SDK) for chat, report generation, and text polishing
+- **AI:** Google Gemini (OpenAI-compatible SDK) for chat, report generation, and text polishing. BYOK supported via user settings.
 - **Optimization:** Turbopack for fast development, custom StreamManager for AI streams, and Server-Side Data Aggregation for heavy charts.
 
 ## Key Subsystems

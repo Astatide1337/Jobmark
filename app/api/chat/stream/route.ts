@@ -3,7 +3,7 @@
  *
  * Why: Providing a "real-time" feel is critical for the AI Mentor experience.
  * This route handles the persistent connection between the user and the
- * LLM (via OpenRouter).
+ * LLM (via Google Gemini).
  *
  * Complex Logic:
  * - Context Injection: Uses the Strategy Pattern to build a specialized
