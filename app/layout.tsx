@@ -50,6 +50,29 @@ export const metadata: Metadata = {
     'work log',
     'impact tracking',
   ],
+  openGraph: {
+    title: 'Jobmark - Build Your Career Record',
+    description:
+      'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+    url: 'https://jobmark.app',
+    siteName: 'Jobmark',
+    type: 'website',
+    images: [
+      {
+        url: '/opengraph-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Jobmark – Your Career, On Record',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Jobmark - Build Your Career Record',
+    description:
+      'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+    images: ['/opengraph-image.png'],
+  },
 };
 
 export default function RootLayout({
