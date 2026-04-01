@@ -224,10 +224,13 @@ export async function exportUserData() {
 
   const filteredReports = filterLockedReports(reports, lockedIds);
 
+  // Exclude the encrypted API key from the export — it must never leave the server.
+  const { geminiApiKey: _omitted, ...safeSettings } = settings ?? {};
+
   return {
     exportedAt: new Date().toISOString(),
     user,
-    settings,
+    settings: safeSettings,
     projects,
     activities: activities.map(a => ({
       content: a.content,
