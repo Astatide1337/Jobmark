@@ -107,7 +107,7 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
   return (
     <div className="mx-auto max-w-4xl">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-8 grid w-full grid-cols-6">
+        <TabsList className="mb-8 grid w-full grid-cols-3 sm:grid-cols-6">
           <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="focus">Focus</TabsTrigger>
           <TabsTrigger value="reports">Reviews</TabsTrigger>
@@ -1585,27 +1585,37 @@ function AISection({ hasKey }: { hasKey: boolean }) {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const result = await saveUserApiKey(keyInput);
-    if (result.success) {
-      toast.success(result.message);
-      setKeyInput('');
-      router.refresh();
-    } else {
-      toast.error(result.message);
+    try {
+      const result = await saveUserApiKey(keyInput);
+      if (result.success) {
+        toast.success(result.message);
+        setKeyInput('');
+        router.refresh();
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    const result = await deleteUserApiKey();
-    if (result.success) {
-      toast.success(result.message);
-      router.refresh();
-    } else {
-      toast.error(result.message);
+    try {
+      const result = await deleteUserApiKey();
+      if (result.success) {
+        toast.success(result.message);
+        router.refresh();
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
-    setIsDeleting(false);
   };
 
   return (
@@ -1626,7 +1636,8 @@ function AISection({ hasKey }: { hasKey: boolean }) {
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={isDeleting || isSaving}
+              aria-label="Remove API key"
               className="text-destructive hover:text-destructive"
             >
               {isDeleting ? (
@@ -1645,7 +1656,7 @@ function AISection({ hasKey }: { hasKey: boolean }) {
             onChange={e => setKeyInput(e.target.value)}
             className="font-mono"
           />
-          <Button onClick={handleSave} disabled={isSaving || !keyInput.trim()} size="sm">
+          <Button onClick={handleSave} disabled={isSaving || isDeleting || !keyInput.trim()} size="sm">
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
           </Button>
         </div>
