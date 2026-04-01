@@ -446,13 +446,15 @@ export function ChatInterface({
                   className="mx-auto w-full max-w-3xl"
                 >
                   <div className="group flex w-full max-w-full gap-5">
-                    <div className="from-primary/20 to-primary/5 text-primary ring-primary/20 mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br shadow-md ring-1">
-                      {isContextPending ? (
+                    {isContextPending ? (
+                      <div className="from-primary/20 to-primary/5 text-primary ring-primary/20 mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br shadow-md ring-1">
                         <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
+                      </div>
+                    ) : streamingContent ? null : (
+                      <div className="from-primary/20 to-primary/5 text-primary ring-primary/20 mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br shadow-md ring-1">
                         <Bot className="h-5 w-5" />
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1 py-2">
                       <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
                         {isStreaming && !streamingContent ? (
@@ -1164,7 +1166,8 @@ function SuggestedPrompts({ projects, userName, onSelect }: SuggestedPromptsProp
           {greeting}
         </h1>
         <p className="text-muted-foreground/70 mx-auto max-w-xl text-base leading-relaxed font-medium">
-          Use your work record to draft updates, prepare reviews, and spot the gaps that still need evidence.
+          Use your work record to draft updates, prepare reviews, and spot the gaps that still need
+          evidence.
         </p>
       </div>
 
