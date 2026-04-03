@@ -18,8 +18,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { createStreamableValue } from '@ai-sdk/rsc';
-import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
-import { getUserApiKey } from '@/app/actions/settings';
+import { createAIClient } from '@/lib/ai';
+import { getUserAiConfig } from '@/app/actions/settings';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -140,15 +140,16 @@ export async function streamReport(config: ReportConfig) {
   `;
 
   // 5. Stream
-  // Key must be resolved before ReadableStream construction so ai is captured in the stream closure.
-  const userKey = await getUserApiKey();
-  const ai = createAIClient(userKey);
+  // Config must be resolved before ReadableStream construction so `ai` and `model`
+  // are captured in the stream closure with the correct values.
+  const { provider, model, apiKey } = await getUserAiConfig();
+  const ai = createAIClient(provider, apiKey);
   const stream = createStreamableValue('');
 
   (async () => {
     try {
       const completion = await ai.chat.completions.create({
-        model: DEFAULT_MODEL,
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
@@ -178,10 +179,10 @@ export async function improveText(selection: string, instruction: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  const userKey = await getUserApiKey();
-  const ai = createAIClient(userKey);
+  const { provider, model, apiKey } = await getUserAiConfig();
+  const ai = createAIClient(provider, apiKey);
   const completion = await ai.chat.completions.create({
-    model: DEFAULT_MODEL,
+    model,
     messages: [
       {
         role: 'system',

@@ -137,7 +137,10 @@ model UserSettings {
   // Vault (Password-Locked Projects)
   vaultPasswordHash  String?  @db.Text
 
-  geminiApiKey  String?  @db.Text   // AES-256-GCM encrypted, null = use server key
+  // Multi-provider BYOK — store encrypted key per provider in JSON, track active provider
+  aiProvider    String   @default("gemini")  // active provider id
+  aiModel       String?                       // null = use provider's default
+  aiKeys        Json?                         // { "gemini": "encrypted", "openai": "encrypted", ... }
 
   // Focus Session Configuration
   focusConfig     Json?

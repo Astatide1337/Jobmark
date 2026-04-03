@@ -15,8 +15,8 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createStreamableValue } from '@ai-sdk/rsc';
-import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
-import { getUserApiKey } from '@/app/actions/settings';
+import { createAIClient } from '@/lib/ai';
+import { getUserAiConfig } from '@/app/actions/settings';
 import { formatDate } from '@/lib/network';
 import { format } from 'date-fns';
 
@@ -100,15 +100,15 @@ Channel: ${channel}${extraContext ? `\nAdditional context: ${extraContext}` : ''
 
 Generate the outreach draft now.`;
 
-  // Key must be fetched before createStreamableValue to satisfy 'use server' constraints
-  const userKey = await getUserApiKey();
-  const ai = createAIClient(userKey);
+  // Config must be fetched before createStreamableValue to satisfy 'use server' constraints
+  const { provider, model, apiKey } = await getUserAiConfig();
+  const ai = createAIClient(provider, apiKey);
   const stream = createStreamableValue('');
 
   (async () => {
     try {
       const completion = await ai.chat.completions.create({
-        model: DEFAULT_MODEL,
+        model,
         messages: [
           { role: 'system', content: OUTREACH_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt },
@@ -213,10 +213,10 @@ export async function improveOutreachDraft(
   }
 
   try {
-    const userKey = await getUserApiKey();
-    const ai = createAIClient(userKey);
+    const { provider, model, apiKey } = await getUserAiConfig();
+    const ai = createAIClient(provider, apiKey);
     const completion = await ai.chat.completions.create({
-      model: DEFAULT_MODEL,
+      model,
       messages: [
         {
           role: 'system',

@@ -21,8 +21,8 @@ import { formatDate, getChannelLabel } from '@/lib/network';
 import { buildContextString } from '@/lib/chat/context-providers';
 import { buildSystemPrompt } from '@/lib/chat/system-prompts';
 import { streamManager } from '@/lib/chat/stream-manager';
-import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
-import { getUserApiKey } from '@/app/actions/settings';
+import { createAIClient } from '@/lib/ai';
+import { getUserAiConfig } from '@/app/actions/settings';
 import type { ConversationMode } from '@/app/actions/chat';
 
 type StreamBody = {
@@ -132,9 +132,10 @@ export async function POST(request: Request) {
     content: `---\n${userMessage}\n---`,
   });
 
-  // Resolve user key for BYOK support — must happen before ReadableStream construction
-  const userKey = await getUserApiKey();
-  const ai = createAIClient(userKey);
+  // Resolve AI config for BYOK support — must happen before ReadableStream construction
+  // so `ai` and `model` are captured in the stream/auto-title closures.
+  const { provider, model, apiKey } = await getUserAiConfig();
+  const ai = createAIClient(provider, apiKey);
 
   const upstreamController = new AbortController();
   const handleClientAbort = () => {
@@ -164,7 +165,7 @@ export async function POST(request: Request) {
       try {
         const completion = await ai.chat.completions.create(
           {
-            model: DEFAULT_MODEL,
+            model,
             messages: chatMessages,
             stream: true,
           },
@@ -223,22 +224,17 @@ export async function POST(request: Request) {
               conversation.title === 'Mock Interview')
           ) {
             try {
-              const titleCompletion = await ai.chat.completions.create(
-                {
-                  model: DEFAULT_MODEL,
-                  messages: [
-                    {
-                      role: 'system',
-                      content:
-                        'Generate a very short title (3-6 words) for this conversation. Return ONLY the title, nothing else.',
-                    },
-                    { role: 'user', content: userMessage },
-                  ],
-                },
-                {
-                  signal: upstreamController.signal,
-                }
-              );
+              const titleCompletion = await ai.chat.completions.create({
+                model,
+                messages: [
+                  {
+                    role: 'system',
+                    content:
+                      'Generate a very short title (3-6 words) for this conversation. Return ONLY the title, nothing else.',
+                  },
+                  { role: 'user', content: userMessage },
+                ],
+              });
 
               const generatedTitle = titleCompletion.choices[0]?.message?.content?.trim();
               if (generatedTitle && generatedTitle.length < 50) {

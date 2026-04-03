@@ -58,10 +58,16 @@ import {
   exportUserData,
   clearAllActivities,
   deleteUserAccount,
-  saveUserApiKey,
-  deleteUserApiKey,
+  saveProviderApiKey,
+  deleteProviderApiKey,
+  updateAiSettings,
   type UserSettingsData,
 } from '@/app/actions/settings';
+import {
+  PROVIDER_CONFIGS,
+  AI_PROVIDERS,
+  type AIProvider,
+} from '@/lib/ai-config';
 import { createGoal, deleteGoal, type GoalData } from '@/app/actions/goals';
 import { saveFocusConfig, resetFocusConfig } from '@/app/actions/focus-config';
 import { format } from 'date-fns';
@@ -151,9 +157,13 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
         <TabsContent value="ai">
           <SettingsIntro
             title="AI"
-            description="Manage your personal API key for AI features. Using your own key gives you dedicated quota."
+            description="Choose your AI provider, select a model, and bring your own API key for dedicated quota."
           />
-          <AISection hasKey={settings.hasGeminiApiKey} />
+          <AISection
+            aiProvider={settings.aiProvider}
+            aiModel={settings.aiModel}
+            aiKeysByProvider={settings.aiKeysByProvider}
+          />
         </TabsContent>
 
         <TabsContent value="data">
@@ -1577,16 +1587,47 @@ function AffirmationEditor({
   );
 }
 
-function AISection({ hasKey }: { hasKey: boolean }) {
+interface AISectionProps {
+  aiProvider: AIProvider;
+  aiModel: string | null;
+  aiKeysByProvider: Partial<Record<AIProvider, boolean>>;
+}
+
+function AISection({ aiProvider, aiModel, aiKeysByProvider }: AISectionProps) {
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(aiProvider);
+  const [selectedModel, setSelectedModel] = useState<string>(
+    aiModel ?? PROVIDER_CONFIGS[aiProvider].defaultModel
+  );
   const [keyInput, setKeyInput] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [isSavingKey, setIsSavingKey] = useState(false);
+  const [isDeletingKey, setIsDeletingKey] = useState(false);
   const router = useRouter();
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const config = PROVIDER_CONFIGS[selectedProvider];
+  const hasKeyForSelected = aiKeysByProvider[selectedProvider] === true;
+
+  // Unsaved changes: provider switched OR model edited (only meaningful when a key exists)
+  const savedModel = aiModel ?? PROVIDER_CONFIGS[aiProvider].defaultModel;
+  const hasChanges =
+    hasKeyForSelected &&
+    (selectedProvider !== aiProvider || selectedModel !== savedModel);
+
+  const handleApply = async () => {
+    setIsSavingSettings(true);
+    setSettingsSaved(false);
+    await updateAiSettings({ aiProvider: selectedProvider, aiModel: selectedModel });
+    router.refresh();
+    setIsSavingSettings(false);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
+  const handleSaveKey = async () => {
+    setIsSavingKey(true);
     try {
-      const result = await saveUserApiKey(keyInput);
+      const result = await saveProviderApiKey(selectedProvider, keyInput);
       if (result.success) {
         toast.success(result.message);
         setKeyInput('');
@@ -1597,14 +1638,14 @@ function AISection({ hasKey }: { hasKey: boolean }) {
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
-      setIsSaving(false);
+      setIsSavingKey(false);
     }
   };
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
+  const handleDeleteKey = async () => {
+    setIsDeletingKey(true);
     try {
-      const result = await deleteUserApiKey();
+      const result = await deleteProviderApiKey(selectedProvider);
       if (result.success) {
         toast.success(result.message);
         router.refresh();
@@ -1614,65 +1655,119 @@ function AISection({ hasKey }: { hasKey: boolean }) {
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
-      setIsDeleting(false);
+      setIsDeletingKey(false);
     }
   };
 
   return (
-    <Card className="border-border/50 bg-card/45">
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">Gemini API Key</CardTitle>
-        <CardDescription className="text-muted-foreground text-xs">
-          {hasKey
-            ? 'A personal key is saved. AI uses your quota. Enter a new one to replace it.'
-            : 'No personal key saved — using the shared server key.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {hasKey && (
-          <div className="border-border/40 bg-muted/20 flex items-center justify-between rounded-lg border px-3 py-2">
-            <span className="text-muted-foreground font-mono text-sm">••••••••••••••••</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isDeleting || isSaving}
-              aria-label="Remove API key"
-              className="text-destructive hover:text-destructive"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-            </Button>
+    <div className="space-y-6">
+      <SettingsSaveBar
+        show={hasChanges && !settingsSaved}
+        onSave={handleApply}
+        isSaving={isSavingSettings}
+        message="You have unapplied AI settings"
+      />
+
+      <Card className="border-border/50 bg-card/45">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">AI Provider</CardTitle>
+          <CardDescription className="text-muted-foreground text-xs">
+            Select a provider, set a model, and optionally bring your own API key for dedicated quota.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+
+          {/* 1. Provider selector row */}
+          <div className="flex flex-wrap gap-2">
+            {AI_PROVIDERS.map(p => {
+              const pConfig = PROVIDER_CONFIGS[p];
+              const isSelected = p === selectedProvider;
+              return (
+                <button
+                  key={p}
+                  onClick={() => {
+                    setSelectedProvider(p);
+                    setSelectedModel(PROVIDER_CONFIGS[p].defaultModel);
+                    setKeyInput('');
+                  }}
+                  className={cn(
+                    'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                    isSelected
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border/50 bg-muted/20 text-muted-foreground hover:border-border hover:text-foreground'
+                  )}
+                >
+                  {pConfig.label}
+                </button>
+              );
+            })}
           </div>
-        )}
-        <div className="flex gap-2">
-          <Input
-            type="password"
-            placeholder="AIza..."
-            value={keyInput}
-            onChange={e => setKeyInput(e.target.value)}
-            className="font-mono"
-          />
-          <Button onClick={handleSave} disabled={isSaving || isDeleting || !keyInput.trim()} size="sm">
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Get a free key at{' '}
+
+          {/* 2. Model input */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Model{!hasKeyForSelected && ' — add your own key to customize'}
+            </Label>
+            <Input
+              type="text"
+              placeholder={config.defaultModel}
+              value={selectedModel}
+              onChange={e => setSelectedModel(e.target.value)}
+              disabled={!hasKeyForSelected}
+              className="h-8 font-mono text-xs disabled:opacity-50"
+            />
+          </div>
+
+          {/* 3. API key management */}
+          <div className="space-y-2">
+            {hasKeyForSelected && (
+              <div className="border-border/40 bg-muted/20 flex items-center justify-between rounded-lg border px-3 py-2">
+                <span className="text-muted-foreground font-mono text-xs">
+                  {config.label} key saved ••••••••••••
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDeleteKey}
+                  disabled={isDeletingKey || isSavingKey}
+                  aria-label={`Remove ${config.label} API key`}
+                  className="text-destructive hover:text-destructive h-7"
+                >
+                  {isDeletingKey ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+            )}
+            <Input
+              type="password"
+              placeholder={`${config.keyPrefix}... (press Enter to save)`}
+              value={keyInput}
+              onChange={e => setKeyInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && keyInput.trim() && !isSavingKey && !isDeletingKey) {
+                  handleSaveKey();
+                }
+              }}
+              disabled={isSavingKey}
+              className="h-8 font-mono text-xs"
+            />
+          </div>
+
+          {/* 4. Docs link */}
           <a
-            href="https://aistudio.google.com/apikey"
+            href={config.docsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-primary hover:underline text-xs"
           >
-            Google AI Studio
+            Get {config.label} API key ↗
           </a>
-          . Your key is encrypted at rest.
-        </p>
-      </CardContent>
-    </Card>
+
+        </CardContent>
+      </Card>
+    </div>
   );
 }

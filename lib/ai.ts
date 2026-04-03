@@ -1,44 +1,53 @@
 /**
  * Shared AI Client Factory
  *
- * Why Gemini: jobmark is migrating its AI backbone to Google Gemini for the public
- * launch. We point the OpenAI-compatible SDK at Gemini's OpenAI-compatibility layer
- * so all existing chat/completion call sites need zero code changes — only this one
- * module needs updating.
+ * Why multi-provider: jobmark supports Bring-Your-Own-Key (BYOK) for multiple
+ * AI providers. Users pick their preferred provider and model in Settings; their
+ * encrypted key is decrypted at call time and passed here. When no user key is
+ * present we fall back to the matching server-level environment variable.
  *
- * Why `apiKey` is optional: jobmark supports Bring-Your-Own-Key (BYOK). Users who
- * supply their own Gemini key in Settings have it stored encrypted in the DB. Those
- * callers decrypt it and pass it here; everyone else gets `null`/`undefined` and
- * falls back to the server-level `GEMINI_API_KEY` environment variable.
+ * Why OpenAI SDK for all providers: every supported provider exposes an
+ * OpenAI-compatible REST API, so we only need one SDK. The `baseURL` and
+ * optional `defaultHeaders` (e.g. Anthropic's version header) are the only
+ * things that differ between providers.
  *
- * Why `DEFAULT_MODEL` is exported: keeping a single canonical string here prevents
- * model-name drift across call sites (chat stream, report generation, text polishing).
- * To upgrade the model for the whole app, change it in exactly one place.
+ * Why `getProviderDefaultModel`: keeping a single canonical default per
+ * provider in `PROVIDER_CONFIGS` prevents model-name drift across call sites.
  */
 
 import OpenAI from 'openai';
-
-const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/';
-
-/** The default Gemini model used for all AI calls unless a site overrides it. */
-export const DEFAULT_MODEL = 'gemini-2.5-flash';
+import { PROVIDER_CONFIGS, type AIProvider } from '@/lib/ai-config';
 
 /**
- * Create an OpenAI-compatible client pointed at Google Gemini.
+ * Returns the default model ID for a given provider.
+ * Replaces the old `DEFAULT_MODEL` constant — each provider now has its own.
+ */
+export function getProviderDefaultModel(provider: AIProvider): string {
+  return PROVIDER_CONFIGS[provider].defaultModel;
+}
+
+/**
+ * Create an OpenAI-compatible client pointed at the given provider.
  *
- * @param apiKey - Optional user-supplied Gemini API key (BYOK). Pass `null` or
- *   `undefined` to fall back to the `GEMINI_API_KEY` environment variable.
+ * @param provider - Which AI provider to target (gemini, openai, anthropic, groq, openrouter).
+ * @param apiKey   - Optional user-supplied BYOK key. Pass `null`/`undefined` to
+ *                   fall back to the provider's server-level env var.
  * @returns A configured OpenAI client instance ready for chat completions.
  */
-export function createAIClient(apiKey?: string | null): OpenAI {
-  const key = apiKey ?? process.env.GEMINI_API_KEY;
+export function createAIClient(provider: AIProvider, apiKey?: string | null): OpenAI {
+  const config = PROVIDER_CONFIGS[provider];
+  const key = apiKey ?? process.env[config.envVar];
+
   if (!key) {
     console.warn(
-      '[jobmark] No Gemini API key available — AI calls will fail with 401. Set GEMINI_API_KEY in your environment or save a key in Settings.'
+      `[jobmark] No API key available for provider "${provider}" — AI calls will fail with 401. ` +
+        `Set ${config.envVar} in your environment or save a key in Settings.`
     );
   }
+
   return new OpenAI({
-    baseURL: GEMINI_BASE_URL,
+    baseURL: config.baseURL,
     apiKey: key ?? '',
+    ...(config.extraHeaders ? { defaultHeaders: config.extraHeaders } : {}),
   });
 }

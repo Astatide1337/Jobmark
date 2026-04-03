@@ -2,20 +2,20 @@
  * Dictation AI Actions
  *
  * Why: Speech-to-text is often messy and lacks punctuation. This action
- * provides a "Polish" layer using an LLM (via Google Gemini) to
- * transform raw voice transcripts into professional written accomplishments.
+ * provides a "Polish" layer using an LLM to transform raw voice transcripts
+ * into professional written accomplishments.
  *
- * Model Choice: `DEFAULT_MODEL` is used for consistent model management
- * across all AI call sites, with BYOK support for user-supplied keys.
+ * Provider: Resolved at call time via `getUserAiConfig()` — the user's active
+ * provider, model, and BYOK key (or server fallback) are all returned in one shot.
  */
 'use server';
 
 import { auth } from '@/lib/auth';
-import { createAIClient, DEFAULT_MODEL } from '@/lib/ai';
-import { getUserApiKey } from '@/app/actions/settings';
+import { createAIClient } from '@/lib/ai';
+import { getUserAiConfig } from '@/app/actions/settings';
 
 /**
- * Polishes raw dictation text using a free LLM.
+ * Polishes raw dictation text using the user's configured AI provider.
  * Fixes punctuation, capitalization, and grammar while preserving meaning.
  */
 export async function polishDictation(text: string) {
@@ -27,10 +27,10 @@ export async function polishDictation(text: string) {
   if (!text || text.trim().length === 0) return '';
 
   try {
-    const userKey = await getUserApiKey();
-    const ai = createAIClient(userKey);
+    const { provider, model, apiKey } = await getUserAiConfig();
+    const ai = createAIClient(provider, apiKey);
     const completion = await ai.chat.completions.create({
-      model: DEFAULT_MODEL,
+      model,
       messages: [
         {
           role: 'system',
