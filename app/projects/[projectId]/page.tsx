@@ -15,7 +15,7 @@ interface ProjectDetailsPageProps {
 export default async function ProjectDetailsPage({ params }: ProjectDetailsPageProps) {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/');
   }
 
   const { projectId } = await params;

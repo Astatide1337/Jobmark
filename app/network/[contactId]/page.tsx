@@ -14,7 +14,7 @@ export default async function ContactDetailPage({
   params: Promise<{ contactId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
+  if (!session?.user?.id) redirect('/');
 
   const { contactId } = await params;
   const userId = session.user.id;

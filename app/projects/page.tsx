@@ -22,20 +22,18 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   const params = await searchParams;
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/');
   }
 
   const currentFilter =
-    params.filter === 'archived'
-      ? 'archived'
-      : params.filter === 'locked'
-        ? 'locked'
-        : 'active';
+    params.filter === 'archived' ? 'archived' : params.filter === 'locked' ? 'locked' : 'active';
   const openCreate = params.new === 'true';
 
   // Fetch projects and vault state in parallel
   const [projects, vaultStatus, lockedProjects] = await Promise.all([
-    currentFilter !== 'locked' ? getProjects(currentFilter as 'active' | 'archived', session.user.id) : Promise.resolve([]),
+    currentFilter !== 'locked'
+      ? getProjects(currentFilter as 'active' | 'archived', session.user.id)
+      : Promise.resolve([]),
     getVaultStatus(),
     getVaultProjects(session.user.id),
   ]);

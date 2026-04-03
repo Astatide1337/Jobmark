@@ -25,7 +25,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const { tab } = await searchParams;
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/');
   }
 
   const userId = session.user.id;

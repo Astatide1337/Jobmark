@@ -10,6 +10,10 @@
  */
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // Required for Docker — bundles only the files needed to run the server
+  // into .next/standalone so the image doesn't need node_modules at runtime.
+  output: 'standalone',
+};
 
 export default nextConfig;

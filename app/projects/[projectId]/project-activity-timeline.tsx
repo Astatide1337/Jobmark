@@ -6,13 +6,26 @@ import { getProjectActivities } from '@/app/actions/projects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Activity, Calendar, Loader2, ChevronDown } from 'lucide-react';
+import { format } from 'date-fns';
 
 type ActivityItem = {
   id: string;
   content: string;
   createdAt: Date;
-  logDate: Date;
+  logDate: string; // Now a string like "2026-01-30"
 };
+
+// Helper to get YYYY-MM-DD from createdAt in local timezone
+function getCreatedAtLocalYMD(date: Date | string): string {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-CA');
+}
+
+// Helper to parse YYYY-MM-DD string to local Date
+function parseLocalYMD(ymd: string): Date {
+  const [year, month, day] = ymd.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 
 interface ProjectActivityTimelineProps {
   projectId: string;
@@ -66,6 +79,9 @@ export function ProjectActivityTimeline({
           const date = new Date(activity.createdAt);
           const today = new Date();
           const isToday = today.toDateString() === date.toDateString();
+          const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt);
+          const logDateYMD = activity.logDate; // Already a string like "2026-01-30"
+          const datesDiffer = logDateYMD !== createdAtYMD;
 
           return (
             <div key={activity.id} className="group relative pl-8">
@@ -87,6 +103,14 @@ export function ProjectActivityTimeline({
                       hour: 'numeric',
                       minute: '2-digit',
                     })}
+                    {datesDiffer && (
+                      <>
+                        <span className="text-muted-foreground/50 mx-1">•</span>
+                        <span className="font-medium text-amber-500">
+                          For {format(parseLocalYMD(logDateYMD), 'MMM d')}
+                        </span>
+                      </>
+                    )}
                   </div>
                   {isToday && (
                     <span className="bg-primary/10 text-primary rounded-sm px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">

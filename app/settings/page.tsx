@@ -18,7 +18,7 @@ export default async function SettingsPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect('/login');
+    redirect('/');
   }
 
   const [settings, goals, focusConfig] = await Promise.all([
@@ -28,7 +28,7 @@ export default async function SettingsPage() {
   ]);
 
   if (!settings) {
-    redirect('/login');
+    redirect('/');
   }
 
   return (

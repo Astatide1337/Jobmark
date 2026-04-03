@@ -14,7 +14,7 @@ import { ContactsList } from '@/components/network/contacts-list';
 
 export default async function NetworkPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
+  if (!session?.user?.id) redirect('/');
 
   const userId = session.user.id;
 

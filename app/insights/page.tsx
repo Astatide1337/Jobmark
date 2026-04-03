@@ -20,7 +20,7 @@ export default async function InsightsPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/');
   }
 
   const data = await getInsightsData(session.user.id);

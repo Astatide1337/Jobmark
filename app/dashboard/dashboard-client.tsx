@@ -155,11 +155,24 @@ export function QuickCapture({
     toast.success('Activity captured (Demo Mode)');
   };
 
-  const currentAction = demoMode ? (payload: FormData) => handleDemoSubmit(payload) : formAction;
-
   // ... (rest of component)
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Keep a ref to the current date to avoid stale closure issues with useActionState
+  const selectedDateRef = useRef<Date>(selectedDate);
+  selectedDateRef.current = selectedDate;
+
+  // Wrapper action that ensures the logDate is set correctly from the ref
+  const wrappedFormAction = async (formData: FormData) => {
+    // Ensure the logDate in formData reflects the current selectedDate
+    formData.set('logDate', format(selectedDateRef.current, 'yyyy-MM-dd'));
+    return formAction(formData);
+  };
+
+  const currentAction = demoMode
+    ? (payload: FormData) => handleDemoSubmit(payload)
+    : wrappedFormAction;
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [isMac, setIsMac] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
@@ -660,7 +673,8 @@ export function QuickCapture({
 
             {state.errors?.content && (
               <p className="text-destructive text-sm">
-                {state.errors.content[0]} Add one concrete action or outcome so this entry is useful later.
+                {state.errors.content[0]} Add one concrete action or outcome so this entry is useful
+                later.
               </p>
             )}
 
@@ -1006,6 +1020,9 @@ interface ActivityCardProps {
 }
 
 function ActivityCard({ activity, onOptimisticDelete, onUndoDelete }: ActivityCardProps) {
+  const logDateYMD = getLogDateYMD(activity.logDate);
+  const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt);
+
   return (
     <Card className="bg-card/40 border-border/40 group hover:bg-card/60 hover:shadow-primary/5 rounded-xl transition-all duration-300 hover:shadow-md">
       <CardContent className="p-4">
@@ -1016,9 +1033,9 @@ function ActivityCard({ activity, onOptimisticDelete, onUndoDelete }: ActivityCa
             </p>
 
             <div className="text-muted-foreground mt-3 flex items-center gap-3 text-xs">
-              {getLogDateYMD(activity.logDate) !== getCreatedAtLocalYMD(activity.createdAt) && (
+              {logDateYMD !== createdAtYMD && (
                 <span className="font-medium text-amber-500">
-                  For {format(parseLocalYMD(getLogDateYMD(activity.logDate)), 'MMM d')}
+                  For {format(parseLocalYMD(logDateYMD), 'MMM d')}
                 </span>
               )}
 

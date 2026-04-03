@@ -1,0 +1,28 @@
+services:
+  app:
+    build: .
+    container_name: jobmark
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      # Override for production - takes precedence over .env file
+      - NEXTAUTH_URL=https://jobmark.astatide.com
+      - NEXT_PUBLIC_SITE_URL=https://jobmark.astatide.com
+    # Migrations are already applied to Neon via `prisma migrate deploy` locally.
+    # Just start the server directly — no migration step needed on every boot.
+    command: node server.js
+
+  # Cloudflare Tunnel — exposes port 3000 to jobmark.astatide.com
+  # See README section below for one-time tunnel setup
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: jobmark-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app

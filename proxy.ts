@@ -9,10 +9,8 @@ export function proxy(request: NextRequest) {
     request.cookies.get('authjs.session-token') ||
     request.cookies.get('__Secure-authjs.session-token');
 
-  // Redirect logged-in users from landing page to dashboard
-  if (pathname === '/' && sessionToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // Don't auto-redirect from landing page - let the page handle it
+  // This prevents redirect loops when cookies exist but session is invalid
 
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/api/auth', '/terms', '/privacy', '/articles'];

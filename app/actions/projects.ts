@@ -214,7 +214,14 @@ export async function getProjectDetails(projectId: string, activityLimit = 20, u
   if (!project) return null;
   if (project.locked && lockedIds.includes(project.id)) return null;
 
-  return project;
+  // Convert logDate to ISO date string (YYYY-MM-DD) to prevent timezone issues
+  return {
+    ...project,
+    activities: project.activities.map(activity => ({
+      ...activity,
+      logDate: activity.logDate.toISOString().split('T')[0],
+    })),
+  };
 }
 
 export async function getProjectActivities(
@@ -249,5 +256,9 @@ export async function getProjectActivities(
     skip: offset,
   });
 
-  return activities;
+  // Convert logDate to ISO date string (YYYY-MM-DD) to prevent timezone issues
+  return activities.map(activity => ({
+    ...activity,
+    logDate: activity.logDate.toISOString().split('T')[0],
+  }));
 }

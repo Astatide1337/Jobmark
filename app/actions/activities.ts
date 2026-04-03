@@ -44,10 +44,12 @@ export async function createActivity(
     return { success: false, message: 'You must be signed in to log activities' };
   }
 
+  const logDateStr = formData.get('logDate') as string | null;
+
   const rawData = {
     content: formData.get('content') as string,
     projectId: formData.get('projectId') as string | null,
-    logDate: formData.get('logDate') ? new Date(formData.get('logDate') as string) : new Date(),
+    logDate: logDateStr ? new Date(logDateStr) : new Date(),
   };
 
   const result = activitySchema.safeParse(rawData);
@@ -105,10 +107,7 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
         ...(hideArchived
           ? [
               {
-                OR: [
-                  { projectId: null },
-                  { project: { archived: false } },
-                ],
+                OR: [{ projectId: null }, { project: { archived: false } }],
               },
             ]
           : []),
@@ -116,10 +115,7 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
         ...(lockedIds.length > 0
           ? [
               {
-                OR: [
-                  { projectId: null },
-                  { projectId: { notIn: lockedIds } },
-                ],
+                OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
               },
             ]
           : []),
@@ -135,7 +131,12 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
     },
   });
 
-  return activities;
+  // Convert logDate to ISO date string (YYYY-MM-DD) to prevent timezone issues
+  // when serializing from Server Component to Client Component
+  return activities.map(activity => ({
+    ...activity,
+    logDate: activity.logDate.toISOString().split('T')[0],
+  }));
 }
 
 export async function getActivityCount(userId?: string) {
@@ -153,10 +154,7 @@ export async function getActivityCount(userId?: string) {
     where: {
       userId: targetUserId,
       ...(lockedIds.length > 0 && {
-        OR: [
-          { projectId: null },
-          { projectId: { notIn: lockedIds } },
-        ],
+        OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
       }),
     },
   });

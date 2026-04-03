@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/');
   }
 
   const userId = session.user.id;
@@ -70,7 +70,9 @@ export default async function DashboardPage() {
           <h1 className="text-foreground mb-1 text-2xl font-bold">
             {greeting}, {session.user.name?.split(' ')[0]}.
           </h1>
-          <p className="text-muted-foreground">Document today&apos;s work while it is still fresh.</p>
+          <p className="text-muted-foreground">
+            Document today&apos;s work while it is still fresh.
+          </p>
         </div>
 
         {stats.totalCount < 5 && (

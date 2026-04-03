@@ -9,8 +9,10 @@
  * the `AuthModalProvider` to allow "Sign In" triggers from any CTA
  * section without extra page reloads.
  */
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Pen } from 'lucide-react';
+import { auth } from '@/lib/auth';
 import { AuthModalProvider } from '@/components/auth';
 import { FloatingNav } from '@/components/landing/floating-nav';
 import { EditorialHero } from '@/components/landing/editorial-hero';
@@ -24,7 +26,13 @@ import { FAQ } from '@/components/landing/faq';
 import { FinalCTA } from '@/components/landing/final-cta';
 import { SectionDivider } from '@/components/landing/section-divider';
 
-export default function Home() {
+export default async function Home() {
+  // Redirect logged-in users to dashboard
+  const session = await auth();
+  if (session?.user?.id) {
+    redirect('/dashboard');
+  }
+
   return (
     <AuthModalProvider>
       <main className="bg-background">
