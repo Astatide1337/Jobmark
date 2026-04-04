@@ -7,13 +7,12 @@
  * - Turbopack: Enabled in dev mode via `package.json` for ~10x faster HMR.
  * - Server Components: Utilizes the App Router by default for zero-bundle-size
  *   backend logic.
+ * - Vercel: Optimized for serverless deployment with automatic edge caching.
  */
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Required for Docker — bundles only the files needed to run the server
-  // into .next/standalone so the image doesn't need node_modules at runtime.
-  output: 'standalone',
+  // No special output mode needed for Vercel — it handles optimization automatically
 };
 
 export default nextConfig;
