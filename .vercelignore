@@ -17,5 +17,6 @@ yarn-error.log*
 
 # Documentation that isn't needed in production
 docs/
-*.md
-!README.md
+CLAUDE.md
+UI_GOVERNANCE.md
+README.md
