@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/db';
+import { filterLockedReports, getLockedProjectIds } from '@/lib/project-lock';
+import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 import { ContextStrategy, ConversationContext } from './types';
 
 /**
@@ -31,13 +33,27 @@ export class ReportsContextProvider implements ContextStrategy {
         title: true,
         content: true,
         createdAt: true,
+        projectId: true,
+        metadata: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
+    const lockedIds = await getLockedProjectIds(userId);
+    const visibleReports = filterLockedReports(reports, lockedIds);
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    });
+    const timeZone =
+      settings?.timeZone && isValidTimeZone(settings.timeZone)
+        ? settings.timeZone
+        : DEFAULT_TIME_ZONE;
+
     let context = '';
-    for (const report of reports) {
-      context += `\n\nReferenced Report: "${report.title}" (${report.createdAt.toLocaleDateString()})\n${report.content.slice(0, 3000)}`;
+    for (const report of visibleReports) {
+      const reportDate = report.createdAt.toLocaleDateString('en-US', { timeZone });
+      context += `\n\nReferenced Report: "${report.title}" (${reportDate})\n${report.content.slice(0, 3000)}`;
     }
     return context;
   }

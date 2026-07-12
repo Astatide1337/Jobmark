@@ -10,6 +10,12 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  isValidTimeZone,
+} from '@/lib/date-semantics';
 
 export async function logDecompressionSession() {
   const session = await auth();
@@ -18,6 +24,16 @@ export async function logDecompressionSession() {
   }
 
   try {
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId: session.user.id },
+      select: { timeZone: true },
+    });
+    const timeZone =
+      settings?.timeZone && isValidTimeZone(settings.timeZone)
+        ? settings.timeZone
+        : DEFAULT_TIME_ZONE;
+    const logDate = calendarDateToUtcMidnight(getCalendarDate(new Date(), timeZone));
+
     // 1. Find or Create the "Decompress" project
     let project = await prisma.project.findFirst({
       where: {
@@ -43,6 +59,7 @@ export async function logDecompressionSession() {
         userId: session.user.id,
         projectId: project.id,
         content: 'Completed a decompression ritual.',
+        logDate,
       },
     });
 

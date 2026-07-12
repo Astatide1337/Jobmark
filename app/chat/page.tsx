@@ -29,15 +29,13 @@ export default async function ChatPage() {
     redirect('/');
   }
 
-  const userId = session.user.id;
-
   const [conversations, projects, goals, contacts, reports, vaultProjects] = await Promise.all([
-    getConversations(20, userId),
-    getProjects('active', userId),
-    getGoals(userId),
-    getContacts(undefined, userId),
-    getReports(userId),
-    getVaultProjects(userId), // Returns [] when vault is locked; included when unlocked so they appear in context picker
+    getConversations(20),
+    getProjects('active'),
+    getGoals(),
+    getContacts(),
+    getReports(),
+    getVaultProjects(), // Returns [] when vault is locked; included when unlocked so they appear in context picker
   ]);
 
   // Merge regular active projects with vault projects (vault projects only present when unlocked)

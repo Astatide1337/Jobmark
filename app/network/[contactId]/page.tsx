@@ -17,12 +17,10 @@ export default async function ContactDetailPage({
   if (!session?.user?.id) redirect('/');
 
   const { contactId } = await params;
-  const userId = session.user.id;
-
   const [contact, interactions, initialDrafts] = await Promise.all([
-    getContactById(contactId, userId),
-    getInteractionsByContact(contactId, 20, userId),
-    getOutreachDraftsByContact(contactId, userId),
+    getContactById(contactId),
+    getInteractionsByContact(contactId, 20),
+    getOutreachDraftsByContact(contactId),
   ]);
 
   if (!contact) notFound();

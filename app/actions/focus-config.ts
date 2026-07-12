@@ -11,11 +11,12 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import type { FocusBlock } from '@/lib/focus/types';
 import { getDefaultFocusConfig } from '@/lib/focus/defaults';
+import { Prisma } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,17 +46,10 @@ function parseFocusConfig(raw: unknown): FocusBlock[] {
 // getFocusConfig
 // ---------------------------------------------------------------------------
 
-export async function getFocusConfig(userId?: string): Promise<FocusBlock[]> {
-  let targetUserId = userId;
+export async function getFocusConfig(): Promise<FocusBlock[]> {
+  const targetUserId = await requireUserId();
 
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return getDefaultFocusConfig();
-    targetUserId = session.user.id;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const settings = await (prisma.userSettings as any).findUnique({
+  const settings = await prisma.userSettings.findUnique({
     where: { userId: targetUserId },
     select: { focusConfig: true },
   });
@@ -87,15 +81,14 @@ export async function saveFocusConfig(
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.userSettings as any).upsert({
+  await prisma.userSettings.upsert({
     where: { userId: session.user.id },
     create: {
       userId: session.user.id,
-      focusConfig: blocks as object[],
+      focusConfig: blocks as unknown as Prisma.InputJsonValue,
     },
     update: {
-      focusConfig: blocks as object[],
+      focusConfig: blocks as unknown as Prisma.InputJsonValue,
     },
   });
 
@@ -112,11 +105,10 @@ export async function resetFocusConfig(): Promise<{ success: boolean }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.userSettings as any).upsert({
+  await prisma.userSettings.upsert({
     where: { userId: session.user.id },
-    create: { userId: session.user.id, focusConfig: null },
-    update: { focusConfig: null },
+    create: { userId: session.user.id, focusConfig: Prisma.JsonNull },
+    update: { focusConfig: Prisma.JsonNull },
   });
 
   revalidatePath('/settings');

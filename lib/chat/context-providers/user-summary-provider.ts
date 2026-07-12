@@ -1,4 +1,11 @@
 import { prisma } from '@/lib/db';
+import { buildLockedActivityFilter, getLockedProjectIds } from '@/lib/project-lock';
+import {
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  isValidTimeZone,
+  shiftCalendarDate,
+} from '@/lib/date-semantics';
 import { ContextStrategy, ConversationContext } from './types';
 
 /**
@@ -19,13 +26,30 @@ export class UserSummaryProvider implements ContextStrategy {
   }
 
   async provide(_conversation: ConversationContext, userId: string): Promise<string> {
-    const [user, activityCount, projectCount, goals] = await Promise.all([
+    const lockedIds = await getLockedProjectIds(userId);
+    const lockedFilter = buildLockedActivityFilter(lockedIds);
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    });
+    const timeZone =
+      settings?.timeZone && isValidTimeZone(settings.timeZone)
+        ? settings.timeZone
+        : DEFAULT_TIME_ZONE;
+    const [user, activityCount, projectCount, goalsCount, goals] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { name: true },
       }),
-      prisma.activity.count({ where: { userId } }),
-      prisma.project.count({ where: { userId, archived: false } }),
+      prisma.activity.count({ where: { userId, ...lockedFilter } }),
+      prisma.project.count({
+        where: {
+          userId,
+          archived: false,
+          ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
+        },
+      }),
+      prisma.goal.count({ where: { userId } }),
       prisma.goal.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
@@ -33,15 +57,15 @@ export class UserSummaryProvider implements ContextStrategy {
       }),
     ]);
 
-    const currentStreak = await this.calculateStreak(userId);
+    const currentStreak = await this.calculateStreak(userId, lockedFilter, timeZone);
 
-    let context = `\n\nUser Profile:\n- Name: ${user?.name || 'User'}\n- Total logged activities: ${activityCount}\n- Active projects: ${projectCount}\n- Current streak: ${currentStreak} days\n- Goals set: ${goals.length}`;
+    let context = `\n\nUser Profile:\n- Name: ${user?.name || 'User'}\n- Total logged activities: ${activityCount}\n- Active projects: ${projectCount}\n- Current streak: ${currentStreak} days\n- Goals set: ${goalsCount}`;
 
     if (_conversation.mode === 'goal-coach' && goals.length > 0) {
       context += `\n\nExisting Goals:\n${goals
         .map(
           goal =>
-            `- ${goal.title}${goal.deadline ? ` (due ${goal.deadline.toLocaleDateString()})` : ''}`
+            `- ${goal.title}${goal.deadline ? ` (due ${getCalendarDate(goal.deadline, timeZone)})` : ''}`
         )
         .join('\n')}`;
     }
@@ -49,29 +73,33 @@ export class UserSummaryProvider implements ContextStrategy {
     return context;
   }
 
-  private async calculateStreak(userId: string): Promise<number> {
+  private async calculateStreak(
+    userId: string,
+    lockedFilter: Record<string, unknown>,
+    timeZone: string
+  ): Promise<number> {
     const recentActivities = await prisma.activity.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      select: { createdAt: true },
+      where: { userId, ...lockedFilter },
+      orderBy: { logDate: 'desc' },
+      select: { logDate: true },
       take: 365,
     });
 
-    const activityDateStrings = recentActivities.map(a => a.createdAt.toLocaleDateString('en-CA'));
+    const activityDateStrings = recentActivities.map(a => a.logDate.toISOString().slice(0, 10));
     const uniqueDates = [...new Set(activityDateStrings)].sort((a, b) => b.localeCompare(a));
 
     if (uniqueDates.length === 0) return 0;
 
-    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
+    const today = getCalendarDate(new Date(), timeZone);
+    const yesterday = shiftCalendarDate(today, -1);
     const latest = uniqueDates[0];
 
     if (latest < yesterday) return 0;
 
     let streak = 1;
     for (let i = 1; i < uniqueDates.length; i++) {
-      const current = new Date(uniqueDates[i - 1] + 'T12:00:00');
       const previous = uniqueDates[i];
-      const expectedPrevious = new Date(current.getTime() - 86400000).toISOString().split('T')[0];
+      const expectedPrevious = shiftCalendarDate(uniqueDates[i - 1], -1);
 
       if (previous === expectedPrevious) {
         streak++;

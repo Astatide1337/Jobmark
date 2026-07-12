@@ -98,13 +98,16 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
         <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
           Weekly Record Trend
         </CardTitle>
-        <p className="text-muted-foreground text-sm">How consistently you are capturing usable work</p>
+        <p className="text-muted-foreground text-sm">
+          How consistently you are capturing usable work
+        </p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="h-52">
           {!hasData ? (
             <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-              No record trend yet. Capture a few entries to see whether coverage is holding up week to week.
+              No record trend yet. Capture a few entries to see whether coverage is holding up week
+              to week.
             </div>
           ) : !mounted ? null : (
             <ResponsiveContainer width="100%" height="100%">
@@ -241,34 +244,36 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
           {/* Donut Chart - RIGHT SIDE */}
           <div className="relative z-0 shrink-0">
             <div className="relative h-40 w-40">
-              {mounted && <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={70}
-                    paddingAngle={2}
-                    dataKey="count"
-                    nameKey="name"
-                    strokeWidth={0}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        className="cursor-pointer transition-opacity hover:opacity-80"
-                      />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip
-                    content={<PieTooltip />}
-                    isAnimationActive={false}
-                    wrapperStyle={{ zIndex: 50 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>}
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={2}
+                      dataKey="count"
+                      nameKey="name"
+                      strokeWidth={0}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          className="cursor-pointer transition-opacity hover:opacity-80"
+                        />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      content={<PieTooltip />}
+                      isAnimationActive={false}
+                      wrapperStyle={{ zIndex: 50 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
               {/* Center label */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="text-center">

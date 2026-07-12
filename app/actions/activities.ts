@@ -5,19 +5,26 @@
  * creating, retrieving, and calculating statistics for everything a user logs.
  *
  * Optimization:
- * - `getActivities` and `getActivityStats` now support an optional `userId`.
- *   This allows parent Server Components to fetch the session ONCE and pass
- *   the ID down, preventing "Session Waterfalls" (multiple redundant DB lookups).
- * - `getActivityStats` uses `Promise.all` to execute 7 independent Prisma
+ * - Read actions derive identity from the authenticated server session so
+ *   callers cannot select another tenant.
+ * - `getActivityStats` uses `Promise.all` to execute independent Prisma
  *   queries in parallel, drastically reducing page load latency.
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  getCalendarRange,
+  isValidTimeZone,
+  shiftCalendarDate,
+} from '@/lib/date-semantics';
 
 const activitySchema = z.object({
   content: z.string().min(10, 'Activity must be at least 10 characters').max(1000),
@@ -45,11 +52,22 @@ export async function createActivity(
   }
 
   const logDateStr = formData.get('logDate') as string | null;
+  const settings = logDateStr
+    ? null
+    : await prisma.userSettings.findUnique({
+        where: { userId: session.user.id },
+        select: { timeZone: true },
+      });
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const defaultLogDate = calendarDateToUtcMidnight(getCalendarDate(new Date(), timeZone));
 
   const rawData = {
     content: formData.get('content') as string,
     projectId: formData.get('projectId') as string | null,
-    logDate: logDateStr ? new Date(logDateStr) : new Date(),
+    logDate: logDateStr ? new Date(logDateStr) : defaultLogDate,
   };
 
   const result = activitySchema.safeParse(rawData);
@@ -62,40 +80,44 @@ export async function createActivity(
     };
   }
 
-  if (result.data.projectId) {
-    const lockedIds = await getLockedProjectIds(session.user.id);
-    if (lockedIds.includes(result.data.projectId)) {
-      return { success: false, message: 'Cannot add activities to a locked project' };
-    }
-  }
-
   try {
-    await prisma.activity.create({
-      data: {
-        userId: session.user.id,
-        content: result.data.content,
-        projectId: result.data.projectId || null,
-        logDate: result.data.logDate || new Date(),
-      },
+    await prisma.$transaction(async tx => {
+      if (result.data.projectId) {
+        const project = await tx.project.findFirst({
+          where: { id: result.data.projectId, userId: session.user.id },
+          select: { locked: true },
+        });
+        if (!project) throw new Error('Invalid project');
+        if (project.locked) throw new Error('Locked project');
+      }
+
+      await tx.activity.create({
+        data: {
+          userId: session.user.id,
+          content: result.data.content,
+          projectId: result.data.projectId || null,
+          logDate: result.data.logDate || defaultLogDate,
+        },
+      });
     });
 
     revalidatePath('/dashboard');
 
     return { success: true, message: 'Activity logged successfully' };
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === 'Invalid project' || error.message === 'Locked project')
+    ) {
+      return { success: false, message: 'The selected project is not available' };
+    }
     console.error('Failed to create activity:', error);
     return { success: false, message: 'Failed to save activity. Please try again.' };
   }
 }
 
-export async function getActivities(limit = 20, offset = 0, hideArchived = false, userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+export async function getActivities(limit = 20, offset = 0, hideArchived = false) {
+  const targetUserId = await requireUserId();
 
   const lockedIds = await getLockedProjectIds(targetUserId);
 
@@ -139,14 +161,8 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
   }));
 }
 
-export async function getActivityCount(userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return 0;
-    targetUserId = session.user.id;
-  }
+export async function getActivityCount() {
+  const targetUserId = await requireUserId();
 
   const lockedIds = await getLockedProjectIds(targetUserId);
 
@@ -183,66 +199,53 @@ export async function deleteActivity(activityId: string) {
   }
 }
 
-export async function getActivityStats(userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return {
-        thisMonth: 0,
-        today: 0,
-        thisWeek: 0,
-        recentDates: [],
-        projects: 0,
-        monthlyGoal: 20,
-        dailyGoal: 3,
-        weeklyGoal: 15,
-        totalCount: 0,
-      };
-    }
-    targetUserId = session.user.id;
-  }
+export async function getActivityStats() {
+  const targetUserId = await requireUserId();
 
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  // Get start of week (Sunday = 0)
-  const dayOfWeek = now.getDay();
-  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+  const userSettings = await prisma.userSettings.findUnique({
+    where: { userId: targetUserId },
+    select: { timeZone: true },
+  });
+  const timeZone =
+    userSettings?.timeZone && isValidTimeZone(userSettings.timeZone)
+      ? userSettings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const todayDate = getCalendarDate(now, timeZone);
+  const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
+  const startOfDay = calendarDateToUtcMidnight(todayDate);
+  const endOfDay = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 1));
+  const dayOfWeek = new Date(`${todayDate}T00:00:00Z`).getUTCDay();
+  const startOfWeek = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, -dayOfWeek));
+  const endOfWeek = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 7 - dayOfWeek));
 
   const lockedIds = await getLockedProjectIds(targetUserId);
   const lockedFilter = buildLockedActivityFilter(lockedIds);
 
-  const [user, settings, thisMonthCount, todayCount, thisWeekCount, projectCount, totalCount] =
+  const [settings, thisMonthCount, todayCount, thisWeekCount, projectCount, totalCount] =
     await Promise.all([
-      prisma.user.findUnique({
-        where: { id: targetUserId },
-        select: { monthlyActivityGoal: true },
-      }),
       prisma.userSettings.findUnique({
         where: { userId: targetUserId },
-        select: { dailyTarget: true, weeklyTarget: true },
+        select: { dailyTarget: true, weeklyTarget: true, monthlyTarget: true },
       }),
       prisma.activity.count({
         where: {
           userId: targetUserId,
-          logDate: { gte: startOfMonth },
+          logDate: { gte: monthRange.start, lt: monthRange.endExclusive },
           ...lockedFilter,
         },
       }),
       prisma.activity.count({
         where: {
           userId: targetUserId,
-          logDate: { gte: startOfDay },
+          logDate: { gte: startOfDay, lt: endOfDay },
           ...lockedFilter,
         },
       }),
       prisma.activity.count({
         where: {
           userId: targetUserId,
-          logDate: { gte: startOfWeek },
+          logDate: { gte: startOfWeek, lt: endOfWeek },
           ...lockedFilter,
         },
       }),
@@ -250,7 +253,6 @@ export async function getActivityStats(userId?: string) {
         where: {
           userId: targetUserId,
           archived: false,
-          locked: false,
           ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
         },
       }),
@@ -262,19 +264,22 @@ export async function getActivityStats(userId?: string) {
       }),
     ]);
 
-  // Use createdAt (actual creation timestamp) for streak - more reliable than logDate
+  // Return date-only values at noon UTC so browser-local formatting cannot move
+  // a represented calendar date across midnight.
   const recentActivities = await prisma.activity.findMany({
     where: {
       userId: targetUserId,
       ...lockedFilter,
     },
-    orderBy: { createdAt: 'desc' },
-    select: { createdAt: true },
+    orderBy: { logDate: 'desc' },
+    select: { logDate: true },
     take: 365,
   });
 
   // Return full ISO timestamps - client will convert to local dates
-  const recentDates = recentActivities.map(a => a.createdAt.toISOString());
+  const recentDates = recentActivities.map(
+    a => `${a.logDate.toISOString().slice(0, 10)}T12:00:00.000Z`
+  );
 
   return {
     thisMonth: thisMonthCount,
@@ -282,7 +287,7 @@ export async function getActivityStats(userId?: string) {
     thisWeek: thisWeekCount,
     recentDates,
     projects: projectCount,
-    monthlyGoal: user?.monthlyActivityGoal ?? 20,
+    monthlyGoal: settings?.monthlyTarget ?? 40,
     dailyGoal: settings?.dailyTarget ?? 3,
     weeklyGoal: settings?.weeklyTarget ?? 15,
     totalCount,

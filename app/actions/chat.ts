@@ -10,13 +10,15 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 // Conversation modes
 export type ConversationMode = 'general' | 'goal-coach' | 'interview';
+const conversationModeSchema = z.enum(['general', 'goal-coach', 'interview']);
 
 // Types
 export interface ConversationData {
@@ -59,13 +61,40 @@ export async function createConversation(
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
+  if (!conversationModeSchema.safeParse(mode).success || (initialMessage?.length ?? 0) > 8_000) {
+    throw new Error('Invalid conversation input');
+  }
+
+  const [project, goal, contact] = await Promise.all([
+    projectId
+      ? prisma.project.findFirst({
+          where: { id: projectId, userId: session.user.id },
+          select: { id: true },
+        })
+      : null,
+    goalId
+      ? prisma.goal.findFirst({
+          where: { id: goalId, userId: session.user.id },
+          select: { id: true },
+        })
+      : null,
+    contactId
+      ? prisma.contact.findFirst({
+          where: { id: contactId, userId: session.user.id },
+          select: { id: true },
+        })
+      : null,
+  ]);
+  if ((projectId && !project) || (goalId && !goal) || (contactId && !contact)) {
+    throw new Error('Invalid conversation context');
+  }
 
   const titles: Record<string, string> = {
     'goal-coach': 'Goal Setting Session',
     interview: 'Mock Interview',
   };
 
-  const conversation = await (prisma.conversation as any).create({
+  const conversation = await prisma.conversation.create({
     data: {
       userId: session.user.id,
       mode,
@@ -112,19 +141,13 @@ export async function createConversation(
 /**
  * Get list of user's conversations
  */
-export async function getConversations(limit = 20, userId?: string): Promise<ConversationData[]> {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+export async function getConversations(limit = 20): Promise<ConversationData[]> {
+  const targetUserId = await requireUserId();
+  limit = Math.max(1, Math.min(Math.trunc(limit) || 20, 100));
 
   const lockedIds = await getLockedProjectIds(targetUserId);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const conversations = await (prisma.conversation as any).findMany({
+  const conversations = await prisma.conversation.findMany({
     where: {
       userId: targetUserId,
       ...buildLockedActivityFilter(lockedIds),
@@ -139,10 +162,10 @@ export async function getConversations(limit = 20, userId?: string): Promise<Con
     },
   });
 
-  return conversations.map((c: ConversationData) => ({
+  return conversations.map(c => ({
     id: c.id,
     title: c.title,
-    mode: c.mode,
+    mode: c.mode as ConversationMode,
     projectId: c.projectId,
     goalId: c.goalId,
     contactId: c.contactId,
@@ -164,8 +187,7 @@ export async function getConversation(
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const conversation = await (prisma.conversation as any).findUnique({
+  const conversation = await prisma.conversation.findUnique({
     where: {
       id: conversationId,
       userId: session.user.id,
@@ -241,6 +263,7 @@ export async function renameConversation(conversationId: string, title: string) 
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
+  if (!title.trim() || title.length > 120) throw new Error('Invalid conversation title');
 
   await prisma.conversation.update({
     where: {
@@ -268,6 +291,49 @@ export async function updateConversationContext(
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
+  if (
+    reportIds &&
+    (reportIds.length > 50 || reportIds.some(id => typeof id !== 'string' || id.length > 100))
+  ) {
+    throw new Error('Invalid report selection');
+  }
+
+  const uniqueReportIds = reportIds ? [...new Set(reportIds)] : undefined;
+  const [project, goal, contact, reports] = await Promise.all([
+    projectId
+      ? prisma.project.findFirst({
+          where: { id: projectId, userId: session.user.id },
+          select: { id: true, locked: true },
+        })
+      : null,
+    goalId
+      ? prisma.goal.findFirst({
+          where: { id: goalId, userId: session.user.id },
+          select: { id: true },
+        })
+      : null,
+    contactId
+      ? prisma.contact.findFirst({
+          where: { id: contactId, userId: session.user.id },
+          select: { id: true },
+        })
+      : null,
+    uniqueReportIds
+      ? prisma.report.findMany({
+          where: { id: { in: uniqueReportIds }, userId: session.user.id },
+          select: { id: true },
+        })
+      : null,
+  ]);
+  if (
+    (projectId && !project) ||
+    (goalId && !goal) ||
+    (contactId && !contact) ||
+    (uniqueReportIds && reports && reports.length !== uniqueReportIds.length) ||
+    (project?.locked && (await getLockedProjectIds(session.user.id)).includes(project.id))
+  ) {
+    throw new Error('Invalid conversation context');
+  }
 
   const data: {
     projectId?: string | null;
@@ -281,12 +347,11 @@ export async function updateConversationContext(
   if (reportIds !== undefined) {
     // Replace the full set of connected reports
     data.reports = {
-      set: reportIds.map(id => ({ id })),
+      set: uniqueReportIds!.map(id => ({ id })),
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.conversation as any).update({
+  await prisma.conversation.update({
     where: {
       id: conversationId,
       userId: session.user.id,

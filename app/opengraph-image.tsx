@@ -18,121 +18,119 @@ export const contentType = 'image/png';
 
 export default function OGImage() {
   return new ImageResponse(
-    (
+    <div
+      style={{
+        background: '#0a0a0a',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '80px',
+        position: 'relative',
+      }}
+    >
       <div
         style={{
-          background: '#0a0a0a',
-          width: '100%',
-          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 500,
+          height: 500,
+          background:
+            'radial-gradient(circle at top left, rgba(168,139,100,0.18), transparent 65%)',
           display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '80px',
-          position: 'relative',
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 20,
+          zIndex: 1,
         }}
       >
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: 500,
-            height: 500,
-            background:
-              'radial-gradient(circle at top left, rgba(168,139,100,0.18), transparent 65%)',
             display: 'flex',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 20,
-            zIndex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 64,
+            height: 64,
+            borderRadius: 14,
+            border: '1px solid rgba(168,139,100,0.35)',
+            background: 'rgba(168,139,100,0.12)',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 64,
-              height: 64,
-              borderRadius: 14,
-              border: '1px solid rgba(168,139,100,0.35)',
-              background: 'rgba(168,139,100,0.12)',
-            }}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path d="M12 20h9" stroke="#a88b64" strokeWidth="2" strokeLinecap="round" />
-              <path
-                d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
-                stroke="#a88b64"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div
-            style={{
-              fontSize: 56,
-              fontWeight: 700,
-              color: '#f5f0e8',
-              letterSpacing: '-1.5px',
-              lineHeight: 1,
-            }}
-          >
-            Jobmark
-          </div>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20h9" stroke="#a88b64" strokeWidth="2" strokeLinecap="round" />
+            <path
+              d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+              stroke="#a88b64"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: 16,
-            maxWidth: 500,
-            zIndex: 1,
+            fontSize: 56,
+            fontWeight: 700,
+            color: '#f5f0e8',
+            letterSpacing: '-1.5px',
+            lineHeight: 1,
           }}
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#a88b64',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Career OS
-          </div>
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: 700,
-              color: '#f5f0e8',
-              textAlign: 'right',
-              lineHeight: 1.15,
-              letterSpacing: '-1px',
-            }}
-          >
-            Your Career,{'\n'}On Record
-          </div>
-          <div
-            style={{
-              fontSize: 18,
-              color: 'rgba(245,240,232,0.55)',
-              textAlign: 'right',
-              lineHeight: 1.5,
-            }}
-          >
-            Document work. Build evidence.{'\n'}Turn it into reviews that land.
-          </div>
+          Jobmark
         </div>
       </div>
-    ),
-    { ...size },
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 16,
+          maxWidth: 500,
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#a88b64',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Career OS
+        </div>
+        <div
+          style={{
+            fontSize: 48,
+            fontWeight: 700,
+            color: '#f5f0e8',
+            textAlign: 'right',
+            lineHeight: 1.15,
+            letterSpacing: '-1px',
+          }}
+        >
+          Your Career,{'\n'}On Record
+        </div>
+        <div
+          style={{
+            fontSize: 18,
+            color: 'rgba(245,240,232,0.55)',
+            textAlign: 'right',
+            lineHeight: 1.5,
+          }}
+        >
+          Document work. Build evidence.{'\n'}Turn it into reviews that land.
+        </div>
+      </div>
+    </div>,
+    { ...size }
   );
 }

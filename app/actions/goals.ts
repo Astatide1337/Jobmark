@@ -6,9 +6,10 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 export type GoalData = {
   id: string;
@@ -19,14 +20,14 @@ export type GoalData = {
   updatedAt: string;
 };
 
-export async function getGoals(userId?: string): Promise<GoalData[]> {
-  let targetUserId = userId;
+const goalInputSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  deadline: z.date().nullable().optional(),
+  why: z.string().max(500).optional(),
+});
 
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+export async function getGoals(): Promise<GoalData[]> {
+  const targetUserId = await requireUserId();
 
   const goals = await prisma.goal.findMany({
     where: { userId: targetUserId },
@@ -44,14 +45,16 @@ export async function getGoals(userId?: string): Promise<GoalData[]> {
 export async function createGoal(data: { title: string; deadline?: Date | null; why?: string }) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  const parsed = goalInputSchema.safeParse(data);
+  if (!parsed.success) return { success: false, message: 'Invalid goal' };
 
   try {
     const goal = await prisma.goal.create({
       data: {
         userId: session.user.id,
-        title: data.title,
-        deadline: data.deadline,
-        why: data.why,
+        title: parsed.data.title,
+        deadline: parsed.data.deadline,
+        why: parsed.data.why,
       },
     });
 
@@ -81,6 +84,8 @@ export async function updateGoal(
 ) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  const parsed = goalInputSchema.partial().safeParse(data);
+  if (!parsed.success) return { success: false, message: 'Invalid goal' };
 
   try {
     const existing = await prisma.goal.findUnique({
@@ -93,7 +98,7 @@ export async function updateGoal(
 
     const goal = await prisma.goal.update({
       where: { id },
-      data,
+      data: parsed.data,
     });
 
     const goalData: GoalData = {

@@ -32,10 +32,10 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
   // Fetch projects and vault state in parallel
   const [projects, vaultStatus, lockedProjects] = await Promise.all([
     currentFilter !== 'locked'
-      ? getProjects(currentFilter as 'active' | 'archived', session.user.id)
+      ? getProjects(currentFilter as 'active' | 'archived')
       : Promise.resolve([]),
     getVaultStatus(),
-    getVaultProjects(session.user.id),
+    getVaultProjects(),
   ]);
 
   return (

@@ -513,9 +513,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Tone</p>
-                  <p className="text-foreground font-medium">
-                    {getToneLabel(config.tone)}
-                  </p>
+                  <p className="text-foreground font-medium">{getToneLabel(config.tone)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Estimated entries</p>

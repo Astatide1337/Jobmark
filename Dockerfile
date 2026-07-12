@@ -3,7 +3,8 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+COPY prisma/schema.prisma ./prisma/schema.prisma
+RUN npm ci
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -39,6 +40,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
 
 USER nextjs
 EXPOSE 3000

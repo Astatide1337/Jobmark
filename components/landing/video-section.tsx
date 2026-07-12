@@ -28,26 +28,26 @@ export function VideoSection() {
               <span className="text-primary font-mono text-sm tracking-wide uppercase">Demo</span>
             </motion.div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
-          >
-            Product <span className="text-primary">walkthrough</span>
-          </motion.h2>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
+            >
+              Product <span className="text-primary">walkthrough</span>
+            </motion.h2>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-muted-foreground max-w-lg text-lg leading-relaxed"
-          >
-            A quick, concrete look at how the career record flows from capture to review-ready
-            output.
-          </motion.p>
+              className="text-muted-foreground max-w-lg text-lg leading-relaxed"
+            >
+              A quick, concrete look at how the career record flows from capture to review-ready
+              output.
+            </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}

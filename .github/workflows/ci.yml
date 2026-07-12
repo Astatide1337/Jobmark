@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: jobmark
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d jobmark"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      AUTH_SECRET: ci-only-secret-that-is-not-used-for-production
+      AUTH_GOOGLE_ID: ci-google-client
+      AUTH_GOOGLE_SECRET: ci-google-secret
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/jobmark
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+        env:
+          INTEGRATION_TESTS: '1'
+      - run: npm run build
+      - run: docker build --tag jobmark-ci .
+      - name: Start container
+        run: >-
+          docker run --detach --rm --name jobmark-ci-container --publish 3000:3000
+          --env DATABASE_URL="$DATABASE_URL"
+          --env AUTH_SECRET="$AUTH_SECRET"
+          --env AUTH_GOOGLE_ID="$AUTH_GOOGLE_ID"
+          --env AUTH_GOOGLE_SECRET="$AUTH_GOOGLE_SECRET"
+          jobmark-ci
+      - name: Smoke test container
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs jobmark-ci-container
+          exit 1
+      - name: Stop container
+        if: always()
+        run: docker stop jobmark-ci-container || true

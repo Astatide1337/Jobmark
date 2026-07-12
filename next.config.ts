@@ -12,7 +12,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // No special output mode needed for Vercel — it handles optimization automatically
+  // Required by the production Docker runner, which starts Next's standalone server.
+  output: 'standalone',
 };
 
 export default nextConfig;

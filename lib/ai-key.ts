@@ -1,10 +1,8 @@
 /**
  * AES-256-GCM Encryption for User-Supplied API Keys
  *
- * Why AUTH_SECRET: The encryption key is derived from AUTH_SECRET (the same
- * environment variable used by Auth.js and the vault feature). This avoids
- * introducing a new secret to manage — the app already can't run without
- * AUTH_SECRET, so it's a safe anchor for all symmetric encryption in the project.
+ * The key uses the dedicated encryption secret when configured, then the
+ * Auth.js secret for backwards-compatible decryption of existing values.
  *
  * Stored ciphertext format: `iv:authTag:ciphertext`
  * - All three components are base64-encoded and joined by colons.
@@ -18,23 +16,21 @@
  * `GEMINI_API_KEY` environment variable without crashing the request.
  */
 
+import 'server-only';
 import crypto from 'crypto';
 
 /**
- * Derive a 32-byte AES key from AUTH_SECRET using SHA-256.
- * Uses `AUTH_SECRET` (same algorithm as `lib/project-lock.ts`, includes the
- * `NEXTAUTH_SECRET` legacy fallback for true consistency with the vault pattern).
+ * Derive a 32-byte AES key from the configured application secret using SHA-256.
  */
 function getEncryptionKey(): Buffer {
-  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    console.warn(
-      '[jobmark] AUTH_SECRET is not set — API keys are encrypted with a predictable fallback key. Set AUTH_SECRET in your environment for production use.'
-    );
+  const secret =
+    process.env.JOBMARK_ENCRYPTION_KEY || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('JOBMARK_ENCRYPTION_KEY or AUTH_SECRET is required in production');
   }
   return crypto
     .createHash('sha256')
-    .update(secret ?? 'fallback-dev-secret')
+    .update(secret || 'development-only-fallback-secret')
     .digest();
 }
 

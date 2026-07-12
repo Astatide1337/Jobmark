@@ -125,8 +125,8 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           Practical articles for building a stronger work record
         </h1>
         <p className="text-muted-foreground mt-4 max-w-3xl text-sm sm:text-base">
-          Read practical playbooks that help you capture better evidence, write clearer updates,
-          and prepare stronger reviews inside Jobmark.
+          Read practical playbooks that help you capture better evidence, write clearer updates, and
+          prepare stronger reviews inside Jobmark.
         </p>
       </section>
 
@@ -193,10 +193,16 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
                 in Jobmark.
               </p>
               <div className="mt-4 space-y-2 text-sm">
-                <Link href="/dashboard" className="text-primary inline-flex font-medium hover:underline">
+                <Link
+                  href="/dashboard"
+                  className="text-primary inline-flex font-medium hover:underline"
+                >
                   Open dashboard
                 </Link>
-                <Link href="/reports?tab=new" className="text-primary block font-medium hover:underline">
+                <Link
+                  href="/reports?tab=new"
+                  className="text-primary block font-medium hover:underline"
+                >
                   Build a summary
                 </Link>
                 <Link href="/chat" className="text-primary block font-medium hover:underline">

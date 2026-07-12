@@ -146,9 +146,7 @@ export function VaultPasswordDialog({
             </div>
           )}
 
-          {error && (
-            <p className="text-destructive text-sm font-medium">{error}</p>
-          )}
+          {error && <p className="text-destructive text-sm font-medium">{error}</p>}
 
           {mode === 'setup' && (
             <div className="bg-destructive/5 border-destructive/20 flex items-start gap-2.5 rounded-lg border p-3">

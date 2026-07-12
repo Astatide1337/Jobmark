@@ -1,8 +1,8 @@
 /**
  * Comprehensive Seed Script for Analytics Testing
- * 
+ *
  * Run with: npx tsx prisma/seed-analytics.ts
- * 
+ *
  * Creates:
  * - 3 test projects with different colors
  * - 6 months of varied activity data (realistic patterns)
@@ -10,14 +10,14 @@
  * - Streak-building data
  */
 
-import "dotenv/config";
-import { prisma } from "../lib/db";
+import 'dotenv/config';
+import { prisma } from '../lib/db';
 
 async function main() {
   const user = await prisma.user.findFirst();
-  
+
   if (!user) {
-    console.error("No user found! Please sign in first.");
+    console.error('No user found! Please sign in first.');
     process.exit(1);
   }
 
@@ -25,9 +25,13 @@ async function main() {
 
   // Create test projects
   const projectsData = [
-    { name: "Job Search", color: "#10b981", description: "Tracking job applications and interviews" },
-    { name: "Portfolio Website", color: "#8b5cf6", description: "Building personal portfolio" },
-    { name: "Learning React", color: "#f59e0b", description: "React tutorials and projects" },
+    {
+      name: 'Job Search',
+      color: '#10b981',
+      description: 'Tracking job applications and interviews',
+    },
+    { name: 'Portfolio Website', color: '#8b5cf6', description: 'Building personal portfolio' },
+    { name: 'Learning React', color: '#f59e0b', description: 'React tutorials and projects' },
   ];
 
   const projects: { id: string; name: string }[] = [];
@@ -50,41 +54,41 @@ async function main() {
 
   // Activity content templates
   const activities = {
-    "Job Search": [
-      "Applied to Senior Developer position at TechCorp",
-      "Updated resume with latest project experience",
-      "Prepared for technical interview",
-      "Completed take-home coding challenge",
-      "Had phone screen with recruiter",
-      "Researched company culture and values",
-      "Sent follow-up email to hiring manager",
-      "Practiced system design questions",
-      "Reviewed job description and requirements",
-      "Connected with employees on LinkedIn",
+    'Job Search': [
+      'Applied to Senior Developer position at TechCorp',
+      'Updated resume with latest project experience',
+      'Prepared for technical interview',
+      'Completed take-home coding challenge',
+      'Had phone screen with recruiter',
+      'Researched company culture and values',
+      'Sent follow-up email to hiring manager',
+      'Practiced system design questions',
+      'Reviewed job description and requirements',
+      'Connected with employees on LinkedIn',
     ],
-    "Portfolio Website": [
-      "Designed hero section layout",
-      "Implemented responsive navigation",
-      "Added project showcase gallery",
-      "Optimized images for web",
-      "Set up contact form with validation",
-      "Added dark mode toggle",
-      "Deployed to Vercel",
-      "Fixed mobile layout issues",
-      "Added animation effects",
-      "Wrote project case studies",
+    'Portfolio Website': [
+      'Designed hero section layout',
+      'Implemented responsive navigation',
+      'Added project showcase gallery',
+      'Optimized images for web',
+      'Set up contact form with validation',
+      'Added dark mode toggle',
+      'Deployed to Vercel',
+      'Fixed mobile layout issues',
+      'Added animation effects',
+      'Wrote project case studies',
     ],
-    "Learning React": [
-      "Completed hooks tutorial",
-      "Built todo app from scratch",
-      "Learned about useEffect cleanup",
-      "Studied React Query patterns",
-      "Practiced state management",
-      "Built custom hook for form handling",
-      "Reviewed context API usage",
-      "Completed Zustand tutorial",
-      "Built data fetching component",
-      "Studied Server Components",
+    'Learning React': [
+      'Completed hooks tutorial',
+      'Built todo app from scratch',
+      'Learned about useEffect cleanup',
+      'Studied React Query patterns',
+      'Practiced state management',
+      'Built custom hook for form handling',
+      'Reviewed context API usage',
+      'Completed Zustand tutorial',
+      'Built data fetching component',
+      'Studied Server Components',
     ],
   };
 
@@ -102,19 +106,21 @@ async function main() {
   let totalCreated = 0;
   const currentDate = new Date(sixMonthsAgo);
 
-  console.log(`\nGenerating activities from ${sixMonthsAgo.toDateString()} to ${now.toDateString()}...`);
+  console.log(
+    `\nGenerating activities from ${sixMonthsAgo.toDateString()} to ${now.toDateString()}...`
+  );
 
   while (currentDate <= now) {
     const dayOfWeek = currentDate.getDay();
-    
+
     // More likely to have activities on weekdays
     const baseChance = dayOfWeek === 0 || dayOfWeek === 6 ? 0.4 : 0.75;
-    
+
     // Random number of activities (0-4) weighted by day
     let numActivities = 0;
     if (Math.random() < baseChance) {
       numActivities = Math.floor(Math.random() * 4) + 1;
-      
+
       // Occasionally have very productive days
       if (Math.random() < 0.1) {
         numActivities = Math.floor(Math.random() * 3) + 5; // 5-7 activities
@@ -151,11 +157,11 @@ async function main() {
   }
 
   // Add a streak for recent days (last 7 days guaranteed)
-  console.log("\nEnsuring recent streak...");
+  console.log('\nEnsuring recent streak...');
   for (let i = 0; i < 7; i++) {
     const date = new Date();
     date.setDate(date.getDate() - i);
-    
+
     const existingToday = await prisma.activity.findFirst({
       where: {
         userId: user.id,
@@ -186,11 +192,11 @@ async function main() {
   }
 
   console.log(`\n✅ Created ${totalCreated} activities`);
-  console.log("\nRefresh your Insights page to see the data!");
+  console.log('\nRefresh your Insights page to see the data!');
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error(e);
     process.exit(1);
   })

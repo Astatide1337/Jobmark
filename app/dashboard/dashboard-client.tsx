@@ -49,6 +49,12 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import type { GoalData } from '@/app/actions/goals';
 import type { UserSettingsData } from '@/app/actions/settings';
+import {
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  isValidTimeZone,
+  shiftCalendarDate,
+} from '@/lib/date-semantics';
 
 const initialState: ActivityFormState = {
   success: false,
@@ -875,6 +881,7 @@ type Activity = Awaited<ReturnType<typeof getActivities>>[number];
 interface ActivityTimelineProps {
   activities: Activity[];
   totalCount?: number;
+  initialTimeZone?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -882,7 +889,15 @@ const PAGE_SIZE = 20;
 export function ActivityTimeline({
   activities: initialActivities,
   totalCount,
+  initialTimeZone,
 }: ActivityTimelineProps) {
+  const { settings } = useSettings();
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : initialTimeZone && isValidTimeZone(initialTimeZone)
+        ? initialTimeZone
+        : DEFAULT_TIME_ZONE;
   const [mounted, setMounted] = useState(false);
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -946,7 +961,7 @@ export function ActivityTimeline({
     );
   }
 
-  const groupedActivities = groupByDate(visibleActivities);
+  const groupedActivities = groupByDate(visibleActivities, timeZone);
 
   return (
     <div className="space-y-8">
@@ -955,7 +970,7 @@ export function ActivityTimeline({
           <div key={dateKey}>
             <div className="mb-4 flex items-center gap-3">
               <h3 className="text-muted-foreground text-sm font-medium">
-                {formatDateHeader(dateKey)}
+                {formatDateHeader(dateKey, timeZone)}
               </h3>
               <div className="bg-border/50 h-px flex-1" />
               <span className="text-muted-foreground text-xs">
@@ -968,6 +983,7 @@ export function ActivityTimeline({
                 <ActivityCard
                   key={activity.id}
                   activity={activity}
+                  timeZone={timeZone}
                   onOptimisticDelete={() => handleOptimisticDelete(activity.id)}
                   onUndoDelete={() => handleUndoDelete(activity.id)}
                 />
@@ -1015,13 +1031,14 @@ export function ActivityTimeline({
 
 interface ActivityCardProps {
   activity: Activity;
+  timeZone: string;
   onOptimisticDelete: () => void;
   onUndoDelete: () => void;
 }
 
-function ActivityCard({ activity, onOptimisticDelete, onUndoDelete }: ActivityCardProps) {
+function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: ActivityCardProps) {
   const logDateYMD = getLogDateYMD(activity.logDate);
-  const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt);
+  const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt, timeZone);
 
   return (
     <Card className="bg-card/40 border-border/40 group hover:bg-card/60 hover:shadow-primary/5 rounded-xl transition-all duration-300 hover:shadow-md">
@@ -1136,11 +1153,14 @@ function TimelineEmptyState() {
   );
 }
 
-function groupByDate(activities: Activity[]): { dateKey: string; activities: Activity[] }[] {
+function groupByDate(
+  activities: Activity[],
+  timeZone: string
+): { dateKey: string; activities: Activity[] }[] {
   const groups: Record<string, Activity[]> = {};
 
   activities.forEach(activity => {
-    const dateKey = getCreatedAtLocalYMD(activity.createdAt);
+    const dateKey = getCreatedAtLocalYMD(activity.createdAt, timeZone);
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -1167,9 +1187,9 @@ function getLogDateYMD(date: string | Date): string {
   ).padStart(2, '0')}`;
 }
 
-function getCreatedAtLocalYMD(date: string | Date): string {
+function getCreatedAtLocalYMD(date: string | Date, timeZone: string): string {
   const d = new Date(date);
-  return d.toLocaleDateString('en-CA');
+  return getCalendarDate(d, timeZone);
 }
 
 function parseLocalYMD(ymd: string): Date {
@@ -1177,13 +1197,14 @@ function parseLocalYMD(ymd: string): Date {
   return new Date(year, month - 1, day);
 }
 
-function formatDateHeader(dateKey: string): string {
+function formatDateHeader(dateKey: string, timeZone: string): string {
   const date = parseLocalYMD(dateKey);
+  const today = getCalendarDate(new Date(), timeZone);
 
-  if (isToday(date)) {
+  if (dateKey === today) {
     return 'Today';
   }
-  if (isYesterday(date)) {
+  if (dateKey === shiftCalendarDate(today, -1)) {
     return 'Yesterday';
   }
 

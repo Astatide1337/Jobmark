@@ -5,8 +5,8 @@
  * "bird's-eye view" of recent wins, current goals, and productivity stats.
  *
  * Logic:
- * - Session Lifting: Fetches the session once and passes `userId` to
- *   all subsequent data calls to avoid DB waterfalls.
+ * - Server-side identity: Read actions derive the tenant from the authenticated
+ *   session rather than trusting a caller-supplied user ID.
  * - Dynamic Greeting: Calculates a time-of-day greeting (Morning/Afternoon/Evening)
  *   server-side to ensure it's correct on first paint.
  * - Hydration Safety: Passes `serverDate` to the `StatsCards` to prevent
@@ -27,6 +27,7 @@ import {
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 
 import { getGoals } from '@/app/actions/goals';
 import { getReports } from '@/app/actions/reports';
@@ -38,24 +39,28 @@ export default async function DashboardPage() {
     redirect('/');
   }
 
-  const userId = session.user.id;
-
   // Get user settings first to know if we should hide archived
-  const settings = await getUserSettings(userId);
+  const settings = await getUserSettings();
   const hideArchived = settings?.hideArchived ?? false;
 
   const [activities, stats, projects, goals, reports] = await Promise.all([
-    getActivities(20, 0, hideArchived, userId),
-    getActivityStats(userId),
-    getProjects('active', userId),
-    getGoals(userId),
-    getReports(userId),
+    getActivities(20, 0, hideArchived),
+    getActivityStats(),
+    getProjects('active'),
+    getGoals(),
+    getReports(),
   ]);
 
   const totalCount = stats.totalCount;
 
   // Get time-appropriate greeting
-  const hour = new Date().getHours();
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format()
+  );
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
@@ -133,7 +138,11 @@ export default async function DashboardPage() {
               </span>
             </span>
           </div>
-          <ActivityTimeline activities={activities} totalCount={totalCount} />
+          <ActivityTimeline
+            activities={activities}
+            totalCount={totalCount}
+            initialTimeZone={timeZone}
+          />
         </div>
       </div>
     </DashboardShell>

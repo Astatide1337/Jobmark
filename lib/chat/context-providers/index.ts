@@ -8,6 +8,7 @@
  * Scalability: To add a new type of context (e.g., "Skill Recommendations"),
  * simply create a new provider class and add it to the `strategies` array here.
  */
+import 'server-only';
 import { ContextStrategy, ConversationContext } from './types';
 import { UserSummaryProvider } from './user-summary-provider';
 import { ProjectContextProvider } from './project-provider';

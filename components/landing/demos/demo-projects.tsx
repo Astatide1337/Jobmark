@@ -162,7 +162,9 @@ export function DemoProjects() {
           <ProjectList
             projects={filteredItems}
             initialFilter={filter}
-            onTabChange={val => setFilter(val as any)}
+            onTabChange={val => {
+              if (val === 'active' || val === 'archived') setFilter(val);
+            }}
             onCreate={handleCreate}
             onUpdate={handleUpdate}
             onArchive={handleArchive}

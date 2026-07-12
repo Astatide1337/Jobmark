@@ -17,6 +17,7 @@ import { redirect } from 'next/navigation';
 import DecompressionWizard from './_components/decompression-wizard';
 import { getFocusConfig } from '@/app/actions/focus-config';
 import type { ResolvedFocusBlock } from '@/lib/focus/types';
+import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 
 export const metadata = {
   title: 'Focus | Jobmark',
@@ -28,15 +29,27 @@ export default async function FocusPage() {
   if (!session?.user?.id) {
     redirect('/auth/signin');
   }
-
   const userId = session.user.id;
 
-  // 1. Today's activity stats (still needed for some background context if ever revived, but focus on the blocks)
+  // 1. Today's activity stats use the user's calendar day, not the server's timezone.
+  const userSettings = await prisma.userSettings.findUnique({
+    where: { userId },
+    select: { timeZone: true, primaryGoal: true, whyStatement: true },
+  });
+  const timeZone =
+    userSettings?.timeZone && isValidTimeZone(userSettings.timeZone)
+      ? userSettings.timeZone
+      : DEFAULT_TIME_ZONE;
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayRange = getCalendarRange({
+    kind: 'custom',
+    customStartDate: now,
+    customEndDate: now,
+    timeZone,
+  });
 
   const todaysActivities = await prisma.activity.findMany({
-    where: { userId, logDate: { gte: startOfDay } },
+    where: { userId, logDate: { gte: todayRange.start, lt: todayRange.endExclusive } },
     include: { project: true },
     orderBy: { createdAt: 'desc' },
   });
@@ -45,9 +58,8 @@ export default async function FocusPage() {
   const lastProjectName = todaysActivities[0]?.project?.name || null;
 
   // 2. Load focus config + user data in parallel
-  const [rawBlocks, userSettings, goals] = await Promise.all([
-    getFocusConfig(userId),
-    prisma.userSettings.findUnique({ where: { userId } }),
+  const [rawBlocks, goals] = await Promise.all([
+    getFocusConfig(),
     prisma.goal.findMany({
       where: { userId },
       orderBy: { createdAt: 'asc' },

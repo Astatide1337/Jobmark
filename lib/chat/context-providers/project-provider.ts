@@ -36,9 +36,9 @@ export class ProjectContextProvider implements ContextStrategy {
       include: {
         _count: { select: { activities: true } },
         activities: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { logDate: 'desc' },
           take: conversation.mode === 'interview' ? 20 : 10,
-          select: { content: true, createdAt: true },
+          select: { content: true, logDate: true },
         },
       },
     });
@@ -48,10 +48,7 @@ export class ProjectContextProvider implements ContextStrategy {
     if (conversation.mode === 'interview') {
       const timeline = project.activities
         .map(a => {
-          const dateStr = a.createdAt.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          });
+          const dateStr = a.logDate.toISOString().slice(0, 10);
           return `- [${dateStr}] ${a.content}`;
         })
         .join('\n');

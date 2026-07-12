@@ -10,17 +10,15 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
+import { getLockedProjectIds, filterLockedReports, isVaultUnlocked } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { encryptApiKey, decryptApiKey } from '@/lib/ai-key';
-import {
-  PROVIDER_CONFIGS,
-  isValidProvider,
-  type AIProvider,
-} from '@/lib/ai-config';
+import { PROVIDER_CONFIGS, isValidProvider, type AIProvider } from '@/lib/ai-config';
 import { Prisma } from '@prisma/client';
+import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
+import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,6 +40,7 @@ export type UserSettingsData = {
   // Appearance
   themePreset: string;
   themeMode: string;
+  timeZone: string;
 
   // Preferences
   hideArchived: boolean;
@@ -82,14 +81,8 @@ function parseAiKeys(raw: Prisma.JsonValue): Record<string, string> {
 // Read settings
 // ---------------------------------------------------------------------------
 
-export async function getUserSettings(userId?: string): Promise<UserSettingsData | null> {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return null;
-    targetUserId = session.user.id;
-  }
+export async function getUserSettings(): Promise<UserSettingsData | null> {
+  const targetUserId = await requireUserId();
 
   let settings = await prisma.userSettings.findUnique({
     where: { userId: targetUserId },
@@ -125,6 +118,7 @@ export async function getUserSettings(userId?: string): Promise<UserSettingsData
     customInstructions: settings.customInstructions,
     themePreset: settings.themePreset,
     themeMode: settings.themeMode,
+    timeZone: isValidTimeZone(settings.timeZone) ? settings.timeZone : DEFAULT_TIME_ZONE,
     hideArchived: settings.hideArchived,
     showConfetti: settings.showConfetti,
     aiProvider: provider,
@@ -148,13 +142,8 @@ export async function getUserSettings(userId?: string): Promise<UserSettingsData
 export async function getUserAiConfig(): Promise<AiConfig> {
   const session = await auth();
 
-  // If unauthenticated, fall back to Gemini defaults with no user key
   if (!session?.user?.id) {
-    return {
-      provider: 'gemini',
-      model: PROVIDER_CONFIGS.gemini.defaultModel,
-      apiKey: null,
-    };
+    throw new Error('Unauthorized');
   }
 
   const settings = await prisma.userSettings.findUnique({
@@ -169,9 +158,10 @@ export async function getUserAiConfig(): Promise<AiConfig> {
 
   // Validate stored model against the provider's model list; fall back to default
   const storedModel = settings?.aiModel ?? null;
-  const validModel = storedModel && config.models.some(m => m.id === storedModel)
-    ? storedModel
-    : config.defaultModel;
+  const validModel =
+    storedModel && config.models.some(m => m.id === storedModel)
+      ? storedModel
+      : config.defaultModel;
 
   // Decrypt the stored key for this provider
   const aiKeys = parseAiKeys(settings?.aiKeys ?? null);
@@ -192,11 +182,12 @@ export async function getUserAiConfig(): Promise<AiConfig> {
  * provider as active. "Save = activate" is the simplest UX.
  */
 export async function saveProviderApiKey(
-  provider: AIProvider,
+  provider: AIProvider | string,
   rawKey: string
 ): Promise<{ success: boolean; message: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!isValidProvider(provider)) return { success: false, message: 'Invalid AI provider' };
   if (!rawKey.trim()) return { success: false, message: 'Key cannot be empty' };
 
   const trimmedKey = rawKey.trim();
@@ -242,10 +233,11 @@ export async function saveProviderApiKey(
  * Removes a provider's key. If the deleted provider was active, resets to Gemini.
  */
 export async function deleteProviderApiKey(
-  provider: AIProvider
+  provider: AIProvider | string
 ): Promise<{ success: boolean; message: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!isValidProvider(provider)) return { success: false, message: 'Invalid AI provider' };
 
   try {
     const existing = await prisma.userSettings.findUnique({
@@ -285,11 +277,32 @@ export async function deleteProviderApiKey(
  * Used by the model selector "Apply" button in Settings.
  */
 export async function updateAiSettings(data: {
-  aiProvider?: AIProvider;
+  aiProvider?: AIProvider | string;
   aiModel?: string | null;
 }): Promise<{ success: boolean; message: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+
+  if (data.aiProvider !== undefined && !isValidProvider(data.aiProvider)) {
+    return { success: false, message: 'Invalid AI provider' };
+  }
+  if (data.aiModel !== undefined && data.aiModel !== null && data.aiModel.length > 120) {
+    return { success: false, message: 'Invalid AI model' };
+  }
+  if (data.aiModel) {
+    const existing = await prisma.userSettings.findUnique({
+      where: { userId: session.user.id },
+      select: { aiProvider: true },
+    });
+    const provider =
+      data.aiProvider && isValidProvider(data.aiProvider) ? data.aiProvider : existing?.aiProvider;
+    if (!provider || !isValidProvider(provider))
+      return { success: false, message: 'Invalid AI provider' };
+    const providerConfig = PROVIDER_CONFIGS[provider];
+    if (!providerConfig.models.some(model => model.id === data.aiModel)) {
+      return { success: false, message: 'Invalid AI model for provider' };
+    }
+  }
 
   try {
     await prisma.userSettings.upsert({
@@ -323,6 +336,14 @@ export async function updateGoalSettings(data: {
   if (!session?.user?.id) {
     return { success: false, message: 'Unauthorized' };
   }
+  const numericFields = [data.dailyTarget, data.weeklyTarget, data.monthlyTarget];
+  if (
+    numericFields.some(
+      value => value !== undefined && (!Number.isInteger(value) || value < 0 || value > 10_000)
+    )
+  ) {
+    return { success: false, message: 'Goal targets must be whole numbers between 0 and 10,000' };
+  }
 
   try {
     await prisma.userSettings.upsert({
@@ -330,13 +351,6 @@ export async function updateGoalSettings(data: {
       update: data,
       create: { userId: session.user.id, ...data },
     });
-
-    if (data.monthlyTarget !== undefined) {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { monthlyActivityGoal: data.monthlyTarget },
-      });
-    }
 
     revalidatePath('/settings');
     revalidatePath('/dashboard');
@@ -356,12 +370,19 @@ export async function updateReportSettings(data: {
   if (!session?.user?.id) {
     return { success: false, message: 'Unauthorized' };
   }
+  const reportSettings = z
+    .object({
+      defaultTone: z.enum(['professional', 'casual', 'bullet-points']).optional(),
+      customInstructions: z.string().max(4_000).nullable().optional(),
+    })
+    .safeParse(data);
+  if (!reportSettings.success) return { success: false, message: 'Invalid report settings' };
 
   try {
     await prisma.userSettings.upsert({
       where: { userId: session.user.id },
-      update: data,
-      create: { userId: session.user.id, ...data },
+      update: reportSettings.data,
+      create: { userId: session.user.id, ...reportSettings.data },
     });
 
     revalidatePath('/settings');
@@ -378,11 +399,15 @@ export async function updateAppearanceSettings(data: {
   themeMode?: string;
   hideArchived?: boolean;
   showConfetti?: boolean;
+  timeZone?: string;
 }) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return { success: false, message: 'Unauthorized' };
+  }
+  if (data.timeZone && !isValidTimeZone(data.timeZone)) {
+    return { success: false, message: 'Invalid timezone' };
   }
 
   try {
@@ -409,8 +434,22 @@ export async function exportUserData() {
   }
 
   const lockedIds = await getLockedProjectIds(session.user.id);
+  if (lockedIds.length > 0 && !(await isVaultUnlocked(session.user.id))) {
+    return { error: 'Unlock your vault before exporting all account data.' };
+  }
 
-  const [user, projects, activities, reports, settings] = await Promise.all([
+  const [
+    user,
+    projects,
+    activities,
+    reports,
+    settings,
+    goals,
+    contacts,
+    interactions,
+    outreachDrafts,
+    conversations,
+  ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { name: true, email: true, createdAt: true },
@@ -432,10 +471,7 @@ export async function exportUserData() {
       where: {
         userId: session.user.id,
         ...(lockedIds.length > 0 && {
-          OR: [
-            { projectId: null },
-            { projectId: { notIn: lockedIds } },
-          ],
+          OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
         }),
       },
       include: { project: { select: { name: true } } },
@@ -448,19 +484,107 @@ export async function exportUserData() {
     }),
     prisma.userSettings.findUnique({
       where: { userId: session.user.id },
+      select: {
+        primaryGoal: true,
+        goalDeadline: true,
+        whyStatement: true,
+        dailyTarget: true,
+        weeklyTarget: true,
+        monthlyTarget: true,
+        defaultTone: true,
+        customInstructions: true,
+        themePreset: true,
+        themeMode: true,
+        timeZone: true,
+        hideArchived: true,
+        showConfetti: true,
+        aiProvider: true,
+        aiModel: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.goal.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        deadline: true,
+        why: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.contact.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        email: true,
+        birthday: true,
+        relationship: true,
+        personalityTraits: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.interactionLog.findMany({
+      where: { userId: session.user.id },
+      orderBy: { occurredAt: 'asc' },
+      select: {
+        id: true,
+        contactId: true,
+        occurredAt: true,
+        channel: true,
+        summary: true,
+        nextStep: true,
+        followUpDate: true,
+        rawNotes: true,
+        createdAt: true,
+      },
+    }),
+    prisma.outreachDraft.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        contactId: true,
+        title: true,
+        content: true,
+        metadata: true,
+        createdAt: true,
+      },
+    }),
+    prisma.conversation.findMany({
+      where: {
+        userId: session.user.id,
+        ...(lockedIds.length > 0 && {
+          OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
+        }),
+      },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        messages: { orderBy: { createdAt: 'asc' } },
+        project: { select: { id: true, name: true } },
+        goal: { select: { id: true, title: true } },
+        contact: { select: { id: true, fullName: true } },
+        reports: { select: { id: true, title: true } },
+      },
     }),
   ]);
 
   const filteredReports = filterLockedReports(reports, lockedIds);
 
-  // Exclude encrypted keys from the export — they must never leave the server.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { aiKeys: _keys, ...safeSettings } = settings ?? {};
-
   return {
     exportedAt: new Date().toISOString(),
     user,
-    settings: safeSettings,
+    // Allowlist only user-facing preferences. Vault hashes, encrypted keys,
+    // cryptographic metadata, and internal IDs are intentionally excluded.
+    settings,
     projects,
     activities: activities.map(a => ({
       content: a.content,
@@ -469,14 +593,38 @@ export async function exportUserData() {
       project: a.project?.name || null,
     })),
     reports: filteredReports,
+    goals,
+    contacts,
+    interactions,
+    outreachDrafts,
+    conversations: conversations.map(conversation => ({
+      id: conversation.id,
+      title: conversation.title,
+      mode: conversation.mode,
+      project: conversation.project,
+      goal: conversation.goal,
+      contact: conversation.contact,
+      reports: conversation.reports,
+      messages: conversation.messages.map(message => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        createdAt: message.createdAt,
+      })),
+      createdAt: conversation.createdAt,
+      updatedAt: conversation.updatedAt,
+    })),
   };
 }
 
-export async function clearAllActivities() {
+export async function clearAllActivities(confirmation: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return { success: false, message: 'Unauthorized' };
+  }
+  if (confirmation !== 'CLEAR ALL ACTIVITIES') {
+    return { success: false, message: 'Explicit confirmation is required' };
   }
 
   try {

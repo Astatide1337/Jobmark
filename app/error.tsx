@@ -21,8 +21,8 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <div className="bg-destructive/10 border-destructive/20 mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-xl border">
           <AlertCircle className="text-destructive h-5 w-5" />
         </div>
-        <p className="text-primary mb-2 text-xs font-semibold uppercase tracking-widest">Error</p>
-        <h1 className="text-foreground font-serif mb-3 text-2xl font-semibold">
+        <p className="text-primary mb-2 text-xs font-semibold tracking-widest uppercase">Error</p>
+        <h1 className="text-foreground mb-3 font-serif text-2xl font-semibold">
           Something went wrong
         </h1>
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed">

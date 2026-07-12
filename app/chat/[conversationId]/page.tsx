@@ -23,15 +23,16 @@ export default async function ConversationPage({ params }: ConversationPageProps
 
   const { conversationId } = await params;
 
-  const [conversation, conversations, projects, goals, contacts, reports, vaultProjects] = await Promise.all([
-    getConversation(conversationId),
-    getConversations(),
-    getProjects(),
-    getGoals(),
-    getContacts(),
-    getReports(),
-    getVaultProjects(), // Returns [] when vault is locked; included when unlocked so they appear in context picker
-  ]);
+  const [conversation, conversations, projects, goals, contacts, reports, vaultProjects] =
+    await Promise.all([
+      getConversation(conversationId),
+      getConversations(),
+      getProjects(),
+      getGoals(),
+      getContacts(),
+      getReports(),
+      getVaultProjects(), // Returns [] when vault is locked; included when unlocked so they appear in context picker
+    ]);
 
   if (!conversation) {
     notFound();

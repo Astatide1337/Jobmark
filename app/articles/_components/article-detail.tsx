@@ -78,7 +78,10 @@ function HowToUseArticle({ article }: { article: Article }) {
         </div>
         <div>
           <p className="text-foreground text-sm font-medium">Best next step</p>
-          <Link href={nextHref} className="text-primary mt-1 inline-flex text-sm font-medium hover:underline">
+          <Link
+            href={nextHref}
+            className="text-primary mt-1 inline-flex text-sm font-medium hover:underline"
+          >
             {nextAction}
           </Link>
         </div>

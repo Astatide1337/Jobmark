@@ -15,9 +15,21 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
+import {
+  getLockedProjectIds,
+  buildLockedActivityFilter,
+  filterLockedReports,
+} from '@/lib/project-lock';
 import { Prisma } from '@prisma/client';
 import { formatDate, getChannelLabel } from '@/lib/network';
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  isValidCalendarDate,
+  isValidTimeZone,
+  shiftCalendarDate,
+} from '@/lib/date-semantics';
 
 export interface SearchResult {
   id: string;
@@ -42,21 +54,27 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   }
 
   const searchTerm = query.trim();
-  let searchDate: Date | null = null;
+  let searchDate: string | null = null;
+
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: session.user.id },
+    select: { timeZone: true },
+  });
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
 
   // Try to parse common date terms
   const lowerQuery = searchTerm.toLowerCase();
   if (lowerQuery === 'today') {
-    searchDate = new Date();
+    searchDate = getCalendarDate(new Date(), timeZone);
   } else if (lowerQuery === 'yesterday') {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    searchDate = d;
+    searchDate = shiftCalendarDate(getCalendarDate(new Date(), timeZone), -1);
   } else {
     // Try simple date parsing (e.g. "2024-01-01" or "Jan 1")
-    const parsed = new Date(searchTerm);
-    if (!isNaN(parsed.getTime()) && searchTerm.length > 3) {
-      searchDate = parsed;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(searchTerm) && isValidCalendarDate(searchTerm)) {
+      searchDate = searchTerm;
     }
   }
 
@@ -70,17 +88,15 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   };
 
   if (searchDate) {
-    const startOfDay = new Date(searchDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(searchDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = calendarDateToUtcMidnight(searchDate);
+    const endOfDay = calendarDateToUtcMidnight(shiftCalendarDate(searchDate, 1));
 
     // Add date filter to OR clause
     if (activityWhere.OR && Array.isArray(activityWhere.OR)) {
       activityWhere.OR.push({
         logDate: {
           gte: startOfDay,
-          lte: endOfDay,
+          lt: endOfDay,
         },
       });
     }
@@ -100,7 +116,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       where: {
         userId: session.user.id,
         archived: false,
-        locked: false,
+        locked: lockedIds.length > 0 ? false : undefined,
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { description: { contains: searchTerm, mode: 'insensitive' } },
@@ -172,11 +188,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   });
 
   // Add report results (post-filter locked project reports)
-  reports.forEach(report => {
-    const metadata = report.metadata as Record<string, unknown> | null;
-    const reportProjectId = metadata?.projectId as string | null | undefined;
-    if (reportProjectId && lockedIds.includes(reportProjectId)) return;
-
+  filterLockedReports(reports, lockedIds).forEach(report => {
     results.push({
       id: report.id,
       type: 'report',
@@ -225,11 +237,12 @@ export async function getRecentProjects(limit = 3) {
     return [];
   }
 
+  const lockedIds = await getLockedProjectIds(session.user.id);
   return prisma.project.findMany({
     where: {
       userId: session.user.id,
       archived: false,
-      locked: false,
+      locked: lockedIds.length > 0 ? false : undefined,
     },
     orderBy: { updatedAt: 'desc' },
     take: limit,
@@ -245,10 +258,14 @@ export async function getRecentReports(limit = 3) {
     return [];
   }
 
-  return prisma.report.findMany({
+  const lockedIds = await getLockedProjectIds(session.user.id);
+  const reports = await prisma.report.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: 'desc' },
     take: limit,
-    select: { id: true, title: true },
+    select: { id: true, title: true, metadata: true },
   });
+  return filterLockedReports(reports, lockedIds)
+    .slice(0, limit)
+    .map(report => ({ id: report.id, title: report.title }));
 }

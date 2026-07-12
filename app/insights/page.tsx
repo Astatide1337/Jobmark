@@ -23,7 +23,7 @@ export default async function InsightsPage() {
     redirect('/');
   }
 
-  const data = await getInsightsData(session.user.id);
+  const data = await getInsightsData();
 
   return (
     <DashboardShell

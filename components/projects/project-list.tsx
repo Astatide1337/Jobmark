@@ -31,11 +31,7 @@ import {
   unarchiveProject,
   updateProject,
 } from '@/app/actions/projects';
-import {
-  moveProjectToVault,
-  moveProjectFromVault,
-  lockVault,
-} from '@/app/actions/project-lock';
+import { moveProjectToVault, moveProjectFromVault, lockVault } from '@/app/actions/project-lock';
 import { projectColors } from '@/lib/constants';
 import { VaultPasswordDialog } from './vault-password-dialog';
 import {
@@ -216,9 +212,7 @@ export function ProjectList({
   if (initialFilter === 'locked') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          {tabsNav}
-        </div>
+        <div className="flex items-center justify-between">{tabsNav}</div>
 
         {/* No vault password set yet → show setup prompt */}
         {!vaultHasPassword && (
@@ -229,7 +223,8 @@ export function ProjectList({
               </div>
               <h3 className="text-foreground mb-2 font-semibold">Set Up Your Vault</h3>
               <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-                Protect sensitive projects behind a password. Locked projects are hidden from all views until you unlock the vault.
+                Protect sensitive projects behind a password. Locked projects are hidden from all
+                views until you unlock the vault.
               </p>
               <Button
                 onClick={() => {
@@ -277,12 +272,7 @@ export function ProjectList({
                 <LockOpen className="text-primary h-4 w-4" />
                 <span className="text-foreground font-medium">Vault is unlocked</span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLockVault}
-                disabled={isLocking}
-              >
+              <Button variant="outline" size="sm" onClick={handleLockVault} disabled={isLocking}>
                 {isLocking ? (
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -300,7 +290,8 @@ export function ProjectList({
                   </div>
                   <h3 className="text-foreground mb-2 font-semibold">No locked projects</h3>
                   <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                    Move projects here from the Active or Archived tab to hide them behind your vault password.
+                    Move projects here from the Active or Archived tab to hide them behind your
+                    vault password.
                   </p>
                 </CardContent>
               </Card>
@@ -364,9 +355,7 @@ export function ProjectList({
   if (projects.length === 0 && initialFilter === 'archived') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          {tabsNav}
-        </div>
+        <div className="flex items-center justify-between">{tabsNav}</div>
 
         <Card className="bg-card/40 border-border/40 rounded-2xl border-dashed">
           <CardContent className="py-12 text-center">

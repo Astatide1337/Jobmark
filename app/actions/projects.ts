@@ -11,7 +11,7 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { projectColors } from '@/lib/constants';
 import { getLockedProjectIds } from '@/lib/project-lock';
@@ -80,20 +80,15 @@ export async function createProject(
   }
 }
 
-export async function getProjects(filter: 'active' | 'archived' = 'active', userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+export async function getProjects(filter: 'active' | 'archived' = 'active') {
+  const targetUserId = await requireUserId();
+  const lockedIds = await getLockedProjectIds(targetUserId);
 
   const projects = await prisma.project.findMany({
     where: {
       userId: targetUserId,
       archived: filter === 'archived',
-      locked: false,
+      ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
     },
     orderBy: { name: 'asc' },
     include: {
@@ -191,14 +186,8 @@ export async function unarchiveProject(projectId: string) {
   }
 }
 
-export async function getProjectDetails(projectId: string, activityLimit = 20, userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return null;
-    targetUserId = session.user.id;
-  }
+export async function getProjectDetails(projectId: string, activityLimit = 20) {
+  const targetUserId = await requireUserId();
 
   const [project, lockedIds] = await Promise.all([
     prisma.project.findUnique({
@@ -227,16 +216,9 @@ export async function getProjectDetails(projectId: string, activityLimit = 20, u
 export async function getProjectActivities(
   projectId: string,
   limit: number = 20,
-  offset: number = 0,
-  userId?: string
+  offset: number = 0
 ) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+  const targetUserId = await requireUserId();
 
   const [project, lockedIds] = await Promise.all([
     prisma.project.findUnique({
@@ -250,7 +232,7 @@ export async function getProjectActivities(
   if (project.locked && lockedIds.includes(project.id)) return [];
 
   const activities = await prisma.activity.findMany({
-    where: { projectId },
+    where: { projectId, userId: targetUserId },
     orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,

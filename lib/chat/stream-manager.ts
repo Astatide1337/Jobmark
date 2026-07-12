@@ -1,3 +1,5 @@
+import 'server-only';
+
 type ActiveStream = {
   requestId: string;
   userId: string;

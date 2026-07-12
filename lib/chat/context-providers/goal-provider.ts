@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { DEFAULT_TIME_ZONE, getCalendarDate, isValidTimeZone } from '@/lib/date-semantics';
 import { ContextStrategy, ConversationContext } from './types';
 
 /**
@@ -27,8 +28,17 @@ export class GoalContextProvider implements ContextStrategy {
 
     if (!goal) return '';
 
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    });
+    const timeZone =
+      settings?.timeZone && isValidTimeZone(settings.timeZone)
+        ? settings.timeZone
+        : DEFAULT_TIME_ZONE;
+
     return `\n\nReferenced Goal: "${goal.title}"${
-      goal.deadline ? `\nDeadline: ${goal.deadline.toLocaleDateString()}` : ''
+      goal.deadline ? `\nDeadline: ${getCalendarDate(goal.deadline, timeZone)}` : ''
     }${goal.why ? `\nWhy it matters: ${goal.why}` : ''}`;
   }
 }
