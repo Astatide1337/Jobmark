@@ -26,8 +26,8 @@ import { assertAiRequestAllowed } from '@/lib/ai-rate-limit';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
-  customStartDate?: Date;
-  customEndDate?: Date;
+  customStartDate?: string;
+  customEndDate?: string;
   projectId?: string | null; // null means unassigned
   tone: 'professional' | 'casual' | 'bullet-points';
   notes?: string;
@@ -35,8 +35,14 @@ export type ReportConfig = {
 
 const reportConfigSchema = z.object({
   dateRange: z.enum(['7d', '30d', 'month', 'custom']),
-  customStartDate: z.date().optional(),
-  customEndDate: z.date().optional(),
+  customStartDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  customEndDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   projectId: z.string().max(100).nullable().optional(),
   tone: z.enum(['professional', 'casual', 'bullet-points']),
   notes: z.string().max(4_000).optional(),
@@ -79,7 +85,7 @@ export async function streamReport(config: ReportConfig) {
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-  assertAiRequestAllowed(session.user.id, 'report');
+  await assertAiRequestAllowed(session.user.id, 'report');
   config = validateReportConfig(config);
 
   // Activity reports use the date the work represents, not row creation time.
@@ -207,7 +213,7 @@ export async function streamReport(config: ReportConfig) {
 export async function improveText(selection: string, instruction: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
-  assertAiRequestAllowed(session.user.id, 'report-edit');
+  await assertAiRequestAllowed(session.user.id, 'report-edit');
   if (
     !selection.trim() ||
     selection.length > 20_000 ||
@@ -295,8 +301,8 @@ export async function saveReportToHistory(content: string, config: ReportConfig)
       content,
       metadata: {
         dateRange: config.dateRange,
-        customStartDate: config.customStartDate?.toISOString() ?? null,
-        customEndDate: config.customEndDate?.toISOString() ?? null,
+        customStartDate: config.customStartDate ?? null,
+        customEndDate: config.customEndDate ?? null,
         projectId: config.projectId ?? null,
         tone: config.tone,
         notes: config.notes ?? null,

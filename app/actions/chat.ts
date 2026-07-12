@@ -115,7 +115,7 @@ export async function createConversation(
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
       contact: { select: { id: true, fullName: true } },
-      reports: { select: { id: true, title: true, createdAt: true } },
+      reports: { select: { id: true, title: true, createdAt: true, projectId: true } },
     },
   });
 
@@ -158,7 +158,7 @@ export async function getConversations(limit = 20): Promise<ConversationData[]> 
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
       contact: { select: { id: true, fullName: true } },
-      reports: { select: { id: true, title: true, createdAt: true } },
+      reports: { select: { id: true, title: true, createdAt: true, projectId: true } },
     },
   });
 
@@ -174,7 +174,7 @@ export async function getConversations(limit = 20): Promise<ConversationData[]> 
     project: c.project,
     goal: c.goal,
     contact: c.contact,
-    reports: c.reports ?? [],
+    reports: (c.reports ?? []).filter(report => !lockedIds.includes(report.projectId ?? '')),
   }));
 }
 
@@ -196,7 +196,7 @@ export async function getConversation(
       project: { select: { id: true, name: true, color: true } },
       goal: { select: { id: true, title: true } },
       contact: { select: { id: true, fullName: true } },
-      reports: { select: { id: true, title: true, createdAt: true } },
+      reports: { select: { id: true, title: true, createdAt: true, projectId: true } },
       messages: {
         orderBy: { createdAt: 'asc' },
       },
@@ -206,10 +206,8 @@ export async function getConversation(
   if (!conversation) return null;
 
   // Guard: if conversation is linked to a locked project and vault is closed, hide it
-  if (conversation.projectId) {
-    const lockedIds = await getLockedProjectIds(session.user.id);
-    if (lockedIds.includes(conversation.projectId)) return null;
-  }
+  const lockedIds = await getLockedProjectIds(session.user.id);
+  if (conversation.projectId && lockedIds.includes(conversation.projectId)) return null;
 
   return {
     id: conversation.id,
@@ -223,7 +221,9 @@ export async function getConversation(
     project: conversation.project,
     goal: conversation.goal,
     contact: conversation.contact,
-    reports: conversation.reports ?? [],
+    reports: (conversation.reports ?? []).filter(
+      report => !lockedIds.includes(report.projectId ?? '')
+    ),
     messages: conversation.messages.map(
       (m: { id: string; role: string; content: string; createdAt: Date }) => ({
         id: m.id,
@@ -243,7 +243,6 @@ export async function deleteConversation(conversationId: string) {
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-
   await prisma.conversation.delete({
     where: {
       id: conversationId,
@@ -291,6 +290,7 @@ export async function updateConversationContext(
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
+  const lockedIds = await getLockedProjectIds(session.user.id);
   if (
     reportIds &&
     (reportIds.length > 50 || reportIds.some(id => typeof id !== 'string' || id.length > 100))
@@ -321,7 +321,7 @@ export async function updateConversationContext(
     uniqueReportIds
       ? prisma.report.findMany({
           where: { id: { in: uniqueReportIds }, userId: session.user.id },
-          select: { id: true },
+          select: { id: true, projectId: true },
         })
       : null,
   ]);
@@ -329,7 +329,10 @@ export async function updateConversationContext(
     (projectId && !project) ||
     (goalId && !goal) ||
     (contactId && !contact) ||
-    (uniqueReportIds && reports && reports.length !== uniqueReportIds.length) ||
+    (uniqueReportIds &&
+      reports &&
+      (reports.length !== uniqueReportIds.length ||
+        reports.some(report => report.projectId && lockedIds.includes(report.projectId)))) ||
     (project?.locked && (await getLockedProjectIds(session.user.id)).includes(project.id))
   ) {
     throw new Error('Invalid conversation context');

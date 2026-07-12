@@ -57,6 +57,13 @@ model Session {
   @@index([userId])
 }
 
+model RateLimitBucket {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+  updatedAt   DateTime @updatedAt
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique

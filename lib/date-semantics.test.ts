@@ -29,9 +29,9 @@ describe('calendar date semantics', () => {
     expect(now.toISOString()).toBe('2025-01-01T04:00:00.000Z');
   });
 
-  it('keeps custom date objects unchanged and rejects reversed ranges', () => {
-    const start = new Date('2026-03-08T05:00:00.000Z');
-    const end = new Date('2026-03-09T04:00:00.000Z');
+  it('keeps custom calendar date strings unchanged and rejects reversed ranges', () => {
+    const start = '2026-03-08';
+    const end = '2026-03-09';
     const range = getCalendarRange({
       kind: 'custom',
       customStartDate: start,
@@ -41,8 +41,8 @@ describe('calendar date semantics', () => {
 
     expect(range.startDate).toBe('2026-03-08');
     expect(range.endDate).toBe('2026-03-09');
-    expect(start.toISOString()).toBe('2026-03-08T05:00:00.000Z');
-    expect(end.toISOString()).toBe('2026-03-09T04:00:00.000Z');
+    expect(start).toBe('2026-03-08');
+    expect(end).toBe('2026-03-09');
     expect(() =>
       getCalendarRange({
         kind: 'custom',

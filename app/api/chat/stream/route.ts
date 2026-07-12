@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    assertAiRequestAllowed(session.user.id, 'chat');
+    await assertAiRequestAllowed(session.user.id, 'chat');
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'AI request limit reached' },
@@ -152,11 +152,6 @@ export async function POST(request: Request) {
     );
   }
   const historyMessages = preparedTurn.history;
-  if (preparedTurn.assistantIdToDelete) {
-    await prisma.message.delete({
-      where: { id: preparedTurn.assistantIdToDelete, conversationId },
-    });
-  }
   if (preparedTurn.existingUserIdToClaim) {
     await prisma.message.update({
       where: { id: preparedTurn.existingUserIdToClaim, conversationId },
@@ -247,6 +242,7 @@ export async function POST(request: Request) {
     async start(controller) {
       let fullResponse = '';
       let wasCancelled = false;
+      let generationSucceeded = false;
       const pollCancellation = async () => {
         try {
           const cancelledMessage = await prisma.message.findFirst({
@@ -290,6 +286,7 @@ export async function POST(request: Request) {
           fullResponse += content;
           controller.enqueue(toEventLine({ type: 'delta', content }));
         }
+        generationSucceeded = !wasCancelled;
       } catch (error) {
         if (isAbortError(error) || upstreamController.signal.aborted) {
           wasCancelled = true;
@@ -308,8 +305,8 @@ export async function POST(request: Request) {
         streamManager.unregister(requestId);
 
         try {
-          if (!wasCancelled && fullResponse.trim().length > 0) {
-            await prisma.message.create({
+          if (generationSucceeded && fullResponse.trim().length > 0) {
+            const replacement = prisma.message.create({
               data: {
                 conversationId,
                 role: 'assistant',
@@ -317,6 +314,16 @@ export async function POST(request: Request) {
                 responseRequestId: requestId,
               },
             });
+            if (preparedTurn.assistantIdToDelete) {
+              await prisma.$transaction([
+                replacement,
+                prisma.message.delete({
+                  where: { id: preparedTurn.assistantIdToDelete, conversationId },
+                }),
+              ]);
+            } else {
+              await replacement;
+            }
           }
 
           const updateData: { updatedAt: Date; title?: string } = {
@@ -324,6 +331,9 @@ export async function POST(request: Request) {
           };
 
           if (
+            generationSucceeded &&
+            !wasCancelled &&
+            fullResponse.trim().length > 0 &&
             historyMessages.length === 0 &&
             (conversation.title === 'New Chat' ||
               conversation.title === 'Goal Setting Session' ||

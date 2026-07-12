@@ -16,6 +16,7 @@ import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import DecompressionWizard from './_components/decompression-wizard';
 import { getFocusConfig } from '@/app/actions/focus-config';
+import { getCalendarDate } from '@/lib/date-semantics';
 import type { ResolvedFocusBlock } from '@/lib/focus/types';
 import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 
@@ -43,8 +44,8 @@ export default async function FocusPage() {
   const now = new Date();
   const todayRange = getCalendarRange({
     kind: 'custom',
-    customStartDate: now,
-    customEndDate: now,
+    customStartDate: getCalendarDate(now, timeZone),
+    customEndDate: getCalendarDate(now, timeZone),
     timeZone,
   });
 

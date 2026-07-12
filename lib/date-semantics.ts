@@ -148,8 +148,8 @@ export function getCalendarRange(options: {
   kind: '7d' | '30d' | 'month' | 'custom';
   now?: Date;
   timeZone?: string;
-  customStartDate?: Date;
-  customEndDate?: Date;
+  customStartDate?: string;
+  customEndDate?: string;
 }): CalendarRange {
   const timeZone = options.timeZone || DEFAULT_TIME_ZONE;
   if (!isValidTimeZone(timeZone)) throw new Error('Invalid timezone');
@@ -162,8 +162,10 @@ export function getCalendarRange(options: {
     if (!options.customStartDate || !options.customEndDate) {
       throw new Error('Custom report dates are required');
     }
-    startDate = getCalendarDate(options.customStartDate, timeZone);
-    endDate = getCalendarDate(options.customEndDate, timeZone);
+    parseDateString(options.customStartDate);
+    parseDateString(options.customEndDate);
+    startDate = options.customStartDate;
+    endDate = options.customEndDate;
   } else {
     const days = options.kind === '7d' ? 6 : options.kind === '30d' ? 29 : 0;
     startDate =

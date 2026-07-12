@@ -120,8 +120,8 @@ export function ReportWizard({ projects }: ReportWizardProps) {
               return;
             }
 
-            tempConfig.customStartDate = currentRange.from;
-            tempConfig.customEndDate = currentRange.to || currentRange.from;
+            tempConfig.customStartDate = format(currentRange.from, 'yyyy-MM-dd');
+            tempConfig.customEndDate = format(currentRange.to || currentRange.from, 'yyyy-MM-dd');
           }
 
           const result = await checkActivityCount(tempConfig);
@@ -172,8 +172,8 @@ export function ReportWizard({ projects }: ReportWizardProps) {
       // Finalize config with custom dates if selected
       const finalConfig = { ...config };
       if (config.dateRange === 'custom' && dateRange?.from) {
-        finalConfig.customStartDate = dateRange.from;
-        finalConfig.customEndDate = dateRange.to || dateRange.from;
+        finalConfig.customStartDate = format(dateRange.from, 'yyyy-MM-dd');
+        finalConfig.customEndDate = format(dateRange.to || dateRange.from, 'yyyy-MM-dd');
       }
 
       const { output } = await streamReport(finalConfig);
@@ -220,7 +220,12 @@ export function ReportWizard({ projects }: ReportWizardProps) {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await saveReportToHistory(reportContent, config);
+    const finalConfig = { ...config };
+    if (config.dateRange === 'custom' && dateRange?.from) {
+      finalConfig.customStartDate = format(dateRange.from, 'yyyy-MM-dd');
+      finalConfig.customEndDate = format(dateRange.to || dateRange.from, 'yyyy-MM-dd');
+    }
+    await saveReportToHistory(reportContent, finalConfig);
     setIsSaving(false);
     setSaved(true);
     // Maybe redirect or show success

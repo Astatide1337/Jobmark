@@ -17,6 +17,7 @@ import { projectColors } from '@/lib/constants';
 import { getLockedProjectIds } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { projectUpdateSchema } from '@/lib/input-schemas';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(50),
@@ -118,13 +119,16 @@ export async function updateProject(
     return { success: false, message: 'Unauthorized' };
   }
 
+  const parsed = projectUpdateSchema.safeParse(data);
+  if (!parsed.success) return { success: false, message: 'Invalid project data' };
+
   try {
     await prisma.project.update({
       where: {
         id: projectId,
         userId: session.user.id,
       },
-      data,
+      data: parsed.data,
     });
 
     revalidatePath('/dashboard');

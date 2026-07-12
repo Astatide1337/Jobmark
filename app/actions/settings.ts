@@ -19,6 +19,11 @@ import { PROVIDER_CONFIGS, isValidProvider, type AIProvider } from '@/lib/ai-con
 import { Prisma } from '@prisma/client';
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
+import {
+  aiSettingsSchema,
+  appearanceSettingsSchema,
+  goalSettingsSchema,
+} from '@/lib/input-schemas';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -283,23 +288,26 @@ export async function updateAiSettings(data: {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
 
-  if (data.aiProvider !== undefined && !isValidProvider(data.aiProvider)) {
+  const parsed = aiSettingsSchema.safeParse(data);
+  if (!parsed.success) return { success: false, message: 'Invalid AI settings' };
+  const safeData = parsed.data;
+
+  if (safeData.aiProvider !== undefined && !isValidProvider(safeData.aiProvider)) {
     return { success: false, message: 'Invalid AI provider' };
   }
-  if (data.aiModel !== undefined && data.aiModel !== null && data.aiModel.length > 120) {
-    return { success: false, message: 'Invalid AI model' };
-  }
-  if (data.aiModel) {
+  if (safeData.aiModel) {
     const existing = await prisma.userSettings.findUnique({
       where: { userId: session.user.id },
       select: { aiProvider: true },
     });
     const provider =
-      data.aiProvider && isValidProvider(data.aiProvider) ? data.aiProvider : existing?.aiProvider;
+      safeData.aiProvider && isValidProvider(safeData.aiProvider)
+        ? safeData.aiProvider
+        : existing?.aiProvider;
     if (!provider || !isValidProvider(provider))
       return { success: false, message: 'Invalid AI provider' };
     const providerConfig = PROVIDER_CONFIGS[provider];
-    if (!providerConfig.models.some(model => model.id === data.aiModel)) {
+    if (!providerConfig.models.some(model => model.id === safeData.aiModel)) {
       return { success: false, message: 'Invalid AI model for provider' };
     }
   }
@@ -307,8 +315,8 @@ export async function updateAiSettings(data: {
   try {
     await prisma.userSettings.upsert({
       where: { userId: session.user.id },
-      update: data,
-      create: { userId: session.user.id, ...data },
+      update: safeData,
+      create: { userId: session.user.id, ...safeData },
     });
 
     revalidatePath('/settings');
@@ -336,7 +344,10 @@ export async function updateGoalSettings(data: {
   if (!session?.user?.id) {
     return { success: false, message: 'Unauthorized' };
   }
-  const numericFields = [data.dailyTarget, data.weeklyTarget, data.monthlyTarget];
+  const parsed = goalSettingsSchema.safeParse(data);
+  if (!parsed.success) return { success: false, message: 'Invalid goal settings' };
+  const safeData = parsed.data;
+  const numericFields = [safeData.dailyTarget, safeData.weeklyTarget, safeData.monthlyTarget];
   if (
     numericFields.some(
       value => value !== undefined && (!Number.isInteger(value) || value < 0 || value > 10_000)
@@ -348,8 +359,8 @@ export async function updateGoalSettings(data: {
   try {
     await prisma.userSettings.upsert({
       where: { userId: session.user.id },
-      update: data,
-      create: { userId: session.user.id, ...data },
+      update: safeData,
+      create: { userId: session.user.id, ...safeData },
     });
 
     revalidatePath('/settings');
@@ -406,15 +417,18 @@ export async function updateAppearanceSettings(data: {
   if (!session?.user?.id) {
     return { success: false, message: 'Unauthorized' };
   }
-  if (data.timeZone && !isValidTimeZone(data.timeZone)) {
+  const parsed = appearanceSettingsSchema.safeParse(data);
+  if (!parsed.success) return { success: false, message: 'Invalid appearance settings' };
+  const safeData = parsed.data;
+  if (safeData.timeZone && !isValidTimeZone(safeData.timeZone)) {
     return { success: false, message: 'Invalid timezone' };
   }
 
   try {
     await prisma.userSettings.upsert({
       where: { userId: session.user.id },
-      update: data,
-      create: { userId: session.user.id, ...data },
+      update: safeData,
+      create: { userId: session.user.id, ...safeData },
     });
 
     revalidatePath('/settings');

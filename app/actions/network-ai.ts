@@ -59,7 +59,7 @@ export async function generateOutreachDraft({
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-  assertAiRequestAllowed(session.user.id, 'outreach');
+  await assertAiRequestAllowed(session.user.id, 'outreach');
   if (
     !objective.trim() ||
     objective.length > 1_000 ||
@@ -216,7 +216,7 @@ export async function improveOutreachDraft(
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-  assertAiRequestAllowed(session.user.id, 'outreach-edit');
+  await assertAiRequestAllowed(session.user.id, 'outreach-edit');
   if (
     !selectedText.trim() ||
     selectedText.length > 20_000 ||

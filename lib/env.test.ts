@@ -23,7 +23,7 @@ describe('server environment validation', () => {
       DATABASE_URL: 'postgresql://localhost/jobmark',
       AUTH_GOOGLE_ID: 'google-id',
       AUTH_GOOGLE_SECRET: 'google-secret',
-      AUTH_SECRET: 'auth-secret',
+      AUTH_SECRET: 'auth-secret-that-is-at-least-32-characters',
     });
 
     expect(() => validateServerEnvironment()).not.toThrow();
@@ -35,6 +35,6 @@ describe('server environment validation', () => {
     }
 
     expect(() => validateServerEnvironment()).toThrow(/DATABASE_URL/);
-    expect(() => validateServerEnvironment()).toThrow(/AUTH_SECRET or JOBMARK_ENCRYPTION_KEY/);
+    expect(() => validateServerEnvironment()).toThrow(/AUTH_SECRET or NEXTAUTH_SECRET/);
   });
 });

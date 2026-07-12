@@ -16,30 +16,25 @@ import { prisma } from '@/lib/db';
 import { isVaultUnlocked, setVaultUnlocked, getLockedProjectIds } from '@/lib/project-lock';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
+import { assertSharedRateLimitAllowed } from '@/lib/ai-rate-limit';
 
 const BCRYPT_COST = 12;
 const VAULT_PASSWORD_MIN_LENGTH = 12;
 const MAX_UNLOCK_ATTEMPTS = 5;
-const UNLOCK_WINDOW_MS = 15 * 60 * 1000;
-const unlockAttempts = new Map<string, { count: number; windowStartedAt: number }>();
+const unlockScope = 'vault-unlock';
 
-function isUnlockRateLimited(userId: string): boolean {
-  const attempt = unlockAttempts.get(userId);
-  if (!attempt || Date.now() - attempt.windowStartedAt >= UNLOCK_WINDOW_MS) {
-    unlockAttempts.delete(userId);
+async function checkUnlockRateLimit(userId: string) {
+  try {
+    await assertSharedRateLimitAllowed(
+      userId,
+      unlockScope,
+      MAX_UNLOCK_ATTEMPTS,
+      'Too many attempts'
+    );
+    return true;
+  } catch {
     return false;
   }
-  return attempt.count >= MAX_UNLOCK_ATTEMPTS;
-}
-
-function recordUnlockFailure(userId: string): void {
-  const now = Date.now();
-  const attempt = unlockAttempts.get(userId);
-  if (!attempt || now - attempt.windowStartedAt >= UNLOCK_WINDOW_MS) {
-    unlockAttempts.set(userId, { count: 1, windowStartedAt: now });
-    return;
-  }
-  attempt.count += 1;
 }
 
 /**
@@ -116,17 +111,15 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
     return { success: false, message: 'No vault password is set' };
   }
 
-  if (isUnlockRateLimited(session.user.id)) {
+  if (!(await checkUnlockRateLimit(session.user.id))) {
     return { success: false, message: 'Too many attempts. Try again later.' };
   }
 
   const isValid = await bcrypt.compare(currentPassword, settings.vaultPasswordHash);
   if (!isValid) {
-    recordUnlockFailure(session.user.id);
     return { success: false, message: 'Current password is incorrect' };
   }
 
-  unlockAttempts.delete(session.user.id);
   const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
   await prisma.userSettings.update({
     where: { userId: session.user.id },
@@ -155,17 +148,15 @@ export async function unlockVault(password: string) {
     return { success: false, message: 'No vault password is set' };
   }
 
-  if (isUnlockRateLimited(session.user.id)) {
+  if (!(await checkUnlockRateLimit(session.user.id))) {
     return { success: false, message: 'Too many attempts. Try again later.' };
   }
 
   const isValid = await bcrypt.compare(password, settings.vaultPasswordHash);
   if (!isValid) {
-    recordUnlockFailure(session.user.id);
     return { success: false, message: 'Incorrect password' };
   }
 
-  unlockAttempts.delete(session.user.id);
   await setVaultUnlocked(true, session.user.id);
   revalidatePath('/projects');
   revalidatePath('/chat', 'layout');

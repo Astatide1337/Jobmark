@@ -1,6 +1,7 @@
 import 'server-only';
 
-const encryptionSecretNames = ['JOBMARK_ENCRYPTION_KEY', 'AUTH_SECRET', 'NEXTAUTH_SECRET'] as const;
+const authSecretNames = ['AUTH_SECRET', 'NEXTAUTH_SECRET'] as const;
+const MIN_SECRET_LENGTH = 32;
 
 /** Validate configuration required before the server can safely accept traffic. */
 export function validateServerEnvironment(): void {
@@ -10,10 +11,18 @@ export function validateServerEnvironment(): void {
 
   const required = ['DATABASE_URL', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET'];
   const missing = required.filter(name => !process.env[name]);
-  const hasEncryptionSecret = encryptionSecretNames.some(name => Boolean(process.env[name]));
+  const authSecret = authSecretNames.find(name => Boolean(process.env[name]));
+  const encryptionSecret = process.env.JOBMARK_ENCRYPTION_KEY || process.env[authSecret ?? ''];
 
-  if (!hasEncryptionSecret) {
-    missing.push('AUTH_SECRET or JOBMARK_ENCRYPTION_KEY');
+  if (!authSecret) {
+    missing.push('AUTH_SECRET or NEXTAUTH_SECRET');
+  } else if ((process.env[authSecret]?.length ?? 0) < MIN_SECRET_LENGTH) {
+    missing.push(`${authSecret} (minimum ${MIN_SECRET_LENGTH} characters)`);
+  }
+  if (!encryptionSecret || encryptionSecret.length < MIN_SECRET_LENGTH) {
+    missing.push(
+      `JOBMARK_ENCRYPTION_KEY or ${authSecret ?? 'AUTH_SECRET'} (minimum ${MIN_SECRET_LENGTH} characters)`
+    );
   }
 
   if (missing.length > 0) {
