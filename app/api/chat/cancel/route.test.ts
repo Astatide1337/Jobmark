@@ -1,19 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { authMock, updateManyMock, requestClaimUpdateManyMock, cancelMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  updateManyMock: vi.fn(),
-  requestClaimUpdateManyMock: vi.fn(),
-  cancelMock: vi.fn(),
-}));
+const { authMock, updateManyMock, findClaimMock, releaseClaimMock, cancelMock } = vi.hoisted(
+  () => ({
+    authMock: vi.fn(),
+    updateManyMock: vi.fn(),
+    findClaimMock: vi.fn(),
+    releaseClaimMock: vi.fn(),
+    cancelMock: vi.fn(),
+  })
+);
 
 vi.mock('@/lib/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/db', () => ({
   prisma: {
     message: { updateMany: updateManyMock },
-    chatRequest: { updateMany: requestClaimUpdateManyMock },
+    chatRequest: { findFirst: findClaimMock },
   },
 }));
+vi.mock('@/lib/chat/request-lifecycle', () => ({ releaseChatRequest: releaseClaimMock }));
 vi.mock('@/lib/chat/stream-manager', () => ({
   streamManager: {
     cleanupStale: vi.fn(),
@@ -28,7 +32,8 @@ describe('chat cancellation route', () => {
     authMock.mockResolvedValue({ user: { id: 'user-a' } });
     cancelMock.mockReturnValue(false);
     updateManyMock.mockResolvedValue({ count: 1 });
-    requestClaimUpdateManyMock.mockResolvedValue({ count: 0 });
+    findClaimMock.mockResolvedValue({ conversationId: 'conversation-1' });
+    releaseClaimMock.mockResolvedValue(true);
 
     const response = await POST(
       new Request('http://localhost/api/chat/cancel', {

@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { streamManager } from '@/lib/chat/stream-manager';
+import { releaseChatRequest } from '@/lib/chat/request-lifecycle';
 
 type CancelBody = {
   requestId?: string;
@@ -40,6 +41,13 @@ export async function POST(request: Request) {
 
   streamManager.cleanupStale();
   const cancelled = streamManager.cancel(requestId, session.user.id);
+  const claim = await prisma.chatRequest.findFirst({
+    where: { requestId, userId: session.user.id, status: 'in_progress' },
+    select: { conversationId: true },
+  });
+  const lifecycleCancelled = claim
+    ? await releaseChatRequest(claim.conversationId, requestId, 'cancelled', 'Cancelled by client')
+    : false;
   const persisted = await prisma.message.updateMany({
     where: {
       clientRequestId: requestId,
@@ -49,16 +57,7 @@ export async function POST(request: Request) {
     },
     data: { cancelledAt: new Date() },
   });
-  const requestClaim = await prisma.chatRequest.updateMany({
-    where: {
-      requestId,
-      status: 'in_progress',
-      conversation: { userId: session.user.id },
-    },
-    data: { status: 'cancelled', error: 'Cancelled by client' },
-  });
-
   return NextResponse.json({
-    cancelled: cancelled || persisted.count > 0 || requestClaim.count > 0,
+    cancelled: cancelled || lifecycleCancelled || persisted.count > 0,
   });
 }
