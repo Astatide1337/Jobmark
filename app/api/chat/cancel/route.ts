@@ -49,6 +49,16 @@ export async function POST(request: Request) {
     },
     data: { cancelledAt: new Date() },
   });
+  const requestClaim = await prisma.chatRequest.updateMany({
+    where: {
+      requestId,
+      status: 'in_progress',
+      conversation: { userId: session.user.id },
+    },
+    data: { status: 'cancelled', error: 'Cancelled by client' },
+  });
 
-  return NextResponse.json({ cancelled: cancelled || persisted.count > 0 });
+  return NextResponse.json({
+    cancelled: cancelled || persisted.count > 0 || requestClaim.count > 0,
+  });
 }

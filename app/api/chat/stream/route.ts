@@ -54,6 +54,129 @@ function isAbortError(error: unknown): boolean {
   return Boolean(message && message.includes('abort'));
 }
 
+const STALE_REQUEST_MS = 10 * 60 * 1000;
+
+class ChatRequestConflictError extends Error {}
+
+type ChatClaim = {
+  userMessageId?: string;
+  createdUserMessage: boolean;
+};
+
+async function claimChatRequest(options: {
+  conversationId: string;
+  userId: string;
+  requestId: string;
+  targetMessageId?: string;
+  preparedTurn: ReturnType<typeof prepareTurn>;
+  userMessage: string;
+}): Promise<ChatClaim> {
+  try {
+    return await prisma.$transaction(async tx => {
+      const existing = await tx.chatRequest.findUnique({
+        where: {
+          conversationId_requestId: {
+            conversationId: options.conversationId,
+            requestId: options.requestId,
+          },
+        },
+      });
+      if (existing?.status === 'completed') {
+        throw new ChatRequestConflictError('This chat request is already complete');
+      }
+      if (
+        existing?.status === 'in_progress' &&
+        Date.now() - existing.updatedAt.getTime() < STALE_REQUEST_MS
+      ) {
+        throw new ChatRequestConflictError('This chat request is already in progress');
+      }
+
+      const claim = existing
+        ? await tx.chatRequest.update({
+            where: { id: existing.id },
+            data: {
+              status: 'in_progress',
+              error: null,
+              targetMessageId: options.targetMessageId ?? existing.targetMessageId,
+              userMessageId: null,
+              createdUserMessage: false,
+            },
+          })
+        : await tx.chatRequest.create({
+            data: {
+              conversationId: options.conversationId,
+              userId: options.userId,
+              requestId: options.requestId,
+              targetMessageId: options.targetMessageId,
+            },
+          });
+
+      let userMessageId = options.preparedTurn.existingUserIdToClaim;
+      let createdUserMessage = false;
+      if (userMessageId) {
+        await tx.message.update({
+          where: { id: userMessageId, conversationId: options.conversationId },
+          data: { clientRequestId: options.requestId, cancelledAt: null },
+        });
+      } else if (options.preparedTurn.shouldCreateUserMessage) {
+        const userMessageRow = await tx.message.create({
+          data: {
+            conversationId: options.conversationId,
+            role: 'user',
+            content: options.userMessage,
+            clientRequestId: options.requestId,
+            cancelledAt: null,
+          },
+        });
+        userMessageId = userMessageRow.id;
+        createdUserMessage = true;
+      }
+
+      await tx.chatRequest.update({
+        where: { id: claim.id },
+        data: { userMessageId, createdUserMessage },
+      });
+      return { userMessageId, createdUserMessage };
+    });
+  } catch (error) {
+    if (
+      error instanceof ChatRequestConflictError ||
+      (error as { code?: string })?.code === 'P2002'
+    ) {
+      throw new ChatRequestConflictError('This chat request is already in progress');
+    }
+    throw error;
+  }
+}
+
+async function releaseChatRequest(
+  conversationId: string,
+  requestId: string,
+  status: 'failed' | 'cancelled',
+  errorMessage?: string
+) {
+  await prisma.$transaction(async tx => {
+    const claim = await tx.chatRequest.findUnique({
+      where: { conversationId_requestId: { conversationId, requestId } },
+    });
+    if (!claim) return;
+    if (claim.createdUserMessage && claim.userMessageId) {
+      await tx.message.deleteMany({
+        where: { id: claim.userMessageId, conversationId, clientRequestId: requestId },
+      });
+    } else if (claim.userMessageId) {
+      await tx.message.updateMany({
+        where: { id: claim.userMessageId, conversationId, clientRequestId: requestId },
+        data: { clientRequestId: null },
+      });
+    }
+    await tx.chatRequest.update({
+      where: { id: claim.id },
+      data: { status, error: errorMessage?.slice(0, 1000) ?? null },
+    });
+  });
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -138,6 +261,40 @@ export async function POST(request: Request) {
     );
   }
 
+  const existingClaim = await prisma.chatRequest.findUnique({
+    where: { conversationId_requestId: { conversationId, requestId } },
+  });
+  if (existingClaim?.status === 'completed') {
+    const persistedResponse = await prisma.message.findFirst({
+      where: {
+        id: existingClaim.assistantMessageId ?? undefined,
+        conversationId,
+        role: 'assistant',
+      },
+      select: { content: true },
+    });
+    if (persistedResponse) {
+      return new Response(
+        `${JSON.stringify({ type: 'delta', content: persistedResponse.content })}\n${JSON.stringify({ type: 'done', cancelled: false })}\n`,
+        {
+          headers: {
+            'Content-Type': 'application/x-ndjson; charset=utf-8',
+            'Cache-Control': 'no-cache',
+          },
+        }
+      );
+    }
+  }
+  if (
+    existingClaim?.status === 'in_progress' &&
+    Date.now() - existingClaim.updatedAt.getTime() < STALE_REQUEST_MS
+  ) {
+    return NextResponse.json(
+      { error: 'This chat request is already in progress' },
+      { status: 409 }
+    );
+  }
+
   let preparedTurn;
   try {
     preparedTurn = prepareTurn(conversation.messages, {
@@ -152,34 +309,40 @@ export async function POST(request: Request) {
     );
   }
   const historyMessages = preparedTurn.history;
-  if (preparedTurn.existingUserIdToClaim) {
-    await prisma.message.update({
-      where: { id: preparedTurn.existingUserIdToClaim, conversationId },
-      data: { clientRequestId: requestId, cancelledAt: null },
+  try {
+    await claimChatRequest({
+      conversationId,
+      userId: session.user.id,
+      requestId,
+      targetMessageId: preparedTurn.assistantIdToDelete,
+      preparedTurn,
+      userMessage,
     });
-  }
-  if (preparedTurn.shouldCreateUserMessage) {
-    await prisma.message.create({
-      data: {
-        conversationId,
-        role: 'user',
-        content: userMessage,
-        clientRequestId: requestId,
-        cancelledAt: null,
-      },
-    });
+  } catch (error) {
+    if (error instanceof ChatRequestConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    console.error('Failed to claim chat request:', error);
+    return NextResponse.json({ error: 'Chat request could not be claimed' }, { status: 503 });
   }
 
-  const contextString = await buildContextString(
-    {
-      mode: conversation.mode,
-      projectId: conversation.projectId,
-      goalId: conversation.goalId,
-      contactId: conversation.contactId,
-      reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
-    },
-    session.user.id
-  );
+  let contextString: string;
+  try {
+    contextString = await buildContextString(
+      {
+        mode: conversation.mode,
+        projectId: conversation.projectId,
+        goalId: conversation.goalId,
+        contactId: conversation.contactId,
+        reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
+      },
+      session.user.id
+    );
+  } catch (error) {
+    await releaseChatRequest(conversationId, requestId, 'failed', 'Context construction failed');
+    console.error('Failed to build chat context:', error);
+    return NextResponse.json({ error: 'Chat context is temporarily unavailable' }, { status: 503 });
+  }
 
   const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
@@ -211,6 +374,7 @@ export async function POST(request: Request) {
     model = config.model;
     ai = createAIClient(config.provider, config.apiKey);
   } catch (error) {
+    await releaseChatRequest(conversationId, requestId, 'failed', 'AI configuration failed');
     if (error instanceof AIConfigurationError) {
       return NextResponse.json({ error: error.message }, { status: 503 });
     }
@@ -254,7 +418,11 @@ export async function POST(request: Request) {
             },
             select: { id: true },
           });
-          if (cancelledMessage) upstreamController.abort('persisted-cancel');
+          const cancelledRequest = await prisma.chatRequest.findFirst({
+            where: { conversationId, requestId, status: 'cancelled' },
+            select: { id: true },
+          });
+          if (cancelledMessage || cancelledRequest) upstreamController.abort('persisted-cancel');
         } catch (error) {
           console.error('Failed to poll chat cancellation state:', error);
         }
@@ -306,24 +474,32 @@ export async function POST(request: Request) {
 
         try {
           if (generationSucceeded && fullResponse.trim().length > 0) {
-            const replacement = prisma.message.create({
-              data: {
-                conversationId,
-                role: 'assistant',
-                content: fullResponse,
-                responseRequestId: requestId,
-              },
-            });
-            if (preparedTurn.assistantIdToDelete) {
-              await prisma.$transaction([
-                replacement,
-                prisma.message.delete({
+            await prisma.$transaction(async tx => {
+              const replacement = await tx.message.create({
+                data: {
+                  conversationId,
+                  role: 'assistant',
+                  content: fullResponse,
+                  responseRequestId: requestId,
+                },
+              });
+              if (preparedTurn.assistantIdToDelete) {
+                await tx.message.delete({
                   where: { id: preparedTurn.assistantIdToDelete, conversationId },
-                }),
-              ]);
-            } else {
-              await replacement;
-            }
+                });
+              }
+              await tx.chatRequest.update({
+                where: { conversationId_requestId: { conversationId, requestId } },
+                data: { status: 'completed', assistantMessageId: replacement.id, error: null },
+              });
+            });
+          } else {
+            await releaseChatRequest(
+              conversationId,
+              requestId,
+              wasCancelled ? 'cancelled' : 'failed',
+              wasCancelled ? 'Cancelled by client' : 'No assistant response was generated'
+            );
           }
 
           const updateData: { updatedAt: Date; title?: string } = {
