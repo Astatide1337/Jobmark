@@ -35,13 +35,30 @@ export function useSettings() {
 interface SettingsProviderProps {
   children: React.ReactNode;
   initialSettings?: UserSettingsData | null;
+  /**
+   * The root layout knows whether this request has an Auth.js session. Avoid
+   * invoking a protected Server Action from public pages such as the landing
+   * page, where there is deliberately no authenticated identity.
+   */
+  isAuthenticated: boolean;
 }
 
-export function SettingsProvider({ children, initialSettings }: SettingsProviderProps) {
+export function SettingsProvider({
+  children,
+  initialSettings,
+  isAuthenticated,
+}: SettingsProviderProps) {
   const [settings, setSettings] = useState<UserSettingsData | null>(initialSettings || null);
   const [isLoading, setIsLoading] = useState(!initialSettings);
 
   const refreshSettings = async () => {
+    // Public pages share this provider but have no session by design. Keep a
+    // consumer-triggered refresh from turning into a protected action request.
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     // Only set loading if we're not already in the initial loading state
     setSettings(prev => {
       if (prev === null) setIsLoading(true);
@@ -72,24 +89,29 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
   useEffect(() => {
     let mounted = true;
 
-    if (!initialSettings) {
+    if (isAuthenticated && !initialSettings) {
       const init = async () => {
-        const newSettings = await getUserSettings();
-        if (mounted) {
-          setSettings(newSettings);
-          setIsLoading(false);
-          if (newSettings) {
-            applyTheme(newSettings.themePreset, newSettings.themeMode);
+        try {
+          const newSettings = await getUserSettings();
+          if (mounted) {
+            setSettings(newSettings);
+            if (newSettings) {
+              applyTheme(newSettings.themePreset, newSettings.themeMode);
+            }
           }
+        } finally {
+          if (mounted) setIsLoading(false);
         }
       };
       void init();
+    } else if (!isAuthenticated) {
+      setIsLoading(false);
     }
 
     return () => {
       mounted = false;
     };
-  }, [initialSettings]);
+  }, [initialSettings, isAuthenticated]);
 
   return (
     <SettingsContext.Provider value={{ settings, isLoading, refreshSettings }}>

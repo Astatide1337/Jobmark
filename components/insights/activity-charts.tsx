@@ -110,7 +110,7 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
               to week.
             </div>
           ) : !mounted ? null : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -245,7 +245,7 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
           <div className="relative z-0 shrink-0">
             <div className="relative h-40 w-40">
               {mounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie
                       data={chartData}
