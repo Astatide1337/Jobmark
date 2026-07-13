@@ -83,6 +83,47 @@ export async function acquireChatRequest(
           createdUserMessage = existing.createdUserMessage;
           reusedStaleUserMessage = true;
         }
+      } else if (input.targetMessageId) {
+        const stolen = await tx.chatRequest.updateMany({
+          where: {
+            conversationId: input.conversationId,
+            targetMessageId: input.targetMessageId,
+            status: 'in_progress',
+            updatedAt: { lte: staleCutoff },
+          },
+          data: {
+            requestId: input.requestId,
+            updatedAt: now,
+            error: null,
+            assistantMessageId: null,
+          },
+        });
+        if (stolen.count === 1) {
+          const takenOver = await tx.chatRequest.findUnique({
+            where: {
+              conversationId_requestId: {
+                conversationId: input.conversationId,
+                requestId: input.requestId,
+              },
+            },
+          });
+          if (!takenOver) {
+            throw new ChatRequestConflictError('Stale chat request takeover failed');
+          }
+          claimId = takenOver.id;
+          userMessageId = takenOver.userMessageId ?? undefined;
+          createdUserMessage = takenOver.createdUserMessage;
+        } else {
+          const created = await tx.chatRequest.create({
+            data: {
+              conversationId: input.conversationId,
+              userId: input.userId,
+              requestId: input.requestId,
+              targetMessageId: input.targetMessageId,
+            },
+          });
+          claimId = created.id;
+        }
       } else {
         const created = await tx.chatRequest.create({
           data: {

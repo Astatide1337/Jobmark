@@ -113,6 +113,52 @@ describe.skipIf(!enabled)('production chat request lifecycle', () => {
     ).resolves.toBe(1);
   });
 
+  it('takes over a stale regeneration target with a new request ID exactly once', async () => {
+    await acquireRegeneration('stale-target');
+    await prisma.chatRequest.update({
+      where: { conversationId_requestId: { conversationId, requestId: 'stale-target' } },
+      data: { updatedAt: new Date(Date.now() - CHAT_REQUEST_STALE_MS - 1_000) },
+    });
+
+    const contenders = ['retry-a', 'retry-b'] as const;
+    const results = await Promise.allSettled(contenders.map(requestId => acquireRegeneration(requestId)));
+    const fulfilled = results.filter(result => result.status === 'fulfilled');
+    const rejected = results.filter(result => result.status === 'rejected');
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    const winnerIndex = results.findIndex(result => result.status === 'fulfilled');
+    const winnerRequestId = contenders[winnerIndex]!;
+
+    await expect(
+      prisma.chatRequest.findUnique({
+        where: { conversationId_requestId: { conversationId, requestId: winnerRequestId } },
+      })
+    ).resolves.toMatchObject({
+      status: 'in_progress',
+      targetMessageId: assistantId,
+    });
+    await expect(
+      prisma.message.findUnique({ where: { id: assistantId } })
+    ).resolves.toMatchObject({ content: 'prior valid answer' });
+
+    await expect(
+      finalizeChatRequest({
+        conversationId,
+        requestId: winnerRequestId,
+        assistantContent: 'replacement answer',
+        assistantIdToDelete: assistantId,
+      })
+    ).resolves.toMatchObject({ completed: true });
+    await expect(prisma.message.findUnique({ where: { id: assistantId } })).resolves.toBeNull();
+    await expect(
+      prisma.message.findFirst({
+        where: { conversationId, role: 'assistant', content: 'replacement answer' },
+      })
+    ).resolves.toBeTruthy();
+  });
+
   it('does not finalize after cancellation wins the claim transition', async () => {
     await acquireRegeneration('cancel-before-finalize');
     await releaseChatRequest(conversationId, 'cancel-before-finalize', 'cancelled', 'stopped');
