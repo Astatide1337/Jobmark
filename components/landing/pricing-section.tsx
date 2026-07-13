@@ -86,9 +86,7 @@ export function AccessSection() {
                   <Icon className="h-5 w-5" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold">{point.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {point.description}
-                </p>
+                <p className="text-muted-foreground text-sm leading-relaxed">{point.description}</p>
               </motion.div>
             );
           })}

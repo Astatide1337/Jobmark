@@ -8,10 +8,14 @@
  * Strategy: "database" strategy is used to enable real-time session invalidation
  * and persistent login across devices for up to 30 days.
  */
+import 'server-only';
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/db';
+import { validateServerEnvironment } from '@/lib/env';
+
+validateServerEnvironment();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -54,3 +58,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
+
+/** Return the authenticated database identity for server-only operations. */
+export async function requireUserId(): Promise<string> {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  return userId;
+}

@@ -12,6 +12,7 @@
  * - Closing the browser clears the session cookie, re-locking the vault.
  */
 
+import 'server-only';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
@@ -22,8 +23,13 @@ const COOKIE_NAME = 'jm_vault_unlocked';
  * Derive a 32-byte AES key from AUTH_SECRET using SHA-256.
  */
 function getEncryptionKey(): Buffer {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-dev-secret';
-  return crypto.createHash('sha256').update(secret).digest();
+  const secret =
+    process.env.JOBMARK_ENCRYPTION_KEY || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('JOBMARK_ENCRYPTION_KEY or AUTH_SECRET is required in production');
+  }
+  const resolvedSecret = secret || 'development-only-fallback-secret';
+  return crypto.createHash('sha256').update(resolvedSecret).digest();
 }
 
 /**
@@ -65,13 +71,31 @@ function decrypt(ciphertext: string): string | null {
  * Check if the vault is currently unlocked for the current request.
  * Reads and decrypts the session cookie.
  */
-export async function isVaultUnlocked(): Promise<boolean> {
+export async function isVaultUnlocked(userId: string): Promise<boolean> {
   const cookieStore = await cookies();
   const cookie = cookieStore.get(COOKIE_NAME);
   if (!cookie?.value) return false;
 
   const decrypted = decrypt(cookie.value);
-  return decrypted === 'unlocked';
+  if (!decrypted) return false;
+  try {
+    const payload = JSON.parse(decrypted) as { sub?: string; version?: number; issuedAt?: number };
+    if (
+      payload.sub !== userId ||
+      typeof payload.version !== 'number' ||
+      typeof payload.issuedAt !== 'number'
+    ) {
+      return false;
+    }
+    if (Date.now() - payload.issuedAt > 24 * 60 * 60 * 1000) return false;
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { vaultVersion: true },
+    });
+    return payload.version === (settings?.vaultVersion ?? 1);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -79,11 +103,21 @@ export async function isVaultUnlocked(): Promise<boolean> {
  * When `unlocked` is true, sets an encrypted session cookie.
  * When false, deletes the cookie.
  */
-export async function setVaultUnlocked(unlocked: boolean): Promise<void> {
+export async function setVaultUnlocked(unlocked: boolean, userId: string): Promise<void> {
   const cookieStore = await cookies();
 
   if (unlocked) {
-    const encryptedValue = encrypt('unlocked');
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { vaultVersion: true },
+    });
+    const encryptedValue = encrypt(
+      JSON.stringify({
+        sub: userId,
+        version: settings?.vaultVersion ?? 1,
+        issuedAt: Date.now(),
+      })
+    );
     cookieStore.set(COOKIE_NAME, encryptedValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -105,7 +139,7 @@ export async function setVaultUnlocked(unlocked: boolean): Promise<void> {
  * This is the single primitive every server action calls to filter results.
  */
 export async function getLockedProjectIds(userId: string): Promise<string[]> {
-  const unlocked = await isVaultUnlocked();
+  const unlocked = await isVaultUnlocked(userId);
   if (unlocked) return [];
 
   const lockedProjects = await prisma.project.findMany({
@@ -138,8 +172,9 @@ export function filterLockedReports<T extends { metadata: unknown }>(
 ): T[] {
   if (lockedIds.length === 0) return reports;
   return reports.filter(report => {
+    const relationalProjectId = (report as T & { projectId?: string | null }).projectId;
     const metadata = report.metadata as Record<string, unknown> | null;
-    const projectId = metadata?.projectId as string | null | undefined;
+    const projectId = relationalProjectId ?? (metadata?.projectId as string | null | undefined);
     return !projectId || !lockedIds.includes(projectId);
   });
 }

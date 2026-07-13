@@ -19,6 +19,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { CommandPalette } from '@/components/ui/command-palette';
 import { SettingsProvider } from '@/components/providers/settings-provider';
 import { UIProvider, SmoothScrollProvider } from '@/components/providers/ui-provider';
+import { auth } from '@/lib/auth';
 import './globals.css';
 
 const inter = Inter({
@@ -39,6 +40,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.app'),
   title: 'Jobmark - Build Your Career Record',
   description:
     'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
@@ -75,17 +77,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased`}
       >
-        <SettingsProvider>
+        <SettingsProvider isAuthenticated={Boolean(session?.user?.id)}>
           <UIProvider>
             <SmoothScrollProvider>
               {children}

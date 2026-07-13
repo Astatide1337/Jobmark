@@ -15,8 +15,16 @@
  * provider in `PROVIDER_CONFIGS` prevents model-name drift across call sites.
  */
 
+import 'server-only';
 import OpenAI from 'openai';
 import { PROVIDER_CONFIGS, type AIProvider } from '@/lib/ai-config';
+
+export class AIConfigurationError extends Error {
+  constructor() {
+    super('AI provider is not configured');
+    this.name = 'AIConfigurationError';
+  }
+}
 
 /**
  * Returns the default model ID for a given provider.
@@ -38,16 +46,13 @@ export function createAIClient(provider: AIProvider, apiKey?: string | null): Op
   const config = PROVIDER_CONFIGS[provider];
   const key = apiKey ?? process.env[config.envVar];
 
-  if (!key) {
-    console.warn(
-      `[jobmark] No API key available for provider "${provider}" — AI calls will fail with 401. ` +
-        `Set ${config.envVar} in your environment or save a key in Settings.`
-    );
-  }
+  if (!key?.trim()) throw new AIConfigurationError();
 
   return new OpenAI({
     baseURL: config.baseURL,
-    apiKey: key ?? '',
+    apiKey: key,
+    timeout: 45_000,
+    maxRetries: 1,
     ...(config.extraHeaders ? { defaultHeaders: config.extraHeaders } : {}),
   });
 }

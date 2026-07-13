@@ -1,7 +1,6 @@
 services:
   app:
     build: .
-    container_name: jobmark
     restart: unless-stopped
     ports:
       - '3000:3000'
@@ -18,8 +17,7 @@ services:
   # Cloudflare Tunnel — exposes port 3000 to jobmark.astatide.com
   # See README section below for one-time tunnel setup
   tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: jobmark-tunnel
+    image: cloudflare/cloudflared:2025.6.2
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:

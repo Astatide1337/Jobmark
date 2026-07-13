@@ -28,12 +28,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     redirect('/');
   }
 
-  const userId = session.user.id;
-
-  const [projects, reports] = await Promise.all([
-    getProjects('active', userId),
-    getReports(userId),
-  ]);
+  const [projects, reports] = await Promise.all([getProjects('active'), getReports()]);
 
   const defaultTab = tab === 'history' ? 'history' : 'new';
 

@@ -9,8 +9,8 @@ export default function NotFoundPage() {
         <div className="bg-primary/10 border-primary/20 mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-xl border">
           <Pen className="text-primary h-5 w-5" />
         </div>
-        <p className="text-primary mb-2 text-xs font-semibold uppercase tracking-widest">404</p>
-        <h1 className="text-foreground font-serif mb-3 text-3xl font-semibold">Page not found</h1>
+        <p className="text-primary mb-2 text-xs font-semibold tracking-widest uppercase">404</p>
+        <h1 className="text-foreground mb-3 font-serif text-3xl font-semibold">Page not found</h1>
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
           This page doesn&apos;t exist or may have been moved.
         </p>

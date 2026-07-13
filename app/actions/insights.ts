@@ -12,9 +12,21 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
+import {
+  getLockedProjectIds,
+  buildLockedActivityFilter,
+  filterLockedReports,
+} from '@/lib/project-lock';
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  getCalendarRange,
+  isValidTimeZone,
+  shiftCalendarDate,
+} from '@/lib/date-semantics';
 
 export interface ProjectDistribution {
   name: string;
@@ -52,19 +64,21 @@ export interface InsightsData {
   totalReports: number;
 }
 
-export async function getInsightsData(userId?: string): Promise<InsightsData> {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) throw new Error('Unauthorized');
-    targetUserId = session.user.id;
-  }
+export async function getInsightsData(): Promise<InsightsData> {
+  const targetUserId = await requireUserId();
 
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: targetUserId },
+    select: { timeZone: true },
+  });
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const todayDate = getCalendarDate(now, timeZone);
+  const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
+  const oneYearAgo = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, -364));
 
   const lockedIds = await getLockedProjectIds(targetUserId);
   const lockedFilter = buildLockedActivityFilter(lockedIds);
@@ -76,15 +90,15 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
       prisma.activity.count({
         where: { userId: targetUserId, ...lockedFilter },
       }),
-      // Total reports count
-      prisma.report.count({
-        where: { userId: targetUserId },
-      }),
+      // Count only reports visible under the same vault policy as activities.
+      prisma.report
+        .findMany({ where: { userId: targetUserId }, select: { projectId: true, metadata: true } })
+        .then(reports => filterLockedReports(reports, lockedIds).length),
       // This month's activities (for active days)
       prisma.activity.findMany({
         where: {
           userId: targetUserId,
-          logDate: { gte: startOfMonth },
+          logDate: { gte: monthRange.start, lt: monthRange.endExclusive },
           ...lockedFilter,
         },
         select: { logDate: true },
@@ -132,21 +146,20 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
   // Calculate heatmap data
   const heatmapMap = new Map<string, number>();
   allActivities.forEach(activity => {
-    const dateStr = activity.logDate.toISOString().split('T')[0];
+    const dateStr = activity.logDate.toISOString().slice(0, 10);
     heatmapMap.set(dateStr, (heatmapMap.get(dateStr) || 0) + 1);
   });
 
   // Calculate grid (weeks of days)
   const days: HeatmapDay[] = [];
-  const today = new Date();
+  const today = todayDate;
   for (let i = 364; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = shiftCalendarDate(today, -i);
+    const date = calendarDateToUtcMidnight(dateStr);
     days.push({
       date: dateStr,
       count: heatmapMap.get(dateStr) || 0,
-      dayOfWeek: date.getDay(),
+      dayOfWeek: date.getUTCDay(),
     });
   }
 
@@ -180,11 +193,11 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
   heatmapGrid.forEach((week, weekIndex) => {
     const validDays = week.filter(d => d.date);
     if (validDays.length > 0) {
-      const firstDay = new Date(validDays[0].date);
-      const month = firstDay.getMonth();
+      const firstDay = new Date(`${validDays[0].date}T00:00:00Z`);
+      const month = firstDay.getUTCMonth();
       if (month !== lastMonth) {
         monthLabels.push({
-          month: firstDay.toLocaleDateString('en-US', { month: 'short' }),
+          month: firstDay.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
           weekIndex,
         });
         lastMonth = month;
@@ -202,35 +215,33 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
 
   // Calculate active days this month
   const thisMonthDates = new Set(
-    thisMonthActivities.map(a => a.logDate.toISOString().split('T')[0])
+    thisMonthActivities.map(a => a.logDate.toISOString().slice(0, 10))
   );
   const activeDaysThisMonth = thisMonthDates.size;
 
   // Calculate weekly trend (last 12 weeks)
   const weeklyTrend: number[] = [];
   for (let i = 11; i >= 0; i--) {
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - (i + 1) * 7);
-    const weekEnd = new Date();
-    weekEnd.setDate(weekEnd.getDate() - i * 7);
+    const weekEnd = shiftCalendarDate(todayDate, -i * 7);
+    const weekStart = shiftCalendarDate(weekEnd, -7);
 
     const count = allActivities.filter(a => {
-      const date = a.logDate;
+      const date = a.logDate.toISOString().slice(0, 10);
       return date >= weekStart && date < weekEnd;
     }).length;
 
     weeklyTrend.push(count);
   }
 
-  // Calculate current streak using createdAt for reliability
+  // Streaks use the represented calendar date, so backdated entries behave
+  // consistently with reports, heatmaps, and goal totals.
   const uniqueDates = Array.from(
-    new Set(allActivities.map(a => a.createdAt.toLocaleDateString('en-CA')))
+    new Set(allActivities.map(a => a.logDate.toISOString().slice(0, 10)))
   ).sort((a, b) => b.localeCompare(a));
 
   let currentStreak = 0;
   if (uniqueDates.length > 0) {
-    const today = new Date().toLocaleDateString('en-CA');
-    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
+    const yesterday = shiftCalendarDate(todayDate, -1);
     const latest = uniqueDates[0];
 
     if (latest >= yesterday) {
@@ -238,10 +249,7 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
       for (let i = 1; i < uniqueDates.length; i++) {
         const current = uniqueDates[i - 1];
         const previous = uniqueDates[i];
-        const currentDate = new Date(current + 'T12:00:00');
-        const expectedPrevious = new Date(currentDate.getTime() - 86400000)
-          .toISOString()
-          .split('T')[0];
+        const expectedPrevious = shiftCalendarDate(current, -1);
         if (previous === expectedPrevious) {
           currentStreak++;
         } else {
@@ -260,10 +268,7 @@ export async function getInsightsData(userId?: string): Promise<InsightsData> {
     if (i === 0) {
       tempStreak = 1;
     } else {
-      const prev = new Date(sortedDates[i - 1] + 'T12:00:00');
-      const curr = new Date(sortedDates[i] + 'T12:00:00');
-      const diff = (curr.getTime() - prev.getTime()) / 86400000;
-      if (diff === 1) {
+      if (shiftCalendarDate(sortedDates[i - 1], 1) === sortedDates[i]) {
         tempStreak++;
       } else {
         tempStreak = 1;

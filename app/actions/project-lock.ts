@@ -11,13 +11,31 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { isVaultUnlocked, setVaultUnlocked, getLockedProjectIds } from '@/lib/project-lock';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
+import { assertSharedRateLimitAllowed } from '@/lib/ai-rate-limit';
 
 const BCRYPT_COST = 12;
+const VAULT_PASSWORD_MIN_LENGTH = 12;
+const MAX_UNLOCK_ATTEMPTS = 5;
+const unlockScope = 'vault-unlock';
+
+async function checkUnlockRateLimit(userId: string) {
+  try {
+    await assertSharedRateLimitAllowed(
+      userId,
+      unlockScope,
+      MAX_UNLOCK_ATTEMPTS,
+      'Too many attempts'
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Set the vault password for the first time.
@@ -28,8 +46,11 @@ export async function setVaultPassword(password: string, confirmPassword: string
     return { success: false, message: 'Unauthorized' };
   }
 
-  if (!password || password.length < 6) {
-    return { success: false, message: 'Password must be at least 6 characters' };
+  if (!password || password.length < VAULT_PASSWORD_MIN_LENGTH) {
+    return {
+      success: false,
+      message: `Password must be at least ${VAULT_PASSWORD_MIN_LENGTH} characters`,
+    };
   }
 
   if (password !== confirmPassword) {
@@ -43,7 +64,10 @@ export async function setVaultPassword(password: string, confirmPassword: string
   });
 
   if (existing?.vaultPasswordHash) {
-    return { success: false, message: 'Vault password is already set. Use change password instead.' };
+    return {
+      success: false,
+      message: 'Vault password is already set. Use change password instead.',
+    };
   }
 
   const hash = await bcrypt.hash(password, BCRYPT_COST);
@@ -55,7 +79,7 @@ export async function setVaultPassword(password: string, confirmPassword: string
   });
 
   // Auto-unlock after setting password
-  await setVaultUnlocked(true);
+  await setVaultUnlocked(true, session.user.id);
   revalidatePath('/projects');
   revalidatePath('/chat', 'layout');
 
@@ -71,8 +95,11 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
     return { success: false, message: 'Unauthorized' };
   }
 
-  if (!newPassword || newPassword.length < 6) {
-    return { success: false, message: 'New password must be at least 6 characters' };
+  if (!newPassword || newPassword.length < VAULT_PASSWORD_MIN_LENGTH) {
+    return {
+      success: false,
+      message: `New password must be at least ${VAULT_PASSWORD_MIN_LENGTH} characters`,
+    };
   }
 
   const settings = await prisma.userSettings.findUnique({
@@ -84,6 +111,10 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
     return { success: false, message: 'No vault password is set' };
   }
 
+  if (!(await checkUnlockRateLimit(session.user.id))) {
+    return { success: false, message: 'Too many attempts. Try again later.' };
+  }
+
   const isValid = await bcrypt.compare(currentPassword, settings.vaultPasswordHash);
   if (!isValid) {
     return { success: false, message: 'Current password is incorrect' };
@@ -92,8 +123,9 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
   const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
   await prisma.userSettings.update({
     where: { userId: session.user.id },
-    data: { vaultPasswordHash: hash },
+    data: { vaultPasswordHash: hash, vaultVersion: { increment: 1 } },
   });
+  await setVaultUnlocked(false, session.user.id);
 
   return { success: true, message: 'Vault password changed successfully' };
 }
@@ -116,12 +148,16 @@ export async function unlockVault(password: string) {
     return { success: false, message: 'No vault password is set' };
   }
 
+  if (!(await checkUnlockRateLimit(session.user.id))) {
+    return { success: false, message: 'Too many attempts. Try again later.' };
+  }
+
   const isValid = await bcrypt.compare(password, settings.vaultPasswordHash);
   if (!isValid) {
     return { success: false, message: 'Incorrect password' };
   }
 
-  await setVaultUnlocked(true);
+  await setVaultUnlocked(true, session.user.id);
   revalidatePath('/projects');
   revalidatePath('/chat', 'layout');
 
@@ -137,7 +173,7 @@ export async function lockVault() {
     return { success: false, message: 'Unauthorized' };
   }
 
-  await setVaultUnlocked(false);
+  await setVaultUnlocked(false, session.user.id);
   revalidatePath('/projects');
   revalidatePath('/chat', 'layout');
 
@@ -192,7 +228,7 @@ export async function moveProjectFromVault(projectId: string) {
     return { success: false, message: 'Unauthorized' };
   }
 
-  const unlocked = await isVaultUnlocked();
+  const unlocked = await isVaultUnlocked(session.user.id);
   if (!unlocked) {
     return { success: false, message: 'Vault must be unlocked to move projects out' };
   }
@@ -218,16 +254,10 @@ export async function moveProjectFromVault(projectId: string) {
  * Get all vault (locked) projects for the current user.
  * Only callable when vault is unlocked.
  */
-export async function getVaultProjects(userId?: string) {
-  let targetUserId = userId;
+export async function getVaultProjects() {
+  const targetUserId = await requireUserId();
 
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
-
-  const unlocked = await isVaultUnlocked();
+  const unlocked = await isVaultUnlocked(targetUserId);
   if (!unlocked) return [];
 
   const projects = await prisma.project.findMany({
@@ -256,14 +286,8 @@ export async function getVaultProjects(userId?: string) {
 /**
  * Check if the user has a vault password set.
  */
-export async function hasVaultPassword(userId?: string): Promise<boolean> {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return false;
-    targetUserId = session.user.id;
-  }
+export async function hasVaultPassword(): Promise<boolean> {
+  const targetUserId = await requireUserId();
 
   const settings = await prisma.userSettings.findUnique({
     where: { userId: targetUserId },
@@ -283,8 +307,8 @@ export async function getVaultStatus() {
   }
 
   const [hasPassword, unlocked] = await Promise.all([
-    hasVaultPassword(session.user.id),
-    isVaultUnlocked(),
+    hasVaultPassword(),
+    isVaultUnlocked(session.user.id),
   ]);
 
   // Also get count of locked projects

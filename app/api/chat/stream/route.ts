@@ -21,14 +21,24 @@ import { formatDate, getChannelLabel } from '@/lib/network';
 import { buildContextString } from '@/lib/chat/context-providers';
 import { buildSystemPrompt } from '@/lib/chat/system-prompts';
 import { streamManager } from '@/lib/chat/stream-manager';
-import { createAIClient } from '@/lib/ai';
+import { AIConfigurationError, createAIClient } from '@/lib/ai';
 import { getUserAiConfig } from '@/app/actions/settings';
 import type { ConversationMode } from '@/app/actions/chat';
+import { prepareTurn } from '@/lib/chat/turn-persistence';
+import { assertAiRequestAllowed } from '@/lib/ai-rate-limit';
+import {
+  acquireChatRequest,
+  ChatRequestConflictError,
+  finalizeChatRequest,
+  releaseChatRequest,
+} from '@/lib/chat/request-lifecycle';
 
 type StreamBody = {
   conversationId?: string;
   userMessage?: string;
   requestId?: string;
+  regenerateMessageId?: string;
+  reuseExistingUserTurn?: boolean;
 };
 
 type StreamEvent =
@@ -55,6 +65,14 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  try {
+    await assertAiRequestAllowed(session.user.id, 'chat');
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'AI request limit reached' },
+      { status: 429 }
+    );
+  }
 
   let body: StreamBody;
   try {
@@ -66,6 +84,8 @@ export async function POST(request: Request) {
   const conversationId = body.conversationId?.trim();
   const userMessage = body.userMessage?.trim();
   const requestId = body.requestId?.trim();
+  const regenerateMessageId = body.regenerateMessageId?.trim();
+  const reuseExistingUserTurn = body.reuseExistingUserTurn === true;
 
   if (!conversationId || !userMessage || !requestId) {
     return NextResponse.json(
@@ -73,9 +93,14 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+  if (requestId.length > 120) {
+    return NextResponse.json({ error: 'Invalid request ID' }, { status: 400 });
+  }
+  if (userMessage.length > 8_000) {
+    return NextResponse.json({ error: 'Message is too long' }, { status: 413 });
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const conversation = await (prisma.conversation as any).findUnique({
+  const conversation = await prisma.conversation.findUnique({
     where: {
       id: conversationId,
       userId: session.user.id,
@@ -92,24 +117,101 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
   }
 
-  await prisma.message.create({
-    data: {
-      conversationId,
-      role: 'user',
-      content: userMessage,
-    },
+  const completedResponse = await prisma.message.findFirst({
+    where: { conversationId, responseRequestId: requestId, role: 'assistant' },
+    select: { content: true },
   });
+  if (completedResponse) {
+    return new Response(
+      `${JSON.stringify({ type: 'delta', content: completedResponse.content })}\n${JSON.stringify({ type: 'done', cancelled: false })}\n`,
+      {
+        headers: {
+          'Content-Type': 'application/x-ndjson; charset=utf-8',
+          'Cache-Control': 'no-cache',
+        },
+      }
+    );
+  }
 
-  const contextString = await buildContextString(
-    {
-      mode: conversation.mode,
-      projectId: conversation.projectId,
-      goalId: conversation.goalId,
-      contactId: conversation.contactId,
-      reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
-    },
-    session.user.id
-  );
+  const existingClaim = await prisma.chatRequest.findUnique({
+    where: { conversationId_requestId: { conversationId, requestId } },
+  });
+  if (existingClaim?.status === 'completed') {
+    const persistedResponse = await prisma.message.findFirst({
+      where: {
+        id: existingClaim.assistantMessageId ?? undefined,
+        conversationId,
+        role: 'assistant',
+      },
+      select: { content: true },
+    });
+    if (persistedResponse) {
+      return new Response(
+        `${JSON.stringify({ type: 'delta', content: persistedResponse.content })}\n${JSON.stringify({ type: 'done', cancelled: false })}\n`,
+        {
+          headers: {
+            'Content-Type': 'application/x-ndjson; charset=utf-8',
+            'Cache-Control': 'no-cache',
+          },
+        }
+      );
+    }
+  }
+  let preparedTurn;
+  try {
+    preparedTurn = prepareTurn(conversation.messages, {
+      userMessage,
+      regenerateMessageId,
+      reuseExistingUserTurn,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Invalid chat turn' },
+      { status: 409 }
+    );
+  }
+  let historyMessages = preparedTurn.history;
+  try {
+    const acquired = await acquireChatRequest({
+      conversationId,
+      userId: session.user.id,
+      requestId,
+      targetMessageId: preparedTurn.assistantIdToDelete,
+      existingUserIdToClaim: preparedTurn.existingUserIdToClaim,
+      shouldCreateUserMessage: preparedTurn.shouldCreateUserMessage,
+      userMessage,
+    });
+    if (acquired.reusedStaleUserMessage && acquired.userMessageId) {
+      const staleTurnIndex = conversation.messages.findIndex(
+        message => message.id === acquired.userMessageId
+      );
+      if (staleTurnIndex >= 0) historyMessages = conversation.messages.slice(0, staleTurnIndex);
+    }
+  } catch (error) {
+    if (error instanceof ChatRequestConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    console.error('Failed to claim chat request:', error);
+    return NextResponse.json({ error: 'Chat request could not be claimed' }, { status: 503 });
+  }
+
+  let contextString: string;
+  try {
+    contextString = await buildContextString(
+      {
+        mode: conversation.mode,
+        projectId: conversation.projectId,
+        goalId: conversation.goalId,
+        contactId: conversation.contactId,
+        reportIds: (conversation.reports ?? []).map((r: { id: string }) => r.id),
+      },
+      session.user.id
+    );
+  } catch (error) {
+    await releaseChatRequest(conversationId, requestId, 'failed', 'Context construction failed');
+    console.error('Failed to build chat context:', error);
+    return NextResponse.json({ error: 'Chat context is temporarily unavailable' }, { status: 503 });
+  }
 
   const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     {
@@ -118,7 +220,7 @@ export async function POST(request: Request) {
     },
   ];
 
-  for (const message of conversation.messages.slice(-20)) {
+  for (const message of historyMessages.slice(-20)) {
     if (message.role === 'user' || message.role === 'assistant') {
       chatMessages.push({
         role: message.role,
@@ -134,8 +236,20 @@ export async function POST(request: Request) {
 
   // Resolve AI config for BYOK support — must happen before ReadableStream construction
   // so `ai` and `model` are captured in the stream/auto-title closures.
-  const { provider, model, apiKey } = await getUserAiConfig();
-  const ai = createAIClient(provider, apiKey);
+  let ai: ReturnType<typeof createAIClient>;
+  let model: string;
+  try {
+    const config = await getUserAiConfig();
+    model = config.model;
+    ai = createAIClient(config.provider, config.apiKey);
+  } catch (error) {
+    await releaseChatRequest(conversationId, requestId, 'failed', 'AI configuration failed');
+    if (error instanceof AIConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+    console.error('Failed to resolve AI configuration:', error);
+    return NextResponse.json({ error: 'AI service is temporarily unavailable' }, { status: 503 });
+  }
 
   const upstreamController = new AbortController();
   const handleClientAbort = () => {
@@ -161,6 +275,29 @@ export async function POST(request: Request) {
     async start(controller) {
       let fullResponse = '';
       let wasCancelled = false;
+      let generationSucceeded = false;
+      const pollCancellation = async () => {
+        try {
+          const cancelledMessage = await prisma.message.findFirst({
+            where: {
+              conversationId,
+              clientRequestId: requestId,
+              role: 'user',
+              cancelledAt: { not: null },
+            },
+            select: { id: true },
+          });
+          const cancelledRequest = await prisma.chatRequest.findFirst({
+            where: { conversationId, requestId, status: 'cancelled' },
+            select: { id: true },
+          });
+          if (cancelledMessage || cancelledRequest) upstreamController.abort('persisted-cancel');
+        } catch (error) {
+          console.error('Failed to poll chat cancellation state:', error);
+        }
+      };
+      const cancellationPoll = setInterval(() => void pollCancellation(), 500);
+      void pollCancellation();
 
       try {
         const completion = await ai.chat.completions.create(
@@ -186,6 +323,7 @@ export async function POST(request: Request) {
           fullResponse += content;
           controller.enqueue(toEventLine({ type: 'delta', content }));
         }
+        generationSucceeded = !wasCancelled;
       } catch (error) {
         if (isAbortError(error) || upstreamController.signal.aborted) {
           wasCancelled = true;
@@ -199,18 +337,31 @@ export async function POST(request: Request) {
           );
         }
       } finally {
+        clearInterval(cancellationPoll);
         request.signal.removeEventListener('abort', handleClientAbort);
         streamManager.unregister(requestId);
 
         try {
-          if (fullResponse.trim().length > 0) {
-            await prisma.message.create({
-              data: {
-                conversationId,
-                role: 'assistant',
-                content: fullResponse,
-              },
+          let finalized = false;
+          if (generationSucceeded && fullResponse.trim().length > 0) {
+            const result = await finalizeChatRequest({
+              conversationId,
+              requestId,
+              assistantContent: fullResponse,
+              assistantIdToDelete: preparedTurn.assistantIdToDelete,
             });
+            finalized = result.completed;
+            if (!finalized) {
+              wasCancelled = true;
+              generationSucceeded = false;
+            }
+          } else {
+            await releaseChatRequest(
+              conversationId,
+              requestId,
+              wasCancelled ? 'cancelled' : 'failed',
+              wasCancelled ? 'Cancelled by client' : 'No assistant response was generated'
+            );
           }
 
           const updateData: { updatedAt: Date; title?: string } = {
@@ -218,7 +369,11 @@ export async function POST(request: Request) {
           };
 
           if (
-            conversation.messages.length === 0 &&
+            generationSucceeded &&
+            finalized &&
+            !wasCancelled &&
+            fullResponse.trim().length > 0 &&
+            historyMessages.length === 0 &&
             (conversation.title === 'New Chat' ||
               conversation.title === 'Goal Setting Session' ||
               conversation.title === 'Mock Interview')
@@ -247,10 +402,12 @@ export async function POST(request: Request) {
             }
           }
 
-          await prisma.conversation.update({
-            where: { id: conversationId },
-            data: updateData,
-          });
+          if (finalized) {
+            await prisma.conversation.update({
+              where: { id: conversationId },
+              data: updateData,
+            });
+          }
 
           revalidatePath('/chat');
         } catch (finalizeError) {

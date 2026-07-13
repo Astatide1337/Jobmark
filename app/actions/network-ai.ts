@@ -12,13 +12,14 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createStreamableValue } from '@ai-sdk/rsc';
 import { createAIClient } from '@/lib/ai';
 import { getUserAiConfig } from '@/app/actions/settings';
 import { formatDate } from '@/lib/network';
 import { format } from 'date-fns';
+import { assertAiRequestAllowed } from '@/lib/ai-rate-limit';
 
 export type OutreachDraftConfig = {
   contactId: string;
@@ -57,6 +58,16 @@ export async function generateOutreachDraft({
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
+  }
+  await assertAiRequestAllowed(session.user.id, 'outreach');
+  if (
+    !objective.trim() ||
+    objective.length > 1_000 ||
+    tone.length > 100 ||
+    channel.length > 100 ||
+    (extraContext?.length ?? 0) > 4_000
+  ) {
+    throw new Error('Outreach request is invalid');
   }
 
   // Fetch contact + recent interactions for context
@@ -124,7 +135,7 @@ Generate the outreach draft now.`;
       }
     } catch (err) {
       console.error('Outreach draft stream error:', err);
-      stream.error(err);
+      stream.error(new Error('Outreach generation failed. Please try again.'));
     } finally {
       stream.done();
     }
@@ -161,14 +172,8 @@ export async function saveOutreachDraftToHistory(
   return { success: true };
 }
 
-export async function getOutreachDraftsByContact(contactId: string, userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) throw new Error('Unauthorized');
-    targetUserId = session.user.id;
-  }
+export async function getOutreachDraftsByContact(contactId: string) {
+  const targetUserId = await requireUserId();
 
   return prisma.outreachDraft.findMany({
     where: { userId: targetUserId, contactId },
@@ -210,6 +215,15 @@ export async function improveOutreachDraft(
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
+  }
+  await assertAiRequestAllowed(session.user.id, 'outreach-edit');
+  if (
+    !selectedText.trim() ||
+    selectedText.length > 20_000 ||
+    !instruction.trim() ||
+    instruction.length > 4_000
+  ) {
+    throw new Error('Invalid edit request');
   }
 
   try {

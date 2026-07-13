@@ -19,7 +19,7 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
   }
 
   const { projectId } = await params;
-  const project = await getProjectDetails(projectId, 20, session.user.id);
+  const project = await getProjectDetails(projectId, 20);
 
   if (!project) {
     // Project not found or locked — redirect to projects list

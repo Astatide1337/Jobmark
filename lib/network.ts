@@ -1,3 +1,10 @@
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  isValidTimeZone,
+} from '@/lib/date-semantics';
+
 /**
  * Network feature utilities for jobmark.
  *
@@ -103,11 +110,6 @@ function getUTCYMD(date: Date | string): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
-function parseLocalYMD(ymd: string): Date {
-  const [year, month, day] = ymd.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
 /**
  * Get a relative time string (e.g., "2 days ago", "in 3 days")
  */
@@ -130,17 +132,19 @@ export function getRelativeTime(date: Date | string | null | undefined): string 
  * Uses UTC date parts for the stored value (to preserve intended calendar day)
  * and compares against the user's local "today".
  */
-export function getRelativeDay(date: Date | string | null | undefined): string {
+export function getRelativeDay(
+  date: Date | string | null | undefined,
+  timeZone = DEFAULT_TIME_ZONE
+): string {
   const d = parseUTCDate(date);
   if (!d) return '';
 
   const targetYMD = getUTCYMD(d);
   if (!targetYMD) return '';
 
-  const todayYMD = new Date().toLocaleDateString('en-CA');
-  const diffDays = Math.round(
-    (parseLocalYMD(targetYMD).getTime() - parseLocalYMD(todayYMD).getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const resolvedTimeZone = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
+  const todayYMD = getCalendarDate(new Date(), resolvedTimeZone);
+  const diffDays = dateDistance(todayYMD, targetYMD);
 
   if (diffDays === 0) return 'today';
   if (diffDays === 1) return 'tomorrow';
@@ -153,13 +157,25 @@ export function getRelativeDay(date: Date | string | null | undefined): string {
  * Date-only overdue check for follow-up dates.
  * Overdue means the follow-up calendar day is before the user's local today.
  */
-export function isDateOnlyOverdue(date: Date | string | null | undefined): boolean {
+export function isDateOnlyOverdue(
+  date: Date | string | null | undefined,
+  timeZone = DEFAULT_TIME_ZONE
+): boolean {
   const d = parseUTCDate(date);
   if (!d) return false;
   const targetYMD = getUTCYMD(d);
   if (!targetYMD) return false;
-  const todayYMD = new Date().toLocaleDateString('en-CA');
+  const resolvedTimeZone = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
+  const todayYMD = getCalendarDate(new Date(), resolvedTimeZone);
   return targetYMD < todayYMD;
+}
+
+function dateDistance(startDate: string, endDate: string): number {
+  return Math.round(
+    (calendarDateToUtcMidnight(endDate).getTime() -
+      calendarDateToUtcMidnight(startDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
 }
 
 /**

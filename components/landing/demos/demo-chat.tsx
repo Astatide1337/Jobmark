@@ -25,18 +25,12 @@ export function DemoChat() {
       <div className="bg-background relative flex h-full flex-col">
         {/* Messages Area */}
         <div className="w-full flex-1 space-y-6 overflow-y-auto p-4 pb-40">
-          <MockChatMessage
-            role="user"
-            content="I need a clearer summary for my weekly update."
-          />
+          <MockChatMessage role="user" content="I need a clearer summary for my weekly update." />
           <MockChatMessage
             role="assistant"
             content="Based on your record, you shipped the dashboard polish, closed three bugs, and led sprint planning. I can turn that into a concise update or a review-ready paragraph."
           />
-          <MockChatMessage
-            role="user"
-            content="Draft the weekly update, then."
-          />
+          <MockChatMessage role="user" content="Draft the weekly update, then." />
         </div>
 
         {/* Floating Input Area (mimicking ChatInterface) */}

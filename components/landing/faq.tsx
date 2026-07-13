@@ -48,8 +48,7 @@ const faqs = [
   {
     id: 'export',
     question: 'Can I export everything?',
-    answer:
-      'Yes. Your work record should remain portable so you can reuse it wherever you need.',
+    answer: 'Yes. Your work record should remain portable so you can reuse it wherever you need.',
   },
   {
     id: 'who',

@@ -63,11 +63,7 @@ import {
   updateAiSettings,
   type UserSettingsData,
 } from '@/app/actions/settings';
-import {
-  PROVIDER_CONFIGS,
-  AI_PROVIDERS,
-  type AIProvider,
-} from '@/lib/ai-config';
+import { PROVIDER_CONFIGS, AI_PROVIDERS, type AIProvider } from '@/lib/ai-config';
 import { createGoal, deleteGoal, type GoalData } from '@/app/actions/goals';
 import { saveFocusConfig, resetFocusConfig } from '@/app/actions/focus-config';
 import { format } from 'date-fns';
@@ -180,7 +176,7 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
 
 function SettingsIntro({ title, description }: { title: string; description: string }) {
   return (
-    <Card className="mb-6 border-border/50 bg-card/45">
+    <Card className="border-border/50 bg-card/45 mb-6">
       <CardContent className="p-5">
         <p className="text-primary text-xs font-semibold tracking-widest uppercase">{title}</p>
         <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{description}</p>
@@ -487,14 +483,16 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
   const [themePreset, setThemePreset] = useState(settings.themePreset);
   const [hideArchived, setHideArchived] = useState(settings.hideArchived);
   const [showConfetti, setShowConfetti] = useState(settings.showConfetti);
+  const [timeZone, setTimeZone] = useState(settings.timeZone);
 
   const hasChanges = useMemo(() => {
     return (
       themePreset !== settings.themePreset ||
       hideArchived !== settings.hideArchived ||
-      showConfetti !== settings.showConfetti
+      showConfetti !== settings.showConfetti ||
+      timeZone !== settings.timeZone
     );
-  }, [themePreset, hideArchived, showConfetti, settings]);
+  }, [themePreset, hideArchived, showConfetti, timeZone, settings]);
 
   useEffect(() => {
     applyTheme(themePreset, 'dark');
@@ -509,6 +507,7 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
       themeMode: 'dark',
       hideArchived,
       showConfetti,
+      timeZone,
     });
 
     await refreshSettings();
@@ -583,6 +582,21 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
             </div>
             <Switch id="hideArchived" checked={hideArchived} onCheckedChange={setHideArchived} />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="timeZone">Calendar timezone</Label>
+            <select
+              id="timeZone"
+              value={timeZone}
+              onChange={event => setTimeZone(event.target.value)}
+              className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+            >
+              <option value="America/New_York">Eastern Time</option>
+              <option value="America/Chicago">Central Time</option>
+              <option value="America/Denver">Mountain Time</option>
+              <option value="America/Los_Angeles">Pacific Time</option>
+              <option value="UTC">UTC</option>
+            </select>
+          </div>
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="showConfetti">Show confetti</Label>
@@ -618,6 +632,7 @@ function DataSection() {
   const [isExporting, setIsExporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [clearConfirmation, setClearConfirmation] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   const handleExport = async () => {
@@ -625,6 +640,10 @@ function DataSection() {
     try {
       const data = await exportUserData();
       if (data) {
+        if ('error' in data) {
+          toast.error(data.error);
+          return;
+        }
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -642,9 +661,11 @@ function DataSection() {
   };
 
   const handleClearActivities = async () => {
+    if (clearConfirmation !== 'CLEAR ALL ACTIVITIES') return;
     setIsClearing(true);
-    await clearAllActivities();
+    await clearAllActivities(clearConfirmation);
     setIsClearing(false);
+    setClearConfirmation('');
   };
 
   const handleDeleteAccount = async () => {
@@ -708,15 +729,25 @@ function DataSection() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear All Activities?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete all your logged activities. Your projects and
-                    reports will remain. This action cannot be undone.
+                    <>
+                      <p>
+                        This will permanently delete all your logged activities. Your projects and
+                        reports will remain. This action cannot be undone.
+                      </p>
+                      <p className="mt-3 font-medium">Type CLEAR ALL ACTIVITIES to confirm:</p>
+                      <Input
+                        placeholder="CLEAR ALL ACTIVITIES"
+                        value={clearConfirmation}
+                        onChange={e => setClearConfirmation(e.target.value)}
+                      />
+                    </>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleClearActivities}
-                    disabled={isClearing}
+                    disabled={isClearing || clearConfirmation !== 'CLEAR ALL ACTIVITIES'}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     {isClearing ? 'Clearing...' : 'Yes, Clear All'}
@@ -1611,8 +1642,7 @@ function AISection({ aiProvider, aiModel, aiKeysByProvider }: AISectionProps) {
   // Unsaved changes: provider switched OR model edited (only meaningful when a key exists)
   const savedModel = aiModel ?? PROVIDER_CONFIGS[aiProvider].defaultModel;
   const hasChanges =
-    hasKeyForSelected &&
-    (selectedProvider !== aiProvider || selectedModel !== savedModel);
+    hasKeyForSelected && (selectedProvider !== aiProvider || selectedModel !== savedModel);
 
   const handleApply = async () => {
     setIsSavingSettings(true);
@@ -1672,11 +1702,11 @@ function AISection({ aiProvider, aiModel, aiKeysByProvider }: AISectionProps) {
         <CardHeader>
           <CardTitle className="text-sm font-medium">AI Provider</CardTitle>
           <CardDescription className="text-muted-foreground text-xs">
-            Select a provider, set a model, and optionally bring your own API key for dedicated quota.
+            Select a provider, set a model, and optionally bring your own API key for dedicated
+            quota.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-
           {/* 1. Provider selector row */}
           <div className="flex flex-wrap gap-2">
             {AI_PROVIDERS.map(p => {
@@ -1705,7 +1735,7 @@ function AISection({ aiProvider, aiModel, aiKeysByProvider }: AISectionProps) {
 
           {/* 2. Model input */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
+            <Label className="text-muted-foreground text-xs">
               Model{!hasKeyForSelected && ' — add your own key to customize'}
             </Label>
             <Input
@@ -1761,11 +1791,10 @@ function AISection({ aiProvider, aiModel, aiKeysByProvider }: AISectionProps) {
             href={config.docsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline text-xs"
+            className="text-primary text-xs hover:underline"
           >
             Get {config.label} API key ↗
           </a>
-
         </CardContent>
       </Card>
     </div>

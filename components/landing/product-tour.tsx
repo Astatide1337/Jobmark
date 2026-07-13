@@ -26,15 +26,13 @@ const steps = [
     id: 'capture',
     title: 'Capture the work',
     subtitle: 'Fast, low friction.',
-    description:
-      'Log what you shipped or solved in seconds. No rigid templates or busywork.',
+    description: 'Log what you shipped or solved in seconds. No rigid templates or busywork.',
   },
   {
     id: 'timeline',
     title: 'Organize into evidence',
     subtitle: 'Structured by default.',
-    description:
-      'Your record becomes searchable proof of impact, grouped by project and theme.',
+    description: 'Your record becomes searchable proof of impact, grouped by project and theme.',
   },
   {
     id: 'reports',
@@ -53,8 +51,7 @@ const steps = [
     id: 'insights',
     title: 'Grow over time',
     subtitle: 'Patterns you can act on.',
-    description:
-      'See patterns in your work and focus on the habits that move your career forward.',
+    description: 'See patterns in your work and focus on the habits that move your career forward.',
   },
 ];
 

@@ -61,6 +61,8 @@ import {
   CHANNEL_OPTIONS,
 } from '@/lib/network';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/components/providers/settings-provider';
+import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 
 interface Interaction {
   id: string;
@@ -104,6 +106,11 @@ export function ContactDetailView({
   initialDrafts,
 }: ContactDetailViewProps) {
   const router = useRouter();
+  const { settings } = useSettings();
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -194,6 +201,7 @@ export function ContactDetailView({
               <InteractionTimeline
                 interactions={interactions}
                 contactId={contact.id}
+                timeZone={timeZone}
                 onInteractionAdded={() => router.refresh()}
               />
             </TabsContent>
@@ -313,10 +321,12 @@ const CHANNEL_COLORS: Record<string, string> = {
 function InteractionTimeline({
   interactions,
   contactId,
+  timeZone,
   onInteractionAdded,
 }: {
   interactions: Interaction[];
   contactId: string;
+  timeZone: string;
   onInteractionAdded?: () => void;
 }) {
   const router = useRouter();
@@ -388,7 +398,8 @@ function InteractionTimeline({
             <MessageSquare className="text-muted-foreground/50 mx-auto mb-3 h-8 w-8" />
             <p className="text-foreground text-sm font-medium">No interactions logged yet.</p>
             <p className="text-muted-foreground mt-1 text-xs">
-              Keep a light record of meaningful touchpoints so this relationship stays useful and current.
+              Keep a light record of meaningful touchpoints so this relationship stays useful and
+              current.
             </p>
             {!showForm && (
               <Button variant="link" size="sm" className="mt-2" onClick={() => setShowForm(true)}>
@@ -495,7 +506,7 @@ function InteractionTimeline({
                     <div
                       className={cn(
                         'flex items-center gap-1.5 text-xs',
-                        isDateOnlyOverdue(interaction.followUpDate)
+                        isDateOnlyOverdue(interaction.followUpDate, timeZone)
                           ? 'text-destructive font-medium'
                           : 'text-muted-foreground'
                       )}
@@ -503,9 +514,9 @@ function InteractionTimeline({
                       <Clock className="h-3.5 w-3.5" />
                       <span>
                         Follow up: {formatDate(interaction.followUpDate)} (
-                        {getRelativeDay(interaction.followUpDate)})
+                        {getRelativeDay(interaction.followUpDate, timeZone)})
                       </span>
-                      {isDateOnlyOverdue(interaction.followUpDate) && (
+                      {isDateOnlyOverdue(interaction.followUpDate, timeZone) && (
                         <Badge variant="destructive" className="px-1.5 py-0 text-[10px]">
                           Overdue
                         </Badge>

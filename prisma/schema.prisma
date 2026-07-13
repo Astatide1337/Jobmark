@@ -1,17 +1,15 @@
 /**
  * jobmark Database Schema
- * 
- * Why: This schema defines the professional relationship between Users, 
+ * Why: This schema defines the professional relationship between Users,
  * their Accomplishments (Activities), and their Career Assets (Projects, Reports).
- * 
  * Key Design Decisions:
- * - Soft Links in Conversations: The `Conversation` model uses optional IDs 
- *   (`projectId`, `goalId`, etc.) instead of hard relations to allow AI 
- *   context to be highly fluid without database integrity constraints 
- *   blocking the user experience.
- * - Normalized Dates: `logDate` in `Activity` uses `@db.Date` (YYYY-MM-DD) 
- *   to ensure statistics are calculated based on calendar days, while 
- *   `createdAt` remains a full timestamp for ordering and audit logs.
+ * - Soft Links in Conversations: The `Conversation` model uses optional IDs
+ * (`projectId`, `goalId`, etc.) instead of hard relations to allow AI
+ * context to be highly fluid without database integrity constraints
+ * blocking the user experience.
+ * - Normalized Dates: `logDate` in `Activity` uses `@db.Date` (YYYY-MM-DD)
+ * to ensure statistics are calculated based on calendar days, while
+ * `createdAt` remains a full timestamp for ordering and audit logs.
  */
 
 // Jobmark Database Schema
@@ -57,6 +55,13 @@ model Session {
   @@index([userId])
 }
 
+model RateLimitBucket {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+  updatedAt   DateTime @updatedAt
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -78,32 +83,32 @@ model User {
   // Legacy Settings (kept for compatibility)
   weekendStreakEnabled Boolean @default(true)
   defaultProjectId     String?
-  monthlyActivityGoal  Int     @default(20)
 
   // Relations
-  accounts      Account[]
-  sessions      Session[]
-  projects      Project[]
-  activities    Activity[]
-  reports       Report[]
-  goals         Goal[]
-  settings      UserSettings?
-  conversations Conversation[]
+  accounts        Account[]
+  sessions        Session[]
+  projects        Project[]
+  activities      Activity[]
+  reports         Report[]
+  goals           Goal[]
+  settings        UserSettings?
+  conversations   Conversation[]
+  chatRequests    ChatRequest[]
   contacts        Contact[]
   interactionLogs InteractionLog[]
   outreachDrafts  OutreachDraft[]
 }
 
 model Goal {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  title     String   @db.VarChar(200) // "Decide exactly what you want"
+  title     String    @db.VarChar(200) // "Decide exactly what you want"
   deadline  DateTime?
-  why       String?  @db.VarChar(500) // "Why is it important"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  why       String?   @db.VarChar(500) // "Why is it important"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations Conversation[]
 
   @@index([userId])
@@ -113,6 +118,9 @@ model UserSettings {
   id     String @id @default(cuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  vaultVersion Int    @default(1)
+  timeZone     String @default("America/New_York")
 
   // Goals (Brian Tracy Method)
   primaryGoal   String?
@@ -127,23 +135,23 @@ model UserSettings {
   customInstructions String? @db.Text
 
   // Appearance
-  themePreset     String @default("cafe")
-  themeMode       String @default("dark")
+  themePreset String @default("cafe")
+  themeMode   String @default("dark")
 
   // Preferences
-  hideArchived    Boolean @default(false)
-  showConfetti    Boolean @default(true)
+  hideArchived Boolean @default(false)
+  showConfetti Boolean @default(true)
 
   // Vault (Password-Locked Projects)
-  vaultPasswordHash  String?  @db.Text
+  vaultPasswordHash String? @db.Text
 
   // Multi-provider BYOK — store encrypted key per provider in JSON, track active provider
-  aiProvider    String   @default("gemini")  // active provider id
-  aiModel       String?                       // null = use provider's default
-  aiKeys        Json?                         // { "gemini": "encrypted", "openai": "encrypted", ... }
+  aiProvider String  @default("gemini") // active provider id
+  aiModel    String? // null = use provider's default
+  aiKeys     Json? // { "gemini": "encrypted", "openai": "encrypted", ... }
 
   // Focus Session Configuration
-  focusConfig     Json?
+  focusConfig Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -152,15 +160,18 @@ model UserSettings {
 model Report {
   id        String   @id @default(cuid())
   userId    String
+  projectId String?
   title     String
   content   String   @db.Text
   metadata  Json?
   createdAt DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
   conversations Conversation[]
 
   @@index([userId])
+  @@index([projectId])
 }
 
 model Project {
@@ -174,9 +185,10 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activities Activity[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activities    Activity[]
   conversations Conversation[]
+  reports       Report[]
 
   @@index([userId])
   @@index([userId, archived])
@@ -201,17 +213,17 @@ model Activity {
 }
 
 model Contact {
-  id                String           @id @default(cuid())
+  id                String    @id @default(cuid())
   userId            String
-  fullName          String           @db.VarChar(150)
-  phone             String?          @db.VarChar(50)
-  email             String?          @db.VarChar(255)
+  fullName          String    @db.VarChar(150)
+  phone             String?   @db.VarChar(50)
+  email             String?   @db.VarChar(255)
   birthday          DateTime?
-  relationship      String?          @db.VarChar(120)
-  personalityTraits String?          @db.Text
-  notes             String?          @db.Text
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  relationship      String?   @db.VarChar(120)
+  personalityTraits String?   @db.Text
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   interactions   InteractionLog[]
@@ -224,17 +236,17 @@ model Contact {
 }
 
 model InteractionLog {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String
   contactId    String
-  occurredAt   DateTime @default(now())
-  channel      String   @default("other")
-  summary      String   @db.Text
-  nextStep     String?  @db.Text
+  occurredAt   DateTime  @default(now())
+  channel      String    @default("other")
+  summary      String    @db.Text
+  nextStep     String?   @db.Text
   followUpDate DateTime?
-  rawNotes     String?  @db.Text
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  rawNotes     String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -260,38 +272,67 @@ model OutreachDraft {
 
 // Chat models for AI Career Coach
 model Conversation {
-  id        String    @id @default(cuid())
-  userId    String
-  title     String    @default("New Chat")
-  mode      String    @default("general") // "general" | "goal-coach" | "interview"
-  
-  // Context references
-  projectId String?   // If conversation is about a specific project
-  goalId    String?   // If conversation is about a specific goal
-  contactId String?   // If conversation references a specific contact
-  
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  title  String @default("New Chat")
+  mode   String @default("general") // "general" | "goal-coach" | "interview"
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  goal      Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
-  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  messages  Message[]
-  reports   Report[]
+  // Context references
+  projectId String? // If conversation is about a specific project
+  goalId    String? // If conversation is about a specific goal
+  contactId String? // If conversation references a specific contact
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  goal         Goal?         @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  messages     Message[]
+  reports      Report[]
+  chatRequests ChatRequest[]
 
   @@index([userId, updatedAt(sort: Desc)])
   @@index([userId, contactId])
 }
 
+model ChatRequest {
+  id                 String   @id @default(cuid())
+  conversationId     String
+  userId             String
+  requestId          String
+  targetMessageId    String?
+  userMessageId      String?
+  createdUserMessage Boolean  @default(false)
+  assistantMessageId String?
+  status             String   @default("in_progress")
+  error              String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, requestId])
+  @@unique([targetMessageId])
+  @@index([conversationId, status])
+  @@index([userId, createdAt])
+}
+
 model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  role           String       // "user" | "assistant" | "system"
-  content        String       @db.Text
-  createdAt      DateTime     @default(now())
+  id                String    @id @default(cuid())
+  conversationId    String
+  role              String // "user" | "assistant" | "system"
+  content           String    @db.Text
+  clientRequestId   String?
+  responseRequestId String?
+  cancelledAt       DateTime?
+  createdAt         DateTime  @default(now())
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@unique([conversationId, clientRequestId])
+  @@unique([conversationId, responseRequestId])
   @@index([conversationId, createdAt])
 }

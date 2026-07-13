@@ -42,7 +42,6 @@ interface Report {
   title: string;
   content: string;
   createdAt: Date;
-  metadata?: any;
 }
 
 interface ReportHistoryProps {

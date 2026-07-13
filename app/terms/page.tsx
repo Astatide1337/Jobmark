@@ -18,10 +18,8 @@ export default function TermsPage() {
         </Link>
 
         <header className="mb-12">
-          <p className="text-primary mb-3 text-xs font-semibold uppercase tracking-widest">
-            Legal
-          </p>
-          <h1 className="text-foreground font-serif text-4xl font-semibold leading-tight">
+          <p className="text-primary mb-3 text-xs font-semibold tracking-widest uppercase">Legal</p>
+          <h1 className="text-foreground font-serif text-4xl leading-tight font-semibold">
             Terms of Service
           </h1>
           <p className="text-muted-foreground mt-4 text-sm">Last updated March 31, 2026</p>
@@ -29,7 +27,7 @@ export default function TermsPage() {
 
         <div className="text-muted-foreground space-y-10 text-sm leading-7">
           <section>
-            <h2 className="text-foreground font-serif mb-3 text-xl font-semibold">Acceptance</h2>
+            <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">Acceptance</h2>
             <p>
               By accessing Jobmark, you agree to these terms. If you don&apos;t agree, please
               don&apos;t use the service.
@@ -37,7 +35,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-foreground font-serif mb-3 text-xl font-semibold">
+            <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
               What Jobmark is
             </h2>
             <p>
@@ -48,7 +46,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-foreground font-serif mb-3 text-xl font-semibold">
+            <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
               Your responsibilities
             </h2>
             <ul className="list-disc space-y-2 pl-5">
@@ -62,7 +60,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-foreground font-serif mb-3 text-xl font-semibold">
+            <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
               AI-generated content disclaimer
             </h2>
             <p>
@@ -74,7 +72,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-foreground font-serif mb-3 text-xl font-semibold">
+            <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
               Account termination
             </h2>
             <p>
@@ -87,7 +85,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-foreground font-serif mb-3 text-xl font-semibold">
+            <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
               Limitation of liability
             </h2>
             <p>

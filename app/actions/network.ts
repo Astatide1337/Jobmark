@@ -12,11 +12,18 @@
  */
 'use server';
 
-import { auth } from '@/lib/auth';
+import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { parseUTCDate } from '@/lib/network';
+import {
+  DEFAULT_TIME_ZONE,
+  getCalendarRange,
+  isValidTimeZone,
+  shiftCalendarDate,
+  zonedCalendarDateToUtc,
+} from '@/lib/date-semantics';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -208,14 +215,8 @@ export async function deleteContact(contactId: string) {
 // Contact Queries
 // ---------------------------------------------------------------------------
 
-export async function getContacts(search?: string, userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+export async function getContacts(search?: string) {
+  const targetUserId = await requireUserId();
 
   const contacts = await prisma.contact.findMany({
     where: {
@@ -236,14 +237,8 @@ export async function getContacts(search?: string, userId?: string) {
   return contacts;
 }
 
-export async function getContactById(contactId: string, userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return null;
-    targetUserId = session.user.id;
-  }
+export async function getContactById(contactId: string) {
+  const targetUserId = await requireUserId();
 
   const contact = await prisma.contact.findUnique({
     where: {
@@ -393,14 +388,8 @@ export async function deleteInteraction(interactionId: string) {
 // Interaction Queries
 // ---------------------------------------------------------------------------
 
-export async function getInteractionsByContact(contactId: string, limit = 20, userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) return [];
-    targetUserId = session.user.id;
-  }
+export async function getInteractionsByContact(contactId: string, limit = 20) {
+  const targetUserId = await requireUserId();
 
   const interactions = await prisma.interactionLog.findMany({
     where: {
@@ -418,19 +407,21 @@ export async function getInteractionsByContact(contactId: string, limit = 20, us
 // Network Stats
 // ---------------------------------------------------------------------------
 
-export async function getNetworkStats(userId?: string) {
-  let targetUserId = userId;
-
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return { totalContacts: 0, interactionsThisMonth: 0, followUpsDue: 0 };
-    }
-    targetUserId = session.user.id;
-  }
+export async function getNetworkStats() {
+  const targetUserId = await requireUserId();
 
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: targetUserId },
+    select: { timeZone: true },
+  });
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
+  const monthStart = zonedCalendarDateToUtc(monthRange.startDate, timeZone);
+  const monthEnd = zonedCalendarDateToUtc(shiftCalendarDate(monthRange.endDate, 1), timeZone);
 
   const [totalContacts, interactionsThisMonth, followUpsDue] = await Promise.all([
     prisma.contact.count({
@@ -439,7 +430,7 @@ export async function getNetworkStats(userId?: string) {
     prisma.interactionLog.count({
       where: {
         userId: targetUserId,
-        occurredAt: { gte: startOfMonth },
+        occurredAt: { gte: monthStart, lt: monthEnd },
       },
     }),
     prisma.interactionLog.count({

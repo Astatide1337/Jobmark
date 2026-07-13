@@ -77,7 +77,8 @@ export function AiInsights({ data }: AiInsightsProps) {
           ))}
           {insights.length === 0 && (
             <p className="text-muted-foreground col-span-2 py-4 text-center text-sm">
-              Capture more work to see where your record is strong and where it still needs coverage.
+              Capture more work to see where your record is strong and where it still needs
+              coverage.
             </p>
           )}
         </div>

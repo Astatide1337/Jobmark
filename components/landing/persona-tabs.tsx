@@ -72,8 +72,7 @@ const tabs: Tab[] = [
     label: 'Stay Visible',
     icon: <Share2 className="h-4 w-4" />,
     headline: 'Send updates without scrambling',
-    description:
-      'Turn your record into weekly updates, standups, and status notes in minutes.',
+    description: 'Turn your record into weekly updates, standups, and status notes in minutes.',
     features: [
       'Weekly summaries',
       'Standup-ready notes',

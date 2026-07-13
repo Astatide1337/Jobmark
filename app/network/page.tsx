@@ -16,12 +16,7 @@ export default async function NetworkPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/');
 
-  const userId = session.user.id;
-
-  const [contacts, stats] = await Promise.all([
-    getContacts(undefined, userId),
-    getNetworkStats(userId),
-  ]);
+  const [contacts, stats] = await Promise.all([getContacts(), getNetworkStats()]);
 
   return (
     <DashboardShell

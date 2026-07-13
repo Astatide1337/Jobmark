@@ -13,6 +13,7 @@
 import { auth } from '@/lib/auth';
 import { createAIClient } from '@/lib/ai';
 import { getUserAiConfig } from '@/app/actions/settings';
+import { assertAiRequestAllowed } from '@/lib/ai-rate-limit';
 
 /**
  * Polishes raw dictation text using the user's configured AI provider.
@@ -23,8 +24,10 @@ export async function polishDictation(text: string) {
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
+  await assertAiRequestAllowed(session.user.id, 'dictation');
 
   if (!text || text.trim().length === 0) return '';
+  if (text.length > 20_000) return text.slice(0, 20_000);
 
   try {
     const { provider, model, apiKey } = await getUserAiConfig();
