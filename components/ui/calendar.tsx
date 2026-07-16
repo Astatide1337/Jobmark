@@ -1,16 +1,16 @@
 /**
  * Date Picker Calendar
  *
- * Why: Used for selecting report ranges and setting goal deadlines.
- * Customized to support the "Warm & Round" design language of jobmark.
+ * Why: Shared calendar primitive for activity dates, report ranges, and goal
+ * deadlines. The class-name map targets react-day-picker v9's UI API.
  */
 'use client';
 
 import * as React from 'react';
 import { DayPicker } from 'react-day-picker';
 
-import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
@@ -18,53 +18,50 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn('p-3', className)}
+      className={cn('relative w-fit p-3', className)}
       classNames={{
-        months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
-        month: 'space-y-4',
-        caption: 'flex justify-center pt-1 relative items-center',
+        months: 'flex flex-col gap-4 sm:flex-row',
+        month: 'space-y-3',
+        month_caption: 'relative flex h-9 items-center justify-center px-10',
         caption_label: 'text-sm font-medium',
-        nav: 'space-x-1 flex items-center',
-        nav_button: cn(
-          buttonVariants({ variant: 'outline' }),
-          'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100'
+        nav: 'absolute inset-x-3 top-3 flex items-center justify-between',
+        button_previous: cn(
+          buttonVariants({ variant: 'outline', size: 'icon-sm' }),
+          'bg-transparent opacity-70 hover:opacity-100'
         ),
-        nav_button_previous: 'absolute left-1',
-        nav_button_next: 'absolute right-1',
-        table: 'w-full border-collapse space-y-1',
-        head_row: 'flex',
-        head_cell: 'text-muted-foreground rounded-xl w-9 font-normal text-[0.8rem]',
-        row: 'flex w-full mt-2',
-        cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-xl [&:has([aria-selected].day-range-start)]:rounded-l-xl [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-xl last:[&:has([aria-selected])]:rounded-r-xl focus-within:relative focus-within:z-20 rounded-xl',
-        day: cn(
+        button_next: cn(
+          buttonVariants({ variant: 'outline', size: 'icon-sm' }),
+          'bg-transparent opacity-70 hover:opacity-100'
+        ),
+        chevron: 'size-4 fill-current',
+        month_grid: 'w-full border-collapse',
+        weekdays: 'grid grid-cols-7',
+        weekday:
+          'text-muted-foreground flex size-9 items-center justify-center text-[0.8rem] font-normal',
+        weeks: 'block',
+        week: 'mt-1 grid grid-cols-7',
+        day: 'relative size-9 p-0 text-center text-sm focus-within:z-20',
+        day_button: cn(
           buttonVariants({ variant: 'ghost' }),
-          'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-xl text-foreground hover:text-primary transition-all'
+          'size-9 p-0 font-normal text-foreground aria-selected:opacity-100'
         ),
-        day_range_start: 'day-range-start',
-        day_range_end: 'day-range-end',
-        day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground',
-        day_selected:
-          'bg-primary !text-primary-foreground hover:bg-primary hover:!text-primary-foreground focus:bg-primary focus:!text-primary-foreground',
-        day_today:
-          'font-bold border border-border !text-foreground aria-selected:!text-primary-foreground',
-
-        day_outside:
-          'day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30',
-        day_disabled: 'text-muted-foreground opacity-50',
-        day_hidden: 'invisible',
+        range_start: 'rounded-l-xl [&>button]:rounded-l-xl',
+        range_end: 'rounded-r-xl [&>button]:rounded-r-xl',
+        range_middle:
+          'rounded-none !bg-accent/60 [&>button]:rounded-none [&>button]:!bg-accent/60 [&>button]:!text-accent-foreground',
+        selected:
+          'rounded-xl bg-primary text-primary-foreground [&>button]:bg-primary [&>button]:text-primary-foreground [&>button:hover]:bg-primary/90',
+        today: 'rounded-xl border border-border font-bold [&>button]:font-bold',
+        outside: 'text-muted-foreground opacity-45 aria-selected:opacity-30',
+        disabled: 'text-muted-foreground opacity-40',
+        hidden: 'invisible',
         ...classNames,
-      }}
-      components={{
-        Chevron: ({ orientation }) => (
-          <span className="h-4 w-4" aria-hidden="true">
-            {orientation === 'left' ? '<' : '>'}
-          </span>
-        ),
       }}
       {...props}
     />
   );
 }
+
 Calendar.displayName = 'Calendar';
 
 export { Calendar };
