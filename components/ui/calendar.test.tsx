@@ -12,8 +12,8 @@ describe('Calendar', () => {
     expect(html).toContain('grid grid-cols-7');
     expect(html).toContain('mt-1 grid grid-cols-7');
     expect(html).toContain('size-4 fill-current');
-    expect(html).toContain('button_previous');
-    expect(html).toContain('button_next');
+    expect(html).toContain('aria-label="Go to the Previous Month"');
+    expect(html).toContain('aria-label="Go to the Next Month"');
     expect(html).not.toContain('&lt;');
     expect(html).not.toContain('&gt;');
   });
