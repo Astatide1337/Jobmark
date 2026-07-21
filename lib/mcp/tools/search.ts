@@ -97,7 +97,7 @@ export const searchGlobalTool = {
         },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -164,7 +164,7 @@ export const dashboardStatsTool = {
         },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -223,7 +223,7 @@ export const insightsGetTool = {
         },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

@@ -64,7 +64,7 @@ export const focusGetTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -103,7 +103,7 @@ export const focusSaveTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -134,7 +134,7 @@ export const focusResetTool = {
         workDuration: { type: 'number' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true },
+    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -169,7 +169,7 @@ export const focusLogDecompressionTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -204,7 +204,7 @@ export const dictationPolishTool = {
         originalText: { type: 'string' },
       },
     },
-    annotations: { openWorldHint: true, destructiveHint: false },
+    annotations: { openWorldHint: true, destructiveHint: false, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

@@ -63,7 +63,7 @@ export const goalsListTool = {
         nextCursor: { type: ['string', 'null'] },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -101,7 +101,7 @@ export const goalsGetTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -141,7 +141,7 @@ export const goalsCreateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -182,7 +182,7 @@ export const goalsUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -216,7 +216,7 @@ export const goalsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true },
+    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

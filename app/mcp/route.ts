@@ -64,7 +64,10 @@ async function validateMcpConnection(request: NextRequest): Promise<{ connection
 }
 
 function hasScope(scopes: string[], required: string): boolean {
-  return scopes.some(s => s === required || s === 'mcp:admin');
+  if (scopes.includes('jobmark:destructive')) return true;
+  if (required === 'jobmark:read') return scopes.includes('jobmark:read') || scopes.includes('jobmark:write') || scopes.includes('jobmark:destructive');
+  if (required === 'jobmark:write') return scopes.includes('jobmark:write') || scopes.includes('jobmark:destructive');
+  return scopes.includes(required);
 }
 
 async function checkIdempotency(connectionId: string, key: string): Promise<{ exists: boolean; result?: unknown }> {

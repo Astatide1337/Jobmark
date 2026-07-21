@@ -147,7 +147,7 @@ export function McpConnectionPage({ user, connections }: McpConnectionProps) {
   
   const mcpUrl = `${baseUrl}/mcp`;
   const authUrl = `${baseUrl}/api/auth/mcp/authorize`;
-  const scopes = 'mcp:read mcp:write mcp:admin mcp:vault offline_access';
+  const scopes = 'jobmark:read jobmark:write jobmark:destructive offline_access';
   
   return (
     <div className="min-h-screen bg-background py-12 px-4">

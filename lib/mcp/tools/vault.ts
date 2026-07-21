@@ -20,7 +20,7 @@ export const vaultStatusTool = {
   definition: {
     name: 'vault_status',
     title: 'Vault Status',
-    description: 'Get vault lock status and configuration. Requires mcp:vault scope.',
+    description: 'Get vault lock status and configuration. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -35,7 +35,7 @@ export const vaultStatusTool = {
         lockedProjectCount: { type: 'number' as const },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -48,7 +48,7 @@ export const vaultListProjectsTool = {
   definition: {
     name: 'vault_list_projects',
     title: 'List Vault Projects',
-    description: 'List projects locked in the vault. Requires mcp:vault scope.',
+    description: 'List projects locked in the vault. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -70,7 +70,7 @@ export const vaultListProjectsTool = {
         },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -90,7 +90,7 @@ export const vaultBeginSetupTool = {
   definition: {
     name: 'vault_begin_setup',
     title: 'Begin Vault Setup',
-    description: 'Start vault password setup via secure one-time browser URL. Requires mcp:vault scope.',
+    description: 'Start vault password setup via secure one-time browser URL. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -103,7 +103,7 @@ export const vaultBeginSetupTool = {
         expiresAt: { type: 'string' as const },
       },
     },
-    annotations: { openWorldHint: true },
+    annotations: { openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -126,7 +126,7 @@ export const vaultBeginChangePasswordTool = {
   definition: {
     name: 'vault_begin_change_password',
     title: 'Begin Vault Password Change',
-    description: 'Start vault password change via secure one-time browser URL. Requires mcp:vault scope.',
+    description: 'Start vault password change via secure one-time browser URL. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -139,7 +139,7 @@ export const vaultBeginChangePasswordTool = {
         expiresAt: { type: 'string' as const },
       },
     },
-    annotations: { openWorldHint: true },
+    annotations: { openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -162,7 +162,7 @@ export const vaultBeginUnlockTool = {
   definition: {
     name: 'vault_begin_unlock',
     title: 'Begin Vault Unlock',
-    description: 'Start vault unlock flow via secure one-time browser URL (5 min TTL). Requires mcp:vault scope.',
+    description: 'Start vault unlock flow via secure one-time browser URL (5 min TTL). Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -175,7 +175,7 @@ export const vaultBeginUnlockTool = {
         expiresAt: { type: 'string' as const },
       },
     },
-    annotations: { openWorldHint: true },
+    annotations: { openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -198,7 +198,7 @@ export const vaultLockTool = {
   definition: {
     name: 'vault_lock',
     title: 'Lock Vault',
-    description: 'Lock the vault immediately. Requires mcp:vault scope.',
+    description: 'Lock the vault immediately. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -210,7 +210,7 @@ export const vaultLockTool = {
         locked: { type: 'boolean' as const },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true },
+    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -223,7 +223,7 @@ export const vaultSetProjectLockedTool = {
   definition: {
     name: 'vault_set_project_locked',
     title: 'Set Project Vault Lock',
-    description: 'Lock or unlock a specific project in the vault. Requires mcp:vault scope.',
+    description: 'Lock or unlock a specific project in the vault. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -240,7 +240,7 @@ export const vaultSetProjectLockedTool = {
         locked: { type: 'boolean' as const },
       },
     },
-    annotations: { idempotentHint: true },
+    annotations: { idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

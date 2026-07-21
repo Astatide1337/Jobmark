@@ -78,7 +78,7 @@ export const reportsListTool = {
         totalCount: { type: 'number' },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -130,7 +130,7 @@ export const reportsGetTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -170,7 +170,7 @@ export const reportsGenerateTool = {
         status: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -205,7 +205,7 @@ export const reportsRegenerateTool = {
         status: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -239,7 +239,7 @@ export const reportsImproveTextTool = {
         improvedText: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -272,7 +272,7 @@ export const reportsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true },
+    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

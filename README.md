@@ -28,7 +28,7 @@ Jobmark no longer operates an internal chat product. Instead, it exposes every c
 
 **Connection Page**: `/chat` — Add Jobmark to your AI assistant (pre-configured for Claude, ChatGPT, MCP Inspector, Cursor, VS Code)
 
-**Scopes**: `mcp:read`, `mcp:write`, `mcp:admin`, `mcp:vault`, `offline_access`
+**Scopes**: `jobmark:read`, `jobmark:write`, `jobmark:destructive`, `offline_access`
 
 **Vault**: Per-connection locking; unlock via short-lived one-time browser flow (`/mcp/vault/unlock?token=...`)
 

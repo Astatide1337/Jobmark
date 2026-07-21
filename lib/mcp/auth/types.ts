@@ -1,10 +1,9 @@
 import { z } from 'zod';
 
 export const OAuthScopes = [
-  'mcp:read',
-  'mcp:write',
-  'mcp:admin',
-  'mcp:vault',
+  'jobmark:read',
+  'jobmark:write',
+  'jobmark:destructive',
   'offline_access',
 ] as const;
 

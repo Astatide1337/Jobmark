@@ -87,7 +87,7 @@ export const outreachListTool = {
         nextCursor: { type: ['string', 'null'] },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -125,7 +125,7 @@ export const outreachGenerateTool = {
         generatedContent: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -165,7 +165,7 @@ export const outreachCreateTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -203,7 +203,7 @@ export const outreachUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -237,7 +237,7 @@ export const outreachDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true },
+    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -271,7 +271,7 @@ export const outreachImproveTextTool = {
         improvedContent: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

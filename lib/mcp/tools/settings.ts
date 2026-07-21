@@ -55,7 +55,7 @@ export const settingsGetTool = {
         timeZone: { type: 'string' },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
@@ -96,7 +96,7 @@ export const settingsUpdateTool = {
         timeZone: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -131,7 +131,7 @@ export const settingsManageAiKeysTool = {
         expiresAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

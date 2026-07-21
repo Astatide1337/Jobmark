@@ -93,7 +93,7 @@ export const projectsListTool = {
         nextCursor: { type: ['string', 'null'] },
       },
     },
-    annotations: { readOnlyHint: true, idempotentHint: true },
+    annotations: { readOnlyHint: true, idempotentHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -146,7 +146,7 @@ export const projectsGetTool = {
         },
       },
     },
-    annotations: { readOnlyHint: true, idempotentHint: true },
+    annotations: { readOnlyHint: true, idempotentHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -214,7 +214,7 @@ export const projectsGetWithActivitiesTool = {
         nextCursor: { type: ['string', 'null'] },
       },
     },
-    annotations: { readOnlyHint: true, idempotentHint: true },
+    annotations: { readOnlyHint: true, idempotentHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -271,7 +271,7 @@ export const projectsCreateTool = {
         },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -321,7 +321,7 @@ export const projectsUpdateTool = {
         },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -358,7 +358,7 @@ export const projectsSetArchivedTool = {
         archived: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true },
+    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -394,7 +394,7 @@ export const projectsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true },
+    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

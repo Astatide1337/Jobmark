@@ -491,15 +491,13 @@ export async function getWellKnownAuthServer(baseUrl: string): Promise<WellKnown
     revocation_endpoint: `${baseUrl}/api/auth/mcp/revoke`,
     introspection_endpoint: `${baseUrl}/api/auth/mcp/introspect`,
     jwks_uri: `${baseUrl}/api/auth/mcp/jwks`,
-    registration_endpoint: `${baseUrl}/api/auth/mcp/register`,
     scopes_supported: [...OAuthScopes],
     response_types_supported: ['code'],
     response_modes_supported: ['query'],
-    grant_types_supported: ['authorization_code', 'refresh_token', 'client_credentials'],
+    grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],
     token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic', 'none'],
     token_endpoint_auth_signing_alg_values_supported: ['RS256'],
-    service_documentation: `${baseUrl}/docs/mcp`,
     ui_locales_supported: ['en'],
   };
 }
@@ -507,11 +505,10 @@ export async function getWellKnownAuthServer(baseUrl: string): Promise<WellKnown
 export async function getWellKnownProtectedResource(baseUrl: string): Promise<WellKnownProtectedResource> {
   return {
     resource: `${baseUrl}/mcp`,
-    authorization_servers: [`${baseUrl}/api/auth/mcp`],
+    authorization_servers: [baseUrl],
     jwks_uri: `${baseUrl}/api/auth/mcp/jwks`,
     scopes_supported: [...OAuthScopes],
     bearer_methods_supported: ['header'],
-    resource_documentation: `${baseUrl}/docs/mcp`,
   };
 }
 

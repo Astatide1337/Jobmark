@@ -43,7 +43,7 @@ export const accountExportTool = {
         includesVault: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: false, openWorldHint: true },
+    annotations: { destructiveHint: false, openWorldHint: true, requiredScopes: ['jobmark:read'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -77,7 +77,7 @@ export const accountClearActivitiesTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: false },
+    annotations: { destructiveHint: true, idempotentHint: false, requiredScopes: ['jobmark:destructive'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -111,7 +111,7 @@ export const accountDeleteTool = {
         expiresAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: true, openWorldHint: true },
+    annotations: { destructiveHint: true, openWorldHint: true, requiredScopes: ['jobmark:destructive'] },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

@@ -167,29 +167,6 @@ export async function POST(request: NextRequest) {
     });
   }
   
-  if (grantType === 'client_credentials') {
-    // Only for confidential clients
-    if (!clientSecret) {
-      return NextResponse.json({ error: 'invalid_client' }, {
-        status: 401,
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
-      });
-    }
-    
-    const scope = body.scope ?? 'mcp:read mcp:write';
-    const accessToken = await createAccessToken(clientId, 'service-account', scope);
-    
-    return NextResponse.json({
-      access_token: accessToken.token,
-      token_type: 'Bearer',
-      expires_in: Math.floor((accessToken.expires_at - Date.now()) / 1000),
-      scope: accessToken.scope,
-    }, {
-      status: 200,
-      headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
-    });
-  }
-  
   return NextResponse.json({ error: 'unsupported_grant_type' }, {
     status: 400,
     headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
