@@ -17,18 +17,12 @@ import { Sidebar } from './sidebar';
 import { PageTransition } from '@/components/ui/page-transition';
 import { useUI } from '@/components/providers/ui-provider';
 import { cn } from '@/lib/utils';
-import type { ConversationData } from '@/app/actions/chat';
 
 interface DashboardShellProps {
   children: React.ReactNode;
   header?: React.ReactNode;
-  className?: string; // Allow custom classes for the main content area
+  className?: string;
   hideSidebar?: boolean;
-  chatSidebarData?: {
-    conversations: ConversationData[];
-    activeConversationId?: string;
-    projects: Array<{ id: string; name: string; color: string }>;
-  };
 }
 
 export function DashboardShell({
@@ -36,7 +30,6 @@ export function DashboardShell({
   header,
   className,
   hideSidebar = false,
-  chatSidebarData,
 }: DashboardShellProps) {
   const { uiV2 } = useUI();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -57,7 +50,6 @@ export function DashboardShell({
     >
       {!hideSidebar && (
         <Sidebar
-          chatSidebarData={chatSidebarData}
           isMobileOpen={isMobileOpen}
           onMobileClose={() => setIsMobileOpen(false)}
         />

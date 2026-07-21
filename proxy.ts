@@ -13,7 +13,7 @@ export function proxy(request: NextRequest) {
   // This prevents redirect loops when cookies exist but session is invalid
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/api/auth', '/terms', '/privacy', '/articles'];
+  const publicRoutes = ['/', '/api/auth', '/terms', '/privacy', '/articles', '/mcp', '/api/auth/mcp', '/.well-known'];
   const isPublicRoute = publicRoutes.some(
     route => pathname === route || pathname.startsWith(route + '/')
   );

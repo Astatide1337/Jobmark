@@ -699,7 +699,7 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                   >
                     <Link href="/chat">
                       <ArrowRight className="mr-2 h-4 w-4" />
-                      Open in Coach
+                      Open in MCP Client
                     </Link>
                   </Button>
                 </div>

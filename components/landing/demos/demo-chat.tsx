@@ -1,25 +1,18 @@
 /**
- * Interactive Chat Demo
+ * Interactive AI Demo
  *
- * Why: Visualizes the AI Mentor's value proposition. It showcases
- * how the mentor uses logged activities to provide specific,
- * evidence-based coaching.
+ * why: Visualizes Jobmark's AI integration value proposition. Shows
+ * how an AI assistant uses logged activities to provide specific,
+ * evidence-based career guidance through MCP.
  *
- * Implementation: Uses static "Mock" messages and a non-functional
- * version of the `ContextSelector` to ensure the landing page stays
- * lightweight and fast.
+ * Implementation: Uses static "Mock" messages and mock context chips
+ * to ensure the landing page stays lightweight and fast.
  */
 import { DashboardFrame } from './dashboard-frame';
 import { cn } from '@/lib/utils';
-import { Bot, User, ArrowUp } from 'lucide-react';
-import { ContextSelector } from '@/components/chat/context-selector';
+import { Bot, User, ArrowUp, X } from 'lucide-react';
 
 export function DemoChat() {
-  const mockProjects = [
-    { id: '1', name: 'Website Redesign', color: '#6366f1' },
-    { id: '2', name: 'Mobile App MVP', color: '#10b981' },
-  ];
-
   return (
     <DashboardFrame activePath="/mentor">
       <div className="bg-background relative flex h-full flex-col">
@@ -33,32 +26,18 @@ export function DemoChat() {
           <MockChatMessage role="user" content="Draft the weekly update, then." />
         </div>
 
-        {/* Floating Input Area (mimicking ChatInterface) */}
+        {/* Floating Input Area */}
         <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-20">
           <div className="from-background via-background/90 absolute inset-0 top-[-50px] h-[200px] bg-gradient-to-t to-transparent" />
 
           <div className="pointer-events-auto relative px-4 pb-6">
             <div className="bg-muted/40 rounded-[32px] border border-white/10 p-2 shadow-2xl backdrop-blur-2xl transition-all duration-300">
-              {/* Context Chips */}
-              <div className="mb-1 border-b border-white/5 px-4 py-2">
-                <ContextSelector
-                  projects={mockProjects}
-                  goals={[]}
-                  reports={[]}
-                  selectedProjectIds={['1']}
-                  selectedGoalIds={[]}
-                  selectedContactIds={[]}
-                  selectedReportIds={[]}
-                  onProjectSelect={() => {}}
-                  onGoalSelect={() => {}}
-                  onContactSelect={() => {}}
-                  onReportSelect={() => {}}
-                  onProjectRemove={() => {}}
-                  onGoalRemove={() => {}}
-                  onContactRemove={() => {}}
-                  onReportRemove={() => {}}
-                  onOpenContextModal={() => {}}
-                />
+              {/* Context Chips (mock) */}
+              <div className="mb-1 flex flex-wrap gap-1 border-b border-white/5 px-4 py-2">
+                <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                  Website Redesign
+                  <X className="h-3 w-3" />
+                </span>
               </div>
 
               <div className="flex items-end gap-2 pr-2 pb-2 pl-4">
