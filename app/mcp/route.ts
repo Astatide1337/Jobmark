@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { validateAccessToken } from '@/lib/mcp/auth/provider';
 import { checkRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
 import { allTools, toolDefinitions } from '@/lib/mcp/tools';
+import { McpValidationError } from '@/lib/mcp/errors';
+import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -22,12 +24,6 @@ interface JsonRpcResponse {
   };
 }
 
-interface McpToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  structuredContent?: unknown;
-  isError?: boolean;
-}
-
 function createErrorResponse(id: string | number | null, code: number, message: string, data?: unknown): JsonRpcResponse {
   return { jsonrpc: '2.0', id, error: { code, message, data } };
 }
@@ -44,10 +40,14 @@ async function validateMcpConnection(request: NextRequest): Promise<{ connection
   const validation = await validateAccessToken(token);
   if (!validation) return null;
 
+  // Resolve public clientId to internal CUID
+  const client = await prisma.oAuthClient.findUnique({ where: { clientId: validation.clientId } });
+  if (!client) return null;
+
   const connection = await prisma.mcpConnection.findFirst({
     where: {
       userId: validation.userId,
-      oauthClientId: validation.clientId,
+      oauthClientId: client.id,
       revokedAt: null,
     },
     orderBy: { lastUsedAt: 'desc' },
@@ -129,7 +129,20 @@ async function executeTool(connectionId: string, userId: string, scopes: string[
 
   const isVaultUnlocked = vaultUnlockedUntil != null && vaultUnlockedUntil > new Date();
   const actor = { userId, source: 'mcp' as const, connectionId, clientId: '', scopes, vaultUnlocked: isVaultUnlocked, requestId: crypto.randomUUID() };
-  const result = await tool.execute(actor, params);
+  
+  let result: McpToolResult;
+  try {
+    result = await tool.execute(actor, params);
+  } catch (error: unknown) {
+    if (error instanceof McpValidationError) {
+      return createStructuredResult(
+        { error: error.code, message: error.message, fieldErrors: error.fieldErrors },
+        error.message,
+        true
+      );
+    }
+    throw error;
+  }
 
   if (tool.definition.annotations?.idempotent && idempotencyKey) {
     await storeIdempotency(connectionId, method, idempotencyKey, result);

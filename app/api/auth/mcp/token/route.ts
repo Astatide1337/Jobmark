@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     await prisma.oAuthAuthorizationCode.delete({ where: { code: codeHash } });
     
     const accessToken = await createAccessToken(clientId, authCode.userId, authCode.scope);
-    const refreshToken = await createRefreshToken(clientId, authCode.userId, authCode.scope, codeVerifier);
+    const refreshToken = await createRefreshToken(clientId, authCode.userId, authCode.scope, authCode.codeChallenge ?? undefined);
     
     return NextResponse.json({
       access_token: accessToken.token,

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as jose from 'jose';
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
 import {
   OAuthScopes,
   OAuthScope,
@@ -257,7 +257,8 @@ export async function createAccessToken(
   const expiresAt = Date.now() + ACCESS_TOKEN_TTL;
   const { key, kid } = await getSigningKey();
   
-  const jwt = await new jose.SignJWT({ sub: userId, scope, client_id: clientId })
+  const jti = randomUUID();
+  const jwt = await new jose.SignJWT({ sub: userId, scope, client_id: clientId, jti })
     .setProtectedHeader({ alg: 'RS256', kid })
     .setIssuedAt()
     .setExpirationTime('15m')
@@ -300,7 +301,7 @@ export async function createRefreshToken(
       userId,
       scope,
       expiresAt: new Date(expiresAt),
-      pkceCodeVerifier: pkceCodeVerifier ? hashToken(pkceCodeVerifier) : null,
+      pkceCodeVerifier: pkceCodeVerifier ?? null,
     },
   });
   
@@ -331,44 +332,21 @@ export async function rotateRefreshToken(
   }
   if (refreshToken.clientId !== clientId || refreshToken.userId !== userId) return null;
   
-  // Check PKCE verifier reuse
+  // Check PKCE verifier: stored value is the code_challenge, presented value is the verifier
   if (pkceCodeVerifier && refreshToken.pkceCodeVerifier) {
-    const valid = timingSafeEqual(
-      Buffer.from(hashToken(pkceCodeVerifier)),
-      Buffer.from(refreshToken.pkceCodeVerifier)
-    );
+    const valid = verifyPKCE(refreshToken.pkceCodeVerifier, pkceCodeVerifier);
     if (!valid) return null;
-  }
-  
-  // Reuse detection: if this token was already rotated, reject
-  if (refreshToken.rotatedFrom) {
-    // Potential token reuse attack - revoke all tokens for this user/client
-    await revokeAllTokensForClient(clientId, userId);
-    return null;
   }
   
   await prisma.oAuthRefreshToken.delete({ where: { tokenHash } });
   
   const newAccessToken = await createAccessToken(clientId, userId, scope);
-  const newRefreshToken = await createRefreshToken(clientId, userId, scope, pkceCodeVerifier);
-  
-  // Mark old token as rotated
-  await prisma.oAuthRefreshToken.create({
-    data: {
-      tokenHash: hashToken(newRefreshToken.token),
-      clientId,
-      userId,
-      scope,
-      expiresAt: new Date(newRefreshToken.expires_at),
-      pkceCodeVerifier: newRefreshToken.pkce_code_verifier ? hashToken(newRefreshToken.pkce_code_verifier) : null,
-      rotatedFrom: tokenHash,
-    },
-  });
+  const newRefreshToken = await createRefreshToken(clientId, userId, scope, refreshToken.pkceCodeVerifier ?? undefined);
   
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
 
-export async function validateAccessToken(token: string): Promise<{ userId: string; clientId: string; scope: string } | null> {
+export async function validateAccessToken(token: string): Promise<{ userId: string; clientId: string; scope: string; exp: number; iat: number } | null> {
   try {
     const keys = await getVerificationKeys();
     
@@ -392,6 +370,8 @@ export async function validateAccessToken(token: string): Promise<{ userId: stri
           userId: payload.sub as string,
           clientId: payload.client_id as string,
           scope: payload.scope as string,
+          exp: payload.exp as number,
+          iat: payload.iat as number,
         };
       } catch {
         continue;
@@ -419,8 +399,8 @@ export async function introspectToken(token: string, clientId: string): Promise<
     client_id: validation.clientId,
     username: validation.userId,
     token_type: 'Bearer',
-    exp: Math.floor(Date.now() / 1000) + 900, // 15 min
-    iat: Math.floor(Date.now() / 1000) - 900,
+    exp: validation.exp,
+    iat: validation.iat,
     sub: validation.userId,
     aud: 'mcp://jobmark',
   };
@@ -449,17 +429,6 @@ export async function revokeToken(token: string, tokenTypeHint?: string, clientI
   }
   
   return false;
-}
-
-export async function revokeAllTokensForClient(clientId: string, userId: string): Promise<void> {
-  await prisma.oAuthAccessToken.updateMany({
-    where: { clientId, userId, revokedAt: null },
-    data: { revokedAt: new Date() },
-  });
-  
-  await prisma.oAuthRefreshToken.deleteMany({
-    where: { clientId, userId },
-  });
 }
 
 export async function createConsent(

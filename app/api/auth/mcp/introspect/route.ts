@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const client = await validateClient(clientId, clientSecret);
     if (client) authenticatedClientId = client.client_id;
   } else if (clientId) {
-    const client = await prisma.oAuthClient.findUnique({ where: { id: clientId } });
+    const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
     if (client && !client.clientSecretHash) {
       authenticatedClientId = client.id;
     }
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
     client_id: validation.clientId,
     username: validation.userId,
     token_type: 'Bearer',
-    exp: Math.floor(Date.now() / 1000) + 900,
-    iat: Math.floor(Date.now() / 1000) - 900,
+    exp: validation.exp,
+    iat: validation.iat,
     sub: validation.userId,
     aud: 'mcp://jobmark',
   }, {

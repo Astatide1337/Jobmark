@@ -345,7 +345,7 @@ model OAuthClient {
   clientSecretHash  String?  @db.Text
   clientName        String
   redirectUris      String[]
-  grantTypes        String[] @default(["authorization_code", "refresh_token", "client_credentials"])
+  grantTypes        String[] @default(["authorization_code", "refresh_token"])
   responseTypes     String[] @default(["code"])
   scope             String   @default("jobmark:read jobmark:write jobmark:destructive offline_access")
   requirePkce       Boolean  @default(true)
@@ -400,7 +400,6 @@ model OAuthRefreshToken {
   revokedAt     DateTime?
   expiresAt     DateTime
   createdAt     DateTime @default(now())
-  rotatedFrom   String?  // token ID this was rotated from
   pkceCodeVerifier String? @db.Text
 
   @@index([tokenHash])
