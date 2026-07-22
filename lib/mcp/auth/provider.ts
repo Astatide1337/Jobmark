@@ -151,6 +151,79 @@ export async function createClient(data: Partial<Client> & { redirect_uris: stri
   } as Client;
 }
 
+/**
+ * Resolve a client_id that may be a CIDDD URL (draft-ietf-oauth-client-id-metadata-document-00).
+ * If client_id is a URL, fetch metadata from it and create a transient client record.
+ */
+export async function resolveClientId(clientId: string): Promise<Client | null> {
+  // If not a URL, treat as a regular pre-registered client_id
+  if (!clientId.startsWith('https://')) {
+    return validateClient(clientId);
+  }
+  
+  // CIDDD: Fetch metadata from the URL
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(clientId, {
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    
+    if (!response.ok) return null;
+    
+    const metadata = await response.json() as {
+      client_id?: string;
+      client_name?: string;
+      redirect_uris?: string[];
+      grant_types?: string[];
+      response_types?: string[];
+      scope?: string;
+      token_endpoint_auth_method?: string;
+    };
+    
+    // Validate required fields
+    if (!metadata.redirect_uris?.length) return null;
+    
+    const clientIdValue = metadata.client_id ?? clientId;
+    
+    // Look up or create a client record for this CIDDD
+    let client = await prisma.oAuthClient.findUnique({ where: { clientId: clientIdValue } });
+    
+    if (!client) {
+      // Create a new client from CIDDD metadata
+      client = await prisma.oAuthClient.create({
+        data: {
+          clientId: clientIdValue,
+          clientSecretHash: null, // CIDDD clients are public
+          clientName: metadata.client_name ?? 'CIDDD Client',
+          redirectUris: metadata.redirect_uris,
+          grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
+          responseTypes: metadata.response_types ?? ['code'],
+          scope: metadata.scope ?? OAuthScopes.join(' '),
+          requirePkce: true,
+          tokenEndpointAuthMethod: metadata.token_endpoint_auth_method ?? 'none',
+        },
+      });
+    }
+    
+    return {
+      client_id: client.clientId,
+      client_secret: undefined,
+      redirect_uris: client.redirectUris,
+      grant_types: client.grantTypes as Client['grant_types'],
+      response_types: client.responseTypes as Client['response_types'],
+      scope: client.scope,
+      token_endpoint_auth_method: client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
+      client_name: client.clientName,
+    } as Client;
+  } catch {
+    return null;
+  }
+}
+
 export async function validateClient(clientId: string, clientSecret?: string): Promise<Client | null> {
   const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
   if (!client) return null;
@@ -289,10 +362,12 @@ export async function createRefreshToken(
   clientId: string,
   userId: string,
   scope: string,
-  pkceCodeVerifier?: string
+  pkceCodeVerifier?: string,
+  familyId?: string
 ): Promise<RefreshToken> {
   const token = generateToken();
   const expiresAt = Date.now() + REFRESH_TOKEN_TTL;
+  const tokenFamilyId = familyId ?? randomUUID();
   
   await prisma.oAuthRefreshToken.create({
     data: {
@@ -300,6 +375,7 @@ export async function createRefreshToken(
       clientId,
       userId,
       scope,
+      familyId: tokenFamilyId,
       expiresAt: new Date(expiresAt),
       pkceCodeVerifier: pkceCodeVerifier ?? null,
     },
@@ -331,6 +407,14 @@ export async function rotateRefreshToken(
     return null;
   }
   if (refreshToken.clientId !== clientId || refreshToken.userId !== userId) return null;
+  if (refreshToken.consumedAt) {
+    // Token was already consumed — replay detected. Revoke entire family.
+    await prisma.oAuthRefreshToken.updateMany({
+      where: { familyId: refreshToken.familyId, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+    return null;
+  }
   
   // Check PKCE verifier: stored value is the code_challenge, presented value is the verifier
   if (pkceCodeVerifier && refreshToken.pkceCodeVerifier) {
@@ -338,10 +422,18 @@ export async function rotateRefreshToken(
     if (!valid) return null;
   }
   
-  await prisma.oAuthRefreshToken.delete({ where: { tokenHash } });
+  // Mark old token as consumed (tombstone) — keep row for replay detection
+  await prisma.oAuthRefreshToken.update({
+    where: { tokenHash },
+    data: { consumedAt: new Date() },
+  });
   
   const newAccessToken = await createAccessToken(clientId, userId, scope);
-  const newRefreshToken = await createRefreshToken(clientId, userId, scope, refreshToken.pkceCodeVerifier ?? undefined);
+  const newRefreshToken = await createRefreshToken(
+    clientId, userId, scope,
+    refreshToken.pkceCodeVerifier ?? undefined,
+    refreshToken.familyId
+  );
   
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
@@ -468,6 +560,7 @@ export async function getWellKnownAuthServer(baseUrl: string): Promise<WellKnown
     token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic', 'none'],
     token_endpoint_auth_signing_alg_values_supported: ['RS256'],
     ui_locales_supported: ['en'],
+    client_id_metadata_document_supported: true,
   };
 }
 

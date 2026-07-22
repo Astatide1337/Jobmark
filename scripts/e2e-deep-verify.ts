@@ -247,22 +247,13 @@ async function testRefreshRotation(refreshToken: string) {
   assert('new refresh_token issued', typeof d1.refresh_token === 'string');
   assert('tokens differ from original', d1.refresh_token !== refreshToken);
 
-  // Old refresh should be rejected
-  const r2 = await post('/api/auth/mcp/token', {
-    grant_type: 'refresh_token',
-    client_id: testClientId,
-    client_secret: testClientSecret,
-    refresh_token: refreshToken,
-  });
-  assert('old refresh rejected', r2.status === 400);
-
   return { newRefresh: d1.refresh_token as string, newAccess: d1.access_token as string };
 }
 
 async function testRefreshReplay(newRefreshToken: string) {
-  console.log('\n4. Refresh Token Replay Rejection');
+  console.log('\n4. Refresh Token Replay Rejection + Family Revocation');
 
-  // Use once
+  // Use once → get R2 (R1 is now consumed/tombstone)
   const r1 = await post('/api/auth/mcp/token', {
     grant_type: 'refresh_token',
     client_id: testClientId,
@@ -271,14 +262,38 @@ async function testRefreshReplay(newRefreshToken: string) {
   });
   assert('first use succeeds', r1.status === 200);
 
-  // Replay → should revoke all tokens for this client/user
-  const r2 = await post('/api/auth/mcp/token', {
+  const r1Data = r1.data as Record<string, unknown>;
+  const r2RefreshToken = r1Data.refresh_token as string;
+  assert('new token issued on rotation', typeof r2RefreshToken === 'string' && r2RefreshToken !== newRefreshToken);
+
+  // Old refresh (R1) should be rejected (consumed)
+  const rOld = await post('/api/auth/mcp/token', {
     grant_type: 'refresh_token',
     client_id: testClientId,
     client_secret: testClientSecret,
     refresh_token: newRefreshToken,
   });
-  assert('replay rejected', r2.status === 400);
+  assert('old refresh rejected', rOld.status === 400);
+
+  // R2 (the successor from the rotation above) should still work at this point
+  // because the rejection above was for R1, not R2
+  // Now test replay: use R1 again → should revoke R2 (family revocation)
+  const r2Replay = await post('/api/auth/mcp/token', {
+    grant_type: 'refresh_token',
+    client_id: testClientId,
+    client_secret: testClientSecret,
+    refresh_token: newRefreshToken,
+  });
+  assert('replay rejected', r2Replay.status === 400);
+
+  // R2 (successor) should also be revoked due to family revocation
+  const r3 = await post('/api/auth/mcp/token', {
+    grant_type: 'refresh_token',
+    client_id: testClientId,
+    client_secret: testClientSecret,
+    refresh_token: r2RefreshToken,
+  });
+  assert('successor token also revoked after replay', r3.status === 400);
 }
 
 async function testTenantIsolation() {
@@ -492,6 +507,28 @@ declare global {
   var __testAccessToken: string | undefined;
 }
 
+async function getFreshAccessToken(): Promise<string | null> {
+  const verifier = generateToken();
+  const code = generateToken();
+  await prisma.oAuthAuthorizationCode.create({
+    data: {
+      code: sha256hex(code),
+      clientId: testClientId,
+      userId: testUserId,
+      redirectUri: 'http://localhost:3456/callback',
+      codeChallenge: sha256base64url(verifier),
+      codeChallengeMethod: 'S256',
+      scope: 'jobmark:read jobmark:write jobmark:destructive offline_access',
+      expiresAt: new Date(Date.now() + 600_000),
+    },
+  });
+  const r = await exchangeCode(code, verifier, testUserId);
+  if (r.status === 200) {
+    return (r.data as Record<string, unknown>).access_token as string;
+  }
+  return null;
+}
+
 async function main() {
   console.log(`Deep E2E Verification Suite — Target: ${BASE}`);
   console.log('='.repeat(60));
@@ -518,13 +555,16 @@ async function main() {
   const tokenR = await exchangeCode(code, verifier, testUserId);
   if (tokenR.status === 200) {
     globalThis.__testAccessToken = (tokenR.data as Record<string, unknown>).access_token as string;
-    const freshRefresh = (tokenR.data as Record<string, unknown>).refresh_token as string;
 
     await testMcpOperations(globalThis.__testAccessToken);
     if (refreshToken) {
       const rot = await testRefreshRotation(refreshToken);
       if (rot.newRefresh) await testRefreshReplay(rot.newRefresh);
     }
+    // Replay detection revoked all access tokens — get a fresh one for remaining tests
+    const freshToken = await getFreshAccessToken();
+    if (freshToken) globalThis.__testAccessToken = freshToken;
+
     await testTenantIsolation();
     await testVaultLocking();
     await testDestructiveConfirmation();

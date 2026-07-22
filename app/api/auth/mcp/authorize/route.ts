@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { createAuthorizationCode, getConsent, createConsent, validateClient } from '@/lib/mcp/auth/provider';
+import { createAuthorizationCode, getConsent, createConsent, resolveClientId } from '@/lib/mcp/auth/provider';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
 import { hashToken } from '@/lib/mcp/auth/crypto';
 import { OAuthScopes } from '@/lib/mcp/auth/types';
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(`/mcp/authorize?error=invalid_request&state=${state}`, request.url));
   }
   
-  const client = await validateClient(clientId);
+  const client = await resolveClientId(clientId);
   if (!client) {
     return NextResponse.redirect(new URL(`/mcp/authorize?error=unauthorized_client&state=${state}`, request.url));
   }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
   
-  const client = await validateClient(clientId);
+  const client = await resolveClientId(clientId);
   if (!client || !client.redirect_uris.includes(redirectUri)) {
     return NextResponse.json({ error: 'invalid_client' }, { status: 400 });
   }

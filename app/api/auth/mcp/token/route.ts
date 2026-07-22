@@ -142,12 +142,12 @@ export async function POST(request: NextRequest) {
     const rotated = await rotateRefreshToken(refreshToken, clientId, storedToken.userId, scope ?? storedToken.scope, body.code_verifier);
     
     if (!rotated) {
-      // Potential token reuse - revoke all tokens for this client/user
+      // Replay detected — provider already revoked the token family.
+      // Additional defense: revoke outstanding access tokens for this client/user.
       await prisma.oAuthAccessToken.updateMany({
         where: { clientId, userId: storedToken.userId, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-      await prisma.oAuthRefreshToken.deleteMany({ where: { clientId, userId: storedToken.userId } });
       
       return NextResponse.json({ error: 'invalid_grant' }, {
         status: 400,

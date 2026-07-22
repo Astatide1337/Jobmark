@@ -135,6 +135,7 @@ export const WellKnownAuthServerSchema = z.object({
   ui_locales_supported: z.array(z.string()).optional(),
   op_policy_uri: z.string().url().optional(),
   op_tos_uri: z.string().url().optional(),
+  client_id_metadata_document_supported: z.boolean().optional(),
 });
 
 export type WellKnownAuthServer = z.infer<typeof WellKnownAuthServerSchema>;

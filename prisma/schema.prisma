@@ -397,13 +397,15 @@ model OAuthRefreshToken {
   userId        String
   scope         String
   accessTokenId String?  @unique
-  revokedAt     DateTime?
+  familyId      String   @default(cuid()) @db.Text
+  consumedAt    DateTime?
   expiresAt     DateTime
   createdAt     DateTime @default(now())
   pkceCodeVerifier String? @db.Text
 
   @@index([tokenHash])
   @@index([clientId, userId])
+  @@index([familyId])
   @@index([accessTokenId])
 }
 
