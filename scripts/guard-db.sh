@@ -16,18 +16,13 @@ if [[ -z "$URL" ]]; then
   exit 1
 fi
 
-PROD_ENDPOINTS=("ep-winter-star-ah9jvaa7" "ep-winter-star-ah9jvaa7-pooler")
+PROD_ENDPOINTS=("ep-dark-lab-avoeezwk" "ep-dark-lab-avoeezwk-pooler")
 
 for ep in "${PROD_ENDPOINTS[@]}"; do
   if echo "$URL" | grep -F -q "$ep"; then
-    if [[ "${ALLOW_PRODUCTION:-}" == "1" ]]; then
-      echo -e "${YELLOW}⚠  DATABASE_URL points to production — ALLOW_PRODUCTION=1 set, proceeding${NC}" >&2
-      exit 0
-    fi
     echo -e "${RED}████████████████████████████████████████████████████████████████████████${NC}" >&2
     echo -e "${RED}██  BLOCKED: DATABASE_URL points to PRODUCTION database              ██${NC}" >&2
-    echo -e "${RED}██  This endpoint is reserved for production deploys only.           ██${NC}" >&2
-    echo -e "${RED}██  Set ALLOW_PRODUCTION=1 to override (use with extreme care!)       ██${NC}" >&2
+    echo -e "${RED}██  This endpoint is reserved for Vercel deploys only.               ██${NC}" >&2
     echo -e "${RED}██  For local dev, set DATABASE_URL to the dev branch in .env.local   ██${NC}" >&2
     echo -e "${RED}████████████████████████████████████████████████████████████████████████${NC}" >&2
     exit 1
