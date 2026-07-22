@@ -17,8 +17,14 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify:chat": "eslint components/chat app/chat app/api/chat",
-    "verify": "npm run lint && npm run typecheck && npm run format:check"
+    "verify": "npm run lint && npm run typecheck && npm run format:check",
+    "db:guard": "bash scripts/guard-db.sh",
+    "db:push": "npm run db:guard && prisma db push",
+    "db:migrate:dev": "npm run db:guard && prisma migrate dev",
+    "db:migrate:deploy": "npm run db:guard && prisma migrate deploy",
+    "db:migrate:resolve": "npm run db:guard && prisma migrate resolve",
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate"
   },
   "dependencies": {
     "@ai-sdk/rsc": "^2.0.49",

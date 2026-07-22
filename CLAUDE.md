@@ -121,6 +121,17 @@ if (prop !== prevProp) {
 - `npm run build`: Production build and typecheck.
 - `npx prisma studio`: Browse database locally.
 
+### Database Safety (CRITICAL)
+
+- **NEVER run `prisma db push`, `prisma migrate deploy`, or `prisma migrate dev` against production.**
+- Always use guards: `npm run db:push` (guarded), `npm run db:migrate:dev` (guarded).
+- The guard script (`scripts/guard-db.sh`) blocks production endpoints.
+- Override with `ALLOW_PRODUCTION=1` only for actual production deploys.
+- `.env` has production URL (for Vercel deploys). `.env.local` should have dev URL.
+- Development branch on Neon: `br-noisy-river-ahq8todh` (endpoint: `ep-orange-field-ahk3riq0`).
+- Get dev connection string: `neonctl connection-string <branch-name>`.
+- Production branch: `main` (endpoint: `ep-winter-star-ah9jvaa7`).
+
 ### Standards & Conventions
 
 - **Naming:** PascalCase for components, camelCase for variables/functions.
