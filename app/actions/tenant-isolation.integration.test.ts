@@ -37,6 +37,7 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
   let projectB: { id: string };
 
   beforeAll(async () => {
+    const currentLogDate = new Date();
     const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     userA = await prisma.user.create({ data: { email: `tenant-a-${suffix}@example.test` } });
     userB = await prisma.user.create({ data: { email: `tenant-b-${suffix}@example.test` } });
@@ -66,19 +67,19 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
         {
           userId: userA.id,
           content: 'User A private activity',
-          logDate: new Date('2026-07-12T00:00:00.000Z'),
+          logDate: currentLogDate,
         },
         {
           userId: userA.id,
           projectId: privateProjectA.id,
           content: 'User A locked activity',
-          logDate: new Date('2026-07-12T00:00:00.000Z'),
+          logDate: currentLogDate,
         },
         {
           userId: userB.id,
           projectId: projectB.id,
           content: 'User B private activity',
-          logDate: new Date('2026-07-12T00:00:00.000Z'),
+          logDate: currentLogDate,
         },
         {
           userId: userA.id,
