@@ -1,400 +1,371 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, X, Copy, ExternalLink, Loader2, Shield, Code, Terminal, Globe, Zap, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { type ComponentType, useState } from 'react';
+import { Claude, Gemini, OpenAI, Perplexity } from '@lobehub/icons';
+import {
+  Check,
+  CircleHelp,
+  Copy,
+  ExternalLink,
+  Link2,
+  Loader2,
+  PlugZap,
+  Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface McpConnectionProps {
+  baseUrl: string;
   user: { id: string; name?: string | null; email?: string | null } | null;
+  initialProviderId?: string;
   connections: Array<{
     id: string;
-    oauthClientId: string;
     clientName: string;
-    scopes: string[];
-    vaultUnlockedUntil: Date | null;
     lastUsedAt: Date | null;
     createdAt: Date;
-    oauthClient: {
-      id: string;
-      clientName: string;
-    };
+    oauthClient: { id: string; clientName: string };
   }>;
 }
 
-const PRE_REGISTERED_CLIENTS = [
+interface Provider {
+  id: string;
+  name: string;
+  Icon: ComponentType<{ className?: string; size?: number | string }>;
+  connectUrl?: string;
+  instructions: string;
+}
+
+function friendlyConnectionName(name: string): string {
+  const normalized = name.trim().toLowerCase();
+  if (normalized === 'google' || normalized.includes('gemini')) return 'Gemini';
+  if (normalized.includes('openai') || normalized.includes('chatgpt')) return 'ChatGPT';
+  if (normalized.includes('anthropic') || normalized.includes('claude')) return 'Claude';
+  return name || 'AI plugin';
+}
+
+const providers: Provider[] = [
   {
     id: 'claude',
-    name: 'Claude (Anthropic)',
-    description: 'Connect Jobmark to Claude via Custom Connectors',
-    logo: '🤖',
-    redirectUri: 'https://claude.ai/api/mcp/auth/callback',
-    docsUrl: 'https://docs.anthropic.com/en/docs/agents-and-tools/mcp',
+    name: 'Claude',
+    Icon: Claude.Color,
+    connectUrl: 'https://claude.ai/customize/connectors',
+    instructions: 'In Claude, choose Add, then Custom connector, and paste your Jobmark link.',
   },
   {
     id: 'chatgpt',
-    name: 'ChatGPT (OpenAI)',
-    description: 'Connect Jobmark to ChatGPT via Custom GPTs or Assistants API',
-    logo: '💬',
-    redirectUri: 'https://chat.openai.com/aip/gpt-plugin/callback',
-    docsUrl: 'https://platform.openai.com/docs/assistants/overview',
+    name: 'ChatGPT',
+    Icon: OpenAI,
+    connectUrl: 'https://chatgpt.com/#settings/Plugins',
+    instructions:
+      'In ChatGPT Settings, open Plugins, turn on Developer mode, then create a plugin.',
   },
   {
-    id: 'inspector',
-    name: 'MCP Inspector',
-    description: 'Official MCP debugging and testing tool',
-    logo: '🔍',
-    redirectUri: 'https://inspector.mcp.dev/callback',
-    docsUrl: 'https://github.com/modelcontextprotocol/inspector',
+    id: 'gemini',
+    name: 'Gemini',
+    Icon: Gemini.Color,
+    connectUrl: 'https://gemini.google.com/apps',
+    instructions: 'In Gemini Spark, open Custom apps, paste your Jobmark link, and choose Next.',
   },
   {
-    id: 'cursor',
-    name: 'Cursor',
-    description: 'AI-first code editor with MCP support',
-    logo: '🎯',
-    redirectUri: 'https://cursor.com/mcp/callback',
-    docsUrl: 'https://docs.cursor.com/mcp',
+    id: 'perplexity',
+    name: 'Perplexity',
+    Icon: Perplexity.Color,
+    connectUrl: 'https://www.perplexity.ai/account/connectors',
+    instructions: 'In Connectors, add a Custom remote connector and choose OAuth.',
   },
   {
-    id: 'vscode',
-    name: 'VS Code (GitHub Copilot)',
-    description: 'Use Jobmark with GitHub Copilot Chat in VS Code',
-    logo: '📝',
-    redirectUri: 'vscode://vscode.github-authentication/did-authenticate',
-    docsUrl: 'https://code.visualstudio.com/api/extension-guides/language-model',
+    id: 'other',
+    name: 'Another plugin',
+    Icon: PlugZap,
+    instructions: 'In your AI plugin, choose Add a connection and paste your Jobmark link.',
   },
 ];
 
-export function McpConnectionPage({ user, connections }: McpConnectionProps) {
-  const [copied, setCopied] = useState<string | null>(null);
+export function McpConnectionPage({
+  baseUrl,
+  user,
+  connections,
+  initialProviderId,
+}: McpConnectionProps) {
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
+    () => providers.find(provider => provider.id === initialProviderId) ?? null
+  );
+  const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(null), 2000);
-  };
-  
-  const handleRevoke = async (connectionId: string) => {
-    if (!confirm('Revoke this MCP connection? This will invalidate all tokens and cannot be undone.')) return;
-    
-    setRevoking(connectionId);
+  const [connectionToRevoke, setConnectionToRevoke] = useState<string | null>(null);
+  const jobmarkLink = `${baseUrl}/mcp`;
+
+  const copyJobmarkLink = async () => {
     try {
-      const res = await fetch(`/api/mcp/connections/${connectionId}/revoke`, { method: 'POST' });
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert('Failed to revoke connection');
-      }
+      await navigator.clipboard.writeText(jobmarkLink);
+      setCopied(true);
+      toast.success('Jobmark link copied');
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert('Failed to revoke connection');
-    } finally {
-      setRevoking(null);
+      toast.error('Could not copy the Jobmark link');
     }
   };
-  
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="mb-8">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl">🤖</div>
-              <CardTitle className="text-3xl">Connect Jobmark to Your AI Assistant</CardTitle>
-              <p className="text-muted-foreground mt-2">
-                Jobmark exposes your professional history through MCP (Model Context Protocol).
-                Connect your AI to access projects, activities, goals, contacts, and more.
-              </p>
-            </CardHeader>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Get Started</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>1. <strong>Sign in</strong> to your Jobmark account</p>
-                <p>2. Choose your AI assistant from the options below</p>
-                <p>3. Follow the OAuth flow to authorize access</p>
-                <p>4. Start asking your AI about your career!</p>
-              </div>
-              <Button className="w-full" size="lg" onClick={() => window.location.href = '/api/auth/signin?callbackUrl=/chat'}>
-                Sign In to Connect
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {PRE_REGISTERED_CLIENTS.map(client => (
-              <Card key={client.id} className="border-dashed">
-                <CardContent className="p-6 text-center">
-                  <div className="text-4xl mb-2">{client.logo}</div>
-                  <h3 className="font-semibold">{client.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{client.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  const mcpUrl = `${baseUrl}/mcp`;
-  const authUrl = `${baseUrl}/api/auth/mcp/authorize`;
-  const scopes = 'jobmark:read jobmark:write jobmark:destructive offline_access';
-  
+
+  const handleRevoke = async (connectionId: string) => {
+    setRevoking(connectionId);
+    try {
+      const response = await fetch(`/api/mcp/connections/${connectionId}/revoke`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Could not remove connection');
+      toast.success('Connection removed');
+      window.location.reload();
+    } catch {
+      toast.error('Could not remove connection');
+    } finally {
+      setRevoking(null);
+      setConnectionToRevoke(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">Add Jobmark to Your AI Assistant</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Connect via MCP (Model Context Protocol) — the open standard for AI-tool integration
-          </p>
-        </div>
-        
-        {/* OAuth Discovery */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              OAuth 2.1 Discovery Endpoints
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <code className="text-sm font-mono">{baseUrl}/.well-known/oauth-authorization-server</code>
-                <p className="text-xs text-muted-foreground mt-1">Authorization Server Metadata (RFC 8414)</p>
-              </div>
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <code className="text-sm font-mono">{baseUrl}/.well-known/oauth-protected-resource</code>
-                <p className="text-xs text-muted-foreground mt-1">Protected Resource Metadata (RFC 9728)</p>
-              </div>
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <code className="text-sm font-mono">{baseUrl}/api/auth/mcp/jwks</code>
-                <p className="text-xs text-muted-foreground mt-1">JWKS for RS256 token verification</p>
-              </div>
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <code className="text-sm font-mono">{baseUrl}/mcp</code>
-                <p className="text-xs text-muted-foreground mt-1">MCP Streamable HTTP Endpoint</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Pre-registered Clients */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              Quick Connect (Pre-registered Clients)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {PRE_REGISTERED_CLIENTS.map(client => (
-                <Card key={client.id} className="border-muted/50 hover:border-primary/50 transition-colors">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="text-3xl">{client.logo}</div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium">{client.name}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{client.description}</p>
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <a
-                              href={`${authUrl}?client_id=${client.id}&redirect_uri=${encodeURIComponent(client.redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${crypto.randomUUID()}&code_challenge=${btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/[+/=]/g, '').substring(0, 43)}&code_challenge_method=S256`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              Connect
-                            </a>
-                          </Button>
-                          <Button variant="ghost" size="sm" asChild>
-                            <a href={client.docsUrl} target="_blank" rel="noopener noreferrer">
-                              <Code className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Manual Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Terminal className="h-5 w-5" />
-              Manual Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label className="block mb-2">MCP Server URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={mcpUrl}
-                  onClick={e => (e.target as HTMLInputElement).select()}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopy(mcpUrl, 'MCP URL')}
-                >
-                  {copied === 'MCP URL' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <Label className="block mb-2">Authorization URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={`${authUrl}?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI&response_type=code&scope=${encodeURIComponent(scopes)}&state=RANDOM_STATE&code_challenge=PKCE_CHALLENGE&code_challenge_method=S256`}
-                  onClick={e => (e.target as HTMLInputElement).select()}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopy(`${authUrl}?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI&response_type=code&scope=${encodeURIComponent(scopes)}&state=RANDOM_STATE&code_challenge=PKCE_CHALLENGE&code_challenge_method=S256`, 'Auth URL')}
-                >
-                  {copied === 'Auth URL' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <Label className="block mb-2">Scopes</Label>
-              <div className="flex flex-wrap gap-2">
-                {scopes.split(' ').map(scope => (
-                  <span key={scope} className="px-2 py-1 bg-muted rounded text-sm font-mono">
-                    {scope}
-                  </span>
-                ))}
-              </div>
-            </div>
-            
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm font-medium mb-2">Claude Desktop Config (claude_desktop_config.json)</p>
-              <pre className="text-xs overflow-x-auto bg-background p-3 rounded"><code>{JSON.stringify({
-  mcpServers: {
-    jobmark: {
-      command: 'npx',
-      args: ['mcp-remote', mcpUrl],
-      env: {
-        MCP_AUTH_SERVER: baseUrl + '/api/auth/mcp',
-      },
-    },
-  },
-}, null, 2)}</code></pre>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => handleCopy(JSON.stringify({
-                  mcpServers: {
-                    jobmark: {
-                      command: 'npx',
-                      args: ['mcp-remote', mcpUrl],
-                      env: { MCP_AUTH_SERVER: baseUrl + '/api/auth/mcp' },
-                    },
-                  },
-                }, null, 2), 'Claude Config')}
+    <div className={user ? 'w-full py-2' : 'bg-background min-h-screen px-4 py-10'}>
+      <div className="mx-auto max-w-5xl space-y-8">
+        <section
+          className={`border-border/60 bg-card/45 rounded-3xl border px-6 py-8 sm:px-10 sm:py-10 ${
+            user ? '' : 'text-center'
+          }`}
+        >
+          <div
+            className={`flex flex-col gap-5 ${
+              user ? 'items-start justify-between sm:flex-row sm:items-center' : 'items-center'
+            }`}
+          >
+            <div className={user ? 'max-w-2xl' : 'max-w-xl'}>
+              <div
+                className={`bg-primary/10 text-primary mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${
+                  user ? '' : 'mx-auto'
+                }`}
               >
-                {copied === 'Claude Config' ? <Check className="h-4 w-4 text-green-500 mr-1" /> : <Copy className="h-4 w-4 mr-1" />} Copy Config
-              </Button>
+                <PlugZap className="h-5 w-5" />
+              </div>
+              <h1 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
+                MCP Connector
+              </h1>
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Active Connections */}
-        {connections.length > 0 && (
-          <Card>
+            <Button variant="ghost" className="shrink-0" asChild>
+              <Link href="/articles/connect-jobmark-to-ai">
+                <CircleHelp className="mr-2 h-4 w-4" />
+                Help article
+              </Link>
+            </Button>
+          </div>
+        </section>
+
+        {!user ? (
+          <section className="mx-auto max-w-5xl text-center">
+            <h2 className="text-foreground text-xl font-semibold">Choose where to use Jobmark</h2>
+            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+              Pick a plugin and add Jobmark in a couple of clicks.
+            </p>
+            <div className="mt-6">
+              <ProviderCarousel onSelect={setSelectedProvider} />
+            </div>
+          </section>
+        ) : (
+          <section>
+            <div className="mb-4">
+              <h2 className="text-foreground text-xl font-semibold">Choose an AI plugin</h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Choose one and we’ll walk you through it.
+              </p>
+            </div>
+            <ProviderCarousel onSelect={setSelectedProvider} />
+          </section>
+        )}
+
+        {user && connections.length > 0 && (
+          <Card className="border-border/60 bg-card/45 rounded-3xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Active Connections
-              </CardTitle>
+              <CardTitle>Your connected tools</CardTitle>
+              <CardDescription>
+                Remove a tool at any time to stop its access to Jobmark.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              {connections.map(conn => (
-                <div key={conn.id} className="flex items-center justify-between p-4 border rounded-lg mb-3 last:mb-0">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-lg">🔗</div>
-                    <div>
-                      <p className="font-medium">{conn.oauthClient.clientName || conn.clientName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Scopes: {conn.scopes.join(', ')} • {!conn.vaultUnlockedUntil || conn.vaultUnlockedUntil < new Date() ? (
-                          <span className="text-amber-600 dark:text-amber-400">🔒 Vault Locked</span>
-                        ) : (
-                          <span className="text-green-600 dark:text-green-400">🔓 Vault Unlocked</span>
+            <CardContent className="space-y-3">
+              {connections.map(connection => (
+                <div
+                  key={connection.id}
+                  className="border-border/60 flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
+                      <Link2 className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">
+                        {friendlyConnectionName(
+                          connection.oauthClient.clientName || connection.clientName
                         )}
-                        {conn.lastUsedAt && ` • Last used: ${new Date(conn.lastUsedAt).toLocaleDateString()}`}
+                      </p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        Connected {new Date(connection.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    disabled={revoking === conn.id}
-                    onClick={() => handleRevoke(conn.id)}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={revoking === connection.id}
+                    onClick={() => setConnectionToRevoke(connection.id)}
                   >
-                    {revoking === conn.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4 mr-1" />} Revoke
+                    {revoking === connection.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    Remove
                   </Button>
                 </div>
               ))}
             </CardContent>
           </Card>
         )}
-        
-        {/* Security & Privacy */}
-        <Card className="border-amber-200/50 dark:border-amber-800/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Security & Privacy
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <ul className="list-disc list-inside space-y-1">
-              <li><strong>OAuth 2.1 with PKCE</strong> — Industry-standard authorization with code challenge</li>
-              <li><strong>RS256 JWT tokens</strong> — Asymmetric signatures, rotating keys (24h rotation, 48h retention)</li>
-              <li><strong>Per-connection vault locking</strong> — Sensitive data requires explicit unlock via secure browser flow</li>
-              <li><strong>No passwords or API keys in MCP</strong> — Secrets managed via one-time secure action URLs only</li>
-              <li><strong>Idempotency keys</strong> — Safe retries for mutating operations</li>
-              <li><strong>Rate limited</strong> — 120 req/min per connection with burst protection</li>
-              <li><strong>Audit logging</strong> — Connection ID, tool, duration, status (no secrets logged)</li>
-            </ul>
-          </CardContent>
-        </Card>
-        
-        <div className="text-center text-sm text-muted-foreground pt-4 border-t">
-          <p>Jobmark stores and organizes your professional history and connects it to the AI assistant you choose through MCP.</p>
-          <p className="mt-1">
-            <a href="/settings/connections" className="underline hover:text-foreground">Manage connections in Settings</a> •
-            <a href="/docs/mcp" className="underline hover:text-foreground ml-2">MCP Documentation</a>
-          </p>
-        </div>
       </div>
+
+      <Dialog
+        open={selectedProvider !== null}
+        onOpenChange={open => !open && setSelectedProvider(null)}
+      >
+        {selectedProvider && (
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <div className="bg-primary/10 text-primary mb-2 flex h-11 w-11 items-center justify-center rounded-2xl">
+                <selectedProvider.Icon size={20} />
+              </div>
+              <DialogTitle>Connect {selectedProvider.name}</DialogTitle>
+              <DialogDescription>{selectedProvider.instructions}</DialogDescription>
+            </DialogHeader>
+            <div className="border-border/60 bg-muted/20 rounded-2xl border p-4">
+              <label htmlFor="jobmark-mcp-link" className="text-foreground text-sm font-medium">
+                Jobmark link
+              </label>
+              <div className="mt-2">
+                <Input
+                  id="jobmark-mcp-link"
+                  readOnly
+                  value={jobmarkLink}
+                  onFocus={event => event.currentTarget.select()}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+              <Button variant="ghost" onClick={() => setSelectedProvider(null)}>
+                Close
+              </Button>
+              {selectedProvider.connectUrl ? (
+                <Button asChild>
+                  <a
+                    href={selectedProvider.connectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => void copyJobmarkLink()}
+                  >
+                    Copy link &amp; open {selectedProvider.name}
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              ) : (
+                <Button onClick={copyJobmarkLink}>
+                  {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  Copy Jobmark link
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      <AlertDialog
+        open={connectionToRevoke !== null}
+        onOpenChange={open => !open && setConnectionToRevoke(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this connection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The AI tool will no longer be able to use your Jobmark information. You can connect it
+              again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revoking !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!connectionToRevoke || revoking !== null}
+              onClick={() => connectionToRevoke && handleRevoke(connectionToRevoke)}
+            >
+              {revoking ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Remove connection
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function ProviderCarousel({ onSelect }: { onSelect: (provider: Provider) => void }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-3">
+      {providers.map(provider => (
+        <ProviderButton key={provider.id} provider={provider} onClick={() => onSelect(provider)} />
+      ))}
+    </div>
+  );
+}
+
+function ProviderButton({ provider, onClick }: { provider: Provider; onClick: () => void }) {
+  const content = (
+    <>
+      <span className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
+        <provider.Icon size={20} />
+      </span>
+      <span className="text-foreground font-medium">{provider.name}</span>
+    </>
+  );
+  const className =
+    'border-border/60 bg-card/45 hover:border-primary/50 hover:bg-card flex min-h-28 w-44 shrink-0 flex-col items-start justify-between rounded-2xl border p-5 text-left transition-colors focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none';
+
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={onClick}
+      aria-label={`Connect ${provider.name}`}
+    >
+      {content}
+    </button>
   );
 }

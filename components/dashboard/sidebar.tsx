@@ -19,13 +19,13 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { href: '/dashboard', icon: Pen, label: 'Capture', demoId: 'journal' },
-  { href: '/chat', icon: LinkIcon, label: 'Connect AI', demoId: 'feature-mentor' },
   { href: '/projects', icon: FolderOpen, label: 'Projects', demoId: 'feature-projects' },
   { href: '/reports', icon: FileText, label: 'Reviews', demoId: 'feature-reports' },
   { href: '/insights', icon: BarChart3, label: 'Insights', demoId: 'feature-insights' },
   { href: '/focus', icon: Coffee, label: 'Focus', demoId: 'feature-focus' },
   { href: '/network', icon: Users, label: 'Network', demoId: 'feature-network' },
   { href: '/articles', icon: Newspaper, label: 'Articles', demoId: 'feature-articles' },
+  { href: '/chat', icon: LinkIcon, label: 'MCP Connector', demoId: 'feature-mentor' },
 ];
 
 const settingsItem = { href: '/settings', icon: Settings, label: 'Settings', demoId: 'settings' };
@@ -176,8 +176,10 @@ function NavItem({
       href={href}
       onClick={onClick}
       className={cn(
-        'relative z-10 group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-        isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+        'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+        isActive
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
       )}
     >
       {content}

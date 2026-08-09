@@ -181,7 +181,7 @@ export const insightsGetTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        year: z.number().int().min(2020).max(2030).optional(),
+        year: { type: 'integer', minimum: 2020, maximum: 2030 },
       },
       additionalProperties: false,
     },

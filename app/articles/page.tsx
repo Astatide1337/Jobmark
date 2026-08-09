@@ -206,7 +206,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
                   Build a summary
                 </Link>
                 <Link href="/chat" className="text-primary block font-medium hover:underline">
-                  Connect AI
+                  MCP Connector
                 </Link>
               </div>
             </section>

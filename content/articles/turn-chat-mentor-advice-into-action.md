@@ -16,7 +16,7 @@ difficulty: intermediate
 series: Mentor to Execution
 ctaVariant: default
 bestFor: turning advice into action
-primaryAction: Connect AI
+primaryAction: Open MCP Connector
 primaryHref: /chat
 secondaryAction: Log recent work
 secondaryHref: /dashboard

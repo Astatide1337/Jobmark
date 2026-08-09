@@ -12,7 +12,9 @@ export function hashPKCE(verifier: string): string {
 
 export function verifyPKCE(challenge: string, verifier: string): boolean {
   const expected = hashPKCE(verifier);
-  return timingSafeEqual(Buffer.from(challenge), Buffer.from(expected));
+  const supplied = Buffer.from(challenge);
+  const computed = Buffer.from(expected);
+  return supplied.length === computed.length && timingSafeEqual(supplied, computed);
 }
 
 export function generateToken(): string {

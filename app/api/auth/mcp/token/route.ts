@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { validateClient, hashToken, createAccessToken, createRefreshToken, rotateRefreshToken } from '@/lib/mcp/auth/provider';
+import { validateClient, hashToken, createAccessToken, createRefreshToken, rotateRefreshToken, ensureMcpConnection } from '@/lib/mcp/auth/provider';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
 import { verifyPKCE } from '@/lib/mcp/auth/crypto';
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify PKCE
-    if (authCode.codeChallenge) {
+    if (authCode.codeChallenge !== null && authCode.codeChallenge !== undefined) {
       if (!codeVerifier || !verifyPKCE(authCode.codeChallenge, codeVerifier)) {
         return NextResponse.json({ error: 'invalid_grant' }, {
           status: 400,
@@ -90,6 +90,10 @@ export async function POST(request: NextRequest) {
     
     // Consume code
     await prisma.oAuthAuthorizationCode.delete({ where: { code: codeHash } });
+
+    // `/mcp` requires a persisted connection in addition to a valid token.
+    // Create/reactivate it as part of the successful authorization exchange.
+    await ensureMcpConnection(clientId, authCode.userId, authCode.scope);
     
     const accessToken = await createAccessToken(clientId, authCode.userId, authCode.scope);
     const refreshToken = await createRefreshToken(clientId, authCode.userId, authCode.scope, authCode.codeChallenge ?? undefined);
@@ -108,7 +112,7 @@ export async function POST(request: NextRequest) {
   
   if (grantType === 'refresh_token') {
     const refreshToken = body.refresh_token;
-    const scope = body.scope;
+    const requestedScope = body.scope;
     
     if (!refreshToken) {
       return NextResponse.json({ error: 'invalid_request' }, {
@@ -127,6 +131,23 @@ export async function POST(request: NextRequest) {
       });
     }
     
+    // A refreshed grant may only retain or narrow the scopes originally
+    // granted. Never let a client mint a broader grant by supplying scope.
+    const originalScopes = storedToken.scope.trim().split(/\s+/).filter(Boolean);
+    const requestedScopes = requestedScope === undefined
+      ? originalScopes
+      : requestedScope.trim().split(/\s+/).filter(Boolean);
+
+    if (
+      requestedScopes.length === 0 ||
+      !requestedScopes.every(scopeName => originalScopes.includes(scopeName))
+    ) {
+      return NextResponse.json({ error: 'invalid_scope' }, {
+        status: 400,
+        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
+      });
+    }
+
     // Verify PKCE if present
     if (storedToken.pkceCodeVerifier && body.code_verifier) {
       const valid = verifyPKCE(storedToken.pkceCodeVerifier, body.code_verifier);
@@ -139,7 +160,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Rotate refresh token
-    const rotated = await rotateRefreshToken(refreshToken, clientId, storedToken.userId, scope ?? storedToken.scope, body.code_verifier);
+    const rotated = await rotateRefreshToken(
+      refreshToken,
+      clientId,
+      storedToken.userId,
+      requestedScopes.join(' '),
+      body.code_verifier
+    );
     
     if (!rotated) {
       // Replay detected — provider already revoked the token family.
@@ -154,6 +181,8 @@ export async function POST(request: NextRequest) {
         headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
       });
     }
+
+    await ensureMcpConnection(clientId, storedToken.userId, rotated.accessToken.scope);
     
     return NextResponse.json({
       access_token: rotated.accessToken.token,

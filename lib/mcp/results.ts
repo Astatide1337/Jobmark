@@ -41,9 +41,14 @@ export function createStructuredResult(
   textFallback: string,
   isError = false
 ): McpToolResult {
+  // Some MCP clients currently ignore `structuredContent`. Include the same
+  // payload in the standard text channel so every supported provider can use
+  // the result instead of seeing only a generic success message.
+  const serializedContent = JSON.stringify(structuredContent, null, 2);
+
   return {
     structuredContent,
-    content: [{ type: 'text', text: textFallback }],
+    content: [{ type: 'text', text: `${textFallback}\n\n${serializedContent}` }],
     isError,
   };
 }

@@ -855,7 +855,7 @@ export function NextBestAction({
               title: 'Use your record to prepare the next move.',
               body: 'Review your summaries, then connect your AI assistant to sharpen the story.',
               href: '/chat',
-              cta: 'Connect AI',
+              cta: 'Open MCP Connector',
             };
 
   return (

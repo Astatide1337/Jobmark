@@ -2,15 +2,28 @@
 
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Shield, Check, X } from 'lucide-react';
+import { Check, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const SCOPE_LABELS: Record<string, { label: string; description: string }> = {
-  'jobmark:read': { label: 'Read', description: 'View your activities, projects, goals, and contacts' },
-  'jobmark:write': { label: 'Write', description: 'Create and update your activities, projects, goals, and contacts' },
-  'jobmark:destructive': { label: 'Delete', description: 'Delete activities, projects, goals, and contacts' },
-  'offline_access': { label: 'Offline access', description: 'Maintain access when you are not actively using the app' },
+  'jobmark:read': {
+    label: 'Read',
+    description: 'View your activities, projects, goals, and contacts',
+  },
+  'jobmark:write': {
+    label: 'Write',
+    description: 'Create and update your activities, projects, goals, and contacts',
+  },
+  'jobmark:destructive': {
+    label: 'Delete',
+    description: 'Delete activities, projects, goals, and contacts',
+  },
+  offline_access: {
+    label: 'Offline access',
+    description: 'Stay connected between sessions',
+  },
 };
 
 function ConsentForm() {
@@ -23,8 +36,16 @@ function ConsentForm() {
   const state = searchParams.get('state') ?? '';
   const codeChallenge = searchParams.get('code_challenge') ?? '';
   const codeChallengeMethod = searchParams.get('code_challenge_method') ?? '';
+  const transaction = searchParams.get('transaction') ?? '';
 
   const scopes = scope.split(' ').filter(Boolean);
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(() => scopes);
+
+  function toggleScope(scopeName: string, selected: boolean) {
+    setSelectedScopes(current =>
+      selected ? [...new Set([...current, scopeName])] : current.filter(item => item !== scopeName)
+    );
+  }
 
   async function handleSubmit(action: 'allow' | 'deny') {
     setSubmitting(true);
@@ -35,10 +56,12 @@ function ConsentForm() {
     const fields: Record<string, string> = {
       client_id: clientId,
       redirect_uri: redirectUri,
-      scope,
+      response_type: 'code',
+      scope: selectedScopes.join(' '),
       state,
       code_challenge: codeChallenge,
       code_challenge_method: codeChallengeMethod,
+      transaction,
       action,
     };
 
@@ -55,41 +78,53 @@ function ConsentForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Shield className="h-6 w-6 text-primary" />
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
+      <Card className="border-border/50 bg-card/60 w-full max-w-lg overflow-hidden rounded-3xl shadow-sm">
+        <CardHeader className="relative p-8 text-center">
+          <div className="border-primary/20 bg-primary/10 absolute -top-16 -right-16 h-40 w-40 rounded-full border blur-3xl" />
+          <div className="bg-primary/10 text-primary relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
+            <Shield className="h-7 w-7" />
           </div>
-          <CardTitle className="text-xl">Authorize MCP Connection</CardTitle>
-          <p className="text-sm text-muted-foreground mt-2">
-            An AI assistant is requesting access to your Jobmark account.
-          </p>
+          <CardTitle className="relative text-2xl tracking-tight">
+            Connect this plugin to Jobmark
+          </CardTitle>
+          <CardDescription className="relative mx-auto mt-3 max-w-sm leading-relaxed">
+            Choose what the plugin can access. You can remove this connection at any time.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6 pt-0">
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Requested permissions</h3>
+            <h3 className="text-sm font-medium">Choose permissions</h3>
             <ul className="space-y-2">
-              {scopes.map((s) => {
+              {scopes.map(s => {
                 const info = SCOPE_LABELS[s];
+                const isSelected = selectedScopes.includes(s);
                 return (
-                  <li key={s} className="flex items-start gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="font-medium">{info?.label ?? s}</span>
-                      {info?.description && (
-                        <span className="text-muted-foreground ml-1">— {info.description}</span>
-                      )}
+                  <li key={s} className="bg-muted/20 rounded-2xl border text-sm">
+                    <div className="flex items-start gap-3 p-4">
+                      <Checkbox
+                        id={`scope-${s.replace(/[^a-z0-9]+/gi, '-')}`}
+                        checked={isSelected}
+                        onCheckedChange={checked => toggleScope(s, checked === true)}
+                        aria-label={`${isSelected ? 'Remove' : 'Allow'} ${info?.label ?? s} permission`}
+                        className="mt-0.5"
+                      />
+                      <label
+                        htmlFor={`scope-${s.replace(/[^a-z0-9]+/gi, '-')}`}
+                        className="min-w-0 cursor-pointer"
+                      >
+                        <span className="font-medium">{info?.label ?? s}</span>
+                        {info?.description && (
+                          <span className="text-muted-foreground mt-1 block leading-relaxed">
+                            {info.description}
+                          </span>
+                        )}
+                      </label>
                     </div>
                   </li>
                 );
               })}
             </ul>
-          </div>
-
-          <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">Client ID</p>
-            <p className="font-mono break-all">{clientId}</p>
           </div>
 
           <div className="flex gap-3">
@@ -100,17 +135,17 @@ function ConsentForm() {
               onClick={() => handleSubmit('deny')}
               type="button"
             >
-              <X className="h-4 w-4 mr-2" />
-              Deny
+              <X className="mr-2 h-4 w-4" />
+              Cancel
             </Button>
             <Button
               className="flex-1"
-              disabled={submitting}
+              disabled={submitting || selectedScopes.length === 0}
               onClick={() => handleSubmit('allow')}
               type="button"
             >
-              <Check className="h-4 w-4 mr-2" />
-              Allow
+              <Check className="mr-2 h-4 w-4" />
+              Connect plugin
             </Button>
           </div>
         </CardContent>
@@ -121,11 +156,13 @@ function ConsentForm() {
 
 export default function ConsentPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="bg-background flex min-h-screen items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
       <ConsentForm />
     </Suspense>
   );

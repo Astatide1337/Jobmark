@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   } else if (clientId) {
     const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
     if (client && !client.clientSecretHash) {
-      authenticatedClientId = client.id;
+      authenticatedClientId = client.clientId;
     }
   }
   
