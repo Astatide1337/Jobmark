@@ -9,7 +9,6 @@ const { authMock, revalidatePathMock, prismaMock } = vi.hoisted(() => ({
     project: { findFirst: vi.fn() },
     goal: { findFirst: vi.fn() },
     contact: { findFirst: vi.fn() },
-    conversation: { create: vi.fn() },
   },
 }));
 
@@ -22,7 +21,6 @@ vi.mock('@/lib/project-lock', () => ({
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
 import { createActivity } from './activities';
-import { createConversation } from './chat';
 
 describe('cross-tenant relationship protection', () => {
   beforeEach(() => {
@@ -54,17 +52,4 @@ describe('cross-tenant relationship protection', () => {
     expect(tx.activity.create).not.toHaveBeenCalled();
   });
 
-  it('rejects a conversation linked to another user project before writing', async () => {
-    prismaMock.project.findFirst.mockResolvedValue(null);
-
-    await expect(createConversation('general', 'user-b-project')).rejects.toThrow(
-      'Invalid conversation context'
-    );
-
-    expect(prismaMock.project.findFirst).toHaveBeenCalledWith({
-      where: { id: 'user-b-project', userId: 'user-a' },
-      select: { id: true },
-    });
-    expect(prismaMock.conversation.create).not.toHaveBeenCalled();
-  });
 });

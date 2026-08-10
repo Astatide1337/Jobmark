@@ -1,23 +1,8 @@
-/**
- * Primary Application Sidebar
- *
- * Why: The central navigation hub. It's "dual-purpose": it handles standard
- * app navigation AND real-time chat history management.
- *
- * Complexities:
- * - Hybrid Navigation: Switches between "App Links" and "Chat History"
- *   automatically when the user is on a `/chat` route.
- * - Inline Editing: Supports renaming and deleting conversations directly
- *   within the sidebar via optimistic transitions.
- * - Demo Mode: Can switch to a non-functional "Demo" mode for the landing
- *   page, utilizing mock scroll-spy logic.
- */
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Pen,
@@ -25,41 +10,21 @@ import {
   FolderOpen,
   FileText,
   Settings,
-  MessageSquare,
   Coffee,
   Users,
-  Plus,
-  Target,
-  Briefcase,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
   Newspaper,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  createConversation,
-  deleteConversation,
-  renameConversation,
-  type ConversationData,
-  type ConversationMode,
-} from '@/app/actions/chat';
 
 const navItems = [
   { href: '/dashboard', icon: Pen, label: 'Capture', demoId: 'journal' },
-  { href: '/chat', icon: MessageSquare, label: 'Coach', demoId: 'feature-mentor' },
   { href: '/projects', icon: FolderOpen, label: 'Projects', demoId: 'feature-projects' },
   { href: '/reports', icon: FileText, label: 'Reviews', demoId: 'feature-reports' },
   { href: '/insights', icon: BarChart3, label: 'Insights', demoId: 'feature-insights' },
   { href: '/focus', icon: Coffee, label: 'Focus', demoId: 'feature-focus' },
   { href: '/network', icon: Users, label: 'Network', demoId: 'feature-network' },
+  { href: '/chat', icon: LinkIcon, label: 'MCP Connector', demoId: 'feature-mentor' },
   { href: '/articles', icon: Newspaper, label: 'Articles', demoId: 'feature-articles' },
 ];
 
@@ -70,11 +35,6 @@ interface SidebarProps {
   activePath?: string;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
-  chatSidebarData?: {
-    conversations: ConversationData[];
-    activeConversationId?: string;
-    projects: Array<{ id: string; name: string; color: string }>;
-  };
 }
 
 export function Sidebar({
@@ -82,74 +42,9 @@ export function Sidebar({
   activePath = '/',
   isMobileOpen,
   onMobileClose,
-  chatSidebarData,
 }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const currentPath = mode === 'demo' ? activePath : pathname;
-  const [viewMode, setViewMode] = useState<'history' | 'navigation'>('history');
-  const [isPending, startTransition] = useTransition();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-
-  const isChatRoute = mode === 'app' && currentPath?.startsWith('/chat');
-
-  const handleNewChat = async (chatMode: ConversationMode, projectId?: string) => {
-    startTransition(async () => {
-      const conversation = await createConversation(chatMode, projectId);
-      onMobileClose?.();
-      router.push(`/chat/${conversation.id}`);
-    });
-  };
-
-  const handleDelete = async (conversationId: string) => {
-    startTransition(async () => {
-      await deleteConversation(conversationId);
-      if (chatSidebarData?.activeConversationId === conversationId) {
-        onMobileClose?.();
-        router.push('/chat');
-      }
-    });
-  };
-
-  const handleStartRename = (id: string, currentTitle: string) => {
-    setEditingId(id);
-    setEditTitle(currentTitle);
-  };
-
-  const handleRenameSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!editingId || !editTitle.trim()) {
-      setEditingId(null);
-      return;
-    }
-    startTransition(async () => {
-      await renameConversation(editingId, editTitle.trim());
-      setEditingId(null);
-    });
-  };
-
-  const getChatModeLabel = (chatMode: string) => {
-    switch (chatMode) {
-      case 'goal-coach':
-        return 'Goal Setting';
-      case 'interview':
-        return 'Interview';
-      default:
-        return 'Chat';
-    }
-  };
-
-  const getChatModeIcon = (chatMode: string) => {
-    switch (chatMode) {
-      case 'goal-coach':
-        return <Target className="h-4 w-4" />;
-      case 'interview':
-        return <Briefcase className="h-4 w-4" />;
-      default:
-        return <MessageSquare className="h-4 w-4" />;
-    }
-  };
 
   const handleDemoClick = (id: string) => {
     if (mode === 'demo') {
@@ -162,7 +57,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div
           className="bg-background/80 fixed inset-0 z-40 backdrop-blur-sm lg:hidden"
@@ -196,190 +90,25 @@ export function Sidebar({
         </div>
 
         <nav className="min-h-0 flex-1 px-3">
-          {isChatRoute && viewMode === 'history' && chatSidebarData ? (
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="space-y-2 pb-3">
-                <Button
-                  onClick={() => handleNewChat('general')}
-                  disabled={isPending}
-                  className="w-full justify-start"
-                  size="sm"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Chat
-                </Button>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleNewChat('goal-coach')}
-                    disabled={isPending}
-                    className="justify-start text-xs"
-                  >
-                    <Target className="mr-1 h-3 w-3" />
-                    Goal
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isPending || chatSidebarData.projects.length === 0}
-                        className="justify-start text-xs"
-                      >
-                        <Briefcase className="mr-1 h-3 w-3" />
-                        Interview
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
-                      <div className="text-muted-foreground p-2 text-xs font-medium">
-                        Select a project to practice
-                      </div>
-                      {chatSidebarData.projects.map(project => (
-                        <DropdownMenuItem
-                          key={project.id}
-                          onClick={() => handleNewChat('interview', project.id)}
-                          className="cursor-pointer"
-                        >
-                          <span
-                            className="mr-2 h-2 w-2 rounded-full"
-                            style={{ backgroundColor: project.color }}
-                          />
-                          {project.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              <div className="text-muted-foreground mb-2 px-2 text-xs font-medium">
-                Recent Chats
-              </div>
-              <div className="flex-1 overflow-y-auto pr-1" data-lenis-prevent>
-                {chatSidebarData.conversations.length === 0 ? (
-                  <div className="text-muted-foreground px-2 py-8 text-sm">
-                    No conversations yet.
-                  </div>
-                ) : (
-                  chatSidebarData.conversations.map(conversation => (
-                    <div key={conversation.id} className="group mb-1">
-                      <Link
-                        href={`/chat/${conversation.id}`}
-                        onClick={() => onMobileClose?.()}
-                        className={cn(
-                          'flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200',
-                          chatSidebarData.activeConversationId === conversation.id
-                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                        )}
-                      >
-                        <span className="shrink-0">{getChatModeIcon(conversation.mode)}</span>
-                        <div className="min-w-0 flex-1">
-                          {editingId === conversation.id ? (
-                            <form
-                              onSubmit={e => {
-                                e.preventDefault();
-                                handleRenameSubmit();
-                              }}
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <Input
-                                value={editTitle}
-                                onChange={e => setEditTitle(e.target.value)}
-                                onBlur={() => handleRenameSubmit()}
-                                autoFocus
-                                className="h-6 w-full px-1 py-0 text-xs"
-                              />
-                            </form>
-                          ) : (
-                            <div className="group-hover:text-primary truncate font-medium transition-colors">
-                              {conversation.title}
-                            </div>
-                          )}
-                          <div className="text-muted-foreground group-hover:text-primary/70 truncate text-xs transition-colors">
-                            {getChatModeLabel(conversation.mode)}
-                          </div>
-                        </div>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleStartRename(conversation.id, conversation.title);
-                              }}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDelete(conversation.id);
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </Link>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          ) : (
-            navItems.map(item => (
-              <NavItem
-                key={item.href}
-                mode={mode}
-                href={item.href}
-                demoId={item.demoId}
-                icon={item.icon}
-                label={item.label}
-                isActive={
-                  mode === 'app'
-                    ? currentPath === item.href || currentPath?.startsWith(item.href + '/')
-                    : (item.label === 'Capture' && currentPath === '/dashboard') ||
-                      (item.label === 'Coach' && currentPath === '/mentor') ||
-                      (item.label === 'Articles' && currentPath === '/articles') ||
-                      currentPath?.includes(item.label.toLowerCase())
-                }
-                onClick={
-                  mode === 'demo' ? () => handleDemoClick(item.demoId) : () => onMobileClose?.()
-                }
-              />
-            ))
-          )}
+          {navItems.map(item => (
+            <NavItem
+              key={item.href}
+              mode={mode}
+              href={item.href}
+              demoId={item.demoId}
+              icon={item.icon}
+              label={item.label}
+              isActive={
+                mode === 'app'
+                  ? currentPath === item.href || currentPath?.startsWith(item.href + '/')
+                  : currentPath === item.href
+              }
+              onClick={
+                mode === 'demo' ? () => handleDemoClick(item.demoId) : () => onMobileClose?.()
+              }
+            />
+          ))}
         </nav>
-        {isChatRoute && chatSidebarData && (
-          <button
-            type="button"
-            onClick={() => setViewMode(prev => (prev === 'history' ? 'navigation' : 'history'))}
-            className="text-muted-foreground hover:text-foreground mb-2 w-full text-center text-xs transition-colors"
-          >
-            {viewMode === 'history' ? 'Switch to navigation' : 'Switch to chat history'}
-          </button>
-        )}
         <div className="border-border/50 border-t p-3">
           <NavItem
             mode={mode}
@@ -414,7 +143,6 @@ function NavItem({
 }) {
   const content = (
     <>
-      {/* Active background indicator with animation */}
       {isActive && (
         <motion.div
           layoutId={mode === 'demo' ? 'demo-sidebar-active' : 'sidebar-active'}
@@ -428,23 +156,32 @@ function NavItem({
     </>
   );
 
-  const className = cn(
-    'group relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 mb-1',
-    isActive
-      ? 'text-sidebar-accent-foreground font-medium'
-      : 'text-muted-foreground hover:text-foreground hover:bg-muted/20'
-  );
-
   if (mode === 'demo') {
     return (
-      <button onClick={onClick} className={cn(className, 'w-full text-left')}>
+      <Button
+        variant={isActive ? 'default' : 'ghost'}
+        className={cn(
+          'relative z-10 w-full justify-start gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+          isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : ''
+        )}
+        onClick={onClick}
+      >
         {content}
-      </button>
+      </Button>
     );
   }
 
   return (
-    <Link href={href} className={className}>
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(
+        'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+        isActive
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+      )}
+    >
       {content}
     </Link>
   );

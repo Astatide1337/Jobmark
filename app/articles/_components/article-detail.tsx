@@ -53,6 +53,8 @@ function ArticleHeader({ article }: { article: Article }) {
 }
 
 function HowToUseArticle({ article }: { article: Article }) {
+  if (!article.bestFor && !article.primaryAction && !article.primaryHref) return null;
+
   const nextHref = article.primaryHref ?? '/dashboard';
   const nextAction = article.primaryAction ?? 'Open dashboard';
 

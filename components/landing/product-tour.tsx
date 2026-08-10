@@ -43,9 +43,9 @@ const steps = [
   },
   {
     id: 'mentor',
-    title: 'Reflect with a coach',
-    subtitle: 'Support, not replacement.',
-    description: 'Use your record to think through goals, tradeoffs, and next steps.',
+    title: 'Connect your AI',
+    subtitle: 'Your data, your assistant.',
+    description: 'Use your record with Claude, ChatGPT, or any MCP-compatible AI assistant.',
   },
   {
     id: 'insights',

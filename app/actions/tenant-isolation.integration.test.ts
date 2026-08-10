@@ -25,7 +25,6 @@ import { getProjects } from './projects';
 import { getGoals } from './goals';
 import { getContacts } from './network';
 import { getReports } from './reports';
-import { getConversations } from './chat';
 import { getUserSettings } from './settings';
 
 const integrationEnabled = process.env.INTEGRATION_TESTS === '1';
@@ -38,6 +37,7 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
   let projectB: { id: string };
 
   beforeAll(async () => {
+    const currentLogDate = new Date();
     const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     userA = await prisma.user.create({ data: { email: `tenant-a-${suffix}@example.test` } });
     userB = await prisma.user.create({ data: { email: `tenant-b-${suffix}@example.test` } });
@@ -61,45 +61,25 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
     await Promise.all([
       prisma.userSettings.create({ data: { userId: userA.id } }),
       prisma.userSettings.create({ data: { userId: userB.id } }),
-      prisma.conversation.create({
-        data: {
-          userId: userA.id,
-          title: 'User A conversation',
-          projectId: projectA.id,
-          goalId: goalA.id,
-          contactId: contactA.id,
-          reports: { connect: { id: reportA.id } },
-        },
-      }),
-      prisma.conversation.create({
-        data: {
-          userId: userB.id,
-          title: 'User B conversation',
-          projectId: projectB.id,
-          goalId: goalB.id,
-          contactId: contactB.id,
-          reports: { connect: { id: reportB.id } },
-        },
-      }),
     ]);
     await prisma.activity.createMany({
       data: [
         {
           userId: userA.id,
           content: 'User A private activity',
-          logDate: new Date('2026-07-12T00:00:00.000Z'),
+          logDate: currentLogDate,
         },
         {
           userId: userA.id,
           projectId: privateProjectA.id,
           content: 'User A locked activity',
-          logDate: new Date('2026-07-12T00:00:00.000Z'),
+          logDate: currentLogDate,
         },
         {
           userId: userB.id,
           projectId: projectB.id,
           content: 'User B private activity',
-          logDate: new Date('2026-07-12T00:00:00.000Z'),
+          logDate: currentLogDate,
         },
         {
           userId: userA.id,
@@ -153,16 +133,15 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
     expect(stats.thisMonth).toBe(2);
   });
 
-  it('scopes projects, goals, contacts, reports, conversations, and settings', async () => {
+  it('scopes projects, goals, contacts, reports, and settings', async () => {
     requireUserIdMock.mockResolvedValue(userA.id);
     authMock.mockResolvedValue({ user: { id: userA.id } });
 
-    const [projects, goals, contacts, reports, conversations, settings] = await Promise.all([
+    const [projects, goals, contacts, reports, settings] = await Promise.all([
       getProjects(),
       getGoals(),
       getContacts(),
       getReports(),
-      getConversations(),
       getUserSettings(),
     ]);
 
@@ -173,7 +152,6 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
     expect(goals.map(goal => goal.title)).toEqual(['User A goal']);
     expect(contacts.map(contact => contact.fullName)).toEqual(['User A contact']);
     expect(reports.map(report => report.title)).toEqual(['User A report']);
-    expect(conversations.map(conversation => conversation.title)).toEqual(['User A conversation']);
     expect(settings?.aiProvider).toBe('gemini');
   });
 

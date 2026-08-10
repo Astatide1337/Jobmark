@@ -1,0 +1,189 @@
+'use client';
+
+import Link from 'next/link';
+import { Claude, Gemini, OpenAI } from '@lobehub/icons';
+import { ArrowRight, ChevronDown, Link2, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+export interface ConnectedAiProvider {
+  key: string;
+  name: string;
+}
+
+export const MCP_PROVIDER_URLS: Record<string, string> = {
+  claude: 'https://claude.ai/new',
+  chatgpt: 'https://chatgpt.com/',
+  gemini: 'https://gemini.google.com/app',
+};
+
+// These are the only provider URL handoffs we can verify against the current
+// web apps. Gemini currently ignores prompt query parameters, so it uses the
+// clipboard fallback instead of putting the user's draft in the URL.
+const MCP_PROVIDER_PROMPT_PARAMS: Record<string, string> = {
+  claude: 'q',
+  chatgpt: 'q',
+};
+
+export function providerSupportsPromptUrl(providerKey: string) {
+  return Object.prototype.hasOwnProperty.call(MCP_PROVIDER_PROMPT_PARAMS, providerKey);
+}
+
+export function getMcpProviderLaunchUrl(providerKey: string, prompt?: string) {
+  const baseUrl = MCP_PROVIDER_URLS[providerKey];
+  const promptParam = MCP_PROVIDER_PROMPT_PARAMS[providerKey];
+  if (!baseUrl || !prompt || !promptParam) return baseUrl;
+
+  const url = new URL(baseUrl);
+  url.searchParams.set(promptParam, prompt);
+  return url.toString();
+}
+
+interface McpDraftActionsProps {
+  connectedAiProviders: ConnectedAiProvider[];
+  onDraftWithProvider: (provider: ConnectedAiProvider) => void;
+}
+
+export function ProviderIcon({ providerKey }: { providerKey: string }) {
+  if (providerKey === 'claude') return <Claude.Color size={18} />;
+  if (providerKey === 'chatgpt') {
+    return <OpenAI aria-hidden="true" className="text-foreground" size={18} />;
+  }
+  if (providerKey === 'gemini') return <Gemini.Color size={18} />;
+  return <Sparkles className="h-4 w-4" />;
+}
+
+export function McpDraftActions({
+  connectedAiProviders,
+  onDraftWithProvider,
+}: McpDraftActionsProps) {
+  return (
+    <div className="border-border/50 bg-card/30 rounded-2xl border p-5">
+      <div className="flex flex-col gap-1">
+        <p className="text-primary text-xs font-semibold tracking-widest uppercase">
+          Choose where to draft
+        </p>
+        <h3 className="text-foreground font-semibold">Use your connected AI</h3>
+        <p className="text-muted-foreground text-sm">
+          Choose an assistant to open with a ready-to-send prompt grounded in your Jobmark record.
+        </p>
+        {connectedAiProviders.some(provider => provider.key === 'gemini') && (
+          <p className="text-muted-foreground/80 mt-1 text-xs">
+            Gemini opens with your prompt copied. Paste it into the message box to begin.
+          </p>
+        )}
+      </div>
+
+      {connectedAiProviders.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-3">
+          {connectedAiProviders.map(provider => (
+            <Button
+              key={provider.key}
+              type="button"
+              variant="outline"
+              className="h-11 rounded-xl px-4"
+              onClick={() => onDraftWithProvider(provider)}
+            >
+              <ProviderIcon providerKey={provider.key} />
+              <span className="ml-2">
+                {getMcpProviderLaunchUrl(provider.key)
+                  ? `Draft with ${provider.name}`
+                  : `Copy for ${provider.name}`}
+              </span>
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <Button asChild variant="outline" className="mt-4 h-11 rounded-xl px-4">
+          <Link href="/settings/connections">
+            <Link2 className="mr-2 h-4 w-4" />
+            Set up an MCP Connector
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+interface McpProviderMenuProps {
+  connectedAiProviders: ConnectedAiProvider[];
+  onOpenProvider: (provider: ConnectedAiProvider) => void;
+}
+
+/**
+ * A compact provider chooser for post-draft actions. One connection gets a
+ * direct action; multiple connections get a menu, so “Open in…” is never
+ * ambiguous.
+ */
+export function McpProviderMenu({ connectedAiProviders, onOpenProvider }: McpProviderMenuProps) {
+  if (connectedAiProviders.length === 0) {
+    return (
+      <Button
+        asChild
+        variant="outline"
+        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+      >
+        <Link href="/settings/connections">
+          <Link2 className="mr-2 h-4 w-4" />
+          Set up an MCP Connector
+        </Link>
+      </Button>
+    );
+  }
+
+  if (connectedAiProviders.length === 1) {
+    const provider = connectedAiProviders[0];
+    const launchUrl = getMcpProviderLaunchUrl(provider.key);
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+        onClick={() => onOpenProvider(provider)}
+      >
+        <ProviderIcon providerKey={provider.key} />
+        <span className="ml-2">
+          {launchUrl ? `Open in ${provider.name}` : `Copy for ${provider.name}`}
+        </span>
+        <ArrowRight className="text-muted-foreground ml-auto h-4 w-4" />
+      </Button>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+        >
+          <ArrowRight className="mr-2 h-4 w-4" />
+          Choose where to continue
+          <ChevronDown className="text-muted-foreground ml-auto h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64">
+        {connectedAiProviders.map(provider => (
+          <DropdownMenuItem
+            key={provider.key}
+            onSelect={() => onOpenProvider(provider)}
+            className="cursor-pointer"
+          >
+            <ProviderIcon providerKey={provider.key} />
+            <span>
+              {getMcpProviderLaunchUrl(provider.key)
+                ? `Open in ${provider.name}`
+                : `Copy for ${provider.name}`}
+            </span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

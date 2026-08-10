@@ -18,7 +18,7 @@
 ### API Routes
 
 - Group related endpoints in the same folder
-- Use POST with `action` type for related operations (e.g., `/api/chat` handles stream, cancel, history)
+- Use POST with `action` type for related operations (e.g., `/api/vault` handles unlock, setup, change-password)
 
 ---
 

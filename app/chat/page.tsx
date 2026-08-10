@@ -1,45 +1,61 @@
-/**
- * AI Mentor Page (The Chat Hub)
- *
- * Why: This is the primary interface for users to interact with their
- * career coach. It handles the server-side preparation of all
- * potential context sources.
- *
- * Performance: Uses `Promise.all` to fetch conversations, projects,
- * goals, contacts, and reports in parallel. This ensures the chat
- * interface has everything it needs to offer smart suggested prompts
- * immediately on load.
- */
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { getConversations } from '@/app/actions/chat';
-import { getProjects } from '@/app/actions/projects';
-import { getGoals } from '@/app/actions/goals';
-import { getContacts } from '@/app/actions/network';
-import { getReports } from '@/app/actions/reports';
-import { getVaultProjects } from '@/app/actions/project-lock';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { McpConnectionPage } from '@/components/mcp/McpConnectionPage';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { ChatInterface } from '@/components/chat/chat-interface';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { headers } from 'next/headers';
 
-export default async function ChatPage() {
+interface ChatPageProps {
+  searchParams: Promise<{ connect?: string }>;
+}
+
+export default async function ChatPage({ searchParams }: ChatPageProps) {
+  const { connect } = await searchParams;
   const session = await auth();
+  const requestHeaders = await headers();
+  const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
+  const forwardedProtocol = requestHeaders.get('x-forwarded-proto')?.split(',')[0];
+  const protocol = forwardedProtocol ?? (host?.startsWith('localhost') ? 'http' : 'https');
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : (process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? '');
+  const mcpBaseUrl = process.env.MCP_PUBLIC_BASE_URL?.replace(/\/$/, '') ?? baseUrl;
 
-  if (!session?.user?.id) {
-    redirect('/');
-  }
+  const connections = session?.user?.id
+    ? await prisma.mcpConnection.findMany({
+        where: { userId: session.user.id, revokedAt: null },
+        include: {
+          oauthClient: {
+            select: { id: true, clientId: true, clientName: true, redirectUris: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    : [];
 
-  const [conversations, projects, goals, contacts, reports, vaultProjects] = await Promise.all([
-    getConversations(20),
-    getProjects('active'),
-    getGoals(),
-    getContacts(),
-    getReports(),
-    getVaultProjects(), // Returns [] when vault is locked; included when unlocked so they appear in context picker
-  ]);
+  const connectionPage = (
+    <McpConnectionPage
+      baseUrl={mcpBaseUrl}
+      user={
+        session?.user
+          ? { id: session.user.id, name: session.user.name, email: session.user.email }
+          : null
+      }
+      connections={connections.map(c => ({
+        id: c.id,
+        oauthClientId: c.oauthClientId,
+        clientName: c.clientName,
+        scopes: c.scopes,
+        vaultUnlockedUntil: c.vaultUnlockedUntil,
+        lastUsedAt: c.lastUsedAt,
+        createdAt: c.createdAt,
+        oauthClient: c.oauthClient,
+      }))}
+      initialProviderId={connect}
+    />
+  );
 
-  // Merge regular active projects with vault projects (vault projects only present when unlocked)
-  const activeProjects = [...projects.filter(p => !p.archived), ...vaultProjects];
+  if (!session?.user?.id) return connectionPage;
 
   return (
     <DashboardShell
@@ -47,51 +63,11 @@ export default async function ChatPage() {
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="Career Coach"
+          title="MCP Connector"
         />
       }
-      className="p-0"
-      chatSidebarData={{
-        conversations,
-        projects: activeProjects.map(p => ({
-          id: p.id,
-          name: p.name,
-          color: p.color,
-        })),
-      }}
     >
-      <div className="flex flex-1 flex-col">
-        <ChatInterface
-          mode="general"
-          userName={session.user.name}
-          initialMessages={[]}
-          projectId={null}
-          goalId={null}
-          contactId={null}
-          reportIds={[]}
-          projects={activeProjects.map(p => ({
-            id: p.id,
-            name: p.name,
-            color: p.color,
-          }))}
-          goals={goals.map(g => ({
-            id: g.id,
-            title: g.title,
-          }))}
-          contacts={contacts.map(c => ({
-            id: c.id,
-            fullName: c.fullName,
-            relationship: c.relationship ?? null,
-            interactionsCount: c._count?.interactions ?? 0,
-          }))}
-          reports={reports.map(r => ({
-            id: r.id,
-            title: r.title,
-            createdAt: r.createdAt,
-          }))}
-          showPrompts
-        />
-      </div>
+      <div className="mx-auto w-full max-w-(--container-content)">{connectionPage}</div>
     </DashboardShell>
   );
 }

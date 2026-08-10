@@ -10,7 +10,7 @@
  */
 'use server';
 
-import { auth, requireUserId } from '@/lib/auth';
+import { auth, requireUserId, signOut } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports, isVaultUnlocked } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
@@ -667,6 +667,9 @@ export async function deleteUserAccount() {
     await prisma.user.delete({
       where: { id: session.user.id },
     });
+
+    // Clear the session cookie so the browser is signed out
+    await signOut({ redirect: false });
 
     return { success: true, message: 'Account deleted' };
   } catch (error) {

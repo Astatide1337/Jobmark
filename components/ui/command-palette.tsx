@@ -37,6 +37,7 @@ import {
   MessageSquare,
   Calendar,
   Newspaper,
+  LinkIcon,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +47,7 @@ import { format } from 'date-fns';
 // Quick action definitions
 const quickActions = [
   { id: 'log', label: 'Log New Activity', icon: Plus, action: 'focus-capture' },
-  { id: 'open-coach', label: 'Open Coach', icon: MessageSquare, href: '/chat' },
+  { id: 'open-mcp-connector', label: 'MCP Connector', icon: LinkIcon, href: '/chat' },
   { id: 'view-reports', label: 'View Reviews', icon: FileBarChart, href: '/reports?tab=history' },
   { id: 'create-report', label: 'Create Summary', icon: Sparkles, href: '/reports?tab=new' },
   { id: 'project', label: 'Create Project', icon: FolderOpen, href: '/projects?new=true' },

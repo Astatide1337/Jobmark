@@ -2,7 +2,7 @@
 
 ## Overview
 
-jobmark is a personal career management platform that allows users to log accomplishments ("activities"), track projects, set goals, and manage professional networks with AI-powered insights and mentor interactions.
+jobmark is a personal career management platform that allows users to log accomplishments ("activities"), track projects, set goals, and manage professional networks. It connects to the AI assistant the user chooses through MCP (Model Context Protocol).
 
 ## Architecture & Tech Stack
 
@@ -11,8 +11,9 @@ jobmark is a personal career management platform that allows users to log accomp
 - **Database:** PostgreSQL via Prisma ORM
 - **Auth:** Auth.js (NextAuth) with Google Provider
 - **UI:** Tailwind CSS, Radix UI, Framer Motion, Lucide Icons, Recharts (Insights)
-- **AI:** Google Gemini (OpenAI-compatible SDK) for chat, report generation, and text polishing. BYOK supported via user settings.
-- **Optimization:** Turbopack for fast development, custom StreamManager for AI streams, and Server-Side Data Aggregation for heavy charts.
+- **AI:** Google Gemini (OpenAI-compatible SDK) for report generation, text polishing, and outreach. BYOK supported via user settings.
+- **MCP:** Standards-compliant MCP server with OAuth 2.1 provider for external AI clients (Claude, ChatGPT, etc.).
+- **Optimization:** Turbopack for fast development and Server-Side Data Aggregation for heavy charts.
 
 ## Key Subsystems
 
@@ -22,11 +23,12 @@ jobmark is a personal career management platform that allows users to log accomp
 - **Projects:** Logical groupings for activities. Supports archiving.
 - **Stats:** Calculated on the server to avoid client-side waterfalls.
 
-### 2. AI Chat System (`/chat`)
+### 2. MCP Server (`/mcp`)
 
-- **Streaming:** Real-time responses via `/api/chat/stream`.
-- **Context Strategy:** Uses a Strategy Pattern (`lib/chat/context-providers`) to modularly build AI prompts based on relevant projects, goals, and reports.
-- **Stream Registry:** Managed via `StreamManager` class to handle cancellation and prevent memory leaks.
+- **Protocol:** JSON-RPC 2.0 over Streamable HTTP.
+- **OAuth:** Full OAuth 2.1 provider with PKCE, JWT access tokens, refresh token rotation.
+- **Tools:** 50+ domain tools (activities, projects, goals, reports, contacts, outreach, focus, settings, vault, account).
+- **Vault:** Per-connection vault lock with secure action URLs for unlock/setup/change-password flows.
 
 ### 3. Focus & Decompression (`/focus`)
 
@@ -58,11 +60,11 @@ graph TD
     Report[Reports] --> Activity
     Report --> Project
 
-    AI[AI Mentor] --> Conversation[Conversations]
-    Conversation -.-> Project
-    Conversation -.-> Goal
-    Conversation -.-> Report
-    Conversation -.-> Contact
+    MCP[MCP Server] --> Activity
+    MCP --> Project
+    MCP --> Goal
+    MCP --> Contact
+    MCP --> Report
 ```
 
 ## Core Code Patterns
@@ -81,19 +83,22 @@ export default async function Page() {
 }
 ```
 
-### 2. AI Context Strategy (Extensibility)
+### 2. MCP Tool Pattern (Extensibility)
 
-To add new data to the AI, create a new `ContextProvider`.
+To add a new MCP tool, create a tool definition in `lib/mcp/tools/`.
 
 ```typescript
-export class NewDataProvider implements ContextStrategy {
-  name = 'new-data';
-  async provide(ctx: ConversationContext, userId: string) {
-    // 1. Fetch data
-    // 2. Format for AI
-    // 3. Return string
-  }
-}
+export const newTool = {
+  name: 'new_tool' as const,
+  inputSchema: { /* Zod schema */ },
+  outputSchema: { /* Zod schema */ },
+  annotations: { readOnly: true, destructive: false, idempotent: true, openWorld: false },
+  async execute(input, actor) {
+    // 1. Validate input
+    // 2. Call domain function from lib/jobmark/
+    // 3. Return structured result
+  },
+};
 ```
 
 ### 3. Render-Phase State Syncing (Snappiness)
@@ -115,6 +120,17 @@ if (prop !== prevProp) {
 - `npm run dev`: Start with Turbopack (fast).
 - `npm run build`: Production build and typecheck.
 - `npx prisma studio`: Browse database locally.
+
+### Database Safety (CRITICAL)
+
+- **NEVER run `prisma db push`, `prisma migrate deploy`, or `prisma migrate dev` against production.**
+- Always use guards: `npm run db:push` (guarded), `npm run db:migrate:dev` (guarded).
+- The guard script (`scripts/guard-db.sh`) blocks production endpoints.
+- Override with `ALLOW_PRODUCTION=1` only for actual production deploys.
+- `.env` has production URL (for Vercel deploys). `.env.local` should have dev URL.
+- Development branch on Neon: `br-noisy-river-ahq8todh` (endpoint: `ep-orange-field-ahk3riq0`).
+- Get dev connection string: `neonctl connection-string <branch-name>`.
+- Production branch: `main` (endpoint: `ep-winter-star-ah9jvaa7`).
 
 ### Standards & Conventions
 
