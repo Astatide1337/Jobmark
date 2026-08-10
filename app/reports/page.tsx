@@ -6,6 +6,8 @@
  * "Report Wizard" and the "Report History" view.
  */
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { getMcpProviderKey, getMcpProviderName } from '@/lib/mcp/provider-identity';
 import { redirect } from 'next/navigation';
 import { getProjects } from '@/app/actions/projects';
 import { getReports } from '@/app/actions/reports';
@@ -28,7 +30,33 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     redirect('/');
   }
 
-  const [projects, reports] = await Promise.all([getProjects('active'), getReports()]);
+  const [projects, reports, connections] = await Promise.all([
+    getProjects('active'),
+    getReports(),
+    prisma.mcpConnection.findMany({
+      where: { userId: session.user.id, revokedAt: null },
+      include: {
+        oauthClient: { select: { clientId: true, clientName: true, redirectUris: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  // A user can have more than one connection record for the same client. The
+  // wizard only needs one action per active provider, so dedupe by the trusted
+  // provider identity rather than the user-supplied display name.
+  const connectedAiProviders = Array.from(
+    new Map(
+      connections.map(connection => {
+        const identity = {
+          ...connection.oauthClient,
+          clientName: connection.oauthClient.clientName || connection.clientName,
+        };
+        const key = getMcpProviderKey(identity);
+        return [key, { key, name: getMcpProviderName(identity) }];
+      })
+    ).values()
+  );
 
   const defaultTab = tab === 'history' ? 'history' : 'new';
 
@@ -58,7 +86,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </div>
 
           <TabsContent value="new" className="flex-1">
-            <ReportWizard projects={projects} />
+            <ReportWizard projects={projects} connectedAiProviders={connectedAiProviders} />
           </TabsContent>
 
           <TabsContent value="history" className="flex-1">

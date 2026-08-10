@@ -24,8 +24,8 @@ const navItems = [
   { href: '/insights', icon: BarChart3, label: 'Insights', demoId: 'feature-insights' },
   { href: '/focus', icon: Coffee, label: 'Focus', demoId: 'feature-focus' },
   { href: '/network', icon: Users, label: 'Network', demoId: 'feature-network' },
-  { href: '/articles', icon: Newspaper, label: 'Articles', demoId: 'feature-articles' },
   { href: '/chat', icon: LinkIcon, label: 'MCP Connector', demoId: 'feature-mentor' },
+  { href: '/articles', icon: Newspaper, label: 'Articles', demoId: 'feature-articles' },
 ];
 
 const settingsItem = { href: '/settings', icon: Settings, label: 'Settings', demoId: 'settings' };

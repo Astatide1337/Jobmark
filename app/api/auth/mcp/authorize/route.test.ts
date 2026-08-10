@@ -116,6 +116,28 @@ describe('MCP authorization consent callback', () => {
     expect(location.searchParams.has('client_name')).toBe(false);
   });
 
+  it('encodes state when redirecting malformed requests to the Jobmark error page', async () => {
+    const requestUrl = new URL('https://jobmark.example.com/api/auth/mcp/authorize');
+    requestUrl.search = new URLSearchParams({
+      response_type: 'token',
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      scope: 'jobmark:read offline_access',
+      state: 'state with & separators',
+      code_challenge: 'A'.repeat(43),
+      code_challenge_method: 'S256',
+    }).toString();
+
+    const response = await GET(new NextRequest(requestUrl));
+    const location = new URL(response.headers.get('location') ?? '');
+
+    expect(response.status).toBe(307);
+    expect(location.pathname).toBe('/mcp/authorize');
+    expect(location.searchParams.get('error')).toBe('invalid_request');
+    expect(location.searchParams.get('state')).toBe('state with & separators');
+    expect(location.searchParams.has('separators')).toBe(false);
+  });
+
   it('redirects an approved connection as GET and preserves selected permissions', async () => {
     const response = await POST(await createRequest('allow', 'jobmark:read'));
 

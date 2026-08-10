@@ -824,10 +824,12 @@ export function NextBestAction({
   activityCount,
   projectCount,
   summaryCount,
+  hasMcpConnection,
 }: {
   activityCount: number;
   projectCount: number;
   summaryCount: number;
+  hasMcpConnection: boolean;
 }) {
   const suggestion =
     activityCount === 0
@@ -851,12 +853,19 @@ export function NextBestAction({
               href: '/reports?tab=new',
               cta: 'Build Summary',
             }
-          : {
-              title: 'Use your record to prepare the next move.',
-              body: 'Review your summaries, then connect your AI assistant to sharpen the story.',
-              href: '/chat',
-              cta: 'Open MCP Connector',
-            };
+          : hasMcpConnection
+            ? {
+                title: 'Draft your next review brief.',
+                body: 'Use your connected AI assistant to turn your record into a manager-ready update.',
+                href: '/reports?tab=new',
+                cta: 'Build Review Draft',
+              }
+            : {
+                title: 'Use your record to prepare the next move.',
+                body: 'Review your summaries, then connect your AI assistant to sharpen the story.',
+                href: '/chat',
+                cta: 'Open MCP Connector',
+              };
 
   return (
     <Card className="border-border/50 bg-card/60 rounded-2xl">

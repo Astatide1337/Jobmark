@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   createRefreshToken: vi.fn(),
   rotateRefreshToken: vi.fn(),
   authCodeFindUnique: vi.fn(),
-  authCodeDelete: vi.fn(),
+  authCodeDeleteMany: vi.fn(),
   refreshTokenFindUnique: vi.fn(),
   refreshTokenUpdateMany: vi.fn(),
   accessTokenUpdateMany: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('@/lib/db', () => ({
   prisma: {
     oAuthAuthorizationCode: {
       findUnique: mocks.authCodeFindUnique,
-      delete: mocks.authCodeDelete,
+      deleteMany: mocks.authCodeDeleteMany,
     },
     oAuthRefreshToken: {
       findUnique: mocks.refreshTokenFindUnique,
@@ -72,6 +72,7 @@ describe('MCP OAuth token exchange', () => {
       expires_at: Date.now() + 15 * 60_000,
     });
     mocks.createRefreshToken.mockResolvedValue({ token: 'refresh-token' });
+    mocks.authCodeDeleteMany.mockResolvedValue({ count: 1 });
   });
 
   it('persists the MCP connection before returning tokens to Claude', async () => {
@@ -99,7 +100,8 @@ describe('MCP OAuth token exchange', () => {
     expect(mocks.ensureMcpConnection).toHaveBeenCalledWith(
       'claude-client',
       'user-1',
-      'jobmark:read jobmark:write offline_access'
+      'jobmark:read jobmark:write offline_access',
+      { revokeExistingTokens: true }
     );
     expect(mocks.ensureMcpConnection.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.createAccessToken.mock.invocationCallOrder[0]
@@ -124,7 +126,29 @@ describe('MCP OAuth token exchange', () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: 'invalid_grant' });
     expect(mocks.verifyPKCE).not.toHaveBeenCalled();
-    expect(mocks.authCodeDelete).not.toHaveBeenCalled();
+    expect(mocks.authCodeDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it('returns invalid_grant when another request consumes the code first', async () => {
+    mocks.authCodeDeleteMany.mockResolvedValue({ count: 0 });
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: 'claude-client',
+      code: 'authorization-code',
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      code_verifier: 'verifier',
+    });
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/api/auth/mcp/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body,
+      })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: 'invalid_grant' });
+    expect(mocks.ensureMcpConnection).not.toHaveBeenCalled();
   });
 
   it('rejects refresh requests that broaden the original grant', async () => {

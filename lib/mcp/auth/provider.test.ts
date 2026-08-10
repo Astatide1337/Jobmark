@@ -8,9 +8,15 @@ const mocks = vi.hoisted(() => ({
   clientCreate: vi.fn(),
   authCodeFindUnique: vi.fn(),
   authCodeDelete: vi.fn(),
-  connectionFindFirst: vi.fn(),
+  authCodeDeleteMany: vi.fn(),
+  consentDeleteMany: vi.fn(),
+  connectionFindMany: vi.fn(),
   connectionUpdate: vi.fn(),
+  connectionUpdateMany: vi.fn(),
   connectionCreate: vi.fn(),
+  accessTokenUpdateMany: vi.fn(),
+  refreshTokenUpdateMany: vi.fn(),
+  transaction: vi.fn(),
   resolve4: vi.fn(),
   resolve6: vi.fn(),
   httpsRequest: vi.fn(),
@@ -18,17 +24,25 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/db', () => ({
   prisma: {
-    oAuthAccessToken: { findUnique: mocks.accessTokenFindUnique },
+    oAuthAccessToken: {
+      findUnique: mocks.accessTokenFindUnique,
+      updateMany: mocks.accessTokenUpdateMany,
+    },
+    oAuthRefreshToken: { updateMany: mocks.refreshTokenUpdateMany },
     oAuthClient: { findUnique: mocks.clientFindUnique, create: mocks.clientCreate },
     oAuthAuthorizationCode: {
       findUnique: mocks.authCodeFindUnique,
       delete: mocks.authCodeDelete,
+      deleteMany: mocks.authCodeDeleteMany,
     },
+    oAuthConsent: { deleteMany: mocks.consentDeleteMany },
     mcpConnection: {
-      findFirst: mocks.connectionFindFirst,
+      findMany: mocks.connectionFindMany,
       update: mocks.connectionUpdate,
+      updateMany: mocks.connectionUpdateMany,
       create: mocks.connectionCreate,
     },
+    $transaction: mocks.transaction,
   },
 }));
 
@@ -77,6 +91,7 @@ describe('MCP OAuth discovery', () => {
 describe('MCP OAuth token persistence', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.transaction.mockResolvedValue([]);
   });
 
   it('validates an opaque access token from its persisted hash across instances', async () => {
@@ -105,8 +120,13 @@ describe('MCP OAuth token persistence', () => {
   });
 
   it('creates a connection when an OAuth client has no active connection', async () => {
-    mocks.clientFindUnique.mockResolvedValue({ id: 'oauth-client-cuid', clientName: 'Claude' });
-    mocks.connectionFindFirst.mockResolvedValue(null);
+    mocks.clientFindUnique.mockResolvedValue({
+      id: 'oauth-client-cuid',
+      clientId: 'public-client-id',
+      clientName: 'Claude',
+      redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+    });
+    mocks.connectionFindMany.mockResolvedValue([]);
 
     await ensureMcpConnection('public-client-id', 'user-1', 'jobmark:read offline_access');
 
@@ -121,18 +141,142 @@ describe('MCP OAuth token persistence', () => {
   });
 
   it('reactivates and updates an existing connection during token exchange', async () => {
-    mocks.clientFindUnique.mockResolvedValue({ id: 'oauth-client-cuid', clientName: 'Claude' });
-    mocks.connectionFindFirst.mockResolvedValue({ id: 'connection-1' });
+    mocks.clientFindUnique.mockResolvedValue({
+      id: 'oauth-client-cuid',
+      clientId: 'public-client-id',
+      clientName: 'Claude',
+      redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+    });
+    mocks.connectionFindMany.mockResolvedValue([
+      {
+        id: 'connection-1',
+        oauthClientId: 'oauth-client-cuid',
+        clientName: 'Claude',
+        oauthClient: {
+          clientId: 'public-client-id',
+          clientName: 'Claude',
+          redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+        },
+      },
+    ]);
 
     await ensureMcpConnection('public-client-id', 'user-1', 'jobmark:read jobmark:write');
 
     expect(mocks.connectionUpdate).toHaveBeenCalledWith({
       where: { id: 'connection-1' },
       data: expect.objectContaining({
+        oauthClientId: 'oauth-client-cuid',
         clientName: 'Claude',
         scopes: ['jobmark:read', 'jobmark:write'],
         revokedAt: null,
       }),
+    });
+  });
+
+  it('revokes prior tokens when a client reauthorizes with a fresh scope grant', async () => {
+    mocks.clientFindUnique.mockResolvedValue({
+      id: 'oauth-client-cuid',
+      clientId: 'public-client-id',
+      clientName: 'Claude',
+      redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+    });
+    mocks.connectionFindMany.mockResolvedValue([
+      {
+        id: 'connection-1',
+        oauthClientId: 'oauth-client-cuid',
+        clientName: 'Claude',
+        oauthClient: {
+          clientId: 'public-client-id',
+          clientName: 'Claude',
+          redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+        },
+      },
+    ]);
+
+    await ensureMcpConnection('public-client-id', 'user-1', 'jobmark:read', {
+      revokeExistingTokens: true,
+    });
+
+    expect(mocks.accessTokenUpdateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', clientId: { in: ['public-client-id'] }, revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(mocks.refreshTokenUpdateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', clientId: { in: ['public-client-id'] }, consumedAt: null },
+      data: { consumedAt: expect.any(Date) },
+    });
+    expect(mocks.authCodeDeleteMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', clientId: { in: ['public-client-id'] } },
+    });
+  });
+
+  it('collapses duplicate provider registrations and revokes replaced tokens', async () => {
+    mocks.clientFindUnique.mockResolvedValue({
+      id: 'gemini-client-new',
+      clientId: 'gemini-public-new',
+      clientName: 'Google',
+      redirectUris: ['https://gemini.google.com/mcp/oauth/callback'],
+    });
+    mocks.connectionFindMany.mockResolvedValue([
+      {
+        id: 'gemini-connection-2',
+        oauthClientId: 'gemini-client-old-2',
+        clientName: 'Google',
+        oauthClient: {
+          clientId: 'gemini-public-old-2',
+          clientName: 'Google',
+          redirectUris: ['https://gemini.google.com/mcp/oauth/callback'],
+        },
+      },
+      {
+        id: 'gemini-connection-1',
+        oauthClientId: 'gemini-client-old-1',
+        clientName: 'Gemini',
+        oauthClient: {
+          clientId: 'gemini-public-old-1',
+          clientName: 'Gemini',
+          redirectUris: ['https://gemini.google.com/mcp/oauth/callback'],
+        },
+      },
+    ]);
+
+    await ensureMcpConnection('gemini-public-new', 'user-1', 'jobmark:read offline_access');
+
+    expect(mocks.connectionUpdate).toHaveBeenCalledWith({
+      where: { id: 'gemini-connection-2' },
+      data: expect.objectContaining({ oauthClientId: 'gemini-client-new', clientName: 'Google' }),
+    });
+    expect(mocks.connectionUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['gemini-connection-1'] }, userId: 'user-1' },
+      data: expect.objectContaining({ revokedAt: expect.any(Date), vaultUnlockedUntil: null }),
+    });
+    expect(mocks.accessTokenUpdateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        clientId: { in: ['gemini-public-old-2', 'gemini-public-old-1'] },
+        revokedAt: null,
+      },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(mocks.refreshTokenUpdateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        clientId: { in: ['gemini-public-old-2', 'gemini-public-old-1'] },
+        consumedAt: null,
+      },
+      data: { consumedAt: expect.any(Date) },
+    });
+    expect(mocks.authCodeDeleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        clientId: { in: ['gemini-public-old-2', 'gemini-public-old-1'] },
+      },
+    });
+    expect(mocks.consentDeleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        clientId: { in: ['gemini-public-old-2', 'gemini-public-old-1'] },
+      },
     });
   });
 });
@@ -182,14 +326,22 @@ describe('MCP OAuth authorization-code PKCE', () => {
 
   it('requires and verifies the PKCE verifier before consuming a code', async () => {
     await expect(consumeAuthorizationCode('authorization-code')).resolves.toBeNull();
-    await expect(consumeAuthorizationCode('authorization-code', 'wrong-verifier')).resolves.toBeNull();
-    expect(mocks.authCodeDelete).not.toHaveBeenCalled();
+    await expect(
+      consumeAuthorizationCode('authorization-code', 'wrong-verifier')
+    ).resolves.toBeNull();
+    expect(mocks.authCodeDeleteMany).not.toHaveBeenCalled();
 
-    await expect(consumeAuthorizationCode('authorization-code', 'correct-verifier')).resolves.toMatchObject({
+    mocks.authCodeDeleteMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      consumeAuthorizationCode('authorization-code', 'correct-verifier')
+    ).resolves.toMatchObject({
       client_id: 'public-client',
       code_challenge: hashPKCE('correct-verifier'),
     });
-    expect(mocks.authCodeDelete).toHaveBeenCalledWith({ where: { code: hashToken('authorization-code') } });
+    expect(mocks.authCodeDeleteMany).toHaveBeenCalledWith({
+      where: { code: hashToken('authorization-code') },
+    });
   });
 });
 
@@ -203,13 +355,26 @@ describe('CIDDD client metadata SSRF and response limits', () => {
     scope: 'jobmark:read jobmark:write',
     token_endpoint_auth_method: 'none',
   };
-  const responseQueue: Array<{ statusCode: number; headers: Record<string, string>; body: string }> = [];
-  type LookupMock = (hostname: string, options: object, callback: (error: Error | null, address: string) => void) => void;
-  type ResponseCallback = (response: EventEmitter & {
+  const responseQueue: Array<{
     statusCode: number;
     headers: Record<string, string>;
-    destroy: (error?: Error) => void;
-  }) => void;
+    body: string;
+  }> = [];
+  type LookupMock = (
+    hostname: string,
+    options: object,
+    callback: (
+      error: Error | null,
+      address: string | Array<{ address: string; family?: number }>
+    ) => void
+  ) => void;
+  type ResponseCallback = (
+    response: EventEmitter & {
+      statusCode: number;
+      headers: Record<string, string>;
+      destroy: (error?: Error) => void;
+    }
+  ) => void;
 
   function queueResponse(response: Partial<(typeof responseQueue)[number]> = {}) {
     responseQueue.push({
@@ -235,33 +400,38 @@ describe('CIDDD client metadata SSRF and response limits', () => {
       tokenEndpointAuthMethod: metadata.token_endpoint_auth_method,
     });
     queueResponse();
-    mocks.httpsRequest.mockImplementation((_url: URL, _options: object, callback: ResponseCallback) => {
-      const request = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn>; end: () => void };
-      request.destroy = vi.fn();
-      request.end = () => {
-        const next = responseQueue.shift() ?? {
-          statusCode: 200,
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(metadata),
+    mocks.httpsRequest.mockImplementation(
+      (_url: URL, _options: object, callback: ResponseCallback) => {
+        const request = new EventEmitter() as EventEmitter & {
+          destroy: ReturnType<typeof vi.fn>;
+          end: () => void;
         };
-        const response = new EventEmitter() as EventEmitter & {
-          statusCode: number;
-          headers: Record<string, string>;
-          destroy: (error?: Error) => void;
+        request.destroy = vi.fn();
+        request.end = () => {
+          const next = responseQueue.shift() ?? {
+            statusCode: 200,
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(metadata),
+          };
+          const response = new EventEmitter() as EventEmitter & {
+            statusCode: number;
+            headers: Record<string, string>;
+            destroy: (error?: Error) => void;
+          };
+          response.statusCode = next.statusCode;
+          response.headers = next.headers;
+          response.destroy = (error?: Error) => {
+            if (error) response.emit('error', error);
+          };
+          callback(response);
+          queueMicrotask(() => {
+            if (next.body) response.emit('data', Buffer.from(next.body));
+            response.emit('end');
+          });
         };
-        response.statusCode = next.statusCode;
-        response.headers = next.headers;
-        response.destroy = (error?: Error) => {
-          if (error) response.emit('error', error);
-        };
-        callback(response);
-        queueMicrotask(() => {
-          if (next.body) response.emit('data', Buffer.from(next.body));
-          response.emit('end');
-        });
-      };
-      return request;
-    });
+        return request;
+      }
+    );
   });
 
   afterEach(() => {
@@ -281,33 +451,60 @@ describe('CIDDD client metadata SSRF and response limits', () => {
     );
   });
 
+  it('rejects CIDDD metadata that weakens the callback or changes its client ID', async () => {
+    responseQueue.length = 0;
+    queueResponse({
+      body: JSON.stringify({
+        ...metadata,
+        redirect_uris: ['http://attacker.example/callback'],
+      }),
+    });
+    await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
+
+    responseQueue.length = 0;
+    queueResponse({
+      body: JSON.stringify({
+        ...metadata,
+        client_id: 'https://attacker.example/client-metadata',
+      }),
+    });
+    await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
+  });
+
   it('pins the validated DNS address so a later DNS rebinding cannot change the target', async () => {
     let lookedUpAddress: string | undefined;
-    mocks.httpsRequest.mockImplementationOnce((_url: URL, options: { lookup: LookupMock }, callback: ResponseCallback) => {
-      options.lookup(claudeMetadataUrl, {}, (_error: Error | null, address: string) => {
-        lookedUpAddress = address;
-      });
-      const request = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn>; end: () => void };
-      request.destroy = vi.fn();
-      request.end = () => {
-        const response = new EventEmitter() as EventEmitter & {
-          statusCode: number;
-          headers: Record<string, string>;
-          destroy: (error?: Error) => void;
-        };
-        response.statusCode = 200;
-        response.headers = { 'content-type': 'application/json' };
-        response.destroy = vi.fn((_error?: Error) => undefined);
-        callback(response);
-        queueMicrotask(() => {
-          response.emit('data', Buffer.from(JSON.stringify(metadata)));
-          response.emit('end');
+    mocks.httpsRequest.mockImplementationOnce(
+      (_url: URL, options: { lookup: LookupMock }, callback: ResponseCallback) => {
+        options.lookup(claudeMetadataUrl, { all: true }, (_error: Error | null, address) => {
+          lookedUpAddress = Array.isArray(address) ? address[0]?.address : address;
         });
-      };
-      return request;
-    });
+        const request = new EventEmitter() as EventEmitter & {
+          destroy: ReturnType<typeof vi.fn>;
+          end: () => void;
+        };
+        request.destroy = vi.fn();
+        request.end = () => {
+          const response = new EventEmitter() as EventEmitter & {
+            statusCode: number;
+            headers: Record<string, string>;
+            destroy: (error?: Error) => void;
+          };
+          response.statusCode = 200;
+          response.headers = { 'content-type': 'application/json' };
+          response.destroy = vi.fn((_error?: Error) => undefined);
+          callback(response);
+          queueMicrotask(() => {
+            response.emit('data', Buffer.from(JSON.stringify(metadata)));
+            response.emit('end');
+          });
+        };
+        return request;
+      }
+    );
 
-    await expect(resolveClientId(claudeMetadataUrl)).resolves.toMatchObject({ client_id: claudeMetadataUrl });
+    await expect(resolveClientId(claudeMetadataUrl)).resolves.toMatchObject({
+      client_id: claudeMetadataUrl,
+    });
     expect(lookedUpAddress).toBe('104.18.32.47');
     expect(mocks.resolve4).toHaveBeenCalledTimes(1);
   });
@@ -338,7 +535,14 @@ describe('CIDDD client metadata SSRF and response limits', () => {
   });
 
   it('rejects private, loopback, link-local, and reserved DNS answers', async () => {
-    for (const address of ['10.0.0.1', '169.254.169.254', '192.0.2.1', '::1', 'fe80::1', '2001:db8::1']) {
+    for (const address of [
+      '10.0.0.1',
+      '169.254.169.254',
+      '192.0.2.1',
+      '::1',
+      'fe80::1',
+      '2001:db8::1',
+    ]) {
       mocks.resolve4.mockResolvedValue(address.includes(':') ? [] : [address]);
       mocks.resolve6.mockResolvedValue(address.includes(':') ? [address] : []);
       await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
@@ -351,13 +555,20 @@ describe('CIDDD client metadata SSRF and response limits', () => {
 
   it('does not follow redirects and requires JSON under the size cap', async () => {
     responseQueue.length = 0;
-    queueResponse({ statusCode: 302, headers: { location: 'https://169.254.169.254/metadata' }, body: '' });
+    queueResponse({
+      statusCode: 302,
+      headers: { location: 'https://169.254.169.254/metadata' },
+      body: '',
+    });
     await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
 
     queueResponse({ headers: { 'content-type': 'text/plain' }, body: 'not json' });
     await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
 
-    queueResponse({ headers: { 'content-type': 'application/json', 'content-length': '65537' }, body: '{}' });
+    queueResponse({
+      headers: { 'content-type': 'application/json', 'content-length': '65537' },
+      body: '{}',
+    });
     await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
     expect(mocks.httpsRequest).toHaveBeenCalledTimes(3);
   });

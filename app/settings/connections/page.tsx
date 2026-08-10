@@ -29,7 +29,9 @@ export default async function ConnectionsPage() {
 
   const connections = await prisma.mcpConnection.findMany({
     where: { userId: session.user.id, revokedAt: null },
-    include: { oauthClient: { select: { id: true, clientName: true } } },
+    include: {
+      oauthClient: { select: { id: true, clientId: true, clientName: true, redirectUris: true } },
+    },
     orderBy: { createdAt: 'desc' },
   });
 

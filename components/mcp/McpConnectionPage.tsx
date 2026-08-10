@@ -2,18 +2,10 @@
 
 import Link from 'next/link';
 import { type ComponentType, useState } from 'react';
-import { Claude, Gemini, OpenAI, Perplexity } from '@lobehub/icons';
-import {
-  Check,
-  CircleHelp,
-  Copy,
-  ExternalLink,
-  Link2,
-  Loader2,
-  PlugZap,
-  Trash2,
-} from 'lucide-react';
+import { Claude, Gemini, OpenAI } from '@lobehub/icons';
+import { CircleHelp, ExternalLink, Link2, Loader2, PlugZap, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getMcpProviderKey, getMcpProviderName } from '@/lib/mcp/provider-identity';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,7 +36,12 @@ interface McpConnectionProps {
     clientName: string;
     lastUsedAt: Date | null;
     createdAt: Date;
-    oauthClient: { id: string; clientName: string };
+    oauthClient: {
+      id: string;
+      clientId: string;
+      clientName: string;
+      redirectUris: string[];
+    };
   }>;
 }
 
@@ -52,16 +49,18 @@ interface Provider {
   id: string;
   name: string;
   Icon: ComponentType<{ className?: string; size?: number | string }>;
-  connectUrl?: string;
+  connectUrl: string;
   instructions: string;
 }
 
-function friendlyConnectionName(name: string): string {
-  const normalized = name.trim().toLowerCase();
-  if (normalized === 'google' || normalized.includes('gemini')) return 'Gemini';
-  if (normalized.includes('openai') || normalized.includes('chatgpt')) return 'ChatGPT';
-  if (normalized.includes('anthropic') || normalized.includes('claude')) return 'Claude';
-  return name || 'AI plugin';
+function deduplicateConnections(connections: McpConnectionProps['connections']) {
+  const seenProviders = new Set<string>();
+  return connections.filter(connection => {
+    const providerKey = getMcpProviderKey(connection.oauthClient);
+    if (seenProviders.has(providerKey)) return false;
+    seenProviders.add(providerKey);
+    return true;
+  });
 }
 
 const providers: Provider[] = [
@@ -70,12 +69,13 @@ const providers: Provider[] = [
     name: 'Claude',
     Icon: Claude.Color,
     connectUrl: 'https://claude.ai/customize/connectors',
-    instructions: 'In Claude, choose Add, then Custom connector, and paste your Jobmark link.',
+    instructions:
+      'In Claude, open Customize, then Connectors. Choose Add, then Custom connector, and paste your Jobmark link.',
   },
   {
     id: 'chatgpt',
     name: 'ChatGPT',
-    Icon: OpenAI,
+    Icon: ChatGptIcon,
     connectUrl: 'https://chatgpt.com/#settings/Plugins',
     instructions:
       'In ChatGPT Settings, open Plugins, turn on Developer mode, then create a plugin.',
@@ -84,21 +84,9 @@ const providers: Provider[] = [
     id: 'gemini',
     name: 'Gemini',
     Icon: Gemini.Color,
-    connectUrl: 'https://gemini.google.com/apps',
-    instructions: 'In Gemini Spark, open Custom apps, paste your Jobmark link, and choose Next.',
-  },
-  {
-    id: 'perplexity',
-    name: 'Perplexity',
-    Icon: Perplexity.Color,
-    connectUrl: 'https://www.perplexity.ai/account/connectors',
-    instructions: 'In Connectors, add a Custom remote connector and choose OAuth.',
-  },
-  {
-    id: 'other',
-    name: 'Another plugin',
-    Icon: PlugZap,
-    instructions: 'In your AI plugin, choose Add a connection and paste your Jobmark link.',
+    connectUrl: 'https://gemini.google.com/',
+    instructions:
+      'In Gemini, open Settings & help, then Connected Apps. Under Custom apps for Spark, paste your Jobmark link and choose Next.',
   },
 ];
 
@@ -111,17 +99,25 @@ export function McpConnectionPage({
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     () => providers.find(provider => provider.id === initialProviderId) ?? null
   );
-  const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [connectionToRevoke, setConnectionToRevoke] = useState<string | null>(null);
   const jobmarkLink = `${baseUrl}/mcp`;
+  const visibleConnections = deduplicateConnections(connections);
+  const connectionBeingRevoked = visibleConnections.find(
+    connection => connection.id === connectionToRevoke
+  );
+  const connectionBeingRevokedName = connectionBeingRevoked
+    ? getMcpProviderName({
+        ...connectionBeingRevoked.oauthClient,
+        clientName:
+          connectionBeingRevoked.oauthClient.clientName || connectionBeingRevoked.clientName,
+      })
+    : 'this plugin';
 
   const copyJobmarkLink = async () => {
     try {
       await navigator.clipboard.writeText(jobmarkLink);
-      setCopied(true);
       toast.success('Jobmark link copied');
-      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Could not copy the Jobmark link');
     }
@@ -133,11 +129,11 @@ export function McpConnectionPage({
       const response = await fetch(`/api/mcp/connections/${connectionId}/revoke`, {
         method: 'POST',
       });
-      if (!response.ok) throw new Error('Could not remove connection');
-      toast.success('Connection removed');
+      if (!response.ok) throw new Error('Could not revoke Jobmark access');
+      toast.success('Jobmark access revoked');
       window.location.reload();
     } catch {
-      toast.error('Could not remove connection');
+      toast.error('Could not revoke Jobmark access');
     } finally {
       setRevoking(null);
       setConnectionToRevoke(null);
@@ -157,12 +153,12 @@ export function McpConnectionPage({
               user ? 'items-start justify-between sm:flex-row sm:items-center' : 'items-center'
             }`}
           >
-            <div className={user ? 'max-w-2xl' : 'max-w-xl'}>
-              <div
-                className={`bg-primary/10 text-primary mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${
-                  user ? '' : 'mx-auto'
-                }`}
-              >
+            <div
+              className={`flex items-center gap-3 ${
+                user ? 'max-w-2xl' : 'max-w-xl justify-center'
+              }`}
+            >
+              <div className="bg-primary/10 text-primary flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl">
                 <PlugZap className="h-5 w-5" />
               </div>
               <h1 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -200,29 +196,31 @@ export function McpConnectionPage({
           </section>
         )}
 
-        {user && connections.length > 0 && (
+        {user && visibleConnections.length > 0 && (
           <Card className="border-border/60 bg-card/45 rounded-3xl">
             <CardHeader>
               <CardTitle>Your connected tools</CardTitle>
               <CardDescription>
-                Remove a tool at any time to stop its access to Jobmark.
+                Revoke Jobmark access at any time. This does not remove the connector from the AI
+                app.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {connections.map(connection => (
+              {visibleConnections.map(connection => (
                 <div
                   key={connection.id}
                   className="border-border/60 flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
-                      <Link2 className="h-5 w-5" />
+                      <ConnectionProviderIcon connection={connection.oauthClient} />
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">
-                        {friendlyConnectionName(
-                          connection.oauthClient.clientName || connection.clientName
-                        )}
+                        {getMcpProviderName({
+                          ...connection.oauthClient,
+                          clientName: connection.oauthClient.clientName || connection.clientName,
+                        })}
                       </p>
                       <p className="text-muted-foreground mt-1 text-sm">
                         Connected {new Date(connection.createdAt).toLocaleDateString()}
@@ -234,6 +232,8 @@ export function McpConnectionPage({
                     size="sm"
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     disabled={revoking === connection.id}
+                    aria-busy={revoking === connection.id}
+                    aria-label={`Revoke ${getMcpProviderName(connection.oauthClient)} access`}
                     onClick={() => setConnectionToRevoke(connection.id)}
                   >
                     {revoking === connection.id ? (
@@ -241,7 +241,7 @@ export function McpConnectionPage({
                     ) : (
                       <Trash2 className="mr-2 h-4 w-4" />
                     )}
-                    Remove
+                    Revoke access
                   </Button>
                 </div>
               ))}
@@ -280,24 +280,17 @@ export function McpConnectionPage({
               <Button variant="ghost" onClick={() => setSelectedProvider(null)}>
                 Close
               </Button>
-              {selectedProvider.connectUrl ? (
-                <Button asChild>
-                  <a
-                    href={selectedProvider.connectUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => void copyJobmarkLink()}
-                  >
-                    Copy link &amp; open {selectedProvider.name}
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
-              ) : (
-                <Button onClick={copyJobmarkLink}>
-                  {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                  Copy Jobmark link
-                </Button>
-              )}
+              <Button asChild>
+                <a
+                  href={selectedProvider.connectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => void copyJobmarkLink()}
+                >
+                  Copy link &amp; open {selectedProvider.name}
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </DialogContent>
         )}
@@ -309,10 +302,12 @@ export function McpConnectionPage({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this connection?</AlertDialogTitle>
+            <AlertDialogTitle>Revoke {connectionBeingRevokedName} access?</AlertDialogTitle>
             <AlertDialogDescription>
-              The AI tool will no longer be able to use your Jobmark information. You can connect it
-              again later.
+              This revokes all {connectionBeingRevokedName} connections Jobmark knows about for this
+              account. It stops the AI plugin from accessing your Jobmark information, but it does
+              not remove the connector from the AI app. To remove it completely, delete it in the AI
+              app&apos;s connector settings. You can reconnect later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -320,6 +315,7 @@ export function McpConnectionPage({
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={!connectionToRevoke || revoking !== null}
+              aria-busy={revoking !== null}
               onClick={() => connectionToRevoke && handleRevoke(connectionToRevoke)}
             >
               {revoking ? (
@@ -327,7 +323,7 @@ export function McpConnectionPage({
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Remove connection
+              Revoke access
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -336,9 +332,25 @@ export function McpConnectionPage({
   );
 }
 
+function ConnectionProviderIcon({
+  connection,
+}: {
+  connection: McpConnectionProps['connections'][number]['oauthClient'];
+}) {
+  const providerKey = getMcpProviderKey(connection);
+  if (providerKey === 'claude') return <Claude.Color size={20} />;
+  if (providerKey === 'chatgpt') return <ChatGptIcon size={20} />;
+  if (providerKey === 'gemini') return <Gemini.Color size={20} />;
+  return <Link2 className="h-5 w-5" aria-hidden="true" />;
+}
+
+function ChatGptIcon({ className, size = 20 }: { className?: string; size?: number | string }) {
+  return <OpenAI aria-hidden="true" className={`text-foreground ${className ?? ''}`} size={size} />;
+}
+
 function ProviderCarousel({ onSelect }: { onSelect: (provider: Provider) => void }) {
   return (
-    <div className="flex flex-wrap justify-center gap-3">
+    <div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
       {providers.map(provider => (
         <ProviderButton key={provider.id} provider={provider} onClick={() => onSelect(provider)} />
       ))}
@@ -356,7 +368,7 @@ function ProviderButton({ provider, onClick }: { provider: Provider; onClick: ()
     </>
   );
   const className =
-    'border-border/60 bg-card/45 hover:border-primary/50 hover:bg-card flex min-h-28 w-44 shrink-0 flex-col items-start justify-between rounded-2xl border p-5 text-left transition-colors focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none';
+    'border-border/60 bg-card/45 hover:border-primary/50 hover:bg-card flex min-h-28 w-full flex-col items-start justify-between rounded-2xl border p-5 text-left transition-colors focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none';
 
   return (
     <button

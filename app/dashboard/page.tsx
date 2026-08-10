@@ -13,6 +13,7 @@
  *   mismatches between server-rendered and client-calculated streaks.
  */
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { getActivities, getActivityStats } from '@/app/actions/activities';
 import { getProjects } from '@/app/actions/projects';
@@ -43,12 +44,15 @@ export default async function DashboardPage() {
   const settings = await getUserSettings();
   const hideArchived = settings?.hideArchived ?? false;
 
-  const [activities, stats, projects, goals, reports] = await Promise.all([
+  const [activities, stats, projects, goals, reports, activeMcpConnections] = await Promise.all([
     getActivities(20, 0, hideArchived),
     getActivityStats(),
     getProjects('active'),
     getGoals(),
     getReports(),
+    prisma.mcpConnection.count({
+      where: { userId: session.user.id, revokedAt: null },
+    }),
   ]);
 
   const totalCount = stats.totalCount;
@@ -124,6 +128,7 @@ export default async function DashboardPage() {
             activityCount={stats.totalCount}
             projectCount={projects.length}
             summaryCount={reports.length}
+            hasMcpConnection={activeMcpConnections > 0}
           />
         </div>
 

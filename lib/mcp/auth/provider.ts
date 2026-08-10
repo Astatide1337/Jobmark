@@ -4,7 +4,10 @@ import * as dns from 'node:dns/promises';
 import { isIP } from 'node:net';
 import * as https from 'node:https';
 import type { ClientRequest, IncomingHttpHeaders } from 'node:http';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { getMcpProviderKey } from '@/lib/mcp/provider-identity';
+import { areValidOAuthRedirectUris } from './redirect-uri';
 import {
   OAuthScopes,
   OAuthScope,
@@ -52,7 +55,7 @@ async function rotateKeys() {
   previousKid = currentKid;
   currentKeyPair = await generateKeyPair();
   currentKid = randomBytes(16).toString('hex');
-  
+
   // Clean up keys older than 48 hours
   setTimeout(() => {
     if (previousKeyPair) {
@@ -86,12 +89,19 @@ async function getVerificationKeys(): Promise<Map<string, CryptoKey>> {
 async function getJWKS(): Promise<JWKS> {
   const keys = await getVerificationKeys();
   const jwksKeys = [];
-  
+
   for (const [kid, publicKey] of keys) {
     const jwk = await jose.exportJWK(publicKey);
-    jwksKeys.push({ kty: 'RSA' as const, use: 'sig' as const, kid, n: jwk.n!, e: jwk.e!, alg: 'RS256' as const });
+    jwksKeys.push({
+      kty: 'RSA' as const,
+      use: 'sig' as const,
+      kid,
+      n: jwk.n!,
+      e: jwk.e!,
+      alg: 'RS256' as const,
+    });
   }
-  
+
   return { keys: jwksKeys };
 }
 
@@ -127,10 +137,12 @@ export function generateId(): string {
   return randomBytes(16).toString('hex');
 }
 
-export async function createClient(data: Partial<Client> & { redirect_uris: string[] }): Promise<Client> {
+export async function createClient(
+  data: Partial<Client> & { redirect_uris: string[] }
+): Promise<Client> {
   const clientId = generateId();
   const clientSecret = data.token_endpoint_auth_method === 'none' ? undefined : generateToken();
-  
+
   const client = await prisma.oAuthClient.create({
     data: {
       clientId,
@@ -144,7 +156,7 @@ export async function createClient(data: Partial<Client> & { redirect_uris: stri
       tokenEndpointAuthMethod: data.token_endpoint_auth_method ?? 'client_secret_post',
     },
   });
-  
+
   return {
     client_id: client.clientId,
     client_secret: clientSecret,
@@ -152,7 +164,8 @@ export async function createClient(data: Partial<Client> & { redirect_uris: stri
     grant_types: client.grantTypes as Client['grant_types'],
     response_types: client.responseTypes as Client['response_types'],
     scope: client.scope,
-    token_endpoint_auth_method: client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
+    token_endpoint_auth_method:
+      client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
     client_name: client.clientName,
   } as Client;
 }
@@ -169,11 +182,11 @@ type ClientMetadata = {
 
 function ipv4ToNumber(address: string): number | null {
   const parts = address.split('.');
-  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) return null;
+  if (parts.length !== 4 || parts.some(part => !/^\d{1,3}$/.test(part))) return null;
 
   const octets = parts.map(Number);
-  if (octets.some((octet) => octet > 255)) return null;
-  return (((octets[0] * 256 + octets[1]) * 256 + octets[2]) * 256 + octets[3]);
+  if (octets.some(octet => octet > 255)) return null;
+  return ((octets[0] * 256 + octets[1]) * 256 + octets[2]) * 256 + octets[3];
 }
 
 function ipv4NumberToString(value: number): string {
@@ -226,14 +239,18 @@ function parseIPv6(address: string): string | null {
     const leftGroups = left ? left.split(':') : [];
     const rightGroups = right ? right.split(':') : [];
     if (leftGroups.length + rightGroups.length >= 8) return null;
-    groups = [...leftGroups, ...Array(8 - leftGroups.length - rightGroups.length).fill('0'), ...rightGroups];
+    groups = [
+      ...leftGroups,
+      ...Array(8 - leftGroups.length - rightGroups.length).fill('0'),
+      ...rightGroups,
+    ];
   } else {
     groups = normalized.split(':');
     if (groups.length !== 8) return null;
   }
 
-  if (groups.length !== 8 || groups.some((group) => !/^[0-9a-f]{1,4}$/.test(group))) return null;
-  return groups.map((group) => group.padStart(4, '0')).join('');
+  if (groups.length !== 8 || groups.some(group => !/^[0-9a-f]{1,4}$/.test(group))) return null;
+  return groups.map(group => group.padStart(4, '0')).join('');
 }
 
 function hasIPv6Prefix(value: string, bits: number, prefix: string): boolean {
@@ -244,7 +261,10 @@ function hasIPv6Prefix(value: string, bits: number, prefix: string): boolean {
   if (bits % 4 === 0) return true;
 
   const mask = 0xf << (4 - (bits % 4));
-  return (parseInt(value[completeDigits], 16) & mask) === (parseInt(normalizedPrefix[completeDigits], 16) & mask);
+  return (
+    (parseInt(value[completeDigits], 16) & mask) ===
+    (parseInt(normalizedPrefix[completeDigits], 16) & mask)
+  );
 }
 
 function isBlockedIPv6(address: string): boolean {
@@ -302,19 +322,27 @@ type PinnedAddress = {
 async function resolveSafeAddress(hostname: string): Promise<PinnedAddress | null> {
   const normalizedHostname = hostname.replace(/^\[/, '').replace(/\]$/, '');
   const family = isIP(normalizedHostname);
-  if (family) return isBlockedAddress(normalizedHostname) ? null : { address: normalizedHostname, family: family as 4 | 6 };
+  if (family)
+    return isBlockedAddress(normalizedHostname)
+      ? null
+      : { address: normalizedHostname, family: family as 4 | 6 };
 
-  if (normalizedHostname === 'localhost' || normalizedHostname.endsWith('.localhost') || normalizedHostname.endsWith('.local')) return null;
+  if (
+    normalizedHostname === 'localhost' ||
+    normalizedHostname.endsWith('.localhost') ||
+    normalizedHostname.endsWith('.local')
+  )
+    return null;
 
   const results = await withTimeout(
     Promise.allSettled([dns.resolve4(normalizedHostname), dns.resolve6(normalizedHostname)]),
     CIDDD_FETCH_TIMEOUT
   );
-  const addresses = results.flatMap((result) => {
+  const addresses = results.flatMap(result => {
     if (result.status === 'fulfilled') return result.value;
     return [];
   });
-  if (addresses.length === 0 || addresses.some((address) => isBlockedAddress(address))) return null;
+  if (addresses.length === 0 || addresses.some(address => isBlockedAddress(address))) return null;
 
   const address = addresses[0];
   return { address, family: isIP(address) as 4 | 6 };
@@ -326,37 +354,60 @@ type PinnedResponse = {
   body: Buffer;
 };
 
-async function fetchPinnedMetadata(url: URL, pinnedAddress: PinnedAddress): Promise<PinnedResponse> {
+async function fetchPinnedMetadata(
+  url: URL,
+  pinnedAddress: PinnedAddress
+): Promise<PinnedResponse> {
   let request: ClientRequest | undefined;
   const responsePromise = new Promise<PinnedResponse>((resolve, reject) => {
-    request = https.request(url, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      // Disable connection pooling so every request uses the pinned lookup.
-      agent: false,
-      // Keep the original hostname for TLS certificate validation and SNI,
-      // while forcing the socket connection to the address checked above.
-      servername: isIP(url.hostname.replace(/^\[/, '').replace(/\]$/, '')) ? undefined : url.hostname,
-      lookup: (_hostname, _options, callback) => callback(null, pinnedAddress.address, pinnedAddress.family),
-    }, (response) => {
-      const chunks: Buffer[] = [];
-      let total = 0;
-      response.on('data', (chunk: Buffer | string) => {
-        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-        total += bytes.byteLength;
-        if (total > CIDDD_MAX_RESPONSE_BYTES) {
-          response.destroy(new Error('response too large'));
-          return;
-        }
-        chunks.push(bytes);
-      });
-      response.once('end', () => {
-        if (total <= CIDDD_MAX_RESPONSE_BYTES) {
-          resolve({ statusCode: response.statusCode ?? 0, headers: response.headers, body: Buffer.concat(chunks) });
-        }
-      });
-      response.once('error', reject);
-    });
+    request = https.request(
+      url,
+      {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        // Disable connection pooling so every request uses the pinned lookup.
+        agent: false,
+        // Keep the original hostname for TLS certificate validation and SNI,
+        // while forcing the socket connection to the address checked above.
+        servername: isIP(url.hostname.replace(/^\[/, '').replace(/\]$/, ''))
+          ? undefined
+          : url.hostname,
+        lookup: (_hostname, options, callback) => {
+          // Node 20+ may request all DNS answers for its Happy Eyeballs
+          // connection strategy. Return the already-validated pinned address
+          // in the shape requested by either lookup callback overload.
+          if (options.all) {
+            callback(null, [{ address: pinnedAddress.address, family: pinnedAddress.family }]);
+            return;
+          }
+
+          callback(null, pinnedAddress.address, pinnedAddress.family);
+        },
+      },
+      response => {
+        const chunks: Buffer[] = [];
+        let total = 0;
+        response.on('data', (chunk: Buffer | string) => {
+          const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          total += bytes.byteLength;
+          if (total > CIDDD_MAX_RESPONSE_BYTES) {
+            response.destroy(new Error('response too large'));
+            return;
+          }
+          chunks.push(bytes);
+        });
+        response.once('end', () => {
+          if (total <= CIDDD_MAX_RESPONSE_BYTES) {
+            resolve({
+              statusCode: response.statusCode ?? 0,
+              headers: response.headers,
+              body: Buffer.concat(chunks),
+            });
+          }
+        });
+        response.once('error', reject);
+      }
+    );
     request.once('error', reject);
     request.end();
   });
@@ -404,7 +455,8 @@ async function resolveRegisteredClient(clientId: string): Promise<Client | null>
     grant_types: client.grantTypes as Client['grant_types'],
     response_types: client.responseTypes as Client['response_types'],
     scope: client.scope,
-    token_endpoint_auth_method: client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
+    token_endpoint_auth_method:
+      client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
     client_name: client.clientName,
   } as Client;
 }
@@ -441,23 +493,40 @@ export async function resolveClientId(clientId: string): Promise<Client | null> 
     // Redirects are intentionally disallowed so every request target is
     // validated before it reaches the network.
     if (response.statusCode < 200 || response.statusCode >= 300) return null;
-    const contentType = getResponseHeader(response.headers, 'content-type')?.split(';', 1)[0].trim().toLowerCase();
+    const contentType = getResponseHeader(response.headers, 'content-type')
+      ?.split(';', 1)[0]
+      .trim()
+      .toLowerCase();
     if (contentType !== 'application/json' && !contentType?.endsWith('+json')) return null;
     const contentLength = getResponseHeader(response.headers, 'content-length');
-    if (contentLength && Number.isFinite(Number(contentLength)) && Number(contentLength) > CIDDD_MAX_RESPONSE_BYTES) return null;
+    if (
+      contentLength &&
+      Number.isFinite(Number(contentLength)) &&
+      Number(contentLength) > CIDDD_MAX_RESPONSE_BYTES
+    )
+      return null;
 
     const body = readResponseBody(response.body);
     if (body === null) return null;
     const metadata = JSON.parse(body) as ClientMetadata;
 
-    // Validate required fields
-    if (!metadata.redirect_uris?.length) return null;
-    
+    // Validate required fields before persisting or using the client. A
+    // metadata document cannot downgrade the redirect to plaintext or point
+    // the authorization code at a non-web scheme.
+    if (
+      !Array.isArray(metadata.redirect_uris) ||
+      !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
+      !areValidOAuthRedirectUris(metadata.redirect_uris) ||
+      (metadata.client_id !== undefined &&
+        (typeof metadata.client_id !== 'string' || metadata.client_id !== clientId))
+    )
+      return null;
+
     const clientIdValue = metadata.client_id ?? clientId;
-    
+
     // Look up or create a client record for this CIDDD
     let client = await prisma.oAuthClient.findUnique({ where: { clientId: clientIdValue } });
-    
+
     if (!client) {
       // Create a new client from CIDDD metadata
       client = await prisma.oAuthClient.create({
@@ -474,7 +543,7 @@ export async function resolveClientId(clientId: string): Promise<Client | null> 
         },
       });
     }
-    
+
     return {
       client_id: client.clientId,
       client_secret: undefined,
@@ -482,7 +551,8 @@ export async function resolveClientId(clientId: string): Promise<Client | null> 
       grant_types: client.grantTypes as Client['grant_types'],
       response_types: client.responseTypes as Client['response_types'],
       scope: client.scope,
-      token_endpoint_auth_method: client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
+      token_endpoint_auth_method:
+        client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
       client_name: client.clientName,
     } as Client;
   } catch {
@@ -490,10 +560,13 @@ export async function resolveClientId(clientId: string): Promise<Client | null> 
   }
 }
 
-export async function validateClient(clientId: string, clientSecret?: string): Promise<Client | null> {
+export async function validateClient(
+  clientId: string,
+  clientSecret?: string
+): Promise<Client | null> {
   const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
   if (!client) return null;
-  
+
   if (client.clientSecretHash) {
     // Confidential clients must authenticate at every token endpoint call;
     // accepting an omitted secret would downgrade them to public clients.
@@ -505,7 +578,7 @@ export async function validateClient(clientId: string, clientSecret?: string): P
       return null;
     }
   }
-  
+
   return {
     client_id: client.clientId,
     client_secret: undefined,
@@ -513,7 +586,8 @@ export async function validateClient(clientId: string, clientSecret?: string): P
     grant_types: client.grantTypes as Client['grant_types'],
     response_types: client.responseTypes as Client['response_types'],
     scope: client.scope,
-    token_endpoint_auth_method: client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
+    token_endpoint_auth_method:
+      client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
     client_name: client.clientName,
   } as Client;
 }
@@ -521,7 +595,7 @@ export async function validateClient(clientId: string, clientSecret?: string): P
 export async function validateRedirectUri(clientId: string, redirectUri: string): Promise<boolean> {
   const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
   if (!client) return false;
-  
+
   return client.redirectUris.some(uri => {
     if (uri.includes('*')) {
       const pattern = uri.replace(/\*/g, '.*');
@@ -541,7 +615,7 @@ export async function createAuthorizationCode(
 ): Promise<AuthorizationCode> {
   const code = generateAuthCode();
   const expiresAt = Date.now() + AUTH_CODE_TTL;
-  
+
   await prisma.oAuthAuthorizationCode.create({
     data: {
       code: hashToken(code),
@@ -554,7 +628,7 @@ export async function createAuthorizationCode(
       expiresAt: new Date(expiresAt),
     },
   });
-  
+
   return {
     code,
     client_id: clientId,
@@ -573,7 +647,7 @@ export async function consumeAuthorizationCode(
 ): Promise<AuthorizationCode | null> {
   const codeHash = hashToken(code);
   const authCode = await prisma.oAuthAuthorizationCode.findUnique({ where: { code: codeHash } });
-  
+
   if (!authCode) return null;
   if (authCode.expiresAt < new Date()) {
     await prisma.oAuthAuthorizationCode.delete({ where: { code: codeHash } });
@@ -590,9 +664,12 @@ export async function consumeAuthorizationCode(
   ) {
     return null;
   }
-  
-  await prisma.oAuthAuthorizationCode.delete({ where: { code: codeHash } });
-  
+
+  const consumed = await prisma.oAuthAuthorizationCode.deleteMany({
+    where: { code: codeHash },
+  });
+  if (consumed.count !== 1) return null;
+
   return {
     code: authCode.code,
     client_id: authCode.clientId,
@@ -612,7 +689,7 @@ export async function createAccessToken(
 ): Promise<AccessToken> {
   const token = generateToken();
   const expiresAt = Date.now() + ACCESS_TOKEN_TTL;
-  
+
   await prisma.oAuthAccessToken.create({
     data: {
       // Access tokens are intentionally opaque. The DB hash is the source of
@@ -625,7 +702,7 @@ export async function createAccessToken(
       expiresAt: new Date(expiresAt),
     },
   });
-  
+
   return {
     token,
     client_id: clientId,
@@ -646,7 +723,7 @@ export async function createRefreshToken(
   const token = generateToken();
   const expiresAt = Date.now() + REFRESH_TOKEN_TTL;
   const tokenFamilyId = familyId ?? randomUUID();
-  
+
   await prisma.oAuthRefreshToken.create({
     data: {
       tokenHash: hashToken(token),
@@ -658,7 +735,7 @@ export async function createRefreshToken(
       pkceCodeVerifier: pkceCodeVerifier ?? null,
     },
   });
-  
+
   return {
     token,
     client_id: clientId,
@@ -678,7 +755,7 @@ export async function rotateRefreshToken(
 ): Promise<{ accessToken: AccessToken; refreshToken: RefreshToken } | null> {
   const tokenHash = hashToken(oldToken);
   const refreshToken = await prisma.oAuthRefreshToken.findUnique({ where: { tokenHash } });
-  
+
   if (!refreshToken) return null;
   if (refreshToken.expiresAt < new Date()) {
     await prisma.oAuthRefreshToken.delete({ where: { tokenHash } });
@@ -693,13 +770,13 @@ export async function rotateRefreshToken(
     });
     return null;
   }
-  
+
   // Check PKCE verifier: stored value is the code_challenge, presented value is the verifier
   if (pkceCodeVerifier && refreshToken.pkceCodeVerifier) {
     const valid = verifyPKCE(refreshToken.pkceCodeVerifier, pkceCodeVerifier);
     if (!valid) return null;
   }
-  
+
   // Mark old token as consumed atomically. Two concurrent refresh requests can
   // both pass the read above, but only one may win this conditional update and
   // mint a new token pair.
@@ -717,18 +794,22 @@ export async function rotateRefreshToken(
     });
     return null;
   }
-  
+
   const newAccessToken = await createAccessToken(clientId, userId, scope);
   const newRefreshToken = await createRefreshToken(
-    clientId, userId, scope,
+    clientId,
+    userId,
+    scope,
     refreshToken.pkceCodeVerifier ?? undefined,
     refreshToken.familyId
   );
-  
+
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
 
-export async function validateAccessToken(token: string): Promise<{ userId: string; clientId: string; scope: string; exp: number; iat: number } | null> {
+export async function validateAccessToken(
+  token: string
+): Promise<{ userId: string; clientId: string; scope: string; exp: number; iat: number } | null> {
   try {
     const tokenRecord = await prisma.oAuthAccessToken.findUnique({
       where: { tokenHash: hashToken(token) },
@@ -755,11 +836,12 @@ export async function validateAccessToken(token: string): Promise<{ userId: stri
 export async function ensureMcpConnection(
   clientId: string,
   userId: string,
-  scope: string
+  scope: string,
+  options: { revokeExistingTokens?: boolean } = {}
 ): Promise<void> {
   const client = await prisma.oAuthClient.findUnique({
     where: { clientId },
-    select: { id: true, clientName: true },
+    select: { id: true, clientId: true, clientName: true, redirectUris: true },
   });
 
   if (!client) {
@@ -767,26 +849,97 @@ export async function ensureMcpConnection(
   }
 
   const scopes = scope.split(' ').filter(Boolean);
-  const connection = await prisma.mcpConnection.findFirst({
-    where: { userId, oauthClientId: client.id },
+  const activeConnections = await prisma.mcpConnection.findMany({
+    where: { userId, revokedAt: null },
     orderBy: { updatedAt: 'desc' },
-    select: { id: true },
+    include: {
+      oauthClient: { select: { clientId: true, clientName: true, redirectUris: true } },
+    },
   });
+  const providerKey = getMcpProviderKey({
+    clientId: client.clientId,
+    clientName: client.clientName,
+    redirectUris: client.redirectUris,
+  });
+  const providerConnections = activeConnections.filter(
+    connection =>
+      getMcpProviderKey({
+        clientId: connection.oauthClient.clientId,
+        clientName: connection.oauthClient.clientName,
+        redirectUris: connection.oauthClient.redirectUris,
+      }) === providerKey
+  );
+  const connection =
+    providerConnections.find(candidate => candidate.oauthClientId === client.id) ??
+    providerConnections[0];
 
   if (connection) {
-    await prisma.mcpConnection.update({
-      where: { id: connection.id },
-      data: {
-        clientName: client.clientName,
-        scopes,
-        revokedAt: null,
-        lastUsedAt: new Date(),
-      },
-    });
+    const now = new Date();
+    const duplicateConnectionIds = providerConnections
+      .filter(candidate => candidate.id !== connection.id)
+      .map(candidate => candidate.id);
+    const replacedClientIds = [
+      ...new Set(
+        providerConnections
+          .map(candidate => candidate.oauthClient.clientId)
+          .filter(candidateClientId => candidateClientId !== client.clientId)
+      ),
+    ];
+    const tokenClientIds = [
+      ...new Set([
+        ...replacedClientIds,
+        ...(options.revokeExistingTokens ? [client.clientId] : []),
+      ]),
+    ];
+    const operations: Prisma.PrismaPromise<unknown>[] = [
+      prisma.mcpConnection.update({
+        where: { id: connection.id },
+        data: {
+          oauthClientId: client.id,
+          clientName: client.clientName,
+          scopes,
+          revokedAt: null,
+          lastUsedAt: now,
+        },
+      }),
+    ];
+
+    if (duplicateConnectionIds.length > 0) {
+      operations.push(
+        prisma.mcpConnection.updateMany({
+          where: { id: { in: duplicateConnectionIds }, userId },
+          data: { revokedAt: now, vaultUnlockedUntil: null },
+        })
+      );
+    }
+    if (tokenClientIds.length > 0) {
+      operations.push(
+        prisma.oAuthAccessToken.updateMany({
+          where: { userId, clientId: { in: tokenClientIds }, revokedAt: null },
+          data: { revokedAt: now },
+        }),
+        prisma.oAuthRefreshToken.updateMany({
+          where: { userId, clientId: { in: tokenClientIds }, consumedAt: null },
+          data: { consumedAt: now },
+        }),
+        prisma.oAuthAuthorizationCode.deleteMany({
+          where: { userId, clientId: { in: tokenClientIds } },
+        })
+      );
+    }
+    if (replacedClientIds.length > 0) {
+      operations.push(
+        prisma.oAuthConsent.deleteMany({
+          where: { userId, clientId: { in: replacedClientIds } },
+        })
+      );
+    }
+
+    await prisma.$transaction(operations);
     return;
   }
 
-  await prisma.mcpConnection.create({
+  const createConnection = prisma.mcpConnection.create({
     data: {
       userId,
       oauthClientId: client.id,
@@ -795,18 +948,40 @@ export async function ensureMcpConnection(
       lastUsedAt: new Date(),
     },
   });
+
+  if (!options.revokeExistingTokens) {
+    await createConnection;
+    return;
+  }
+
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.oAuthAccessToken.updateMany({
+      where: { userId, clientId, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    prisma.oAuthRefreshToken.updateMany({
+      where: { userId, clientId, consumedAt: null },
+      data: { consumedAt: now },
+    }),
+    prisma.oAuthAuthorizationCode.deleteMany({ where: { userId, clientId } }),
+    createConnection,
+  ]);
 }
 
-export async function introspectToken(token: string, clientId: string): Promise<IntrospectionResponse> {
+export async function introspectToken(
+  token: string,
+  clientId: string
+): Promise<IntrospectionResponse> {
   const validation = await validateAccessToken(token);
   if (!validation) {
     return { active: false };
   }
-  
+
   if (validation.clientId !== clientId) {
     return { active: false };
   }
-  
+
   return {
     active: true,
     scope: validation.scope,
@@ -820,9 +995,13 @@ export async function introspectToken(token: string, clientId: string): Promise<
   };
 }
 
-export async function revokeToken(token: string, tokenTypeHint?: string, clientId?: string): Promise<boolean> {
+export async function revokeToken(
+  token: string,
+  tokenTypeHint?: string,
+  clientId?: string
+): Promise<boolean> {
   const tokenHash = hashToken(token);
-  
+
   if (!tokenTypeHint || tokenTypeHint === 'access_token') {
     const accessToken = await prisma.oAuthAccessToken.findUnique({ where: { tokenHash } });
     if (accessToken && (!clientId || accessToken.clientId === clientId)) {
@@ -833,7 +1012,7 @@ export async function revokeToken(token: string, tokenTypeHint?: string, clientI
       return true;
     }
   }
-  
+
   if (!tokenTypeHint || tokenTypeHint === 'refresh_token') {
     const refreshToken = await prisma.oAuthRefreshToken.findUnique({ where: { tokenHash } });
     if (refreshToken && (!clientId || refreshToken.clientId === clientId)) {
@@ -841,7 +1020,7 @@ export async function revokeToken(token: string, tokenTypeHint?: string, clientI
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -885,7 +1064,9 @@ export async function getWellKnownAuthServer(baseUrl: string): Promise<WellKnown
   };
 }
 
-export async function getWellKnownProtectedResource(baseUrl: string): Promise<WellKnownProtectedResource> {
+export async function getWellKnownProtectedResource(
+  baseUrl: string
+): Promise<WellKnownProtectedResource> {
   return {
     resource: `${baseUrl}/mcp`,
     authorization_servers: [baseUrl],

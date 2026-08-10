@@ -49,7 +49,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import { useSettings } from '@/components/providers/settings-provider';
+import {
+  McpDraftActions,
+  McpProviderMenu,
+  getMcpProviderLaunchUrl,
+  providerSupportsPromptUrl,
+  type ConnectedAiProvider,
+} from '@/components/reports/mcp-draft-actions';
 
 interface Project {
   id: string;
@@ -58,9 +66,10 @@ interface Project {
 
 interface ReportWizardProps {
   projects: Project[];
+  connectedAiProviders: ConnectedAiProvider[];
 }
 
-export function ReportWizard({ projects }: ReportWizardProps) {
+export function ReportWizard({ projects, connectedAiProviders }: ReportWizardProps) {
   const { settings } = useSettings();
   const [step, setStep] = useState(1);
   const [config, setConfig] = useState<ReportConfig>({
@@ -230,6 +239,43 @@ export function ReportWizard({ projects }: ReportWizardProps) {
     setSaved(true);
     // Maybe redirect or show success
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleDraftWithProvider = async (provider: ConnectedAiProvider) => {
+    const prompt = [
+      'Draft my Jobmark review brief using the connected Jobmark MCP tools.',
+      `Use the selected period: ${getDateRangeLabel(config.dateRange, dateRange)}.`,
+      `Project scope: ${getProjectScopeLabel(config.projectId, projects)}.`,
+      `Tone: ${getToneLabel(config.tone)}.`,
+      config.notes?.trim() ? `Additional focus: ${config.notes.trim()}.` : '',
+      'Use evidence from my Jobmark activity, do not invent outcomes, and make the result ready to share with my manager.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const providerUrl = getMcpProviderLaunchUrl(provider.key, prompt);
+
+    // Start copying before opening a new tab. Some browsers revoke clipboard
+    // permission as soon as focus moves to the provider tab.
+    const copyPromise = copyTextToClipboard(prompt);
+    // Open synchronously from the click event so popup protection does not
+    // block the assistant while the clipboard permission prompt resolves.
+    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
+
+    try {
+      const copied = await copyPromise;
+      if (!copied) throw new Error('clipboard_unavailable');
+      let promptDescription = `Open ${provider.name} and paste the prompt to start your review.`;
+      if (providerSupportsPromptUrl(provider.key)) {
+        promptDescription = `Open ${provider.name} to draft your review with Jobmark.`;
+      } else if (provider.key === 'gemini') {
+        promptDescription = 'Your prompt is copied. Paste it into Gemini to start your draft.';
+      }
+      toast.success(`${provider.name} prompt copied`, {
+        description: promptDescription,
+      });
+    } catch {
+      toast.error('Could not copy the drafting prompt');
+    }
   };
 
   // Animation variants
@@ -496,36 +542,10 @@ export function ReportWizard({ projects }: ReportWizardProps) {
               />
             </div>
 
-            <div className="border-border/50 bg-card/40 space-y-3 rounded-2xl border p-5">
-              <div>
-                <p className="text-primary text-xs font-semibold tracking-widest uppercase">
-                  Draft Summary
-                </p>
-                <h3 className="text-foreground mt-1 font-semibold">What this draft will use</h3>
-              </div>
-              <div className="grid gap-3 text-sm md:grid-cols-2">
-                <div>
-                  <p className="text-muted-foreground">Period</p>
-                  <p className="text-foreground font-medium">
-                    {getDateRangeLabel(config.dateRange, dateRange)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Project scope</p>
-                  <p className="text-foreground font-medium">
-                    {getProjectScopeLabel(config.projectId, projects)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Tone</p>
-                  <p className="text-foreground font-medium">{getToneLabel(config.tone)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Estimated entries</p>
-                  <p className="text-foreground font-medium">{activityCount}</p>
-                </div>
-              </div>
-            </div>
+            <McpDraftActions
+              connectedAiProviders={connectedAiProviders}
+              onDraftWithProvider={handleDraftWithProvider}
+            />
 
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={prevStep}>
@@ -692,16 +712,10 @@ export function ReportWizard({ projects }: ReportWizardProps) {
                     )}
                     {saved ? 'Saved Draft' : 'Save Draft'}
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
-                    asChild
-                  >
-                    <Link href="/chat">
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                      Open in MCP Client
-                    </Link>
-                  </Button>
+                  <McpProviderMenu
+                    connectedAiProviders={connectedAiProviders}
+                    onOpenProvider={handleDraftWithProvider}
+                  />
                 </div>
               </div>
             </div>

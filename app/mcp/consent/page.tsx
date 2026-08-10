@@ -89,7 +89,7 @@ function ConsentForm() {
             Connect this plugin to Jobmark
           </CardTitle>
           <CardDescription className="relative mx-auto mt-3 max-w-sm leading-relaxed">
-            Choose what the plugin can access. You can remove this connection at any time.
+            Choose what the plugin can access. You can revoke Jobmark access at any time.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-6 pt-0">

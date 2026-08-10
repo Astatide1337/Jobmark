@@ -17,6 +17,7 @@ import {
   createAuthorizationTransaction,
   verifyAuthorizationTransaction,
 } from '@/lib/mcp/auth/authorization-transaction';
+import { isValidOAuthRedirectUri } from '@/lib/mcp/auth/redirect-uri';
 
 function isOAuthScope(scope: string): scope is OAuthScope {
   return OAuthScopes.includes(scope as OAuthScope);
@@ -42,15 +43,6 @@ function isRegisteredRedirectUri(
   return client.redirect_uris.includes(redirectUri);
 }
 
-function isValidRedirectUri(redirectUri: string): boolean {
-  try {
-    const url = new URL(redirectUri);
-    return Boolean(url.protocol && url.host) && !url.hash;
-  } catch {
-    return false;
-  }
-}
-
 function isValidCodeChallenge(codeChallenge: string): boolean {
   return /^[A-Za-z0-9._~-]{43,128}$/.test(codeChallenge);
 }
@@ -62,6 +54,17 @@ function getFormString(formData: FormData, name: string): string | null {
 
 function invalidRequestResponse(message = 'invalid_request'): NextResponse {
   return NextResponse.json({ error: message }, { status: 400 });
+}
+
+function authorizationErrorRedirect(
+  request: NextRequest,
+  error: 'invalid_request' | 'unauthorized_client' | 'invalid_scope',
+  state: string | null
+): NextResponse {
+  const url = new URL('/mcp/authorize', request.url);
+  url.searchParams.set('error', error);
+  if (state) url.searchParams.set('state', state);
+  return NextResponse.redirect(url);
 }
 
 export async function GET(request: NextRequest) {
@@ -94,26 +97,20 @@ export async function GET(request: NextRequest) {
     !state ||
     !codeChallenge ||
     codeChallengeMethod !== 'S256' ||
-    !isValidRedirectUri(redirectUri) ||
+    !isValidOAuthRedirectUri(redirectUri) ||
     !isValidCodeChallenge(codeChallenge) ||
     !getScopes(scope)
   ) {
-    return NextResponse.redirect(
-      new URL(`/mcp/authorize?error=invalid_request&state=${state}`, request.url)
-    );
+    return authorizationErrorRedirect(request, 'invalid_request', state);
   }
 
   const client = await resolveClientId(clientId);
   if (!client) {
-    return NextResponse.redirect(
-      new URL(`/mcp/authorize?error=unauthorized_client&state=${state}`, request.url)
-    );
+    return authorizationErrorRedirect(request, 'unauthorized_client', state);
   }
 
   if (!isRegisteredRedirectUri(client, redirectUri)) {
-    return NextResponse.redirect(
-      new URL(`/mcp/authorize?error=invalid_request&state=${state}`, request.url)
-    );
+    return authorizationErrorRedirect(request, 'invalid_request', state);
   }
 
   if (!session?.user?.id) {
@@ -134,16 +131,12 @@ export async function GET(request: NextRequest) {
   const userId = session.user.id;
   const scopes = getScopes(scope);
   if (!scopes) {
-    return NextResponse.redirect(
-      new URL(`/mcp/authorize?error=invalid_scope&state=${state}`, request.url)
-    );
+    return authorizationErrorRedirect(request, 'invalid_scope', state);
   }
 
   const clientScopes = getScopes(client.scope);
   if (!clientScopes || !scopes.every(requestedScope => clientScopes.includes(requestedScope))) {
-    return NextResponse.redirect(
-      new URL(`/mcp/authorize?error=invalid_scope&state=${state}`, request.url)
-    );
+    return authorizationErrorRedirect(request, 'invalid_scope', state);
   }
 
   // Check for existing consent
@@ -239,7 +232,7 @@ export async function POST(request: NextRequest) {
     codeChallengeMethod !== 'S256' ||
     !transaction ||
     (action !== 'allow' && action !== 'deny') ||
-    !isValidRedirectUri(redirectUri) ||
+    !isValidOAuthRedirectUri(redirectUri) ||
     !isValidCodeChallenge(codeChallenge)
   ) {
     return invalidRequestResponse();
