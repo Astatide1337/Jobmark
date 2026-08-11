@@ -16,7 +16,7 @@ import { prisma } from '@/lib/db';
 import { isVaultUnlocked, setVaultUnlocked, getLockedProjectIds } from '@/lib/project-lock';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
-import { assertSharedRateLimitAllowed } from '@/lib/ai-rate-limit';
+import { assertSharedRateLimitAllowed } from '@/lib/rate-limit';
 
 const BCRYPT_COST = 12;
 const VAULT_PASSWORD_MIN_LENGTH = 12;

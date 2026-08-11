@@ -18,8 +18,7 @@ export async function signInWithGoogle(formData?: FormData) {
 export async function signInToMcp(formData: FormData) {
   const requestedProvider = formData.get('provider');
   const provider =
-    typeof requestedProvider === 'string' &&
-    ['claude', 'chatgpt', 'gemini', 'perplexity', 'other'].includes(requestedProvider)
+    typeof requestedProvider === 'string' && ['claude', 'chatgpt', 'gemini'].includes(requestedProvider)
       ? requestedProvider
       : null;
   const redirectTo = provider ? `/chat?connect=${provider}` : '/chat';

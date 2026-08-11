@@ -4,6 +4,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
 
@@ -117,8 +118,13 @@ export async function updateContact(
 
   if (!contact) throw new NotFoundError('Contact');
 
-  const data: any = { ...result.data };
-  if (data.birthday) data.birthday = new Date(data.birthday);
+  const { birthday, ...contactFields } = result.data;
+  let normalizedBirthday: Date | null | undefined;
+  if (birthday !== undefined) normalizedBirthday = birthday ? new Date(birthday) : null;
+  const data: Prisma.ContactUncheckedUpdateInput = {
+    ...contactFields,
+    birthday: normalizedBirthday,
+  };
 
   const updated = await prisma.contact.update({
     where: { id: contactId },
@@ -141,7 +147,11 @@ export async function deleteContact(actor: JobmarkActor, contactId: string): Pro
   await prisma.contact.delete({ where: { id: contactId } });
 }
 
-function toContactDTO(contact: any): ContactDTO {
+type ContactWithCounts = Prisma.ContactGetPayload<{
+  include: { _count: { select: { interactions: true; outreachDrafts: true } } };
+}>;
+
+function toContactDTO(contact: ContactWithCounts): ContactDTO {
   return {
     id: contact.id,
     fullName: contact.fullName,

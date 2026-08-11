@@ -109,7 +109,6 @@ Mapping between SPEC.md tool inventory and implemented MCP tools.
 |-----------|-----------------|--------|
 | `settings_get` | `settings_get` | ✅ |
 | `settings_update` | `settings_update` | ✅ |
-| `settings_manage_ai_keys` | `settings_manage_ai_keys` | ✅ |
 
 ## Vault
 
@@ -133,9 +132,9 @@ Mapping between SPEC.md tool inventory and implemented MCP tools.
 
 ## Summary
 
-- **SPEC tools**: 58
-- **Implemented tools**: 62 (50 core + 12 extras)
-- **Coverage**: 57/58 SPEC tools implemented (98.3%)
+- **SPEC tools**: 57
+- **Implemented tools**: 61 (50 core + 11 extras)
+- **Coverage**: 56/57 SPEC tools implemented (98.2%)
 - **Missing**: `reports_check_activity_count` (removed: not needed, activity count is part of `reports_generate`)
 - **Extra tools**: 12 tools added for completeness (get, delete, update variants not in SPEC but useful)
 

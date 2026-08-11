@@ -4,6 +4,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
 
@@ -44,7 +45,7 @@ export async function listInteractions(
 
   const { contactId, limit = 50, cursor } = options;
 
-  const where: any = { userId: actor.userId };
+  const where: Prisma.InteractionLogWhereInput = { userId: actor.userId };
   if (contactId) where.contactId = contactId;
 
   const interactions = await prisma.interactionLog.findMany({
@@ -96,12 +97,19 @@ export async function createInteraction(
   });
   if (!contact) throw new NotFoundError('Contact');
 
-  const data: any = { ...result.data };
-  data.occurredAt = new Date(data.occurredAt);
-  if (data.followUpDate) data.followUpDate = new Date(data.followUpDate);
+  const data: Prisma.InteractionLogUncheckedCreateInput = {
+    contactId: result.data.contactId,
+    occurredAt: new Date(result.data.occurredAt),
+    channel: result.data.channel,
+    summary: result.data.summary,
+    nextStep: result.data.nextStep,
+    followUpDate: result.data.followUpDate ? new Date(result.data.followUpDate) : null,
+    rawNotes: result.data.rawNotes,
+    userId: actor.userId,
+  };
 
   const interaction = await prisma.interactionLog.create({
-    data: { ...data, userId: actor.userId },
+    data,
     include: { contact: { select: { id: true, fullName: true } } },
   });
 
@@ -125,9 +133,12 @@ export async function updateInteraction(
   });
   if (!interaction) throw new NotFoundError('Interaction');
 
-  const data: any = { ...result.data };
-  if (data.occurredAt) data.occurredAt = new Date(data.occurredAt);
-  if (data.followUpDate) data.followUpDate = new Date(data.followUpDate);
+  const { occurredAt, followUpDate, ...interactionFields } = result.data;
+  const data: Prisma.InteractionLogUncheckedUpdateInput = {
+    ...interactionFields,
+    occurredAt: occurredAt ? new Date(occurredAt) : undefined,
+    followUpDate: followUpDate ? new Date(followUpDate) : followUpDate,
+  };
 
   const updated = await prisma.interactionLog.update({
     where: { id: interactionId },
@@ -178,7 +189,11 @@ export async function getNetworkStats(actor: JobmarkActor): Promise<{
   return { totalContacts, totalInteractions, interactionsThisMonth, followUpsDue };
 }
 
-function toInteractionDTO(interaction: any): InteractionDTO {
+type InteractionWithContact = Prisma.InteractionLogGetPayload<{
+  include: { contact: { select: { id: true; fullName: true } } };
+}>;
+
+function toInteractionDTO(interaction: InteractionWithContact): InteractionDTO {
   return {
     id: interaction.id,
     contactId: interaction.contactId,

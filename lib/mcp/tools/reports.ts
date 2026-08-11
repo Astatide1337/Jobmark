@@ -151,7 +151,7 @@ export const reportsGenerateTool = {
   definition: {
     name: 'reports_generate',
     title: 'Generate Report',
-    description: 'Generate a new report for a project or global period. Requires jobmark:write scope.',
+    description: 'Build and save a deterministic review brief from the activity record. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -188,7 +188,7 @@ export const reportsRegenerateTool = {
   definition: {
     name: 'reports_regenerate',
     title: 'Regenerate Report',
-    description: 'Regenerate an existing report with fresh AI content. Requires jobmark:write scope.',
+    description: 'Regenerate a saved report brief from the current activity record. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -223,7 +223,7 @@ export const reportsImproveTextTool = {
   definition: {
     name: 'reports_improve_text',
     title: 'Improve Report Text',
-    description: 'Improve a section of a report with AI assistance. Requires jobmark:write scope.',
+    description: 'Apply a predictable edit to a saved report. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {

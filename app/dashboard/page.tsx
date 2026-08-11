@@ -21,10 +21,12 @@ import { getUserSettings } from '@/app/actions/settings';
 import {
   QuickCapture,
   ActivityTimeline,
-  GoalMotivator,
-  WorkflowStarter,
-  NextBestAction,
 } from './dashboard-client';
+import {
+  GoalMotivator,
+  NextBestAction,
+  WorkflowStarter,
+} from '@/components/dashboard/dashboard-widgets';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
@@ -65,7 +67,9 @@ export default async function DashboardPage() {
   const hour = Number(
     new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format()
   );
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  let greeting = 'Good evening';
+  if (hour < 12) greeting = 'Good morning';
+  else if (hour < 18) greeting = 'Good afternoon';
 
   return (
     <DashboardShell

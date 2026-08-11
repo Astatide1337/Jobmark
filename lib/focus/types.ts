@@ -50,7 +50,7 @@ export interface BreathingPatternDef {
   steps: BreathingStep[];
 }
 
-// What the wizard gets after server resolves goals & AI affirmations
+// What the wizard gets after the server resolves goals and affirmations
 export interface ResolvedAffirmationBlock extends AffirmationBlock {
   config: AffirmationBlock['config'] & {
     resolvedTexts: string[];

@@ -2,7 +2,7 @@
  * Interactive Reports Demo
  *
  * Why: Showcases the end-result of using jobmark. It visualizes the
- * professional formatting and AI-driven structure of the generated reports.
+ * professional formatting and evidence-based structure of generated briefs.
  *
  * Implementation: Reuses the production `ReportHistory` component with
  * pre-written examples that demonstrate the "Note-to-Narrative"

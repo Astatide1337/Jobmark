@@ -56,8 +56,6 @@ describe('account export safety', () => {
       timeZone: 'America/New_York',
       hideArchived: false,
       showConfetti: true,
-      aiProvider: 'gemini',
-      aiModel: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -72,15 +70,12 @@ describe('account export safety', () => {
     const exported = await exportUserData();
     const serialized = JSON.stringify(exported);
 
-    expect(serialized).not.toMatch(
-      /vaultPasswordHash|aiKeys|access_token|refresh_token|sessionToken|ciphertext/i
-    );
+    expect(serialized).not.toMatch(/vaultPasswordHash|access_token|refresh_token|sessionToken|ciphertext/i);
     expect(prismaMock.userSettings.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: 'user-a' },
         select: expect.not.objectContaining({
           vaultPasswordHash: expect.anything(),
-          aiKeys: expect.anything(),
         }),
       })
     );

@@ -21,7 +21,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Found user: ${user.name} (${user.id})`);
+  console.info(`Found user: ${user.name} (${user.id})`);
 
   // Create test projects
   const projectsData = [
@@ -45,9 +45,9 @@ async function main() {
       project = await prisma.project.create({
         data: { userId: user.id, ...p },
       });
-      console.log(`Created project: ${p.name}`);
+      console.info(`Created project: ${p.name}`);
     } else {
-      console.log(`Using existing project: ${p.name}`);
+      console.info(`Using existing project: ${p.name}`);
     }
     projects.push({ id: project.id, name: project.name });
   }
@@ -96,7 +96,7 @@ async function main() {
   const deleted = await prisma.activity.deleteMany({
     where: { userId: user.id },
   });
-  console.log(`\nDeleted ${deleted.count} existing activities`);
+  console.info(`\nDeleted ${deleted.count} existing activities`);
 
   // Generate 6 months of data
   const now = new Date();
@@ -106,7 +106,7 @@ async function main() {
   let totalCreated = 0;
   const currentDate = new Date(sixMonthsAgo);
 
-  console.log(
+  console.info(
     `\nGenerating activities from ${sixMonthsAgo.toDateString()} to ${now.toDateString()}...`
   );
 
@@ -157,7 +157,7 @@ async function main() {
   }
 
   // Add a streak for recent days (last 7 days guaranteed)
-  console.log('\nEnsuring recent streak...');
+  console.info('\nEnsuring recent streak...');
   for (let i = 0; i < 7; i++) {
     const date = new Date();
     date.setDate(date.getDate() - i);
@@ -187,12 +187,12 @@ async function main() {
         },
       });
       totalCreated++;
-      console.log(`  Added activity for ${date.toDateString()}`);
+      console.info(`  Added activity for ${date.toDateString()}`);
     }
   }
 
-  console.log(`\n✅ Created ${totalCreated} activities`);
-  console.log('\nRefresh your Insights page to see the data!');
+  console.info(`\n✅ Created ${totalCreated} activities`);
+  console.info('\nRefresh your Insights page to see the data!');
 }
 
 main()

@@ -154,7 +154,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
       </div>
 
       {/* Contact Grid or Empty State */}
-      {contacts.length === 0 ? (
+      {contacts.length === 0 && (
         <Card className="bg-card/50 border-border/50 rounded-2xl border-dashed">
           <CardContent className="py-16 text-center">
             <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
@@ -171,11 +171,13 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </Button>
           </CardContent>
         </Card>
-      ) : filteredContacts.length === 0 ? (
+      )}
+      {contacts.length > 0 && filteredContacts.length === 0 && (
         <div className="text-muted-foreground py-12 text-center italic">
           No contacts match your search.
         </div>
-      ) : (
+      )}
+      {contacts.length > 0 && filteredContacts.length > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredContacts.map(contact => {
             const age = getAgeFromBirthday(contact.birthday);

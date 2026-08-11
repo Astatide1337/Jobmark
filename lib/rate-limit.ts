@@ -6,18 +6,18 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 20;
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
-export type AiRateLimitResult = {
+export type RateLimitResult = {
   allowed: boolean;
   retryAfterSeconds: number;
 };
 
-/** Lightweight per-user guard for provider-costing requests. */
-export function consumeAiRequest(
+/** Lightweight per-user guard for bounded application requests. */
+export function consumeRateLimitedRequest(
   userId: string,
   scope: string,
   now = Date.now(),
   maxRequests = MAX_REQUESTS_PER_WINDOW
-): AiRateLimitResult {
+): RateLimitResult {
   const key = `${userId}:${scope}`;
   const current = buckets.get(key);
   if (!current || current.resetAt <= now) {
@@ -43,7 +43,6 @@ export async function assertSharedRateLimitAllowed(
   message = 'Request limit reached'
 ): Promise<void> {
   const now = new Date();
-  const resetAt = new Date(now.getTime() + WINDOW_MS);
   const key = `${userId}:${scope}`;
   const rows = await prisma.$queryRaw<Array<{ count: number; windowStart: Date }>>`
     INSERT INTO "RateLimitBucket" ("key", "windowStart", "count", "updatedAt")
@@ -73,8 +72,4 @@ export async function assertSharedRateLimitAllowed(
   if (!result.allowed) {
     throw new Error(`${message}. Try again in ${result.retryAfterSeconds} seconds.`);
   }
-}
-
-export async function assertAiRequestAllowed(userId: string, scope: string): Promise<void> {
-  return assertSharedRateLimitAllowed(userId, scope);
 }

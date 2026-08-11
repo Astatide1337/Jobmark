@@ -373,6 +373,87 @@ async function executeTool(
   return result;
 }
 
+async function executeMcpMethod({
+  method,
+  params,
+  request,
+  connectionId,
+  userId,
+  scopes,
+  vaultUnlockedUntil,
+}: {
+  method: string;
+  params?: Record<string, unknown>;
+  request: NextRequest;
+  connectionId: string;
+  userId: string;
+  scopes: string[];
+  vaultUnlockedUntil: Date | null;
+}): Promise<unknown> {
+  switch (method) {
+    case 'server/discover':
+      return {
+        resultType: 'complete',
+        supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
+        capabilities: SERVER_CAPABILITIES,
+        ttlMs: 300_000,
+        cacheScope: 'public',
+        instructions:
+          'Use Jobmark tools to view and manage the connected user’s job-search record. Ask before making changes.',
+      };
+    case 'initialize':
+      return {
+        protocolVersion: params?.protocolVersion ?? '2024-11-05',
+        capabilities: SERVER_CAPABILITIES,
+        serverInfo: SERVER_INFO,
+      };
+    case 'notifications/initialized':
+    case 'ping':
+      return {};
+    case 'tools/list': {
+      const cursor = params?.cursor as string | undefined;
+      const limit = Math.min((params?.limit as number) ?? 50, 100);
+      let tools = toolDefinitions
+        .filter(definition => {
+          const requiredScopes = (definition.annotations as Record<string, unknown> | undefined)
+            ?.requiredScopes as string[] | undefined;
+          return !requiredScopes || requiredScopes.every(scope => hasScope(scopes, scope));
+        })
+        .map(toPublicToolDefinition);
+      if (cursor) {
+        const index = tools.findIndex(tool => tool.name === cursor);
+        tools = tools.slice(index + 1);
+      }
+      const page = tools.slice(0, limit);
+      return {
+        tools: page,
+        nextCursor: page.length === limit ? page[page.length - 1].name : undefined,
+        ttlMs: 300_000,
+        cacheScope: 'private',
+      };
+    }
+    case 'tools/call': {
+      const toolName = params?.name as string;
+      const toolParams = (params?.arguments as Record<string, unknown>) ?? {};
+      return executeTool(
+        connectionId,
+        userId,
+        scopes,
+        toolName,
+        toolParams,
+        vaultUnlockedUntil,
+        request.headers.get('idempotency-key') ?? undefined
+      );
+    }
+    case 'resources/list':
+      return { resources: [], nextCursor: undefined };
+    case 'prompts/list':
+      return { prompts: [], nextCursor: undefined };
+    default:
+      throw { code: -32601, message: 'Method not found', data: { code: 'METHOD_NOT_FOUND' } };
+  }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
@@ -446,102 +527,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    let result: unknown;
-
-    switch (method) {
-      case 'server/discover': {
-        result = {
-          resultType: 'complete',
-          supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
-          capabilities: SERVER_CAPABILITIES,
-          ttlMs: 300_000,
-          cacheScope: 'public',
-          instructions:
-            'Use Jobmark tools to view and manage the connected user’s job-search record. Ask before making changes.',
-        };
-        break;
-      }
-
-      case 'initialize': {
-        const protocolVersion =
-          (params as Record<string, unknown>)?.protocolVersion ?? '2024-11-05';
-        result = {
-          protocolVersion,
-          capabilities: SERVER_CAPABILITIES,
-          serverInfo: SERVER_INFO,
-        };
-        break;
-      }
-
-      case 'notifications/initialized': {
-        result = {};
-        break;
-      }
-
-      case 'ping': {
-        result = {};
-        break;
-      }
-
-      case 'tools/list': {
-        const cursor = (params as Record<string, unknown>)?.cursor as string | undefined;
-        const limit = Math.min(((params as Record<string, unknown>)?.limit as number) ?? 50, 100);
-
-        let tools = toolDefinitions
-          .filter(definition => {
-            const requiredScopes = (definition.annotations as Record<string, unknown> | undefined)
-              ?.requiredScopes as string[] | undefined;
-            return !requiredScopes || requiredScopes.every(scope => hasScope(scopes, scope));
-          })
-          .map(toPublicToolDefinition);
-        if (cursor) {
-          const index = tools.findIndex(t => t.name === cursor);
-          tools = tools.slice(index + 1);
-        }
-
-        const page = tools.slice(0, limit);
-        result = {
-          tools: page,
-          nextCursor: page.length === limit ? page[page.length - 1].name : undefined,
-          ttlMs: 300_000,
-          cacheScope: 'private',
-        };
-        break;
-      }
-
-      case 'tools/call': {
-        const toolName = (params as Record<string, unknown>)?.name as string;
-        const toolParams =
-          ((params as Record<string, unknown>)?.arguments as Record<string, unknown>) ?? {};
-        const idempotencyKey = request.headers.get('idempotency-key') ?? undefined;
-
-        const toolResult = await executeTool(
-          connectionId,
-          userId,
-          scopes,
-          toolName,
-          toolParams,
-          authResult.vaultUnlockedUntil,
-          idempotencyKey
-        );
-        result = toolResult;
-        break;
-      }
-
-      case 'resources/list': {
-        result = { resources: [], nextCursor: undefined };
-        break;
-      }
-
-      case 'prompts/list': {
-        result = { prompts: [], nextCursor: undefined };
-        break;
-      }
-
-      default: {
-        throw { code: -32601, message: 'Method not found', data: { code: 'METHOD_NOT_FOUND' } };
-      }
-    }
+    let result = await executeMcpMethod({
+      method,
+      params,
+      request,
+      connectionId,
+      userId,
+      scopes,
+      vaultUnlockedUntil: authResult.vaultUnlockedUntil,
+    });
 
     if (isNotification) {
       return new NextResponse(null, {
@@ -561,7 +555,7 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
     const err = error as { code?: number; message?: string; data?: { code?: string } };
 
-    console.log(
+    console.error(
       JSON.stringify({
         connection_id: connectionId,
         tool: method,

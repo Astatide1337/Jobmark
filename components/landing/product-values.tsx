@@ -62,11 +62,11 @@ const values = [
     ),
   },
   {
-    id: 'ai-helps',
-    title: 'AI As An Assistant',
-    subtitle: 'You lead, AI refines',
+    id: 'assistant-ready',
+    title: 'Assistant-Ready by Design',
+    subtitle: 'You lead, your assistant refines',
     description:
-      'AI helps synthesize and polish your record, but the substance stays yours. Jobmark elevates your voice, not replace it.',
+      'Jobmark keeps the evidence and structure in your hands. When you connect an assistant, it can refine the story without replacing your voice.',
     icon: (
       <svg
         className="h-5 w-5"

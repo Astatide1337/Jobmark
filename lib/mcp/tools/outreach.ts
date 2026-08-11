@@ -108,7 +108,7 @@ export const outreachGenerateTool = {
   definition: {
     name: 'outreach_generate',
     title: 'Generate Outreach Draft',
-    description: 'Generate personalized outreach draft using AI based on contact history. Requires jobmark:write scope.',
+    description: 'Build an evidence-only outreach brief from a contact and its history. Use it as a safe starting point for a message. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -255,7 +255,7 @@ export const outreachImproveTextTool = {
   definition: {
     name: 'outreach_improve_text',
     title: 'Improve Outreach Text',
-    description: 'Improve outreach text with AI assistance. Requires jobmark:write scope.',
+    description: 'Apply a predictable edit to a saved outreach draft. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {

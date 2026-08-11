@@ -74,7 +74,7 @@ export default async function FocusPage() {
   // Goal id -> title map
   const goalMap = new Map<string, string>(goals.map(g => [g.id, g.title]));
 
-  // 3. Resolve blocks (inject goal text + AI affirmations)
+  // 3. Resolve blocks (inject goal text and affirmations)
   const resolvedBlocks: ResolvedFocusBlock[] = await Promise.all(
     rawBlocks.map(async (block): Promise<ResolvedFocusBlock> => {
       if (block.type === 'goal') {

@@ -53,7 +53,7 @@ export async function exportToPdf(content: string, options: ExportOptions = {}) 
   const opt = {
     margin: 10,
     filename: options.filename || 'report.pdf',
-    image: { type: 'jpeg' as 'jpeg', quality: 0.98 },
+    image: { type: 'jpeg' as const, quality: 0.98 },
     html2canvas: {
       scale: 2,
       // Ignore global stylesheets to prevent 'oklch' parsing errors and ensure clean export
@@ -61,7 +61,7 @@ export async function exportToPdf(content: string, options: ExportOptions = {}) 
         return element.tagName === 'STYLE' || element.tagName === 'LINK';
       },
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as 'portrait' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
   };
 
   html2pdf().set(opt).from(element).save();

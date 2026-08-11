@@ -21,11 +21,9 @@ authenticated manual QA.
 | Missing configuration       | Image without required runtime variables exited with code 1 and logged the missing-variable error | Passed                                                             |
 | Production dependency audit | `npm audit --omit=dev --audit-level=high`                                                         | No high/critical findings; 3 moderate transitive findings remain   |
 
-AI-generating actions use a per-user, per-operation in-process limit of 20
-requests per minute in addition to bounded inputs and a 45-second provider
-timeout. This is intentionally a lightweight deployment-local guard; a
-shared distributed quota remains an operational follow-up if the app is
-scaled across multiple Node processes.
+Brief-generation actions are deterministic and bounded; they do not call a
+Jobmark model service or require a provider timeout. Vault and other sensitive
+operations use the shared database-backed request limit.
 
 ## Migration notes
 

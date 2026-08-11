@@ -43,7 +43,7 @@ const steps = [
   },
   {
     id: 'mentor',
-    title: 'Connect your AI',
+    title: 'Connect your assistant',
     subtitle: 'Your data, your assistant.',
     description: 'Use your record with Claude, ChatGPT, or any MCP-compatible AI assistant.',
   },
@@ -297,7 +297,7 @@ function TimelineDemo() {
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold">Your Timeline</h3>
-        <p className="text-muted-foreground text-sm">This week's accomplishments</p>
+        <p className="text-muted-foreground text-sm">This week&apos;s accomplishments</p>
       </div>
 
       {/* Timeline */}

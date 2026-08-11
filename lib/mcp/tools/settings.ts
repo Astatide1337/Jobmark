@@ -3,7 +3,6 @@ import { z } from 'zod';
 import {
   getSettings,
   updateSettings,
-  manageAIKeys,
 } from '@/lib/jobmark/settings';
 import { McpActor, assertMcpActor } from '../actor';
 import {
@@ -107,43 +106,5 @@ export const settingsUpdateTool = {
 
     const settings = await updateSettings(actor, result.data);
     return createStructuredResult(settings, 'Settings updated');
-  },
-};
-
-export const settingsManageAiKeysTool = {
-  definition: {
-    name: 'settings_manage_ai_keys',
-    title: 'Manage AI Provider Keys',
-    description: 'Manage AI provider API keys via secure one-time flow. Returns a secure action URL. Requires jobmark:admin scope.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        provider: { type: 'string' },
-        action: { type: 'string', enum: ['set', 'remove'] },
-      },
-      required: ['provider', 'action'],
-      additionalProperties: false,
-    },
-    outputSchema: {
-      type: 'object',
-      properties: {
-        actionUrl: { type: 'string' },
-        expiresAt: { type: 'string' },
-      },
-    },
-    annotations: { destructiveHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
-  },
-  execute: async (actor: McpActor, input: unknown) => {
-    assertMcpActor(actor);
-    const result = z.object({
-      provider: z.string(),
-      action: z.enum(['set', 'remove']),
-    }).safeParse(input);
-    if (!result.success) {
-      throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
-    }
-
-    const { actionUrl, expiresAt } = await manageAIKeys(actor, result.data);
-    return createStructuredResult({ actionUrl, expiresAt }, 'Secure AI key management URL generated');
   },
 };

@@ -4,6 +4,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { getLockedProjectIds } from '@/lib/project-lock';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError, VaultLockedError } from './index';
 import { z } from 'zod';
@@ -45,7 +46,7 @@ export async function listProjects(
   const { includeArchived = false, includeLocked = false, limit = 100, cursor } = options;
   const lockedIds = await getLockedProjectIds(actor.userId);
 
-  const where: any = { userId: actor.userId };
+  const where: Prisma.ProjectWhereInput = { userId: actor.userId };
   if (!includeArchived) where.archived = false;
   if (!includeLocked && lockedIds.length > 0) where.id = { notIn: lockedIds };
 
@@ -84,7 +85,17 @@ export async function getProjectWithActivities(
   actor: JobmarkActor,
   projectId: string,
   options: { limit?: number; cursor?: string } = {}
-): Promise<{ project: ProjectDTO; activities: any[]; nextCursor: string | null }> {
+): Promise<{
+  project: ProjectDTO;
+  activities: Array<{
+    id: string;
+    content: string;
+    logDate: string;
+    createdAt: string;
+    project: { id: string; name: string; color: string; archived: boolean } | null;
+  }>;
+  nextCursor: string | null;
+}> {
   assertActor(actor);
 
   const { limit = 50, cursor } = options;
@@ -209,7 +220,11 @@ export async function deleteProject(actor: JobmarkActor, projectId: string): Pro
   await prisma.project.delete({ where: { id: projectId } });
 }
 
-function toProjectDTO(project: any): ProjectDTO {
+type ProjectWithCounts = Prisma.ProjectGetPayload<{
+  include: { _count: { select: { activities: true; reports: true } } };
+}>;
+
+function toProjectDTO(project: ProjectWithCounts): ProjectDTO {
   return {
     id: project.id,
     name: project.name,

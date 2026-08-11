@@ -3,7 +3,7 @@
  *
  * Why: This is the primary profile page for a professional contact.
  * It consolidates CRM data (email, phone, notes) with the user's
- * specific interaction history and AI-generated outreach drafts.
+ * specific interaction history and outreach plans/drafts.
  *
  * Sub-components:
  * - ContactProfileCard: Displays the static "who is this" info.
@@ -52,6 +52,7 @@ import { toast } from 'sonner';
 import { ContactDialog } from '@/components/network/contact-dialog';
 import { OutreachWizard } from '@/app/network/[contactId]/outreach-wizard';
 import { OutreachDraftHistory } from '@/components/network/outreach-draft-history';
+import type { ConnectedMcpProvider } from '@/components/reports/mcp-draft-actions';
 import {
   getAgeFromBirthday,
   formatDate,
@@ -92,6 +93,7 @@ interface Contact {
 interface ContactDetailViewProps {
   contact: Contact;
   interactions: Interaction[];
+  connectedMcpProviders: ConnectedMcpProvider[];
   initialDrafts: Array<{
     id: string;
     title: string;
@@ -103,6 +105,7 @@ interface ContactDetailViewProps {
 export function ContactDetailView({
   contact,
   interactions,
+  connectedMcpProviders,
   initialDrafts,
 }: ContactDetailViewProps) {
   const router = useRouter();
@@ -207,7 +210,10 @@ export function ContactDetailView({
             </TabsContent>
 
             <TabsContent value="outreach" className="space-y-6">
-              <OutreachWizard contact={contact} />
+              <OutreachWizard
+                contact={contact}
+                connectedMcpProviders={connectedMcpProviders}
+              />
               <div className="space-y-3">
                 <h3 className="text-muted-foreground px-1 text-sm font-semibold tracking-widest uppercase">
                   Saved Drafts

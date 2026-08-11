@@ -222,6 +222,75 @@ async function findTestUser() {
   return user;
 }
 
+async function verifyReadTools(
+  endpoint: string,
+  accessToken: string,
+  userId: string
+): Promise<{ passed: number; skipped: string[]; toolCount: number }> {
+  const fixtures = await getToolFixtures(userId);
+  const plans = buildReadToolPlans(fixtures);
+  const skipped: string[] = [];
+  const failures: string[] = [];
+  let passed = 0;
+
+  for (const plan of plans) {
+    if (plan.requires && !fixtures[plan.requires]) {
+      skipped.push(`${plan.name} (no ${plan.requires} fixture)`);
+      console.info(`SKIP ${plan.name}: no safe fixture for ${plan.requires}`);
+      continue;
+    }
+
+    try {
+      const response = await postJsonRpc(endpoint, accessToken, `tool-${passed + 4}`, 'tools/call', {
+        name: plan.name,
+        arguments: plan.arguments,
+        _meta: {
+          'io.modelcontextprotocol/protocolVersion': MODERN_PROTOCOL_VERSION,
+          'io.modelcontextprotocol/clientCapabilities': {},
+        },
+      });
+      assertToolResult(plan.name, response);
+      passed += 1;
+      console.info(`PASS ${plan.name}`);
+    } catch (error: unknown) {
+      if (
+        plan.name === 'vault_list_projects' &&
+        error instanceof Error &&
+        error.message.includes('VAULT_LOCKED')
+      ) {
+        skipped.push(`${plan.name} (vault is locked)`);
+        console.info(`SKIP ${plan.name}: vault is locked; unlock flow is write-scoped`);
+        continue;
+      }
+      failures.push(plan.name);
+      console.error(`FAIL ${plan.name}: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
+  assert(failures.length === 0, `read-only tool failures: ${failures.join(', ')}`);
+  return { passed, skipped, toolCount: plans.length };
+}
+
+async function cleanupVerificationRun(
+  connectionId: string | undefined,
+  accessTokenHash: string | undefined,
+  oauthClientInternalId: string | undefined,
+  oauthClientId: string | undefined
+): Promise<void> {
+  if (connectionId) {
+    await prisma.mcpIdempotency.deleteMany({ where: { connectionId } });
+    await prisma.mcpConnection.deleteMany({ where: { id: connectionId } });
+  }
+  if (accessTokenHash) {
+    await prisma.oAuthAccessToken.deleteMany({ where: { tokenHash: accessTokenHash } });
+  }
+  if (oauthClientInternalId) {
+    await prisma.oAuthClient.deleteMany({
+      where: { id: oauthClientInternalId, clientId: oauthClientId },
+    });
+  }
+}
+
 async function main(): Promise<void> {
   assert(process.env.DATABASE_URL, 'DATABASE_URL must be set');
   const baseUrl = requireBaseUrl();
@@ -350,64 +419,17 @@ async function main(): Promise<void> {
     const missingReadTools = READ_TOOL_NAMES.filter(name => !listedNames.has(name));
     assert(missingReadTools.length === 0, `tools/list omitted read tools: ${missingReadTools.join(', ')}`);
 
-    const fixtures = await getToolFixtures(user.id);
-    const plans = buildReadToolPlans(fixtures);
-    const skipped: string[] = [];
-    const failures: string[] = [];
-    let passed = 0;
-
-    for (const plan of plans) {
-      if (plan.requires && !fixtures[plan.requires]) {
-        skipped.push(`${plan.name} (no ${plan.requires} fixture)`);
-        console.info(`SKIP ${plan.name}: no safe fixture for ${plan.requires}`);
-        continue;
-      }
-
-      try {
-        const response = await postJsonRpc(endpoint, token.token, `tool-${passed + 4}`, 'tools/call', {
-          name: plan.name,
-          arguments: plan.arguments,
-          _meta: {
-            'io.modelcontextprotocol/protocolVersion': MODERN_PROTOCOL_VERSION,
-            'io.modelcontextprotocol/clientCapabilities': {},
-          },
-        });
-        assertToolResult(plan.name, response);
-        passed += 1;
-        console.info(`PASS ${plan.name}`);
-      } catch (error: unknown) {
-        if (
-          plan.name === 'vault_list_projects' &&
-          error instanceof Error &&
-          error.message.includes('VAULT_LOCKED')
-        ) {
-          skipped.push(`${plan.name} (vault is locked)`);
-          console.info(`SKIP ${plan.name}: vault is locked; unlock flow is write-scoped`);
-          continue;
-        }
-        failures.push(plan.name);
-        console.error(`FAIL ${plan.name}: ${error instanceof Error ? error.message : 'unknown error'}`);
-      }
-    }
-
-    assert(failures.length === 0, `read-only tool failures: ${failures.join(', ')}`);
+    const { passed, skipped } = await verifyReadTools(endpoint, token.token, user.id);
     console.info(
       `PASS live MCP protocol: discover, initialize, tools/list (${tools.length} tools), ${passed} read tools; ${skipped.length} skipped`
     );
   } finally {
-    // Cleanup is deliberately constrained to values captured from this run.
-    if (connectionId) {
-      await prisma.mcpIdempotency.deleteMany({ where: { connectionId } });
-      await prisma.mcpConnection.deleteMany({ where: { id: connectionId } });
-    }
-    if (accessTokenHash) {
-      await prisma.oAuthAccessToken.deleteMany({ where: { tokenHash: accessTokenHash } });
-    }
-    if (oauthClientInternalId) {
-      await prisma.oAuthClient.deleteMany({
-        where: { id: oauthClientInternalId, clientId: oauthClientId },
-      });
-    }
+    await cleanupVerificationRun(
+      connectionId,
+      accessTokenHash,
+      oauthClientInternalId,
+      oauthClientId
+    );
   }
 }
 

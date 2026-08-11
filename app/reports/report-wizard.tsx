@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ReportConfig,
@@ -22,41 +22,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { LiveEditor } from '@/components/reports/live-editor';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
-  ChevronLeft,
   Sparkles,
-  Save,
   CheckCircle,
   AlertCircle,
-  Mail,
-  Send,
-  Download,
-  FileText,
-  File,
 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
-import { exportToPdf, exportToWord } from '@/lib/report-export';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { useSettings } from '@/components/providers/settings-provider';
+import { ReportWizardEditor } from '@/components/reports/report-wizard-editor';
 import {
   McpDraftActions,
-  McpProviderMenu,
   getMcpProviderLaunchUrl,
   providerSupportsPromptUrl,
-  type ConnectedAiProvider,
+  type ConnectedMcpProvider,
 } from '@/components/reports/mcp-draft-actions';
 
 interface Project {
@@ -66,10 +51,10 @@ interface Project {
 
 interface ReportWizardProps {
   projects: Project[];
-  connectedAiProviders: ConnectedAiProvider[];
+  connectedMcpProviders: ConnectedMcpProvider[];
 }
 
-export function ReportWizard({ projects, connectedAiProviders }: ReportWizardProps) {
+export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardProps) {
   const { settings } = useSettings();
   const [step, setStep] = useState(1);
   const [config, setConfig] = useState<ReportConfig>({
@@ -94,8 +79,6 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
 
   // Custom date selection state
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [validationError, setValidationError] = useState<string | null>(null);
-
   const [reportContent, setReportContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -108,16 +91,12 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
   // When dateRange or config changes, we validate the count to ensure "Next" is only enabled when valid.
   const [hasValidActivities, setHasValidActivities] = useState(true); // default true to avoid flicker on load
   const [isValidating, setIsValidating] = useState(false);
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  const [activityCount, setActivityCount] = useState(0);
 
   // Debounced validation logic
   const debouncedValidate = useMemo(
     () =>
       debounce(async (currentConfig: ReportConfig, currentRange: DateRange | undefined) => {
         setIsValidating(true);
-        setValidationMessage(null);
-
         try {
           // Prepare temp config for check
           const tempConfig = { ...currentConfig };
@@ -136,8 +115,6 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
           const result = await checkActivityCount(tempConfig);
           const isValid = result.count > 0;
           setHasValidActivities(isValid);
-          setActivityCount(result.count);
-          if (!isValid) setValidationMessage('No activities found in this range.');
         } catch (e) {
           console.error(e);
         } finally {
@@ -241,7 +218,7 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const handleDraftWithProvider = async (provider: ConnectedAiProvider) => {
+  const handleDraftWithProvider = async (provider: ConnectedMcpProvider) => {
     const prompt = [
       'Draft my Jobmark review brief using the connected Jobmark MCP tools.',
       `Use the selected period: ${getDateRangeLabel(config.dateRange, dateRange)}.`,
@@ -252,7 +229,8 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
     ]
       .filter(Boolean)
       .join('\n');
-    const providerUrl = getMcpProviderLaunchUrl(provider.key, prompt);
+    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
+    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
 
     // Start copying before opening a new tab. Some browsers revoke clipboard
     // permission as soon as focus moves to the provider tab.
@@ -278,21 +256,14 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
     }
   };
 
-  // Animation variants
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 50 : -50,
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 50 : -50,
-      opacity: 0,
-    }),
-  };
+  const stepLabels = ['Scope', 'Notes', 'Tone', 'Draft'];
+  const dateRangeLabel = getDateRangeButtonLabel(config, dateRange);
+  const validationStatus = getValidationStatus(
+    config.dateRange,
+    dateRange,
+    hasValidActivities,
+    isValidating
+  );
 
   return (
     <div className={cn('h-full py-8', step < 4 ? 'mx-auto max-w-2xl' : 'w-full')}>
@@ -322,7 +293,7 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
                 {i}
               </div>
               <span className="text-muted-foreground text-[10px] tracking-wider uppercase">
-                {i === 1 ? 'Scope' : i === 2 ? 'Notes' : i === 3 ? 'Tone' : 'Draft'}
+                {stepLabels[i - 1]}
               </span>
             </div>
           ))}
@@ -384,17 +355,7 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
                       }
                     }}
                   >
-                    {config.dateRange === 'custom' && dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, 'LLL dd')} - {format(dateRange.to, 'LLL dd')}
-                        </>
-                      ) : (
-                        format(dateRange.from, 'LLL dd')
-                      )
-                    ) : (
-                      <span>Custom Range from Calendar</span>
-                    )}
+                    {dateRangeLabel}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="center">
@@ -412,21 +373,7 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
 
               {/* Validation Warning */}
               <div className="mt-2 h-6 text-center text-sm">
-                {config.dateRange === 'custom' && (!dateRange?.from || !dateRange?.to) ? (
-                  <p className="text-muted-foreground text-xs">Please select start & end date.</p>
-                ) : isValidating ? (
-                  <p className="text-muted-foreground animate-pulse text-xs">
-                    Checking activities...
-                  </p>
-                ) : !hasValidActivities ? (
-                  <p className="text-destructive flex items-center justify-center gap-1 text-xs font-medium">
-                    <AlertCircle className="h-3 w-3" /> No activities found in this range.
-                  </p>
-                ) : (
-                  <p className="animate-in fade-in slide-in-from-bottom-1 flex items-center justify-center gap-1 text-xs text-green-600 opacity-0">
-                    <CheckCircle className="h-3 w-3" /> Ready
-                  </p>
-                )}
+                {validationStatus}
               </div>
             </div>
 
@@ -465,7 +412,9 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
                 value={config.projectId === null ? 'unassigned' : config.projectId || 'all'}
                 onValueChange={v => {
                   // Logic: 'all' -> undefined, 'unassigned' -> null, else -> string
-                  const pid = v === 'all' ? undefined : v === 'unassigned' ? null : v;
+                  let pid: string | null | undefined = v;
+                  if (v === 'all') pid = undefined;
+                  else if (v === 'unassigned') pid = null;
                   setConfig({ ...config, projectId: pid });
                 }}
               >
@@ -543,7 +492,7 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
             </div>
 
             <McpDraftActions
-              connectedAiProviders={connectedAiProviders}
+              connectedMcpProviders={connectedMcpProviders}
               onDraftWithProvider={handleDraftWithProvider}
             />
 
@@ -565,161 +514,19 @@ export function ReportWizard({ projects, connectedAiProviders }: ReportWizardPro
 
         {/* STEP 4: EDITOR */}
         {step === 4 && (
-          <motion.div
-            key="step4"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="h-full"
-          >
-            <div className="flex h-full w-full flex-col gap-6">
-              {/* Header: Back & Title */}
-              <div className="flex shrink-0 items-center gap-2 pl-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setStep(1)}
-                  disabled={isStreaming}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h2 className="flex items-center gap-2 text-xl font-bold">
-                  Review Draft
-                  {isStreaming && (
-                    <span className="text-muted-foreground animate-pulse text-xs font-normal">
-                      (Generating...)
-                    </span>
-                  )}
-                </h2>
-              </div>
-
-              <div className="border-border/50 bg-card/35 rounded-2xl border p-4">
-                <p className="text-foreground text-sm font-medium">Where this is useful</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Use this draft for a weekly update, manager sync, self-review, or the first pass
-                  of a promotion narrative.
-                </p>
-              </div>
-
-              {/* Content Layout: Editor (Left) + Actions (Right) */}
-              <div className="flex min-h-0 flex-1 gap-8">
-                {/* Main Editor Area - Scales with height */}
-                <div className="flex h-full min-h-0 flex-1 flex-col">
-                  <div className="border-border/50 bg-card/30 flex flex-1 flex-col rounded-xl border shadow-xl">
-                    <LiveEditor
-                      value={reportContent}
-                      onChange={setReportContent}
-                      isStreaming={isStreaming}
-                      className="h-full flex-1"
-                    />
-                  </div>
-                </div>
-
-                {/* Vertical Actions Sidebar */}
-                <div className="flex w-64 shrink-0 flex-col gap-4 pt-4">
-                  <div className="text-muted-foreground px-1 text-xs font-bold tracking-widest uppercase">
-                    Actions
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
-                      >
-                        <Send className="mr-2 h-4 w-4" />
-                        Send via...
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      className="w-[var(--radix-dropdown-menu-trigger-width)]"
-                    >
-                      <DropdownMenuItem onClick={handleEmail} className="group cursor-pointer">
-                        <Mail className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
-                        <span className="group-focus:text-accent-foreground">Default Mail App</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleGmail} className="group cursor-pointer">
-                        <span className="text-foreground group-focus:text-accent-foreground mr-2 text-lg font-bold">
-                          M
-                        </span>
-                        <span className="group-focus:text-accent-foreground">Gmail</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      className="w-[var(--radix-dropdown-menu-trigger-width)]"
-                    >
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          try {
-                            toast.info('Generating PDF...');
-                            await exportToPdf(reportContent);
-                            toast.success('PDF Downloaded');
-                          } catch (e) {
-                            toast.error('Failed to generate PDF');
-                          }
-                        }}
-                        className="group cursor-pointer"
-                      >
-                        <File className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
-                        <span className="group-focus:text-accent-foreground">Download as PDF</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          try {
-                            toast.info('Generating Word Doc...');
-                            exportToWord(reportContent);
-                            toast.success('Word Doc Downloaded');
-                          } catch (e) {
-                            toast.error('Failed to generate Word Doc');
-                          }
-                        }}
-                        className="group cursor-pointer"
-                      >
-                        <FileText className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
-                        <span className="group-focus:text-accent-foreground">Download as Word</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button
-                    variant="outline"
-                    className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
-                    onClick={() => navigator.clipboard.writeText(reportContent)}
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Copy Text
-                  </Button>
-                  <div className="h-4" /> {/* Spacer */}
-                  <Button
-                    className="h-12 w-full justify-start rounded-xl bg-[var(--accent-warm)] font-semibold text-black shadow-[var(--accent-warm)]/10 shadow-lg hover:bg-[var(--accent-warm-hover)]"
-                    onClick={handleSave}
-                    disabled={isStreaming || isSaving || saved}
-                  >
-                    {saved ? (
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
-                    {saved ? 'Saved Draft' : 'Save Draft'}
-                  </Button>
-                  <McpProviderMenu
-                    connectedAiProviders={connectedAiProviders}
-                    onOpenProvider={handleDraftWithProvider}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          <ReportWizardEditor
+            reportContent={reportContent}
+            setReportContent={setReportContent}
+            isStreaming={isStreaming}
+            isSaving={isSaving}
+            saved={saved}
+            onBack={() => setStep(1)}
+            onEmail={handleEmail}
+            onGmail={handleGmail}
+            onSave={handleSave}
+            connectedMcpProviders={connectedMcpProviders}
+            onDraftWithProvider={handleDraftWithProvider}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -737,6 +544,42 @@ function getDateRangeLabel(range: ReportConfig['dateRange'], customRange?: DateR
     return format(customRange.from, 'MMM d');
   }
   return 'Custom range';
+}
+
+function getDateRangeButtonLabel(config: ReportConfig, dateRange?: DateRange): ReactNode {
+  if (config.dateRange !== 'custom' || !dateRange?.from) {
+    return <span>Custom Range from Calendar</span>;
+  }
+  if (dateRange.to) {
+    return `${format(dateRange.from, 'LLL dd')} - ${format(dateRange.to, 'LLL dd')}`;
+  }
+  return format(dateRange.from, 'LLL dd');
+}
+
+function getValidationStatus(
+  dateRangeKind: ReportConfig['dateRange'],
+  dateRange: DateRange | undefined,
+  hasValidActivities: boolean,
+  isValidating: boolean
+): ReactNode {
+  if (dateRangeKind === 'custom' && (!dateRange?.from || !dateRange?.to)) {
+    return <p className="text-muted-foreground text-xs">Please select start & end date.</p>;
+  }
+  if (isValidating) {
+    return <p className="text-muted-foreground animate-pulse text-xs">Checking activities...</p>;
+  }
+  if (!hasValidActivities) {
+    return (
+      <p className="text-destructive flex items-center justify-center gap-1 text-xs font-medium">
+        <AlertCircle className="h-3 w-3" /> No activities found in this range.
+      </p>
+    );
+  }
+  return (
+    <p className="animate-in fade-in slide-in-from-bottom-1 flex items-center justify-center gap-1 text-xs text-green-600 opacity-0">
+      <CheckCircle className="h-3 w-3" /> Ready
+    </p>
+  );
 }
 
 function getProjectScopeLabel(projectId: string | null | undefined, projects: Project[]) {

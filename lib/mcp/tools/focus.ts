@@ -187,7 +187,7 @@ export const dictationPolishTool = {
   definition: {
     name: 'dictation_polish',
     title: 'Polish Dictation Text',
-    description: 'Polish and format raw dictation text using AI. Requires jobmark:write scope.',
+    description: 'Clean up raw dictation text without an external provider. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {

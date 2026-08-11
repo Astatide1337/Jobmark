@@ -89,16 +89,16 @@ export function BreathingDisplay({
         {Array.from({ length: totalCycles }).map((_, i) => (
           <div
             key={i}
-            className={`h-1.5 w-1.5 rounded-full transition-colors duration-500 ${
-              i < cycleIndex
-                ? 'bg-primary'
-                : i === cycleIndex
-                  ? 'bg-primary/60'
-                  : 'bg-foreground/20'
-            }`}
+            className={`h-1.5 w-1.5 rounded-full transition-colors duration-500 ${getCycleClass(i, cycleIndex)}`}
           />
         ))}
       </div>
     </div>
   );
+}
+
+function getCycleClass(index: number, currentIndex: number): string {
+  if (index < currentIndex) return 'bg-primary';
+  if (index === currentIndex) return 'bg-primary/60';
+  return 'bg-foreground/20';
 }

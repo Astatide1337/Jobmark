@@ -31,7 +31,7 @@ export default function DecompressionWizard({ blocks }: DecompressionWizardProps
     audioRef.current = audio;
 
     // Fade in
-    audio.play().catch(e => console.log('Audio play failed:', e));
+    audio.play().catch(e => console.warn('Audio play failed:', e));
     let vol = 0;
     fadeIntervalRef.current = setInterval(() => {
       if (audioRef.current) {

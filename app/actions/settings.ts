@@ -14,16 +14,9 @@ import { auth, requireUserId, signOut } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports, isVaultUnlocked } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
-import { encryptApiKey, decryptApiKey } from '@/lib/ai-key';
-import { PROVIDER_CONFIGS, isValidProvider, type AIProvider } from '@/lib/ai-config';
-import { Prisma } from '@prisma/client';
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
-import {
-  aiSettingsSchema,
-  appearanceSettingsSchema,
-  goalSettingsSchema,
-} from '@/lib/input-schemas';
+import { appearanceSettingsSchema, goalSettingsSchema } from '@/lib/input-schemas';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,37 +43,7 @@ export type UserSettingsData = {
   // Preferences
   hideArchived: boolean;
   showConfetti: boolean;
-
-  // Multi-provider BYOK
-  aiProvider: AIProvider;
-  aiModel: string | null;
-  /** Map of provider → whether a key is saved (never the key itself) */
-  aiKeysByProvider: Partial<Record<AIProvider, boolean>>;
 };
-
-/**
- * Resolved AI configuration for a single call site.
- * Returned by `getUserAiConfig()` and consumed by every AI call site.
- */
-export interface AiConfig {
-  provider: AIProvider;
-  model: string;
-  /** Decrypted BYOK key, or null if using the server env-var fallback */
-  apiKey: string | null;
-}
-
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Safely casts a Prisma JsonValue to a plain string-map.
- * Returns {} for null, arrays, or non-objects so callers never crash.
- */
-function parseAiKeys(raw: Prisma.JsonValue): Record<string, string> {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return raw as Record<string, string>;
-}
 
 // ---------------------------------------------------------------------------
 // Read settings
@@ -100,18 +63,6 @@ export async function getUserSettings(): Promise<UserSettingsData | null> {
     });
   }
 
-  const provider: AIProvider = isValidProvider(settings.aiProvider)
-    ? settings.aiProvider
-    : 'gemini';
-
-  const aiKeys = parseAiKeys(settings.aiKeys ?? null);
-  const aiKeysByProvider: Partial<Record<AIProvider, boolean>> = {};
-  for (const [p, val] of Object.entries(aiKeys)) {
-    if (isValidProvider(p) && typeof val === 'string' && val.length > 0) {
-      aiKeysByProvider[p] = true;
-    }
-  }
-
   return {
     primaryGoal: settings.primaryGoal,
     goalDeadline: settings.goalDeadline,
@@ -126,205 +77,7 @@ export async function getUserSettings(): Promise<UserSettingsData | null> {
     timeZone: isValidTimeZone(settings.timeZone) ? settings.timeZone : DEFAULT_TIME_ZONE,
     hideArchived: settings.hideArchived,
     showConfetti: settings.showConfetti,
-    aiProvider: provider,
-    aiModel: settings.aiModel,
-    aiKeysByProvider,
   };
-}
-
-// ---------------------------------------------------------------------------
-// AI Config resolution (used by all AI call sites)
-// ---------------------------------------------------------------------------
-
-/**
- * getUserAiConfig
- *
- * Why: Single entry point for resolving which provider/model/key to use.
- * All AI call sites call this once (before any stream is created) and then
- * pass the result directly to `createAIClient`. This keeps auth logic out of
- * individual call sites and prevents IDOR — the session is always derived here.
- */
-export async function getUserAiConfig(): Promise<AiConfig> {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  const settings = await prisma.userSettings.findUnique({
-    where: { userId: session.user.id },
-    select: { aiProvider: true, aiModel: true, aiKeys: true },
-  });
-
-  const provider: AIProvider =
-    settings && isValidProvider(settings.aiProvider) ? settings.aiProvider : 'gemini';
-
-  const config = PROVIDER_CONFIGS[provider];
-
-  // Validate stored model against the provider's model list; fall back to default
-  const storedModel = settings?.aiModel ?? null;
-  const validModel =
-    storedModel && config.models.some(m => m.id === storedModel)
-      ? storedModel
-      : config.defaultModel;
-
-  // Decrypt the stored key for this provider
-  const aiKeys = parseAiKeys(settings?.aiKeys ?? null);
-  const encryptedKey = aiKeys[provider];
-  const apiKey = encryptedKey ? (decryptApiKey(encryptedKey) ?? null) : null;
-
-  return { provider, model: validModel, apiKey };
-}
-
-// ---------------------------------------------------------------------------
-// Save / delete provider API keys
-// ---------------------------------------------------------------------------
-
-/**
- * saveProviderApiKey
- *
- * Encrypts and stores the user's key for a specific provider, then sets that
- * provider as active. "Save = activate" is the simplest UX.
- */
-export async function saveProviderApiKey(
-  provider: AIProvider | string,
-  rawKey: string
-): Promise<{ success: boolean; message: string }> {
-  const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
-  if (!isValidProvider(provider)) return { success: false, message: 'Invalid AI provider' };
-  if (!rawKey.trim()) return { success: false, message: 'Key cannot be empty' };
-
-  const trimmedKey = rawKey.trim();
-  const config = PROVIDER_CONFIGS[provider];
-
-  if (!trimmedKey.startsWith(config.keyPrefix) || trimmedKey.length < config.keyMinLength) {
-    return {
-      success: false,
-      message: `Invalid key format. ${config.label} keys start with "${config.keyPrefix}" and must be at least ${config.keyMinLength} characters.`,
-    };
-  }
-
-  try {
-    const encrypted = encryptApiKey(trimmedKey);
-
-    // Fetch existing keys, merge the new one in
-    const existing = await prisma.userSettings.findUnique({
-      where: { userId: session.user.id },
-      select: { aiKeys: true },
-    });
-    const existingKeys = parseAiKeys(existing?.aiKeys ?? null);
-    const updatedKeys = { ...existingKeys, [provider]: encrypted };
-
-    // Reset aiModel to null when switching providers so getUserAiConfig always
-    // falls back to the new provider's clean default instead of a stale model ID.
-    await prisma.userSettings.upsert({
-      where: { userId: session.user.id },
-      update: { aiKeys: updatedKeys, aiProvider: provider, aiModel: null },
-      create: { userId: session.user.id, aiKeys: updatedKeys, aiProvider: provider },
-    });
-
-    revalidatePath('/settings');
-    return { success: true, message: `${config.label} key saved and activated` };
-  } catch (error) {
-    console.error('Failed to save provider API key:', error);
-    return { success: false, message: 'Failed to save API key' };
-  }
-}
-
-/**
- * deleteProviderApiKey
- *
- * Removes a provider's key. If the deleted provider was active, resets to Gemini.
- */
-export async function deleteProviderApiKey(
-  provider: AIProvider | string
-): Promise<{ success: boolean; message: string }> {
-  const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
-  if (!isValidProvider(provider)) return { success: false, message: 'Invalid AI provider' };
-
-  try {
-    const existing = await prisma.userSettings.findUnique({
-      where: { userId: session.user.id },
-      select: { aiKeys: true, aiProvider: true },
-    });
-
-    const existingKeys = parseAiKeys(existing?.aiKeys ?? null);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [provider]: _removed, ...remainingKeys } = existingKeys;
-    // Prisma requires Prisma.JsonNull (not plain null) to explicitly clear a Json? field
-    const updatedKeys: Record<string, string> | typeof Prisma.JsonNull =
-      Object.keys(remainingKeys).length > 0 ? remainingKeys : Prisma.JsonNull;
-
-    // If the deleted provider was active, fall back to gemini
-    const currentProvider = existing?.aiProvider ?? 'gemini';
-    const newProvider = currentProvider === provider ? 'gemini' : currentProvider;
-
-    await prisma.userSettings.upsert({
-      where: { userId: session.user.id },
-      update: { aiKeys: updatedKeys, aiProvider: newProvider },
-      create: { userId: session.user.id },
-    });
-
-    revalidatePath('/settings');
-    return { success: true, message: `${PROVIDER_CONFIGS[provider].label} key removed` };
-  } catch (error) {
-    console.error('Failed to delete provider API key:', error);
-    return { success: false, message: 'Failed to delete API key' };
-  }
-}
-
-/**
- * updateAiSettings
- *
- * Updates provider/model selection without touching stored keys.
- * Used by the model selector "Apply" button in Settings.
- */
-export async function updateAiSettings(data: {
-  aiProvider?: AIProvider | string;
-  aiModel?: string | null;
-}): Promise<{ success: boolean; message: string }> {
-  const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
-
-  const parsed = aiSettingsSchema.safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Invalid AI settings' };
-  const safeData = parsed.data;
-
-  if (safeData.aiProvider !== undefined && !isValidProvider(safeData.aiProvider)) {
-    return { success: false, message: 'Invalid AI provider' };
-  }
-  if (safeData.aiModel) {
-    const existing = await prisma.userSettings.findUnique({
-      where: { userId: session.user.id },
-      select: { aiProvider: true },
-    });
-    const provider =
-      safeData.aiProvider && isValidProvider(safeData.aiProvider)
-        ? safeData.aiProvider
-        : existing?.aiProvider;
-    if (!provider || !isValidProvider(provider))
-      return { success: false, message: 'Invalid AI provider' };
-    const providerConfig = PROVIDER_CONFIGS[provider];
-    if (!providerConfig.models.some(model => model.id === safeData.aiModel)) {
-      return { success: false, message: 'Invalid AI model for provider' };
-    }
-  }
-
-  try {
-    await prisma.userSettings.upsert({
-      where: { userId: session.user.id },
-      update: safeData,
-      create: { userId: session.user.id, ...safeData },
-    });
-
-    revalidatePath('/settings');
-    return { success: true, message: 'AI settings updated' };
-  } catch (error) {
-    console.error('Failed to update AI settings:', error);
-    return { success: false, message: 'Failed to update AI settings' };
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -512,8 +265,6 @@ export async function exportUserData() {
         timeZone: true,
         hideArchived: true,
         showConfetti: true,
-        aiProvider: true,
-        aiModel: true,
         createdAt: true,
         updatedAt: true,
       },

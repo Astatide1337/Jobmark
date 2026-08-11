@@ -17,7 +17,7 @@ import {
 describe('McpDraftActions', () => {
   it('encourages setup when no MCP provider is connected', () => {
     const markup = renderToStaticMarkup(
-      <McpDraftActions connectedAiProviders={[]} onDraftWithProvider={vi.fn()} />
+      <McpDraftActions connectedMcpProviders={[]} onDraftWithProvider={vi.fn()} />
     );
 
     expect(markup).toContain('Set up an MCP Connector');
@@ -29,7 +29,7 @@ describe('McpDraftActions', () => {
   it('renders only the connected providers', () => {
     const markup = renderToStaticMarkup(
       <McpDraftActions
-        connectedAiProviders={[
+        connectedMcpProviders={[
           { key: 'claude', name: 'Claude' },
           { key: 'gemini', name: 'Gemini' },
         ]}
@@ -47,13 +47,13 @@ describe('McpDraftActions', () => {
   it('uses a direct open action for one provider and a chooser for multiple', () => {
     const singleMarkup = renderToStaticMarkup(
       <McpProviderMenu
-        connectedAiProviders={[{ key: 'gemini', name: 'Gemini' }]}
+        connectedMcpProviders={[{ key: 'gemini', name: 'Gemini' }]}
         onOpenProvider={vi.fn()}
       />
     );
     const multipleMarkup = renderToStaticMarkup(
       <McpProviderMenu
-        connectedAiProviders={[
+        connectedMcpProviders={[
           { key: 'claude', name: 'Claude' },
           { key: 'chatgpt', name: 'ChatGPT' },
         ]}
@@ -89,7 +89,7 @@ describe('McpDraftActions', () => {
   it('uses a copy action for an unlisted MCP client', () => {
     const markup = renderToStaticMarkup(
       <McpProviderMenu
-        connectedAiProviders={[{ key: 'client:linear', name: 'Linear' }]}
+        connectedMcpProviders={[{ key: 'client:linear', name: 'Linear' }]}
         onOpenProvider={vi.fn()}
       />
     );

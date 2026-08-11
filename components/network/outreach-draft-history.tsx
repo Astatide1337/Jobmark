@@ -1,7 +1,7 @@
 /**
  * Outreach Draft History
  *
- * Why: Allows users to review, edit, and export previously generated AI
+ * Why: Allows users to review, edit, and export previously generated
  * outreach messages. This preserves "the best" drafts for future reuse.
  *
  * Integration:

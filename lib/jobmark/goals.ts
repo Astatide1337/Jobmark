@@ -4,6 +4,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
 
@@ -101,8 +102,13 @@ export async function updateGoal(
 
   if (!goal) throw new NotFoundError('Goal');
 
-  const data: any = { ...result.data };
-  if (data.deadline) data.deadline = new Date(data.deadline);
+  const { deadline, ...goalFields } = result.data;
+  let normalizedDeadline: Date | null | undefined;
+  if (deadline !== undefined) normalizedDeadline = deadline ? new Date(deadline) : null;
+  const data: Prisma.GoalUncheckedUpdateInput = {
+    ...goalFields,
+    deadline: normalizedDeadline,
+  };
 
   const updated = await prisma.goal.update({
     where: { id: goalId },
@@ -124,7 +130,7 @@ export async function deleteGoal(actor: JobmarkActor, goalId: string): Promise<v
   await prisma.goal.delete({ where: { id: goalId } });
 }
 
-function toGoalDTO(goal: any): GoalDTO {
+function toGoalDTO(goal: Prisma.GoalGetPayload<object>): GoalDTO {
   return {
     id: goal.id,
     title: goal.title,

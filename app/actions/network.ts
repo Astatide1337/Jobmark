@@ -3,7 +3,7 @@
  *
  * Why: Maintaining a strong network requires tracking interactions and
  * follow-ups. These actions provide a lightweight "Relationship Manager"
- * directly integrated with the AI mentor.
+ * directly integrated with the MCP assistant handoff.
  *
  * Edge Case (Timezones):
  * We use `parseUTCDate` for birthdays and follow-up dates. This ensures

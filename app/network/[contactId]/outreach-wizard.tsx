@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { readStreamableValue } from '@ai-sdk/rsc';
@@ -36,11 +36,18 @@ import {
 } from 'lucide-react';
 import {
   generateOutreachDraft,
-  improveOutreachDraft,
   saveOutreachDraftToHistory,
 } from '@/app/actions/network-ai';
 import { exportToPdf, exportToWord } from '@/lib/report-export';
 import { LiveEditor } from '@/components/reports/live-editor';
+import {
+  McpDraftActions,
+  McpProviderMenu,
+  getMcpProviderLaunchUrl,
+  providerSupportsPromptUrl,
+  type ConnectedMcpProvider,
+} from '@/components/reports/mcp-draft-actions';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import { OUTREACH_OBJECTIVES, OUTREACH_TONES, OUTREACH_CHANNELS } from '@/lib/network';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -62,6 +69,7 @@ interface ContactSummary {
 
 interface OutreachWizardProps {
   contact: ContactSummary;
+  connectedMcpProviders: ConnectedMcpProvider[];
 }
 
 function OptionCard({
@@ -100,7 +108,7 @@ function getCleanEmailBody(content: string): string {
     .replace(/\[(.+?)\]\(.+?\)/g, '$1');
 }
 
-export function OutreachWizard({ contact }: OutreachWizardProps) {
+export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [config, setConfig] = useState<{
@@ -143,6 +151,44 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
     }
   };
 
+  const buildMcpPrompt = (includeBrief = false) =>
+    [
+      'Prepare an outreach message using my Jobmark record and the connected Jobmark MCP tools.',
+      `First retrieve contact ${contact.id} with contacts_get and review its recent interactions before writing.`,
+      `Recipient: ${contact.fullName}.`,
+      `Purpose: ${config.objective}.`,
+      `Channel: ${config.channel}.`,
+      `Tone: ${config.tone}.`,
+      config.extraContext.trim() ? `Additional context: ${config.extraContext.trim()}.` : '',
+      includeBrief
+        ? `Use this evidence-only brief as a starting point:\n\n${draftContent}`
+        : 'Use only verified record facts, do not invent shared history or outcomes, and return a draft for me to review. Do not send it.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  const handleDraftWithProvider = async (provider: ConnectedMcpProvider, includeBrief = false) => {
+    const prompt = buildMcpPrompt(includeBrief);
+    // Keep provider URLs short enough for browser and provider limits. The
+    // full prompt is always copied, so a longer plan still works reliably.
+    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
+    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
+    const copyPromise = copyTextToClipboard(prompt);
+
+    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
+
+    try {
+      const copied = await copyPromise;
+      if (!copied) throw new Error('clipboard_unavailable');
+      const description = providerSupportsPromptUrl(provider.key)
+        ? `Open ${provider.name} to draft with your Jobmark record.`
+        : `Your prompt is copied. Paste it into ${provider.name} to start.`;
+      toast.success(`${provider.name} prompt copied`, { description });
+    } catch {
+      toast.error('Could not copy the drafting prompt');
+    }
+  };
+
   const handleSave = async () => {
     if (!draftContent || isSaving || saved) return;
     setIsSaving(true);
@@ -176,6 +222,17 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email ?? '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(gmailUrl, '_blank');
   };
+
+  let saveButtonContent: ReactNode = 'Save to History';
+  if (isSaving) saveButtonContent = <Loader2 className="mr-2 h-4 w-4 animate-spin" />;
+  if (saved) {
+    saveButtonContent = (
+      <>
+        <CheckCircle className="mr-2 h-4 w-4" />
+        Saved!
+      </>
+    );
+  }
 
   const STEP_LABELS = ['Goal', 'Context', 'Tone'];
 
@@ -286,8 +343,8 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
             <div>
               <h2 className="text-xl font-semibold">Add context</h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                The AI already has {contact.fullName}&apos;s profile and interaction history. Add
-                anything extra here.
+                Jobmark will build a factual brief from {contact.fullName}&apos;s profile and
+                interaction history. Add anything extra here for your connected assistant.
               </p>
             </div>
 
@@ -360,6 +417,14 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
               ))}
             </div>
 
+            <McpDraftActions
+              connectedMcpProviders={connectedMcpProviders}
+              onDraftWithProvider={provider => handleDraftWithProvider(provider)}
+              eyebrow="Optional next step"
+              title="Draft this message in your assistant"
+              description="Jobmark will prepare the facts. Open a connected assistant when you want it to turn them into a message."
+            />
+
             <div className="flex justify-between">
               <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl">
                 <ChevronLeft className="mr-1 h-4 w-4" /> Back
@@ -387,8 +452,7 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
                 value={draftContent}
                 onChange={setDraftContent}
                 isStreaming={isStreaming}
-                onImprove={improveOutreachDraft}
-                placeholder="Draft will stream here…"
+                placeholder="Your outreach plan will appear here…"
               />
             </div>
 
@@ -397,6 +461,11 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
               <p className="text-muted-foreground px-1 text-xs font-bold tracking-widest uppercase">
                 Actions
               </p>
+
+              <McpProviderMenu
+                connectedMcpProviders={connectedMcpProviders}
+                onOpenProvider={provider => handleDraftWithProvider(provider, true)}
+              />
 
               {/* Send via */}
               <DropdownMenu>
@@ -473,16 +542,7 @@ export function OutreachWizard({ contact }: OutreachWizardProps) {
                 disabled={isStreaming || isSaving || !draftContent}
                 className="h-12 w-full rounded-xl bg-[var(--accent-warm)] font-semibold text-black shadow-lg hover:opacity-90 disabled:opacity-50"
               >
-                {saved ? (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Saved!
-                  </>
-                ) : isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  'Save to History'
-                )}
+                {saveButtonContent}
               </Button>
 
               {/* Start over */}

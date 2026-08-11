@@ -1,9 +1,8 @@
 /**
- * Interactive AI Demo
+ * Connected assistant demo
  *
- * why: Visualizes Jobmark's AI integration value proposition. Shows
- * how an AI assistant uses logged activities to provide specific,
- * evidence-based career guidance through MCP.
+ * Why: Visualizes the handoff between a Jobmark brief and the assistant the
+ * user already trusts. It does not represent an internal Jobmark chat.
  *
  * Implementation: Uses static "Mock" messages and mock context chips
  * to ensure the landing page stays lightweight and fast.
@@ -14,16 +13,16 @@ import { Bot, User, ArrowUp, X } from 'lucide-react';
 
 export function DemoChat() {
   return (
-    <DashboardFrame activePath="/mentor">
+    <DashboardFrame activePath="/chat">
       <div className="bg-background relative flex h-full flex-col">
         {/* Messages Area */}
         <div className="w-full flex-1 space-y-6 overflow-y-auto p-4 pb-40">
-          <MockChatMessage role="user" content="I need a clearer summary for my weekly update." />
+          <MockChatMessage role="user" content="Turn this week's work into a manager-ready update." />
           <MockChatMessage
             role="assistant"
-            content="Based on your record, you shipped the dashboard polish, closed three bugs, and led sprint planning. I can turn that into a concise update or a review-ready paragraph."
+            content="Your Jobmark brief includes the work you shipped, the outcomes you recorded, and the details worth highlighting. Your connected assistant can now turn it into a polished update."
           />
-          <MockChatMessage role="user" content="Draft the weekly update, then." />
+          <MockChatMessage role="user" content="Open it in my connected assistant." />
         </div>
 
         {/* Floating Input Area */}
@@ -35,14 +34,14 @@ export function DemoChat() {
               {/* Context Chips (mock) */}
               <div className="mb-1 flex flex-wrap gap-1 border-b border-white/5 px-4 py-2">
                 <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium">
-                  Website Redesign
+                  Jobmark record · 7 days
                   <X className="h-3 w-3" />
                 </span>
               </div>
 
               <div className="flex items-end gap-2 pr-2 pb-2 pl-4">
                 <div className="text-muted-foreground/50 flex-1 py-3 text-base">
-                  Type a message...
+                  Ready-to-send brief...
                 </div>
                 <div className="bg-primary text-primary-foreground shadow-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-lg">
                   <ArrowUp className="h-5 w-5" />
@@ -50,7 +49,7 @@ export function DemoChat() {
               </div>
             </div>
             <div className="text-muted-foreground/60 mt-4 text-center text-[10px] font-medium tracking-wide">
-              AI assistant can make mistakes. Verify important information.
+              Review assistant output before you send it.
             </div>
           </div>
         </div>

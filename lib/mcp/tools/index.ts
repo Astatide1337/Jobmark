@@ -10,6 +10,7 @@ import * as focus from './focus';
 import * as settings from './settings';
 import * as vault from './vault';
 import * as account from './account';
+import type { McpTool } from '../results';
 
 export * from './activities';
 export * from './projects';
@@ -24,7 +25,10 @@ export * from './settings';
 export * from './vault';
 export * from './account';
 
-export const allTools = [
+const isMcpTool = (value: unknown): value is McpTool =>
+  typeof value === 'object' && value !== null && 'definition' in value && 'execute' in value;
+
+export const allTools: McpTool[] = [
   ...Object.values(activities),
   ...Object.values(projects),
   ...Object.values(goals),
@@ -37,6 +41,6 @@ export const allTools = [
   ...Object.values(settings),
   ...Object.values(vault),
   ...Object.values(account),
-].filter(t => t && typeof t === 'object' && 'definition' in t && 'execute' in t) as Array<{ definition: any; execute: any }>;
+].filter(isMcpTool);
 
 export const toolDefinitions = allTools.map(t => t.definition);

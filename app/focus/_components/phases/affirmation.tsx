@@ -58,17 +58,17 @@ export function AffirmationPhase({ texts, totalDuration, onComplete }: Affirmati
           {texts.map((_, i) => (
             <div
               key={i}
-              className={`h-1 rounded-full transition-all duration-700 ${
-                i < textIndex
-                  ? 'bg-primary w-4'
-                  : i === textIndex
-                    ? 'bg-primary/70 w-4'
-                    : 'bg-foreground/20 w-1.5'
-              }`}
+              className={`h-1 rounded-full transition-all duration-700 ${getProgressClass(i, textIndex)}`}
             />
           ))}
         </div>
       )}
     </div>
   );
+}
+
+function getProgressClass(index: number, currentIndex: number): string {
+  if (index < currentIndex) return 'bg-primary w-4';
+  if (index === currentIndex) return 'bg-primary/70 w-4';
+  return 'bg-foreground/20 w-1.5';
 }

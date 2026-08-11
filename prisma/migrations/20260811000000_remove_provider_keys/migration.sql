@@ -1,0 +1,4 @@
+ALTER TABLE "UserSettings" DROP COLUMN IF EXISTS "aiProvider";
+ALTER TABLE "UserSettings" DROP COLUMN IF EXISTS "aiModel";
+ALTER TABLE "UserSettings" DROP COLUMN IF EXISTS "aiKeys";
+ALTER TABLE "UserSettings" DROP COLUMN IF EXISTS "geminiApiKey";

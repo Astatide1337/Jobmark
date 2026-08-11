@@ -2,6 +2,8 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { getMcpProviderKey, getMcpProviderName } from '@/lib/mcp/provider-identity';
 import { getContactById, getInteractionsByContact } from '@/app/actions/network';
 import { getOutreachDraftsByContact } from '@/app/actions/network-ai';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
@@ -17,13 +19,33 @@ export default async function ContactDetailPage({
   if (!session?.user?.id) redirect('/');
 
   const { contactId } = await params;
-  const [contact, interactions, initialDrafts] = await Promise.all([
+  const [contact, interactions, initialDrafts, connections] = await Promise.all([
     getContactById(contactId),
     getInteractionsByContact(contactId, 20),
     getOutreachDraftsByContact(contactId),
+    prisma.mcpConnection.findMany({
+      where: { userId: session.user.id, revokedAt: null },
+      include: {
+        oauthClient: { select: { clientId: true, clientName: true, redirectUris: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
   ]);
 
   if (!contact) notFound();
+
+  const connectedMcpProviders = Array.from(
+    new Map(
+      connections.map(connection => {
+        const identity = {
+          ...connection.oauthClient,
+          clientName: connection.oauthClient.clientName || connection.clientName,
+        };
+        const key = getMcpProviderKey(identity);
+        return [key, { key, name: getMcpProviderName(identity) }];
+      })
+    ).values()
+  );
 
   return (
     <DashboardShell
@@ -47,6 +69,7 @@ export default async function ContactDetailPage({
           contact={contact}
           interactions={interactions}
           initialDrafts={initialDrafts}
+          connectedMcpProviders={connectedMcpProviders}
         />
       </div>
     </DashboardShell>
