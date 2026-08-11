@@ -52,16 +52,14 @@ export type UserSettingsData = {
 export async function getUserSettings(): Promise<UserSettingsData | null> {
   const targetUserId = await requireUserId();
 
-  let settings = await prisma.userSettings.findUnique({
+  // Route prefetching and React effects can request settings concurrently.
+  // An atomic upsert avoids a unique-constraint race when the user's default
+  // settings row has not been created yet.
+  const settings = await prisma.userSettings.upsert({
     where: { userId: targetUserId },
+    update: {},
+    create: { userId: targetUserId },
   });
-
-  // Create default settings if none exist
-  if (!settings) {
-    settings = await prisma.userSettings.create({
-      data: { userId: targetUserId },
-    });
-  }
 
   return {
     primaryGoal: settings.primaryGoal,
