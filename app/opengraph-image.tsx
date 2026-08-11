@@ -117,7 +117,7 @@ export default function OGImage() {
             letterSpacing: '-1px',
           }}
         >
-          Your Career,{'\n'}On Record
+          {'Your Career,\nOn Record'}
         </div>
         <div
           style={{
@@ -127,7 +127,7 @@ export default function OGImage() {
             lineHeight: 1.5,
           }}
         >
-          Document work. Build evidence.{'\n'}Turn it into reviews that land.
+          {'Document work. Build evidence.\nTurn it into reviews that land.'}
         </div>
       </div>
     </div>,
