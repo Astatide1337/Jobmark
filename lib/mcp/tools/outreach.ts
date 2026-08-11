@@ -25,6 +25,8 @@ const outreachGenerateSchema = z.object({
   contactId: z.string(),
   goal: z.string().optional(),
   context: z.string().optional(),
+  tone: z.string().max(100).optional(),
+  channel: z.string().max(100).optional(),
 });
 
 const outreachCreateSchema = z.object({
