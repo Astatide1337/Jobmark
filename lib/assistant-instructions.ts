@@ -34,7 +34,7 @@ export function buildOutreachAssistantInstructions(
     `Tone: ${tone}.`,
     context ? `Context I provided: ${context}.` : '',
     draft
-      ? `Here is the draft Jobmark prepared:\n\n${draft}\n\nPlease polish it without adding facts.`
+      ? `Here is the draft Jobmark prepared:\n\n${draft}\n\nPlease polish it without adding facts. Return an editable draft for me to review. Do not send anything.`
       : 'Use the information available in my Jobmark record. Keep every detail accurate, do not invent shared history or outcomes, and return an editable draft for me to review. Do not send anything.',
   ]
     .filter(Boolean)

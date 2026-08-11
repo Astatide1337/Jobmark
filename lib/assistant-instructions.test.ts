@@ -31,4 +31,18 @@ describe('assistant handoff instructions', () => {
     expect(instructions).toContain('Highlight measurable impact');
     expect(instructions).not.toMatch(/MCP|tools|contactId/i);
   });
+
+  it('keeps polishing handoffs review-only', () => {
+    const instructions = buildOutreachAssistantInstructions({
+      recipient: 'Jeevan Shah',
+      purpose: 'referral',
+      channel: 'email',
+      tone: 'warm',
+      draft: 'Subject: A quick referral question\n\nHi Jeevan,',
+    });
+
+    expect(instructions).toContain('Please polish it without adding facts.');
+    expect(instructions).toContain('Return an editable draft for me to review. Do not send anything.');
+    expect(instructions).not.toMatch(/MCP|contacts_get|contactId|cmr[a-z0-9]+/i);
+  });
 });
