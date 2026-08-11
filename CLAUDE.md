@@ -11,7 +11,7 @@ jobmark is a personal career management platform that allows users to log accomp
 - **Database:** PostgreSQL via Prisma ORM
 - **Auth:** Auth.js (NextAuth) with Google Provider
 - **UI:** Tailwind CSS, Radix UI, Framer Motion, Lucide Icons, Recharts (Insights)
-- **Review and outreach:** Deterministic, evidence-only briefs are generated in Jobmark. Connected MCP assistants can turn those briefs into richer writing without an external model service in Jobmark.
+- **Review and outreach:** Deterministic, evidence-safe drafts are generated in Jobmark. Connected assistants can turn those drafts into richer writing without an external model service in Jobmark.
 - **MCP:** Standards-compliant MCP server with OAuth 2.1 provider for external AI clients (Claude, ChatGPT, etc.).
 - **Optimization:** Turbopack for fast development and Server-Side Data Aggregation for heavy charts.
 
@@ -43,7 +43,7 @@ jobmark is a personal career management platform that allows users to log accomp
 ### 5. Networking (`/network`)
 
 - **Contacts:** CRM-lite for professional relationships.
-- **Outreach:** Builds evidence-based outreach plans from contact history.
+- **Outreach:** Builds editable, evidence-based outreach messages from contact history.
 
 ## Architectural Visualization
 

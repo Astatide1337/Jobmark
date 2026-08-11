@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
-import { buildOutreachBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
 
 const outreachCreateSchema = z.object({
   contactId: z.string(),
@@ -22,6 +22,8 @@ const outreachGenerateSchema = z.object({
   contactId: z.string(),
   goal: z.string().optional(),
   context: z.string().optional(),
+  tone: z.string().max(100).optional(),
+  channel: z.string().max(100).optional(),
 });
 
 export type OutreachInput = z.infer<typeof outreachCreateSchema>;
@@ -104,7 +106,7 @@ export async function generateOutreach(
   if (!contact) throw new NotFoundError('Contact');
 
   return {
-    generatedContent: buildOutreachBrief(
+    generatedContent: buildOutreachDraft(
       {
         id: contact.id,
         fullName: contact.fullName,
@@ -121,8 +123,8 @@ export async function generateOutreach(
       },
       {
         objective: result.data.goal ?? 'Reconnect',
-        tone: 'professional',
-        channel: 'email',
+        tone: result.data.tone ?? 'professional',
+        channel: result.data.channel ?? 'email',
         extraContext: result.data.context,
       }
     ),

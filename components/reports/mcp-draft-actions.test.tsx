@@ -39,7 +39,7 @@ describe('McpDraftActions', () => {
 
     expect(markup).toContain('Draft with Claude');
     expect(markup).toContain('Draft with Gemini');
-    expect(markup).toContain('Gemini opens with your prompt copied.');
+    expect(markup).toContain('Gemini opens with the instructions copied.');
     expect(markup).not.toContain('Draft with ChatGPT');
     expect(markup).not.toContain('Set up an MCP Connector');
   });

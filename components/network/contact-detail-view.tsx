@@ -3,7 +3,7 @@
  *
  * Why: This is the primary profile page for a professional contact.
  * It consolidates CRM data (email, phone, notes) with the user's
- * specific interaction history and outreach plans/drafts.
+ * specific interaction history and outreach drafts.
  *
  * Sub-components:
  * - ContactProfileCard: Displays the static "who is this" info.

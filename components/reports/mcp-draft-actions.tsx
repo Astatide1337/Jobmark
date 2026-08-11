@@ -23,8 +23,8 @@ export const MCP_PROVIDER_URLS: Record<string, string> = {
 };
 
 // These are the only provider URL handoffs we can verify against the current
-// web apps. Gemini currently ignores prompt query parameters, so it uses the
-// clipboard fallback instead of putting the user's draft in the URL.
+// web apps. Gemini currently ignores query parameters, so it uses the
+// clipboard fallback instead.
 const MCP_PROVIDER_PROMPT_PARAMS: Record<string, string> = {
   claude: 'q',
   chatgpt: 'q',
@@ -67,8 +67,7 @@ export function McpDraftActions({
   onDraftWithProvider,
   eyebrow = 'Choose where to draft',
   title = 'Use a connected assistant',
-  description =
-    'Choose an assistant to open with a ready-to-send prompt grounded in your Jobmark record.',
+  description = 'Choose an assistant to give your Jobmark draft another pass.',
   providerAction = 'Draft with',
 }: McpDraftActionsProps) {
   return (
@@ -81,7 +80,7 @@ export function McpDraftActions({
         <p className="text-muted-foreground text-sm">{description}</p>
         {connectedMcpProviders.some(provider => provider.key === 'gemini') && (
           <p className="text-muted-foreground/80 mt-1 text-xs">
-            Gemini opens with your prompt copied. Paste it into the message box to begin.
+            Gemini opens with the instructions copied. Paste them into the message box to begin.
           </p>
         )}
       </div>

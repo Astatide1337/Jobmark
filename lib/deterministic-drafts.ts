@@ -17,7 +17,7 @@ export type DraftContact = {
   interactions: DraftInteraction[];
 };
 
-export type OutreachBriefOptions = {
+export type OutreachDraftOptions = {
   objective: string;
   tone: string;
   channel: string;
@@ -34,71 +34,185 @@ function formatInteractionDate(value: Date | string): string {
   return Number.isNaN(date.getTime()) ? 'date not recorded' : format(date, 'MMM d, yyyy');
 }
 
+type OutreachPurpose =
+  | 'referral'
+  | 'catch-up'
+  | 'thank-you'
+  | 'reconnect'
+  | 'introduction'
+  | 'congratulate'
+  | 'follow-up'
+  | 'other';
+
+function getOutreachPurpose(value: string): OutreachPurpose {
+  const normalized = value.toLowerCase().trim();
+  if (normalized.includes('referr')) return 'referral';
+  if (normalized.includes('catch')) return 'catch-up';
+  if (normalized.includes('thank')) return 'thank-you';
+  if (normalized.includes('reconnect')) return 'reconnect';
+  if (normalized.includes('intro')) return 'introduction';
+  if (normalized.includes('congrat')) return 'congratulate';
+  if (normalized.includes('follow') || normalized.includes('update')) return 'follow-up';
+  return 'other';
+}
+
+function getFirstName(fullName: string): string {
+  return fullName.trim().split(/\s+/)[0] || 'there';
+}
+
+function toSentence(value: string): string {
+  const normalized = value.trim();
+  if (!normalized) return '';
+  if (/[.!?]$/.test(normalized)) return normalized;
+  return `${normalized}.`;
+}
+
 /**
- * Build a clear outreach plan from the contact record. It intentionally does
- * not pretend to write a message or invent details; a connected assistant can
- * turn the plan into a message after reading the current record.
+ * Turn a short user-supplied context note into a readable sentence without
+ * rewriting its meaning. The small verb-prefix allowlist handles common notes
+ * such as "worked on Linktree together" while leaving everything else intact.
  */
-export function buildOutreachBrief(
+function formatExtraContext(value: string | null): string {
+  if (!value) return '';
+  if (/^(worked|met|spoke|talked|collaborated|connected|worked)\b/i.test(value)) {
+    return toSentence(`We ${value}`);
+  }
+  return toSentence(value);
+}
+
+function getSubject(purpose: OutreachPurpose): string {
+  switch (purpose) {
+    case 'referral':
+      return 'A quick referral question';
+    case 'catch-up':
+      return 'Would you be up for a catch-up?';
+    case 'thank-you':
+      return 'Thank you';
+    case 'reconnect':
+      return 'Checking in';
+    case 'introduction':
+      return 'A quick introduction question';
+    case 'congratulate':
+      return 'Congratulations';
+    case 'follow-up':
+      return 'Following up';
+    default:
+      return 'A quick note';
+  }
+}
+
+function getMessageParts(
+  purpose: OutreachPurpose,
+  tone: string,
+  context: string,
+  latestInteraction: DraftInteraction | undefined
+): { opening: string; ask?: string } {
+  const isConcise = tone.toLowerCase().includes('concise') || tone.toLowerCase().includes('short');
+  const interactionSummary = latestInteraction
+    ? clean(latestInteraction.summary, 320)
+    : null;
+
+  switch (purpose) {
+    case 'referral':
+      return {
+        opening: isConcise
+          ? 'I’m exploring a next step and would value your perspective.'
+          : 'I’m reaching out because I’m exploring a next step and would value your perspective.',
+        ask: 'Would you be open to a short conversation about whether a referral might make sense? No pressure if the timing isn’t right.',
+      };
+    case 'catch-up':
+      return {
+        opening: 'I’d love to catch up and hear what you’ve been working on.',
+        ask: 'Would you be open to finding a little time to talk?',
+      };
+    case 'thank-you':
+      return {
+        opening: context
+          ? 'I wanted to send a quick thank-you.'
+          : 'I wanted to say thank you and let you know I appreciate it.',
+      };
+    case 'reconnect':
+      return {
+        opening: 'I wanted to reach out and reconnect.',
+        ask: 'If you’re open to it, would you like to catch up sometime soon?',
+      };
+    case 'introduction':
+      return {
+        opening: 'I’m hoping to make a useful connection as I think through my next step.',
+        ask: 'Would you be comfortable making an introduction if someone comes to mind? No pressure if not.',
+      };
+    case 'congratulate':
+      return {
+        opening: 'I wanted to send a quick congratulations.',
+      };
+    case 'follow-up':
+      return {
+        opening: interactionSummary
+          ? `I’m following up on our recent conversation: ${toSentence(interactionSummary)}`
+          : 'I wanted to follow up and see how things are going.',
+        ask: 'Would you be open to a quick reply when you have a moment?',
+      };
+    default:
+      return {
+        opening: 'I wanted to reach out and see if you’d be open to connecting.',
+        ask: 'Would you be open to a quick conversation?',
+      };
+  }
+}
+
+/**
+ * Build an actual, editable outreach message from the contact record.
+ *
+ * This stays deterministic and evidence-safe: it uses a small set of
+ * purpose-specific templates, the user's own context, and at most one recent
+ * interaction. It never invents a role, company, accomplishment, date, or
+ * relationship detail. Missing specifics result in a pleasantly general
+ * message that the user can personalize before sending.
+ */
+export function buildOutreachDraft(
   contact: DraftContact,
-  options: OutreachBriefOptions
+  options: OutreachDraftOptions
 ): string {
   const relationship = clean(contact.relationship);
-  const traits = clean(contact.personalityTraits);
-  const notes = clean(contact.notes, 1_000);
   const extraContext = clean(options.extraContext, 1_000);
   const interactions = contact.interactions.slice(0, 5);
   const channel = clean(options.channel) ?? 'email';
   const objective = clean(options.objective) ?? 'Reconnect';
   const tone = clean(options.tone) ?? 'Professional';
-  const subject = `${objective} — ${contact.fullName}`;
-
-  const lines = [
-    'OUTREACH PLAN',
-    '',
-    `To: ${contact.fullName}`,
-    `Channel: ${channel}`,
-    `Purpose: ${objective}`,
-    `Tone: ${tone}`,
-    `Email: ${contact.email ?? 'Not recorded'}`,
-    `Suggested subject: ${subject}`,
-    '',
-    'WHAT YOU KNOW',
-    relationship ? `- Relationship: ${relationship}` : '- Relationship: Not recorded',
-    traits ? `- Communication notes: ${traits}` : '- Communication notes: Not recorded',
-    notes ? `- User notes: ${notes}` : '- User notes: None',
-    extraContext ? `- Additional context for this message: ${extraContext}` : '- Additional context: None',
-    '',
-    'RECENT CONVERSATIONS',
-  ];
-
-  if (interactions.length === 0) {
-    lines.push('- No interactions are recorded. Keep the opening general and do not imply shared history.');
-  } else {
-    for (const interaction of interactions) {
-      const summary = clean(interaction.summary, 600) ?? 'No summary recorded.';
-      const nextStep = clean(interaction.nextStep, 300);
-      lines.push(
-        `- ${formatInteractionDate(interaction.occurredAt)} · ${interaction.channel || 'other'} · ${summary}${nextStep ? ` · Next step: ${nextStep}` : ''}`
-      );
-    }
-  }
-
-  lines.push(
-    '',
-    'SUGGESTED MESSAGE SHAPE',
-    '1. Open with a truthful, context-aware reason for reaching out.',
-    '2. Reference only the verified details above.',
-    '3. Make one clear, low-pressure ask or next step.',
-    '4. Close warmly and make replying easy.',
-    '',
-    'BEFORE YOU SEND',
-    '- Do not invent accomplishments, mutual connections, dates, or familiarity.',
-    '- Do not send anything automatically; the user reviews and sends it.',
-    '- If the record is too thin, say what detail would make the message more specific.'
+  const purpose = getOutreachPurpose(objective);
+  const latestInteraction = interactions[0];
+  const formattedContext = formatExtraContext(extraContext);
+  const relationshipContext =
+    !formattedContext && relationship && /teammate|collaborat|colleague|mentor|manager|client|friend/i.test(relationship)
+      ? 'I’ve appreciated working with you.'
+      : '';
+  const { opening, ask } = getMessageParts(
+    purpose,
+    tone,
+    formattedContext,
+    latestInteraction
   );
+  const greeting = tone.toLowerCase().includes('professional')
+    ? `Hello ${getFirstName(contact.fullName)},`
+    : `Hi ${getFirstName(contact.fullName)},`;
+  const signoff = tone.toLowerCase().includes('professional') ? 'Thank you for considering it.' : 'Thanks again.';
+  const isMessageChannel = channel.toLowerCase() === 'text' || channel.toLowerCase() === 'linkedin';
+  const body = [
+    greeting,
+    '',
+    opening,
+    formattedContext || relationshipContext,
+    '',
+    ask,
+    ask ? '' : undefined,
+    signoff,
+  ]
+    .filter((line): line is string => line !== undefined)
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
-  return lines.join('\n');
+  return isMessageChannel ? body : [`Subject: ${getSubject(purpose)}`, '', body].join('\n');
 }
 
 export type ReviewBriefActivity = {

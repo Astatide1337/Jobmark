@@ -49,6 +49,7 @@ import {
 } from '@/components/reports/mcp-draft-actions';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { OUTREACH_OBJECTIVES, OUTREACH_TONES, OUTREACH_CHANNELS } from '@/lib/network';
+import { buildOutreachAssistantInstructions } from '@/lib/assistant-instructions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -151,26 +152,17 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
     }
   };
 
-  const buildMcpPrompt = (includeBrief = false) =>
-    [
-      'Prepare an outreach message using my Jobmark record and the connected Jobmark MCP tools.',
-      `First retrieve contact ${contact.id} with contacts_get and review its recent interactions before writing.`,
-      `Recipient: ${contact.fullName}.`,
-      `Purpose: ${config.objective}.`,
-      `Channel: ${config.channel}.`,
-      `Tone: ${config.tone}.`,
-      config.extraContext.trim() ? `Additional context: ${config.extraContext.trim()}.` : '',
-      includeBrief
-        ? `Use this evidence-only brief as a starting point:\n\n${draftContent}`
-        : 'Use only verified record facts, do not invent shared history or outcomes, and return a draft for me to review. Do not send it.',
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-  const handleDraftWithProvider = async (provider: ConnectedMcpProvider, includeBrief = false) => {
-    const prompt = buildMcpPrompt(includeBrief);
+  const handleDraftWithProvider = async (provider: ConnectedMcpProvider, includeDraft = false) => {
+    const prompt = buildOutreachAssistantInstructions({
+      recipient: contact.fullName,
+      purpose: config.objective,
+      channel: config.channel,
+      tone: config.tone,
+      context: config.extraContext.trim() || undefined,
+      draft: includeDraft ? draftContent : undefined,
+    });
     // Keep provider URLs short enough for browser and provider limits. The
-    // full prompt is always copied, so a longer plan still works reliably.
+    // full instructions are always copied, so a longer draft still works reliably.
     const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
     const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
     const copyPromise = copyTextToClipboard(prompt);
@@ -182,10 +174,10 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
       if (!copied) throw new Error('clipboard_unavailable');
       const description = providerSupportsPromptUrl(provider.key)
         ? `Open ${provider.name} to draft with your Jobmark record.`
-        : `Your prompt is copied. Paste it into ${provider.name} to start.`;
-      toast.success(`${provider.name} prompt copied`, { description });
+        : `Your instructions are copied. Paste them into ${provider.name} to start.`;
+      toast.success(`${provider.name} instructions copied`, { description });
     } catch {
-      toast.error('Could not copy the drafting prompt');
+      toast.error('Could not copy the drafting instructions');
     }
   };
 
@@ -343,8 +335,8 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             <div>
               <h2 className="text-xl font-semibold">Add context</h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Jobmark will build a factual brief from {contact.fullName}&apos;s profile and
-                interaction history. Add anything extra here for your connected assistant.
+                Jobmark will prepare a message from {contact.fullName}&apos;s record. Add anything
+                extra you want included.
               </p>
             </div>
 
@@ -421,8 +413,8 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
               connectedMcpProviders={connectedMcpProviders}
               onDraftWithProvider={provider => handleDraftWithProvider(provider)}
               eyebrow="Optional next step"
-              title="Draft this message in your assistant"
-              description="Jobmark will prepare the facts. Open a connected assistant when you want it to turn them into a message."
+              title="Want a little help polishing it?"
+              description="Jobmark will make a first draft here. Open a connected assistant when you want another pass."
             />
 
             <div className="flex justify-between">
@@ -452,7 +444,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                 value={draftContent}
                 onChange={setDraftContent}
                 isStreaming={isStreaming}
-                placeholder="Your outreach plan will appear here…"
+                placeholder="Your outreach draft will appear here…"
               />
             </div>
 

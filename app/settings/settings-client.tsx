@@ -440,7 +440,7 @@ function ReportsSection({ settings: initialSettings }: { settings: UserSettingsD
         <CardHeader>
           <CardTitle className="text-lg">Custom Instructions</CardTitle>
           <CardDescription>
-            Additional focus for your review brief and assistant prompt.
+            Additional focus for your review draft.
           </CardDescription>
         </CardHeader>
         <CardContent>

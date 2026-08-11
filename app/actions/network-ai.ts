@@ -2,14 +2,14 @@
  * Networking draft actions
  *
  * Why: Professional outreach is stressful and time-consuming. These actions
- * build an evidence-only brief from the user's relationship history. A user
- * can then hand that brief to a connected MCP assistant when they want a
- * polished message, without routing the user's record through a model service
- * inside Jobmark.
+ * build an editable, evidence-safe message from the user's relationship
+ * history. A user can then review it locally or ask a connected assistant to
+ * polish it, without routing the user's record through a model service inside
+ * Jobmark.
  *
  * Security & Accuracy:
- * The brief contains only facts stored in Jobmark and explicitly tells the
- * eventual assistant not to fabricate details or send anything automatically.
+ * The draft contains only facts stored in Jobmark; assistant handoffs also
+ * explicitly ask for an editable result and never an automatic send.
  */
 'use server';
 
@@ -17,7 +17,7 @@ import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createStreamableValue } from '@ai-sdk/rsc';
 import { format } from 'date-fns';
-import { buildOutreachBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
 
 export type OutreachDraftConfig = {
   contactId: string;
@@ -28,7 +28,7 @@ export type OutreachDraftConfig = {
 };
 
 // ---------------------------------------------------------------------------
-// Deterministic outreach brief generation
+// Deterministic outreach draft generation
 // ---------------------------------------------------------------------------
 
 export async function generateOutreachDraft({
@@ -73,7 +73,7 @@ export async function generateOutreachDraft({
     throw new Error('Contact not found');
   }
 
-  const content = buildOutreachBrief(
+  const content = buildOutreachDraft(
     {
       id: contact.id,
       fullName: contact.fullName,
@@ -91,7 +91,7 @@ export async function generateOutreachDraft({
     { objective, tone, channel, extraContext }
   );
 
-  // Keep the existing stream contract used by the wizard. The content is
+  // Keep the existing stream contract used by the wizard. The draft is
   // generated synchronously from verified record data, so there is no model
   // call or background request to fail.
   const stream = createStreamableValue('');

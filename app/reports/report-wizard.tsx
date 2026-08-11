@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/lib/clipboard';
+import { buildReviewAssistantInstructions } from '@/lib/assistant-instructions';
 import { useSettings } from '@/components/providers/settings-provider';
 import { ReportWizardEditor } from '@/components/reports/report-wizard-editor';
 import {
@@ -219,16 +220,12 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
   };
 
   const handleDraftWithProvider = async (provider: ConnectedMcpProvider) => {
-    const prompt = [
-      'Draft my Jobmark review brief using the connected Jobmark MCP tools.',
-      `Use the selected period: ${getDateRangeLabel(config.dateRange, dateRange)}.`,
-      `Project scope: ${getProjectScopeLabel(config.projectId, projects)}.`,
-      `Tone: ${getToneLabel(config.tone)}.`,
-      config.notes?.trim() ? `Additional focus: ${config.notes.trim()}.` : '',
-      'Use evidence from my Jobmark activity, do not invent outcomes, and make the result ready to share with my manager.',
-    ]
-      .filter(Boolean)
-      .join('\n');
+    const prompt = buildReviewAssistantInstructions({
+      period: getDateRangeLabel(config.dateRange, dateRange),
+      projectScope: getProjectScopeLabel(config.projectId, projects),
+      tone: getToneLabel(config.tone),
+      focus: config.notes?.trim() || undefined,
+    });
     const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
     const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
 
@@ -242,17 +239,17 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
     try {
       const copied = await copyPromise;
       if (!copied) throw new Error('clipboard_unavailable');
-      let promptDescription = `Open ${provider.name} and paste the prompt to start your review.`;
+      let promptDescription = `Open ${provider.name} and paste the instructions to start your review.`;
       if (providerSupportsPromptUrl(provider.key)) {
         promptDescription = `Open ${provider.name} to draft your review with Jobmark.`;
       } else if (provider.key === 'gemini') {
-        promptDescription = 'Your prompt is copied. Paste it into Gemini to start your draft.';
+        promptDescription = 'Your instructions are copied. Paste them into Gemini to start your draft.';
       }
-      toast.success(`${provider.name} prompt copied`, {
+      toast.success(`${provider.name} instructions copied`, {
         description: promptDescription,
       });
     } catch {
-      toast.error('Could not copy the drafting prompt');
+      toast.error('Could not copy the drafting instructions');
     }
   };
 

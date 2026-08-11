@@ -108,13 +108,15 @@ export const outreachGenerateTool = {
   definition: {
     name: 'outreach_generate',
     title: 'Generate Outreach Draft',
-    description: 'Build an evidence-only outreach brief from a contact and its history. Use it as a safe starting point for a message. Requires jobmark:write scope.',
+    description: 'Generate an editable outreach message from a contact and its history. The message is grounded in the record and ready for the user to review. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
         contactId: { type: 'string' },
         goal: { type: 'string' },
         context: { type: 'string' },
+        tone: { type: 'string' },
+        channel: { type: 'string' },
       },
       required: ['contactId'],
       additionalProperties: false,

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildOutreachBrief,
+  buildOutreachDraft,
   buildReviewBrief,
   deterministicRewrite,
 } from './deterministic-drafts';
 
 describe('deterministic drafts', () => {
-  it('builds an evidence-only outreach brief from a contact record', () => {
-    const brief = buildOutreachBrief(
+  it('builds an editable outreach message from a contact record', () => {
+    const draft = buildOutreachDraft(
       {
         id: 'contact-1',
         fullName: 'Jordan Lee',
@@ -26,10 +26,35 @@ describe('deterministic drafts', () => {
       { objective: 'Follow up', tone: 'Warm', channel: 'email' }
     );
 
-    expect(brief).toContain('To: Jordan Lee');
-    expect(brief).toContain('Discussed a product launch');
-    expect(brief).toContain('Do not send anything automatically');
-    expect(brief).not.toContain('Generated outreach content');
+    expect(draft).toContain('Subject: Following up');
+    expect(draft).toContain('Hi Jordan,');
+    expect(draft).toContain('Discussed a product launch');
+    expect(draft).toContain('Would you be open to a quick reply when you have a moment?');
+    expect(draft).not.toContain('OUTREACH PLAN');
+    expect(draft).not.toContain('contacts_get');
+  });
+
+  it('keeps a thin referral record useful without inventing specifics', () => {
+    const draft = buildOutreachDraft(
+      {
+        id: 'contact-2',
+        fullName: 'Jeevan Shah',
+        interactions: [],
+      },
+      {
+        objective: 'referral',
+        tone: 'warm',
+        channel: 'email',
+        extraContext: 'worked on Linktree together',
+      }
+    );
+
+    expect(draft).toContain('Subject: A quick referral question');
+    expect(draft).toContain('Hi Jeevan,');
+    expect(draft).toContain('We worked on Linktree together.');
+    expect(draft).toContain('Would you be open to a short conversation about whether a referral might make sense?');
+    expect(draft).not.toContain('role');
+    expect(draft).not.toContain('company');
   });
 
   it('builds a manager-ready review brief without inventing impact', () => {

@@ -37,7 +37,7 @@ const faqs = [
     id: 'ai-work',
     question: 'How do assistant handoffs work?',
     answer:
-      'Jobmark first turns your record into a factual brief. If you connect Claude, ChatGPT, Gemini, or another MCP assistant, you can hand that brief over for a richer rewrite while keeping the underlying record in Jobmark.',
+      'Jobmark first turns your record into a factual draft. If you connect Claude, ChatGPT, or Gemini, you can ask for a richer rewrite while keeping the underlying record in Jobmark.',
   },
   {
     id: 'export',

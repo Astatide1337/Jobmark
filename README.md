@@ -10,7 +10,7 @@ Jobmark is a personal career management platform that lets you:
 - **Set goals** — Track progress against measurable career objectives
 - **Generate review briefs** — Evidence-based weekly/monthly/quarterly reviews
 - **Manage your network** — CRM-lite for professional contacts and interactions
-- **Draft outreach** — Evidence-based outreach plans built from your relationship history
+- **Draft outreach** — Editable, evidence-based messages built from your relationship history
 - **Focus & decompress** — Guided breathing, intention-setting, and affirmations
 - **Connect your assistant** — Use Jobmark through Claude, ChatGPT, Gemini, or another MCP-compatible assistant
 
@@ -124,7 +124,7 @@ Compose expects runtime secrets through `.env`; migrations should be applied exp
 
 ## Assistant handoffs and privacy
 
-Jobmark creates review briefs, outreach plans, and small text cleanups from the record you keep here. These first drafts are deterministic and do not require an external model service. When you choose a connected MCP assistant, Jobmark hands that assistant the brief or the record needed for the task; the assistant's provider then handles the content under its own terms and privacy policy. Activity, report, project, and vault visibility follows the authenticated user and vault state.
+Jobmark creates review drafts, outreach messages, and small text cleanups from the record you keep here. These first drafts are deterministic and do not require an external model service. When you choose a connected assistant, Jobmark hands it the relevant draft or record context; the provider then handles the content under its own terms and privacy policy. Activity, report, project, and vault visibility follows the authenticated user and vault state.
 
 Vault unlock cookies are user-bound, expire, and are invalidated when the vault password version changes. Exports use an explicit allowlist and omit hashes, encrypted keys, tokens, and cryptographic state.
 
