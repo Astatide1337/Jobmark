@@ -1,5 +1,5 @@
 /**
- * AI Reports Workspace
+ * Reviews Workspace
  *
  * Why: The primary engine for generating performance summaries.
  * This page uses a tabbed interface to switch between the interactive
@@ -45,7 +45,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   // A user can have more than one connection record for the same client. The
   // wizard only needs one action per active provider, so dedupe by the trusted
   // provider identity rather than the user-supplied display name.
-  const connectedAiProviders = Array.from(
+  const connectedMcpProviders = Array.from(
     new Map(
       connections.map(connection => {
         const identity = {
@@ -86,7 +86,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </div>
 
           <TabsContent value="new" className="flex-1">
-            <ReportWizard projects={projects} connectedAiProviders={connectedAiProviders} />
+            <ReportWizard projects={projects} connectedMcpProviders={connectedMcpProviders} />
           </TabsContent>
 
           <TabsContent value="history" className="flex-1">

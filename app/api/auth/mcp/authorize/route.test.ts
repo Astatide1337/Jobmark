@@ -116,6 +116,37 @@ describe('MCP authorization consent callback', () => {
     expect(location.searchParams.has('client_name')).toBe(false);
   });
 
+  it('keeps an unauthenticated preview login on the current host', async () => {
+    const previousNextAuthUrl = process.env.NEXTAUTH_URL;
+    process.env.NEXTAUTH_URL = 'https://jobmark.app';
+    mocks.auth.mockResolvedValue(null);
+
+    try {
+      const requestUrl = new URL('https://preview.jobmark.example/api/auth/mcp/authorize');
+      requestUrl.search = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: 'jobmark:read offline_access',
+        state: 'test-state',
+        code_challenge: 'A'.repeat(43),
+        code_challenge_method: 'S256',
+      }).toString();
+
+      const response = await GET(new NextRequest(requestUrl));
+      const location = new URL(response.headers.get('location') ?? '');
+
+      expect(location.origin).toBe('https://preview.jobmark.example');
+      expect(location.pathname).toBe('/api/auth/signin');
+      expect(new URL(location.searchParams.get('callbackUrl') ?? '').origin).toBe(
+        'https://preview.jobmark.example'
+      );
+    } finally {
+      if (previousNextAuthUrl === undefined) delete process.env.NEXTAUTH_URL;
+      else process.env.NEXTAUTH_URL = previousNextAuthUrl;
+    }
+  });
+
   it('encodes state when redirecting malformed requests to the Jobmark error page', async () => {
     const requestUrl = new URL('https://jobmark.example.com/api/auth/mcp/authorize');
     requestUrl.search = new URLSearchParams({

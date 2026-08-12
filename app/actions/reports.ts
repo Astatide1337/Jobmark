@@ -2,15 +2,15 @@
  * Report Generation & Management Actions
  *
  * Why: The core value of jobmark is transforming raw activity logs into
- * professional summaries for performance reviews. These actions handle
- * streaming AI generation and historical report management.
+ * professional summaries for performance reviews. These actions build
+ * evidence-based briefs and manage report history without routing content
+ * through a separate model service.
  *
  * Technical Implementation:
- * - `streamReport`: Uses the Vercel AI SDK (`createStreamableValue`) to pipe
- *   LLM chunks to the client. It automatically builds a formatted activity
- *   log from the database to serve as the prompt context.
- * - `improveText`: A "Copilot" style action that rewrites specific selections
- *   within the Live Editor.
+ * - `streamReport`: Keeps the existing streaming response contract while
+ *   returning a deterministic brief built from the user's activity record.
+ * - `improveText`: Applies small, deterministic edits when no assistant is
+ *   connected. A connected MCP assistant can produce richer edits on demand.
  */
 'use server';
 
@@ -18,11 +18,9 @@ import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { createStreamableValue } from '@ai-sdk/rsc';
-import { createAIClient } from '@/lib/ai';
-import { getUserAiConfig } from '@/app/actions/settings';
 import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
-import { assertAiRequestAllowed } from '@/lib/ai-rate-limit';
+import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -85,7 +83,6 @@ export async function streamReport(config: ReportConfig) {
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-  await assertAiRequestAllowed(session.user.id, 'report');
   config = validateReportConfig(config);
 
   // Activity reports use the date the work represents, not row creation time.
@@ -133,78 +130,23 @@ export async function streamReport(config: ReportConfig) {
     throw new Error('No activities found for this period.');
   }
 
-  // 3. Format log
-  const activityLog = activities
-    .map(a => {
-      const dateStr = a.logDate.toISOString().slice(0, 10);
-      return `- [${dateStr}] ${a.project ? `[${a.project.name}] ` : '[Unassigned] '}${a.content.slice(0, 500)}`;
-    })
-    .join('\n');
-  if (activityLog.length > 40_000) {
-    throw new Error(
-      'This report period contains too much text. Narrow the date range or project filter.'
-    );
-  }
+  const content = buildReviewBrief({
+    startDate: range.startDate,
+    endDate: range.endDate,
+    tone: config.tone,
+    notes: config.notes,
+    activities: activities.map(activity => ({
+      logDate: activity.logDate,
+      content: activity.content,
+      projectName: activity.project?.name ?? null,
+    })),
+  });
 
-  // 4. Construct Prompt
-  let systemPrompt =
-    "You are an expert professional writer. Summarize the activity log into a report. Write in **active voice** (e.g., 'Implemented feature' instead of 'The feature was implemented'). **Do not** use meta-phrases like 'The activity log records...' or 'This report summarizes...'. Jump straight into the work.";
-
-  if (config.tone === 'professional') {
-    systemPrompt +=
-      " Use a structured, executive format. Start with a brief 'Executive Summary' paragraph followed by 'Key Accomplishments' grouped by project. Use full sentences for the summary and detailed, value-focused points for the accomplishments.";
-  } else if (config.tone === 'casual') {
-    systemPrompt +=
-      " Use a friendly, conversational email style. Start with a greeting (e.g., 'Hi Team,'). Write as if updating a colleague over coffee.";
-  } else if (config.tone === 'bullet-points') {
-    systemPrompt +=
-      ' strict brevity. Use ONLY bullet points. No introductory text, no summary paragraphs. Just a clean list of done items.';
-  }
-
-  const prompt = `
-  Activity Log (${range.startDate} - ${range.endDate}):
-  ${activityLog}
-
-  User Notes: ${config.notes || 'None'}
-
-  Instructions:
-  Generate a report based on the log. Group by project/theme.
-  - **No Intro Fluff**: Do not say "Here is the report" or "The log covers...".
-  - **Structure**: Group related tasks together logically.
-  - **User Overrides**: PRIORITIZE any instructions provided in "User Notes" above.
-  `;
-
-  // 5. Stream
-  // Config must be resolved before ReadableStream construction so `ai` and `model`
-  // are captured in the stream closure with the correct values.
-  const { provider, model, apiKey } = await getUserAiConfig();
-  const ai = createAIClient(provider, apiKey);
+  // Keep the stream contract used by the existing client while making the
+  // generation itself deterministic and provider-independent.
   const stream = createStreamableValue('');
-
-  (async () => {
-    try {
-      const completion = await ai.chat.completions.create({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
-        stream: true,
-      });
-
-      for await (const chunk of completion) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          stream.update(content);
-        }
-      }
-    } catch (err) {
-      console.error('AI Stream Error:', err);
-      stream.error(new Error('AI report generation failed. Please try again.'));
-    } finally {
-      stream.done();
-    }
-  })();
+  stream.update(content);
+  stream.done();
 
   return { output: stream.value };
 }
@@ -213,7 +155,6 @@ export async function streamReport(config: ReportConfig) {
 export async function improveText(selection: string, instruction: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
-  await assertAiRequestAllowed(session.user.id, 'report-edit');
   if (
     !selection.trim() ||
     selection.length > 20_000 ||
@@ -223,24 +164,7 @@ export async function improveText(selection: string, instruction: string) {
     throw new Error('Invalid edit request');
   }
 
-  const { provider, model, apiKey } = await getUserAiConfig();
-  const ai = createAIClient(provider, apiKey);
-  const completion = await ai.chat.completions.create({
-    model,
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You are an expert editor. Rewrite the text based on the instruction. Return ONLY the rewritten text.',
-      },
-      {
-        role: 'user',
-        content: `Original: "${selection}"\nInstruction: ${instruction}\nRewritten:`,
-      },
-    ],
-  });
-
-  return completion.choices[0]?.message?.content || '';
+  return deterministicRewrite(selection, instruction);
 }
 
 // Check if activities exist for the given config

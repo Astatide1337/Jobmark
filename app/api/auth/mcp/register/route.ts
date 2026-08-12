@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/mcp/auth/provider';
 import { areValidOAuthRedirectUris } from '@/lib/mcp/auth/redirect-uri';
+import { OAuthScopes } from '@/lib/mcp/auth/types';
 import {
   checkRateLimit,
   getClientIp,
@@ -9,6 +10,14 @@ import {
 } from '@/lib/mcp/auth/rate-limit';
 
 const DATABASE_RETRY_DELAYS_MS = [750, 1500];
+const VALID_GRANT_TYPES = ['authorization_code', 'refresh_token'] as const;
+const VALID_AUTH_METHODS = ['client_secret_post', 'client_secret_basic', 'none'] as const;
+const MAX_REDIRECT_URIS = 10;
+const MAX_REDIRECT_URI_LENGTH = 2_048;
+const MAX_CLIENT_NAME_LENGTH = 120;
+const MAX_SCOPE_LENGTH = 256;
+
+type RegistrationMetadata = Parameters<typeof createClient>[0];
 
 function isTransientDatabaseConnectionError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -41,6 +50,103 @@ async function createClientWithRetry(
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+}
+
+function parseRegistrationMetadata(body: Record<string, unknown>): RegistrationMetadata | null {
+  const redirectUris = parseRedirectUris(body.redirect_uris);
+  const grantTypes = parseGrantTypes(body.grant_types);
+  const responseTypes = parseResponseTypes(body.response_types);
+  const tokenEndpointAuthMethod = parseAuthMethod(body.token_endpoint_auth_method);
+  const clientName = parseClientName(body.client_name);
+  const scope = parseScope(body.scope);
+  if (
+    !redirectUris ||
+    !grantTypes ||
+    !responseTypes ||
+    !tokenEndpointAuthMethod ||
+    clientName === null ||
+    scope === null
+  ) {
+    return null;
+  }
+
+  return {
+    redirect_uris: redirectUris,
+    grant_types: grantTypes,
+    response_types: responseTypes,
+    scope: scope ?? undefined,
+    token_endpoint_auth_method: tokenEndpointAuthMethod,
+    client_name: clientName ?? undefined,
+  };
+}
+
+function parseRedirectUris(value: unknown): string[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > MAX_REDIRECT_URIS ||
+    !value.every(uri => typeof uri === 'string' && uri.length <= MAX_REDIRECT_URI_LENGTH)
+  ) {
+    return null;
+  }
+  return areValidOAuthRedirectUris(value) ? value : null;
+}
+
+function parseGrantTypes(value: unknown): (typeof VALID_GRANT_TYPES)[number][] | null {
+  const grantTypes = value === undefined ? [...VALID_GRANT_TYPES] : value;
+  if (
+    !Array.isArray(grantTypes) ||
+    grantTypes.length === 0 ||
+    grantTypes.length > VALID_GRANT_TYPES.length ||
+    !grantTypes.every(
+      (grantType): grantType is (typeof VALID_GRANT_TYPES)[number] =>
+        typeof grantType === 'string' &&
+        VALID_GRANT_TYPES.includes(grantType as (typeof VALID_GRANT_TYPES)[number])
+    ) ||
+    !grantTypes.includes('authorization_code')
+  ) {
+    return null;
+  }
+  return grantTypes;
+}
+
+function parseResponseTypes(value: unknown): 'code'[] | null {
+  if (value === undefined) return ['code'];
+  if (!Array.isArray(value) || value.length !== 1 || value[0] !== 'code') return null;
+  return ['code'];
+}
+
+function parseAuthMethod(value: unknown): (typeof VALID_AUTH_METHODS)[number] | null {
+  const method = value ?? 'none';
+  return typeof method === 'string' &&
+    VALID_AUTH_METHODS.includes(method as (typeof VALID_AUTH_METHODS)[number])
+    ? (method as (typeof VALID_AUTH_METHODS)[number])
+    : null;
+}
+
+function parseClientName(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (
+    typeof value !== 'string' ||
+    value.trim().length === 0 ||
+    value.length > MAX_CLIENT_NAME_LENGTH
+  ) {
+    return null;
+  }
+  return value.trim();
+}
+
+function parseScope(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || value.length > MAX_SCOPE_LENGTH) return null;
+  const scopes = value.trim().split(/\s+/).filter(Boolean);
+  if (
+    scopes.length === 0 ||
+    scopes.some(scope => !OAuthScopes.includes(scope as (typeof OAuthScopes)[number]))
+  ) {
+    return null;
+  }
+  return scopes.join(' ');
 }
 
 export async function POST(request: NextRequest) {
@@ -79,75 +185,12 @@ export async function POST(request: NextRequest) {
     })
   );
 
-  const redirectUris = body.redirect_uris as string[] | undefined;
-  if (!Array.isArray(redirectUris) || redirectUris.length === 0) {
-    return NextResponse.json({ error: 'invalid_redirect_uri' }, { status: 400 });
-  }
-
-  // Validate all redirect URIs are HTTPS (except loopback for development).
-  if (
-    !redirectUris.every(uri => typeof uri === 'string') ||
-    !areValidOAuthRedirectUris(redirectUris)
-  ) {
-    return NextResponse.json({ error: 'invalid_redirect_uri' }, { status: 400 });
-  }
-
-  const validGrantTypes = ['authorization_code', 'refresh_token'] as const;
-  const requestedGrantTypes = body.grant_types;
-  const grantTypes =
-    requestedGrantTypes === undefined
-      ? [...validGrantTypes]
-      : Array.isArray(requestedGrantTypes)
-        ? requestedGrantTypes
-        : null;
-  if (
-    !grantTypes ||
-    grantTypes.some((grantType): grantType is string => typeof grantType !== 'string') ||
-    !grantTypes.includes('authorization_code')
-  ) {
-    return NextResponse.json({ error: 'invalid_client_metadata' }, { status: 400 });
-  }
-
-  // Some clients advertise optional grant types that Jobmark does not use
-  // (Claude currently includes JWT bearer alongside authorization code). Keep
-  // the registration usable while persisting only the grants this server
-  // actually implements.
-  const supportedGrantTypes = grantTypes.filter(
-    (grantType): grantType is (typeof validGrantTypes)[number] =>
-      validGrantTypes.includes(grantType as (typeof validGrantTypes)[number])
-  );
-
-  const responseTypes = body.response_types;
-  if (
-    (responseTypes !== undefined && !Array.isArray(responseTypes)) ||
-    (Array.isArray(responseTypes) &&
-      (responseTypes.length === 0 || responseTypes.some(responseType => responseType !== 'code')))
-  ) {
-    return NextResponse.json({ error: 'invalid_client_metadata' }, { status: 400 });
-  }
-
-  const tokenEndpointAuthMethod = (body.token_endpoint_auth_method as string) ?? 'none';
-  const validAuthMethods = ['client_secret_post', 'client_secret_basic', 'none'];
-  if (!validAuthMethods.includes(tokenEndpointAuthMethod)) {
-    return NextResponse.json({ error: 'invalid_client_metadata' }, { status: 400 });
-  }
+  const metadata = parseRegistrationMetadata(body);
+  if (!metadata) return NextResponse.json({ error: 'invalid_client_metadata' }, { status: 400 });
 
   let client;
   try {
-    client = await createClientWithRetry(
-      {
-        redirect_uris: redirectUris,
-        grant_types: supportedGrantTypes,
-        response_types: (responseTypes ?? ['code']) as 'code'[],
-        scope: (body.scope as string) ?? undefined,
-        token_endpoint_auth_method: tokenEndpointAuthMethod as
-          | 'client_secret_post'
-          | 'client_secret_basic'
-          | 'none',
-        client_name: (body.client_name as string) ?? undefined,
-      },
-      requestId
-    );
+    client = await createClientWithRetry(metadata, requestId);
   } catch (error) {
     console.error(
       JSON.stringify({

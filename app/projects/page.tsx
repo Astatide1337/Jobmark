@@ -25,8 +25,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     redirect('/');
   }
 
-  const currentFilter =
-    params.filter === 'archived' ? 'archived' : params.filter === 'locked' ? 'locked' : 'active';
+  let currentFilter: 'active' | 'archived' | 'locked' = 'active';
+  if (params.filter === 'archived') currentFilter = 'archived';
+  else if (params.filter === 'locked') currentFilter = 'locked';
   const openCreate = params.new === 'true';
 
   // Fetch projects and vault state in parallel

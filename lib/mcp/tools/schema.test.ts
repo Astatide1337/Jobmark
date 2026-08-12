@@ -24,4 +24,12 @@ describe('MCP tool schemas', () => {
       expectJsonValue(definition.inputSchema, `${definition.name}.inputSchema`);
     }
   });
+
+  it('does not advertise account actions that only exist in Settings', () => {
+    const names = new Set(toolDefinitions.map(definition => definition.name));
+
+    expect(names.has('account_export')).toBe(false);
+    expect(names.has('account_delete')).toBe(false);
+    expect(names.has('account_clear_activities')).toBe(true);
+  });
 });

@@ -5,14 +5,15 @@ Jobmark stores and organizes your professional history and connects it to the AI
 ## Overview
 
 Jobmark is a personal career management platform that lets you:
+
 - **Log accomplishments** — Quick capture of daily activities, wins, and metrics
 - **Organize projects** — Group related work with colors, archives, and progress tracking
 - **Set goals** — Track progress against measurable career objectives
-- **Generate reports** — AI-assisted weekly/monthly/quarterly reviews
+- **Generate review briefs** — Evidence-based weekly/monthly/quarterly reviews
 - **Manage your network** — CRM-lite for professional contacts and interactions
-- **Draft outreach** — AI-generated personalized messages based on context
+- **Draft outreach** — Editable, evidence-based messages built from your relationship history
 - **Focus & decompress** — Guided breathing, intention-setting, and affirmations
-- **Connect to any AI** — Expose all capabilities via MCP to Claude, ChatGPT, Cursor, VS Code, and more
+- **Connect your assistant** — Use Jobmark through Claude, ChatGPT, Gemini, or another MCP-compatible assistant
 
 ## Architecture
 
@@ -26,7 +27,7 @@ Jobmark no longer operates an internal chat product. Instead, it exposes every c
 - **JWKS**: `/api/auth/mcp/jwks` (RS256, 24h rotation)
 - **Discovery**: `/.well-known/oauth-authorization-server` + `/.well-known/oauth-protected-resource`
 
-**Connection Page**: `/chat` — Add Jobmark to your AI assistant (pre-configured for Claude, ChatGPT, MCP Inspector, Cursor, VS Code)
+**Connection Page**: `/chat` — Add Jobmark to Claude, ChatGPT, or Gemini
 
 **Scopes**: `jobmark:read`, `jobmark:write`, `jobmark:destructive`, `offline_access`
 
@@ -116,15 +117,16 @@ Compose expects runtime secrets through `.env`; migrations should be applied exp
 
 **Focus & Writing**: `focus_get`, `focus_save`, `focus_reset`, `focus_log_decompression`, `dictation_polish`
 
-**Settings**: `settings_get`, `settings_update`, `settings_manage_ai_keys`
+**Settings**: `settings_get`, `settings_update`
 
 **Vault**: `vault_status`, `vault_list_projects`, `vault_begin_setup`, `vault_begin_change_password`, `vault_begin_unlock`, `vault_lock`, `vault_set_project_locked`
 
-**Account Data**: `account_export`, `account_clear_activities`, `account_delete`
+**Account data**: export and account deletion are available from Settings → Data. The MCP
+connection can clear activities after an explicit confirmation: `account_clear_activities`.
 
-## AI and privacy
+## Assistant handoffs and privacy
 
-Users can save encrypted provider keys in Settings, or the server can use one of the optional provider environment variables. AI inputs are bounded and provider failures are returned as safe generic errors. Activity, report, project, and vault visibility follows the authenticated user and vault state.
+Jobmark creates review drafts, outreach messages, and small text cleanups from the record you keep here. These first drafts are deterministic and do not require an external model service. When you choose a connected assistant, Jobmark hands it the relevant draft or record context; the provider then handles the content under its own terms and privacy policy. Activity, report, project, and vault visibility follows the authenticated user and vault state.
 
 Vault unlock cookies are user-bound, expire, and are invalidated when the vault password version changes. Exports use an explicit allowlist and omit hashes, encrypted keys, tokens, and cryptographic state.
 

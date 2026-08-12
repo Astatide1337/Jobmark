@@ -8,16 +8,16 @@ export interface McpPaginatedResult<T> {
   totalCount?: number;
 }
 
-export function paginate<T>(
+export function paginate<T extends { id: string }>(
   items: T[],
   cursor: string | undefined,
   limit: number
 ): McpPaginatedResult<T> {
-  const startIndex = cursor ? items.findIndex((item) => (item as any).id === cursor) + 1 : 0;
+  const startIndex = cursor ? items.findIndex(item => item.id === cursor) + 1 : 0;
   const page = items.slice(startIndex, startIndex + limit + 1);
   let nextCursor: string | null = null;
   if (page.length > limit) {
-    nextCursor = (page.pop() as any).id;
+    nextCursor = page.pop()!.id;
   }
   return { items: page, nextCursor };
 }

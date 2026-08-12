@@ -22,10 +22,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { createContact, updateContact } from '@/app/actions/network';
 import { parseUTCDate } from '@/lib/network';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 interface ContactDialogProps {
   open: boolean;
@@ -43,6 +46,11 @@ interface ContactDialogProps {
   onSuccess?: () => void;
 }
 
+function ymdToLocalDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function ContactDialog({ open, onOpenChange, contact, onSuccess }: ContactDialogProps) {
   const isEditing = !!contact;
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +61,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [birthday, setBirthday] = useState('');
+  const [birthdayPickerOpen, setBirthdayPickerOpen] = useState(false);
   const [relationship, setRelationship] = useState('');
   const [personalityTraits, setPersonalityTraits] = useState('');
   const [notes, setNotes] = useState('');
@@ -187,12 +196,51 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
           {/* Birthday */}
           <div className="space-y-2">
             <Label htmlFor="contact-birthday">Birthday</Label>
-            <Input
-              id="contact-birthday"
-              type="date"
-              value={birthday}
-              onChange={e => setBirthday(e.target.value)}
-            />
+            <div className="flex items-center gap-2">
+              <Popover open={birthdayPickerOpen} onOpenChange={setBirthdayPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="contact-birthday"
+                    type="button"
+                    variant="outline"
+                    className={`h-10 w-full justify-start text-left font-normal ${
+                      !birthday ? 'text-muted-foreground' : ''
+                    }`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {birthday ? format(ymdToLocalDate(birthday), 'PPP') : 'Pick a birthday'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={birthday ? ymdToLocalDate(birthday) : undefined}
+                    onSelect={date => {
+                      if (!date) return;
+                      setBirthday(format(date, 'yyyy-MM-dd'));
+                      setBirthdayPickerOpen(false);
+                    }}
+                    disabled={date => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date > today;
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {birthday && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setBirthday('')}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
             {errors.birthday && <p className="text-destructive text-xs">{errors.birthday}</p>}
           </div>
 

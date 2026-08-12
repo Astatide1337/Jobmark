@@ -4,7 +4,8 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
+import { JobmarkActor, assertActor, ValidationError } from './index';
+import { deterministicRewrite } from '@/lib/deterministic-drafts';
 import { z } from 'zod';
 
 const focusConfigSchema = z.object({
@@ -141,14 +142,18 @@ export async function logDecompression(
     throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
   }
 
-  // Store in user settings as JSON for now (could be a separate table)
-  const log = {
-    ...result.data,
-    createdAt: new Date().toISOString(),
-  };
+  const log = await prisma.decompressionLog.create({
+    data: {
+      userId: actor.userId,
+      durationMinutes: result.data.durationMinutes,
+      moodBefore: result.data.moodBefore,
+      moodAfter: result.data.moodAfter,
+      notes: result.data.notes ?? null,
+    },
+    select: { id: true, createdAt: true },
+  });
 
-  // For now just return a mock - in real implementation, store in a decompression log table
-  return { id: `decomp_${Date.now()}`, createdAt: log.createdAt };
+  return { id: log.id, createdAt: log.createdAt.toISOString() };
 }
 
 export async function polishDictation(
@@ -162,6 +167,5 @@ export async function polishDictation(
     throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
   }
 
-  // This would call the AI to polish text - placeholder
-  return { polishedText: `Polished: ${result.data.text}` };
+  return { polishedText: deterministicRewrite(result.data.text, 'Clean up this dictation.') };
 }

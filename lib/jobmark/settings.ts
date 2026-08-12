@@ -4,7 +4,8 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { JobmarkActor, assertActor, ValidationError, UserActionRequiredError } from './index';
+import { Prisma } from '@prisma/client';
+import { JobmarkActor, assertActor, ValidationError } from './index';
 import { z } from 'zod';
 
 const settingsUpdateSchema = z.object({
@@ -32,13 +33,7 @@ const settingsUpdateSchema = z.object({
   timeZone: z.string().optional(),
 });
 
-const aiKeyManageSchema = z.object({
-  provider: z.string(),
-  action: z.enum(['set', 'remove']),
-});
-
 export type SettingsInput = z.infer<typeof settingsUpdateSchema>;
-export type AIKeyManageInput = z.infer<typeof aiKeyManageSchema>;
 
 export type SettingsDTO = {
   // Goals
@@ -63,11 +58,6 @@ export type SettingsDTO = {
 
   // Timezone
   timeZone: string;
-
-  // AI
-  aiProvider: string;
-  aiModel: string | null;
-  aiKeysConfigured: string[];
 };
 
 export async function getSettings(actor: JobmarkActor): Promise<SettingsDTO> {
@@ -93,9 +83,6 @@ export async function getSettings(actor: JobmarkActor): Promise<SettingsDTO> {
       hideArchived: false,
       showConfetti: true,
       timeZone: 'America/New_York',
-      aiProvider: 'gemini',
-      aiModel: null,
-      aiKeysConfigured: [],
     };
   }
 
@@ -113,9 +100,6 @@ export async function getSettings(actor: JobmarkActor): Promise<SettingsDTO> {
     hideArchived: settings.hideArchived,
     showConfetti: settings.showConfetti,
     timeZone: settings.timeZone,
-    aiProvider: settings.aiProvider,
-    aiModel: settings.aiModel,
-    aiKeysConfigured: (settings.aiKeys as Record<string, string> | null) ? Object.keys(settings.aiKeys as Record<string, string>) : [],
   };
 }
 
@@ -127,8 +111,15 @@ export async function updateSettings(actor: JobmarkActor, input: SettingsInput):
     throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
   }
 
-  const data: any = { ...result.data };
-  if (data.goalDeadline) data.goalDeadline = new Date(data.goalDeadline);
+  const { goalDeadline, ...settingsFields } = result.data;
+  let normalizedGoalDeadline: Date | null | undefined;
+  if (goalDeadline !== undefined) {
+    normalizedGoalDeadline = goalDeadline ? new Date(goalDeadline) : null;
+  }
+  const data = {
+    ...settingsFields,
+    goalDeadline: normalizedGoalDeadline,
+  };
 
   await prisma.userSettings.upsert({
     where: { userId: actor.userId },
@@ -137,34 +128,4 @@ export async function updateSettings(actor: JobmarkActor, input: SettingsInput):
   });
 
   return getSettings(actor);
-}
-
-export async function manageAIKeys(actor: JobmarkActor, input: AIKeyManageInput): Promise<{ actionUrl: string; expiresAt: string }> {
-  assertActor(actor);
-
-  const result = aiKeyManageSchema.safeParse(input);
-  if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
-  }
-
-  // For security, AI key management requires browser flow
-  const nonce = await createSecureActionNonce(actor.userId, actor.connectionId, `ai_key_${result.data.action}`);
-  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/settings/ai-keys?nonce=${nonce}&provider=${result.data.provider}&action=${result.data.action}`;
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-
-  throw new UserActionRequiredError(
-    `Open Jobmark to ${result.data.action === 'set' ? 'add' : 'remove'} your ${result.data.provider} API key`,
-    actionUrl,
-    expiresAt
-  );
-}
-
-async function createSecureActionNonce(
-  userId: string,
-  connectionId: string | undefined,
-  type: string
-): Promise<string> {
-  const nonce = `sa_${Date.now()}_${Math.random().toString(36).slice(2, 15)}`;
-  // Store in database with hash, expiry, user, connection, type
-  return nonce;
 }

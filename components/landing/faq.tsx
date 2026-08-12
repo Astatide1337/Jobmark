@@ -35,15 +35,9 @@ const faqs = [
   },
   {
     id: 'ai-work',
-    question: 'What exactly does AI do here?',
+    question: 'How do assistant handoffs work?',
     answer:
-      'AI helps synthesize your record into summaries, drafts, and rewrites. It is an assistant layer, not the source of your work.',
-  },
-  {
-    id: 'byok',
-    question: 'What does BYOK mean here?',
-    answer:
-      'Bring-your-own-key support is planned so you can use your own model access over time. We are designing toward user-controlled AI without promising a timeline.',
+      'Jobmark first turns your record into a factual draft. If you connect Claude, ChatGPT, or Gemini, you can ask for a richer rewrite while keeping the underlying record in Jobmark.',
   },
   {
     id: 'export',

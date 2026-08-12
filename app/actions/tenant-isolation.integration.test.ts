@@ -152,7 +152,6 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
     expect(goals.map(goal => goal.title)).toEqual(['User A goal']);
     expect(contacts.map(contact => contact.fullName)).toEqual(['User A contact']);
     expect(reports.map(report => report.title)).toEqual(['User A report']);
-    expect(settings?.aiProvider).toBe('gemini');
   });
 
   it('rejects a cross-tenant project link before persisting an activity', async () => {

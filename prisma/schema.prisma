@@ -85,19 +85,20 @@ model User {
   defaultProjectId     String?
 
   // Relations
-  accounts        Account[]
-  sessions        Session[]
-  projects        Project[]
-  activities      Activity[]
-  reports         Report[]
-  goals           Goal[]
-  settings        UserSettings?
-  conversations   Conversation[]
-  chatRequests    ChatRequest[]
-  contacts        Contact[]
-  interactionLogs InteractionLog[]
-  outreachDrafts  OutreachDraft[]
-  mcpConnections  McpConnection[]
+  accounts          Account[]
+  sessions          Session[]
+  projects          Project[]
+  activities        Activity[]
+  reports           Report[]
+  goals             Goal[]
+  settings          UserSettings?
+  conversations     Conversation[]
+  chatRequests      ChatRequest[]
+  contacts          Contact[]
+  interactionLogs   InteractionLog[]
+  outreachDrafts    OutreachDraft[]
+  mcpConnections    McpConnection[]
+  decompressionLogs DecompressionLog[]
 }
 
 model Goal {
@@ -146,16 +147,25 @@ model UserSettings {
   // Vault (Password-Locked Projects)
   vaultPasswordHash String? @db.Text
 
-  // Multi-provider BYOK — store encrypted key per provider in JSON, track active provider
-  aiProvider String  @default("gemini") // active provider id
-  aiModel    String? // null = use provider's default
-  aiKeys     Json? // { "gemini": "encrypted", "openai": "encrypted", ... }
-
   // Focus Session Configuration
   focusConfig Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DecompressionLog {
+  id              String   @id @default(cuid())
+  userId          String
+  durationMinutes Int
+  moodBefore      Int
+  moodAfter       Int
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model Report {
@@ -340,19 +350,19 @@ model Message {
 
 // MCP OAuth Provider Models
 model OAuthClient {
-  id                String   @id @default(cuid())
-  clientId          String   @unique
-  clientSecretHash  String?  @db.Text
-  clientName        String
-  redirectUris      String[]
-  grantTypes        String[] @default(["authorization_code", "refresh_token"])
-  responseTypes     String[] @default(["code"])
-  scope             String   @default("jobmark:read jobmark:write jobmark:destructive offline_access")
-  requirePkce       Boolean  @default(true)
-  tokenEndpointAuthMethod String @default("client_secret_basic")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  userId            String?  // null for public clients
+  id                      String   @id @default(cuid())
+  clientId                String   @unique
+  clientSecretHash        String?  @db.Text
+  clientName              String
+  redirectUris            String[]
+  grantTypes              String[] @default(["authorization_code", "refresh_token"])
+  responseTypes           String[] @default(["code"])
+  scope                   String   @default("jobmark:read jobmark:write jobmark:destructive offline_access")
+  requirePkce             Boolean  @default(true)
+  tokenEndpointAuthMethod String   @default("client_secret_basic")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  userId                  String? // null for public clients
 
   mcpConnections McpConnection[]
 
@@ -360,30 +370,30 @@ model OAuthClient {
 }
 
 model OAuthAuthorizationCode {
-  id              String   @id @default(cuid())
-  code            String   @unique
-  codeChallenge   String?  @db.Text
+  id                  String   @id @default(cuid())
+  code                String   @unique
+  codeChallenge       String?  @db.Text
   codeChallengeMethod String?
-  clientId        String
-  redirectUri     String
-  scope           String
-  userId          String
-  expiresAt       DateTime
-  createdAt       DateTime @default(now())
+  clientId            String
+  redirectUri         String
+  scope               String
+  userId              String
+  expiresAt           DateTime
+  createdAt           DateTime @default(now())
 
   @@index([code])
   @@index([clientId, userId])
 }
 
 model OAuthAccessToken {
-  id            String   @id @default(cuid())
-  tokenHash     String   @unique @db.Text
-  clientId      String
-  userId        String
-  scope         String
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  revokedAt     DateTime?
+  id        String    @id @default(cuid())
+  tokenHash String    @unique @db.Text
+  clientId  String
+  userId    String
+  scope     String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
 
   @@index([tokenHash])
   @@index([clientId, userId])
@@ -391,17 +401,17 @@ model OAuthAccessToken {
 }
 
 model OAuthRefreshToken {
-  id            String   @id @default(cuid())
-  tokenHash     String   @unique @db.Text
-  clientId      String
-  userId        String
-  scope         String
-  accessTokenId String?  @unique
-  familyId      String   @default(cuid()) @db.Text
-  consumedAt    DateTime?
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  pkceCodeVerifier String? @db.Text
+  id               String    @id @default(cuid())
+  tokenHash        String    @unique @db.Text
+  clientId         String
+  userId           String
+  scope            String
+  accessTokenId    String?   @unique
+  familyId         String    @default(cuid()) @db.Text
+  consumedAt       DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  pkceCodeVerifier String?   @db.Text
 
   @@index([tokenHash])
   @@index([clientId, userId])
@@ -410,30 +420,30 @@ model OAuthRefreshToken {
 }
 
 model OAuthConsent {
-  id          String   @id @default(cuid())
-  clientId    String
-  userId      String
-  scope       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  clientId  String
+  userId    String
+  scope     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([clientId, userId])
 }
 
 // MCP Connection Models
 model McpConnection {
-  id                String   @id @default(cuid())
-  userId            String
-  oauthClientId     String
-  clientName        String
-  scopes            String[]
+  id                 String    @id @default(cuid())
+  userId             String
+  oauthClientId      String
+  clientName         String
+  scopes             String[]
   vaultUnlockedUntil DateTime?
-  lastUsedAt        DateTime?
-  revokedAt         DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  lastUsedAt         DateTime?
+  revokedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   oauthClient OAuthClient @relation(fields: [oauthClientId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -442,14 +452,14 @@ model McpConnection {
 }
 
 model McpIdempotency {
-  id            String   @id @default(cuid())
-  connectionId  String
-  toolName      String
-  requestKey    String
-  status        String   @default("completed") // "pending" | "completed" | "failed"
-  resultJson    Json?
-  createdAt     DateTime @default(now())
-  expiresAt     DateTime
+  id           String   @id @default(cuid())
+  connectionId String
+  toolName     String
+  requestKey   String
+  status       String   @default("completed") // "pending" | "completed" | "failed"
+  resultJson   Json?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
 
   @@unique([connectionId, toolName, requestKey])
   @@index([expiresAt])
@@ -460,7 +470,7 @@ model SecureActionNonce {
   nonceHash    String   @unique @db.Text
   userId       String
   connectionId String?
-  type         String   // "vault_setup" | "vault_unlock" | "vault_change_password" | "ai_keys" | "account_delete" | "account_export"
+  type         String // vault setup/unlock/change-password actions
   used         Boolean  @default(false)
   expiresAt    DateTime
   createdAt    DateTime @default(now())

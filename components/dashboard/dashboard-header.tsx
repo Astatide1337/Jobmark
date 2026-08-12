@@ -77,11 +77,12 @@ export function DashboardHeader({
 
           {/* Title or Date */}
           <div className="flex flex-col">
-            {title ? (
+            {title && (
               <h1 className="max-w-[200px] truncate text-sm font-semibold lg:max-w-none lg:text-lg">
                 {title}
               </h1>
-            ) : showDate ? (
+            )}
+            {!title && showDate && (
               <div className="text-muted-foreground hidden items-center gap-2 lg:flex">
                 <Calendar className="h-4 w-4" />
                 <span className="text-sm">
@@ -92,7 +93,7 @@ export function DashboardHeader({
                   })}
                 </span>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
 

@@ -4,8 +4,10 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
+import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
 
 const outreachCreateSchema = z.object({
   contactId: z.string(),
@@ -20,6 +22,8 @@ const outreachGenerateSchema = z.object({
   contactId: z.string(),
   goal: z.string().optional(),
   context: z.string().optional(),
+  tone: z.string().max(100).optional(),
+  channel: z.string().max(100).optional(),
 });
 
 export type OutreachInput = z.infer<typeof outreachCreateSchema>;
@@ -32,7 +36,7 @@ export type OutreachDTO = {
   contact: { id: string; fullName: string };
   title: string;
   content: string;
-  metadata: any | null;
+  metadata: Prisma.JsonValue | null;
   createdAt: string;
 };
 
@@ -101,8 +105,30 @@ export async function generateOutreach(
 
   if (!contact) throw new NotFoundError('Contact');
 
-  // Call AI to generate - placeholder
-  return { generatedContent: 'Generated outreach content...' };
+  return {
+    generatedContent: buildOutreachDraft(
+      {
+        id: contact.id,
+        fullName: contact.fullName,
+        email: contact.email,
+        relationship: contact.relationship,
+        personalityTraits: contact.personalityTraits,
+        notes: contact.notes,
+        interactions: contact.interactions.map(interaction => ({
+          occurredAt: interaction.occurredAt,
+          channel: interaction.channel,
+          summary: interaction.summary,
+          nextStep: interaction.nextStep,
+        })),
+      },
+      {
+        objective: result.data.goal ?? 'Reconnect',
+        tone: result.data.tone ?? 'professional',
+        channel: result.data.channel ?? 'email',
+        extraContext: result.data.context,
+      }
+    ),
+  };
 }
 
 export async function createOutreach(
@@ -176,8 +202,12 @@ export async function improveOutreachText(
   });
   if (!outreach) throw new NotFoundError('Outreach draft');
 
-  // Call AI to improve - placeholder
-  return { improvedContent: 'Improved content...' };
+  return {
+    improvedContent: deterministicRewrite(
+      outreach.content,
+      instructions ?? 'Keep the meaning and make this easier to scan.'
+    ),
+  };
 }
 
 export async function deleteOutreach(actor: JobmarkActor, outreachId: string): Promise<void> {
@@ -191,7 +221,11 @@ export async function deleteOutreach(actor: JobmarkActor, outreachId: string): P
   await prisma.outreachDraft.delete({ where: { id: outreachId } });
 }
 
-function toOutreachDTO(outreach: any): OutreachDTO {
+type OutreachWithContact = Prisma.OutreachDraftGetPayload<{
+  include: { contact: { select: { id: true; fullName: true } } };
+}>;
+
+function toOutreachDTO(outreach: OutreachWithContact): OutreachDTO {
   return {
     id: outreach.id,
     contactId: outreach.contactId,
@@ -203,7 +237,7 @@ function toOutreachDTO(outreach: any): OutreachDTO {
   };
 }
 
-function toOutreachPreviewDTO(outreach: any): OutreachPreviewDTO {
+function toOutreachPreviewDTO(outreach: OutreachWithContact): OutreachPreviewDTO {
   return {
     id: outreach.id,
     contactId: outreach.contactId,

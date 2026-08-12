@@ -22,9 +22,9 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
       classNames={{
         months: 'flex flex-col gap-4 sm:flex-row',
         month: 'space-y-3',
-        month_caption: 'relative flex h-9 items-center justify-center px-10',
+        month_caption: 'relative z-0 flex h-9 items-center justify-center px-10',
         caption_label: 'text-sm font-medium',
-        nav: 'absolute inset-x-3 top-3 flex items-center justify-between',
+        nav: 'absolute inset-x-3 top-3 z-10 flex items-center justify-between',
         button_previous: cn(
           buttonVariants({ variant: 'outline', size: 'icon-sm' }),
           'bg-transparent opacity-70 hover:opacity-100'

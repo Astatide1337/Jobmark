@@ -13,6 +13,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -154,7 +155,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
       </div>
 
       {/* Contact Grid or Empty State */}
-      {contacts.length === 0 ? (
+      {contacts.length === 0 && (
         <Card className="bg-card/50 border-border/50 rounded-2xl border-dashed">
           <CardContent className="py-16 text-center">
             <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
@@ -171,55 +172,61 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </Button>
           </CardContent>
         </Card>
-      ) : filteredContacts.length === 0 ? (
+      )}
+      {contacts.length > 0 && filteredContacts.length === 0 && (
         <div className="text-muted-foreground py-12 text-center italic">
           No contacts match your search.
         </div>
-      ) : (
+      )}
+      {contacts.length > 0 && filteredContacts.length > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredContacts.map(contact => {
             const age = getAgeFromBirthday(contact.birthday);
             return (
-              <Card
+              <Link
                 key={contact.id}
-                className="hover:border-primary/30 cursor-pointer transition-colors hover:shadow-md"
-                onClick={() => router.push(`/network/${contact.id}`)}
+                href={`/network/${contact.id}`}
+                className="group focus-visible:ring-primary/60 block h-full rounded-xl focus-visible:ring-2 focus-visible:outline-none"
               >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                      <CardTitle className="truncate text-base">{contact.fullName}</CardTitle>
-                      {contact.relationship && (
-                        <p className="text-muted-foreground mt-1 text-sm">{contact.relationship}</p>
-                      )}
+                <Card className="group-hover:border-primary/30 h-full transition-colors group-hover:shadow-md">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0">
+                        <CardTitle className="truncate text-base">{contact.fullName}</CardTitle>
+                        {contact.relationship && (
+                          <p className="text-muted-foreground mt-1 text-sm">
+                            {contact.relationship}
+                          </p>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="ml-2 shrink-0">
+                        {contact._count.interactions}{' '}
+                        {contact._count.interactions === 1 ? 'interaction' : 'interactions'}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="ml-2 shrink-0">
-                      {contact._count.interactions}{' '}
-                      {contact._count.interactions === 1 ? 'interaction' : 'interactions'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="text-muted-foreground space-y-2 text-sm">
-                  {contact.email && (
-                    <div className="flex items-center gap-2 truncate">
-                      <Mail className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{contact.email}</span>
-                    </div>
-                  )}
-                  {contact.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 shrink-0" />
-                      <span>{contact.phone}</span>
-                    </div>
-                  )}
-                  {age !== undefined && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5 shrink-0" />
-                      <span>Age {age}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="text-muted-foreground space-y-2 text-sm">
+                    {contact.email && (
+                      <div className="flex items-center gap-2 truncate">
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{contact.email}</span>
+                      </div>
+                    )}
+                    {contact.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 shrink-0" />
+                        <span>{contact.phone}</span>
+                      </div>
+                    )}
+                    {age !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        <span>Age {age}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>

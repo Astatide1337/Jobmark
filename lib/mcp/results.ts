@@ -2,6 +2,8 @@
  * MCP Tool result types
  */
 
+import type { McpActor } from './actor';
+
 export interface McpToolResult {
   structuredContent?: Record<string, unknown>;
   content: Array<{ type: 'text'; text: string }>;
@@ -26,7 +28,7 @@ export interface McpToolDefinition {
 
 export interface McpTool {
   definition: McpToolDefinition;
-  execute: (actor: any, input: any) => Promise<McpToolResult>;
+  execute: (actor: McpActor, input: unknown) => Promise<McpToolResult>;
 }
 
 export function createTextResult(text: string, isError = false): McpToolResult {

@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-export const aiSettingsSchema = z
-  .object({ aiProvider: z.string().optional(), aiModel: z.string().max(120).nullable().optional() })
-  .strict();
 export const goalSettingsSchema = z
   .object({
     primaryGoal: z.string().max(500).optional(),

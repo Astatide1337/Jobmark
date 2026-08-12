@@ -448,6 +448,18 @@ async function resolveRegisteredClient(clientId: string): Promise<Client | null>
   const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
   if (!client) return null;
 
+  return toOAuthClient(client);
+}
+
+function toOAuthClient(client: {
+  clientId: string;
+  redirectUris: string[];
+  grantTypes: string[];
+  responseTypes: string[];
+  scope: string;
+  tokenEndpointAuthMethod: string;
+  clientName: string;
+}): Client {
   return {
     client_id: client.clientId,
     client_secret: undefined,
@@ -459,6 +471,63 @@ async function resolveRegisteredClient(clientId: string): Promise<Client | null>
       client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
     client_name: client.clientName,
   } as Client;
+}
+
+async function resolveMetadataClient(
+  metadataUrl: URL,
+  clientId: string,
+  pinnedAddress: PinnedAddress
+): Promise<Client | null> {
+  const response = await fetchPinnedMetadata(metadataUrl, pinnedAddress);
+  if (response.statusCode < 200 || response.statusCode >= 300) return null;
+
+  const contentType = getResponseHeader(response.headers, 'content-type')
+    ?.split(';', 1)[0]
+    .trim()
+    .toLowerCase();
+  if (contentType !== 'application/json' && !contentType?.endsWith('+json')) return null;
+
+  const contentLength = getResponseHeader(response.headers, 'content-length');
+  if (
+    contentLength &&
+    Number.isFinite(Number(contentLength)) &&
+    Number(contentLength) > CIDDD_MAX_RESPONSE_BYTES
+  ) {
+    return null;
+  }
+
+  const body = readResponseBody(response.body);
+  if (body === null) return null;
+  const metadata = JSON.parse(body) as ClientMetadata;
+  if (
+    !Array.isArray(metadata.redirect_uris) ||
+    !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
+    !areValidOAuthRedirectUris(metadata.redirect_uris) ||
+    (metadata.client_id !== undefined &&
+      (typeof metadata.client_id !== 'string' || metadata.client_id !== clientId))
+  ) {
+    return null;
+  }
+
+  const metadataClientId = metadata.client_id ?? clientId;
+  let client = await prisma.oAuthClient.findUnique({ where: { clientId: metadataClientId } });
+  if (!client) {
+    client = await prisma.oAuthClient.create({
+      data: {
+        clientId: metadataClientId,
+        clientSecretHash: null,
+        clientName: metadata.client_name ?? 'CIDDD Client',
+        redirectUris: metadata.redirect_uris,
+        grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
+        responseTypes: metadata.response_types ?? ['code'],
+        scope: metadata.scope ?? OAuthScopes.join(' '),
+        requirePkce: true,
+        tokenEndpointAuthMethod: metadata.token_endpoint_auth_method ?? 'none',
+      },
+    });
+  }
+
+  return toOAuthClient(client);
 }
 
 /**
@@ -488,73 +557,7 @@ export async function resolveClientId(clientId: string): Promise<Client | null> 
 
   // CIDDD: Fetch metadata from the URL.
   try {
-    const response = await fetchPinnedMetadata(metadataUrl, pinnedAddress);
-
-    // Redirects are intentionally disallowed so every request target is
-    // validated before it reaches the network.
-    if (response.statusCode < 200 || response.statusCode >= 300) return null;
-    const contentType = getResponseHeader(response.headers, 'content-type')
-      ?.split(';', 1)[0]
-      .trim()
-      .toLowerCase();
-    if (contentType !== 'application/json' && !contentType?.endsWith('+json')) return null;
-    const contentLength = getResponseHeader(response.headers, 'content-length');
-    if (
-      contentLength &&
-      Number.isFinite(Number(contentLength)) &&
-      Number(contentLength) > CIDDD_MAX_RESPONSE_BYTES
-    )
-      return null;
-
-    const body = readResponseBody(response.body);
-    if (body === null) return null;
-    const metadata = JSON.parse(body) as ClientMetadata;
-
-    // Validate required fields before persisting or using the client. A
-    // metadata document cannot downgrade the redirect to plaintext or point
-    // the authorization code at a non-web scheme.
-    if (
-      !Array.isArray(metadata.redirect_uris) ||
-      !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
-      !areValidOAuthRedirectUris(metadata.redirect_uris) ||
-      (metadata.client_id !== undefined &&
-        (typeof metadata.client_id !== 'string' || metadata.client_id !== clientId))
-    )
-      return null;
-
-    const clientIdValue = metadata.client_id ?? clientId;
-
-    // Look up or create a client record for this CIDDD
-    let client = await prisma.oAuthClient.findUnique({ where: { clientId: clientIdValue } });
-
-    if (!client) {
-      // Create a new client from CIDDD metadata
-      client = await prisma.oAuthClient.create({
-        data: {
-          clientId: clientIdValue,
-          clientSecretHash: null, // CIDDD clients are public
-          clientName: metadata.client_name ?? 'CIDDD Client',
-          redirectUris: metadata.redirect_uris,
-          grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
-          responseTypes: metadata.response_types ?? ['code'],
-          scope: metadata.scope ?? OAuthScopes.join(' '),
-          requirePkce: true,
-          tokenEndpointAuthMethod: metadata.token_endpoint_auth_method ?? 'none',
-        },
-      });
-    }
-
-    return {
-      client_id: client.clientId,
-      client_secret: undefined,
-      redirect_uris: client.redirectUris,
-      grant_types: client.grantTypes as Client['grant_types'],
-      response_types: client.responseTypes as Client['response_types'],
-      scope: client.scope,
-      token_endpoint_auth_method:
-        client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
-      client_name: client.clientName,
-    } as Client;
+    return await resolveMetadataClient(metadataUrl, clientId, pinnedAddress);
   } catch {
     return null;
   }

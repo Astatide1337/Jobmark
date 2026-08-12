@@ -73,13 +73,6 @@ export class McpRateLimitedError extends McpError {
   }
 }
 
-export class McpUpstreamAIError extends McpError {
-  constructor(message: string, public readonly provider?: string) {
-    super(message, 'UPSTREAM_AI_FAILED', { provider });
-    this.name = 'McpUpstreamAIError';
-  }
-}
-
 export class McpInternalError extends McpError {
   constructor(message = 'Internal server error') {
     super(message, 'INTERNAL_ERROR');
@@ -116,7 +109,6 @@ export function toMcpErrorResponse(error: unknown): {
       CONFIRMATION_REQUIRED: 400,
       CONFLICT: 409,
       RATE_LIMITED: 429,
-      UPSTREAM_AI_FAILED: 502,
       INTERNAL_ERROR: 500,
       INSUFFICIENT_SCOPE: 403,
       UNAUTHENTICATED: 401,

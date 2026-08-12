@@ -4,6 +4,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { getLockedProjectIds } from '@/lib/project-lock';
 import {
   JobmarkActor,
@@ -62,15 +63,15 @@ export async function listActivities(
   const { limit = 50, cursor, hideArchived = false } = options;
   const lockedIds = await getLockedProjectIds(actor.userId);
 
-  const where: any = {
-    userId: actor.userId,
-    ...(lockedIds.length > 0 && {
-      OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
-    }),
-    ...(hideArchived && {
-      OR: [{ projectId: null }, { project: { archived: false } }],
-    }),
-  };
+  const where: Prisma.ActivityWhereInput = { userId: actor.userId };
+  const filters: Prisma.ActivityWhereInput[] = [];
+  if (lockedIds.length > 0) {
+    filters.push({ OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] });
+  }
+  if (hideArchived) {
+    filters.push({ OR: [{ projectId: null }, { project: { archived: false } }] });
+  }
+  if (filters.length > 0) where.AND = filters;
 
   const activities = await prisma.activity.findMany({
     where,
@@ -279,10 +280,13 @@ export async function updateActivity(
   if (!activity) throw new NotFoundError('Activity');
   if (activity.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
-  const data: any = { ...result.data };
-  if (data.logDate) {
-    data.logDate = calendarDateToUtcMidnight(data.logDate);
-  }
+  const data: Prisma.ActivityUncheckedUpdateInput = {
+    content: result.data.content,
+    projectId: result.data.projectId,
+    logDate: result.data.logDate
+      ? calendarDateToUtcMidnight(result.data.logDate)
+      : undefined,
+  };
 
   const updated = await prisma.activity.update({
     where: { id: activityId },
@@ -307,7 +311,11 @@ export async function deleteActivity(actor: JobmarkActor, activityId: string): P
   await prisma.activity.delete({ where: { id: activityId } });
 }
 
-function toActivityDTO(activity: any): ActivityDTO {
+type ActivityWithProject = Prisma.ActivityGetPayload<{
+  include: { project: { select: { id: true; name: true; color: true; archived: true } } };
+}>;
+
+function toActivityDTO(activity: ActivityWithProject): ActivityDTO {
   return {
     id: activity.id,
     content: activity.content,

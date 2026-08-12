@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aiSettingsSchema,
   appearanceSettingsSchema,
   goalSettingsSchema,
   projectUpdateSchema,
@@ -8,15 +7,12 @@ import {
 
 describe('server action input allowlists', () => {
   it('rejects unrelated security fields', () => {
-    expect(
-      aiSettingsSchema.safeParse({ aiProvider: 'gemini', vaultPasswordHash: 'x' }).success
-    ).toBe(false);
     expect(goalSettingsSchema.safeParse({ monthlyTarget: 5, userId: 'other-user' }).success).toBe(
       false
     );
-    expect(appearanceSettingsSchema.safeParse({ themeMode: 'dark', aiKeys: {} }).success).toBe(
-      false
-    );
+    expect(
+      appearanceSettingsSchema.safeParse({ themeMode: 'dark', vaultPasswordHash: 'x' }).success
+    ).toBe(false);
   });
   it('rejects project ownership and lifecycle fields', () => {
     expect(projectUpdateSchema.safeParse({ name: 'safe', userId: 'other-user' }).success).toBe(

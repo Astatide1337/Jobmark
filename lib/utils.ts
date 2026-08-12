@@ -25,21 +25,28 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Date & Time Utilities
  */
+function toDisplayDate(date: Date | string | number): Date {
+  // A YYYY-MM-DD value is a calendar date, not a UTC timestamp. parseISO
+  // keeps it at local midnight so article dates and deadlines do not shift to
+  // the previous day for users west of UTC.
+  return typeof date === 'string' ? parseISO(date) : new Date(date);
+}
+
 export const dateUtils = {
   format: (date: Date | string | number, formatStr: string = 'MMM d, yyyy') => {
-    return format(new Date(date), formatStr);
+    return format(toDisplayDate(date), formatStr);
   },
 
   relative: (date: Date | string | number) => {
-    return formatDistanceToNow(new Date(date), { addSuffix: true });
+    return formatDistanceToNow(toDisplayDate(date), { addSuffix: true });
   },
 
   isOverdue: (date: Date | string | number) => {
-    return isAfter(new Date(), new Date(date));
+    return isAfter(new Date(), toDisplayDate(date));
   },
 
   getAge: (birthday: string | Date) => {
-    const birthDate = new Date(birthday);
+    const birthDate = toDisplayDate(birthday);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();

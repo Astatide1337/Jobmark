@@ -167,7 +167,9 @@ export function getCalendarRange(options: {
     startDate = options.customStartDate;
     endDate = options.customEndDate;
   } else {
-    const days = options.kind === '7d' ? 6 : options.kind === '30d' ? 29 : 0;
+    let days = 0;
+    if (options.kind === '7d') days = 6;
+    else if (options.kind === '30d') days = 29;
     startDate =
       options.kind === 'month' ? `${today.slice(0, 7)}-01` : shiftCalendarDate(today, -days);
     endDate = today;

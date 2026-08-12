@@ -2,12 +2,12 @@
  * Dictation Status & Trigger Button
  *
  * Why: A specialized button that communicates the state of the
- * Web Speech API (Idle, Listening, or Polishing via AI).
+ * Web Speech API (Idle, Listening, or predictable text cleanup).
  *
  * States:
  * - Idle: Ghostly Mic icon.
  * - Listening: Destructive Red with an active "Ping" animation.
- * - Polishing: Loading spinner representing the AI cleanup phase.
+ * - Polishing: Loading spinner representing the cleanup phase.
  */
 'use client';
 
@@ -48,7 +48,7 @@ export function DictateButton({
       onClick={onClick}
       disabled={disabled || isPolishing}
     >
-      {isListening ? (
+      {isListening && (
         <>
           <span className="relative mr-2 flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
@@ -56,12 +56,14 @@ export function DictateButton({
           </span>
           {showLabel && 'Stop'}
         </>
-      ) : isPolishing ? (
+      )}
+      {!isListening && isPolishing && (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           {showLabel && 'Polishing...'}
         </>
-      ) : (
+      )}
+      {!isListening && !isPolishing && (
         <>
           <Mic className="mr-2 h-4 w-4" />
           {showLabel && 'Dictate'}

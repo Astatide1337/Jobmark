@@ -104,7 +104,7 @@ Group related actions by domain:
 
 ## Testing
 
-- Test critical paths: authentication, data persistence, AI features
+- Test critical paths: authentication, data persistence, review briefs, and MCP handoffs
 - Use Vitest + React Testing Library
 - Place tests next to components (`ComponentName.test.tsx`)
 

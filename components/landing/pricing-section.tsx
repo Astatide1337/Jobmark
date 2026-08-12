@@ -2,12 +2,12 @@
  * Access & Trust Section
  *
  * Why: Provide low-friction access cues without heavy pricing emphasis.
- * It reinforces ownership and BYOK direction without overpromising.
+ * It reinforces ownership and assistant choice without overpromising.
  */
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Shield, Database, Key } from 'lucide-react';
+import { ArrowRight, Shield, Database, Link2 } from 'lucide-react';
 import { useAuthModal } from '@/components/auth';
 
 const accessPoints = [
@@ -22,9 +22,9 @@ const accessPoints = [
     icon: Database,
   },
   {
-    title: 'BYOK direction',
-    description: 'Bring-your-own-key support is planned for user-controlled AI over time.',
-    icon: Key,
+    title: 'Assistant-ready',
+    description: 'Connect a trusted assistant through Jobmark MCP when you want a second perspective.',
+    icon: Link2,
   },
 ];
 

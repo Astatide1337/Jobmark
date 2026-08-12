@@ -1,9 +1,9 @@
 /**
- * AI-Augmented Live Editor
+ * Live Editor
  *
- * Why: Standard textareas are static. This component provides a specialized
- * "Copilot" experience where users can highlight text and ask the AI
- * to rewrite, shorten, or professionalize specific sections.
+ * Why: Standard textareas are static. When a caller supplies an improvement
+ * handler (for example, a connected MCP assistant flow), users can highlight
+ * text and request an edit. Without a handler the editor stays fully manual.
  *
  * Technical Implementation:
  * - Mirroring: Overlays a transparent `textarea` on top of a "Backdrop"
@@ -16,7 +16,6 @@
 'use client';
 
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { improveText } from '@/app/actions/reports';
 import { Loader2, Sparkles, X, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,22 +91,22 @@ export function LiveEditor({
   // Re-calculate position on resize or scroll
   useEffect(() => {
     const handleScroll = () => updateMenuPos();
+    const scrollContainer = scrollContainerRef.current;
     window.addEventListener('resize', updateMenuPos);
-    scrollContainerRef.current?.addEventListener('scroll', handleScroll);
+    scrollContainer?.addEventListener('scroll', handleScroll);
 
     return () => {
       window.removeEventListener('resize', updateMenuPos);
-      scrollContainerRef.current?.removeEventListener('scroll', handleScroll);
+      scrollContainer?.removeEventListener('scroll', handleScroll);
     };
   }, [selection]);
 
   const handleImprove = async () => {
-    if (!selection || !instruction) return;
+    if (!selection || !instruction || !onImprove) return;
     setIsImproving(true);
 
     try {
-      const improveFunc = onImprove ?? improveText;
-      const improved = await improveFunc(selection.text, instruction);
+      const improved = await onImprove(selection.text, instruction);
       if (improved) {
         const before = value.substring(0, selection.start);
         const after = value.substring(selection.end);
@@ -200,7 +199,7 @@ export function LiveEditor({
 
       {/* Floating Copilot Toolbar */}
       <AnimatePresence>
-        {selection && menuPosition && (
+        {onImprove && selection && menuPosition && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 16, scale: 1 }} // 16px below the selection
@@ -223,7 +222,7 @@ export function LiveEditor({
               <Input
                 value={instruction}
                 onChange={e => setInstruction(e.target.value)}
-                placeholder="Ask AI to edit this... (e.g. 'Shorten it')"
+                placeholder="Ask your connected assistant to edit this..."
                 className="h-9 border-none bg-transparent px-2 text-sm shadow-none focus-visible:ring-0"
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleImprove();
@@ -241,7 +240,7 @@ export function LiveEditor({
                   )}
                   onClick={handleImprove}
                   disabled={!instruction || isImproving}
-                  aria-label="Submit AI improvement"
+                  aria-label="Submit text improvement"
                 >
                   {isImproving ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

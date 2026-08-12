@@ -61,13 +61,13 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
-              AI-generated content disclaimer
+              Drafts and assistant suggestions
             </h2>
             <p>
-              Jobmark uses AI to help draft reports, messages, and summaries. AI outputs are
-              suggestions only. They are not professional career advice, legal advice, or HR
-              guidance. Always review and verify AI-generated content before using it
-              professionally.
+              Jobmark builds evidence-based briefs from the information you record and can hand
+              them to a connected assistant to help draft reports or messages. Assistant outputs
+              are suggestions only. They are not professional career advice, legal advice, or HR
+              guidance. Always review and verify any draft before using it professionally.
             </p>
           </section>
 

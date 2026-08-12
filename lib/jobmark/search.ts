@@ -12,7 +12,7 @@ export type SearchResult = {
   id: string;
   title: string;
   snippet: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 };
 
 export async function globalSearch(

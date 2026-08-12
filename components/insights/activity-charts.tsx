@@ -26,10 +26,9 @@ import {
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
-  TooltipProps,
 } from 'recharts';
 import type { ProjectDistribution } from '@/app/actions/insights';
-import { useMemo, useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 
 interface ActivityChartsProps {
   weeklyTrend: number[];
@@ -38,6 +37,13 @@ interface ActivityChartsProps {
 
 // Consistent card styling
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
+const subscribeToMount = () => () => {};
+const getServerMountState = () => false;
+const getClientMountState = () => true;
+
+function useMounted() {
+  return useSyncExternalStore(subscribeToMount, getClientMountState, getServerMountState);
+}
 
 export function ActivityCharts({ weeklyTrend, projectDistribution }: ActivityChartsProps) {
   return (
@@ -82,8 +88,7 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
    * of -1 and emits a console warning. Rendering only after mount means
    * the DOM is ready and dimensions are real.
    */
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const chartData = data.map((value, index) => ({
     week: `W${index + 1}`,
@@ -104,12 +109,13 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="h-52">
-          {!hasData ? (
+          {!hasData && (
             <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
               No record trend yet. Capture a few entries to see whether coverage is holding up week
               to week.
             </div>
-          ) : !mounted ? null : (
+          )}
+          {hasData && mounted && (
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -186,8 +192,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
 
 function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
   // Same SSR-guard as WeeklyTrendChart — see comment there for rationale.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const sortedData = [...data].sort((a, b) => b.count - a.count);
   const total = sortedData.reduce((sum, item) => sum + item.count, 0);

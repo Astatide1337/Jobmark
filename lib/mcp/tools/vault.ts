@@ -40,7 +40,12 @@ export const vaultStatusTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const status = await getVaultStatus(actor);
-    return createStructuredResult(status, `Vault: ${status.configured ? (status.unlocked ? 'unlocked' : 'locked') : 'not configured'}`);
+    let state = 'not configured';
+    if (status.configured) {
+      state = 'locked';
+      if (status.unlocked) state = 'unlocked';
+    }
+    return createStructuredResult(status, `Vault: ${state}`);
   },
 };
 

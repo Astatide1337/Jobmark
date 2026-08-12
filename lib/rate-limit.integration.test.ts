@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { prisma } from './db';
-import { assertSharedRateLimitAllowed } from './ai-rate-limit';
+import { assertSharedRateLimitAllowed } from './rate-limit';
 
 const enabled = process.env.INTEGRATION_TESTS === '1';
 

@@ -45,7 +45,7 @@ This is **capability parity**, not a one-to-one copy of every current Server Act
 - Existing chat data is preserved and exportable; it is not silently destroyed.
 - The MCP server runs efficiently on the current Next.js/Vercel deployment without Redis, sticky sessions, or an always-on worker.
 - Authentication follows the remote MCP authorization specification and works with major hosted clients.
-- Destructive and secret-bearing operations remain possible without exposing passwords or API keys to the language model.
+- Destructive and secret-bearing operations remain possible without exposing passwords or other secrets to the language model.
 
 ### 2.2 Non-goals
 
@@ -67,23 +67,23 @@ Jobmark currently mixes transport/UI concerns and domain behavior inside Server 
 
 ### 3.1 Existing domains that remain
 
-| Domain | Current implementation | Required MCP coverage |
-|---|---|---|
-| Activities | `app/actions/activities.ts` | List, create, delete, counts, dashboard statistics |
-| Projects | `app/actions/projects.ts` | List, read details, create, update, archive, restore, list project activities |
-| Goals | `app/actions/goals.ts` | List, create, update, delete |
-| Reports | `app/actions/reports.ts` | Count eligible activities, generate, improve text, save, list, read, update, delete |
-| Search | `app/actions/search.ts` | Search activities, projects, reports, contacts, and interactions |
-| Insights | `app/actions/insights.ts` | Activity totals, streaks, heatmap/trend data, project distribution, report totals |
-| Contacts | `app/actions/network.ts` | List, read, create, update, delete |
-| Interactions | `app/actions/network.ts` | List, create, update, delete, follow-up/network statistics |
-| Outreach | `app/actions/network-ai.ts` | Generate, save, list, update, delete, improve |
-| Focus | `app/actions/focus-config.ts` | Read, save, reset focus configuration |
-| Decompression | `app/actions/decompress.ts` | Log decompression session |
-| Dictation | `app/actions/dictation.ts` | Polish dictated text |
-| Settings | `app/actions/settings.ts` | Read and update user-facing settings, manage AI provider configuration |
-| Vault | `app/actions/project-lock.ts` | Status, setup/change/unlock/lock, list locked projects, move projects in/out |
-| Account data | `app/actions/settings.ts` | Export, clear activities, delete account |
+| Domain        | Current implementation        | Required MCP coverage                                                               |
+| ------------- | ----------------------------- | ----------------------------------------------------------------------------------- |
+| Activities    | `app/actions/activities.ts`   | List, create, delete, counts, dashboard statistics                                  |
+| Projects      | `app/actions/projects.ts`     | List, read details, create, update, archive, restore, list project activities       |
+| Goals         | `app/actions/goals.ts`        | List, create, update, delete                                                        |
+| Reports       | `app/actions/reports.ts`      | Count eligible activities, generate, improve text, save, list, read, update, delete |
+| Search        | `app/actions/search.ts`       | Search activities, projects, reports, contacts, and interactions                    |
+| Insights      | `app/actions/insights.ts`     | Activity totals, streaks, heatmap/trend data, project distribution, report totals   |
+| Contacts      | `app/actions/network.ts`      | List, read, create, update, delete                                                  |
+| Interactions  | `app/actions/network.ts`      | List, create, update, delete, follow-up/network statistics                          |
+| Outreach      | `app/actions/network-ai.ts`   | Generate, save, list, update, delete, improve                                       |
+| Focus         | `app/actions/focus-config.ts` | Read, save, reset focus configuration                                               |
+| Decompression | `app/actions/decompress.ts`   | Log decompression session                                                           |
+| Dictation     | `app/actions/dictation.ts`    | Polish dictated text                                                                |
+| Settings      | `app/actions/settings.ts`     | Read and update user-facing settings                                                |
+| Vault         | `app/actions/project-lock.ts` | Status, setup/change/unlock/lock, list locked projects, move projects in/out        |
+| Account data  | `app/actions/settings.ts`     | Export, clear activities, and delete account in Settings → Data                       |
 
 ### 3.2 Chat subsystem to retire
 
@@ -124,7 +124,7 @@ Required behavior:
 
 ### 4.1 Navigation
 
-Keep the `/chat` URL, but rename the navigation item from **Chat** to **Connect AI**. The URL remains stable for bookmarks and routing, while the label accurately describes the destination.
+Keep the `/chat` URL, but use **MCP Connector** as the navigation label. The URL remains stable for bookmarks and routing, while the label accurately describes the destination.
 
 Do not use **MCP** as the only navigation label because many users will not know the protocol name. MCP can remain the technical CTA and explanatory term on the page.
 
@@ -135,7 +135,7 @@ The `/chat` page should use the existing Jobmark shell and design language. The 
 Recommended structure:
 
 ```text
-Connect Jobmark to your AI
+Connect Jobmark to your assistant
 Use your Jobmark data from the assistant you already prefer.
 
 ┌──────────────────────────────────────────────────────────┐
@@ -257,7 +257,7 @@ The page and privacy policy must be explicit:
 - Jobmark receives the tool name, arguments, and protocol metadata the client sends to the MCP server.
 - Tool arguments can contain sensitive Jobmark data or user instructions and must be handled as private account data.
 - Jobmark returns user-authorized data to the external MCP client, whose own terms and data controls then apply.
-- Jobmark must not log full tool arguments, report bodies, notes, contact details, passwords, provider keys, or full tool results in production logs.
+- Jobmark must not log full tool arguments, report bodies, notes, contact details, passwords, credentials, or full tool results in production logs.
 - Structured logs may contain request ID, connection ID, tool name, duration, result status, and a non-sensitive error code.
 
 ## 6. Technical architecture
@@ -460,7 +460,7 @@ Revocation must invalidate:
 
 ## 8. Vault and secret-bearing actions
 
-Passwords and provider API keys must never be passed as ordinary MCP tool arguments because the external model/client may retain tool inputs in conversation or telemetry.
+Passwords and other secrets must never be passed as ordinary MCP tool arguments because the external model/client may retain tool inputs in conversation or telemetry.
 
 ### 8.1 Secure action links
 
@@ -469,7 +469,6 @@ The following MCP capabilities initiate a short-lived, user-bound Jobmark browse
 - Set vault password.
 - Change vault password.
 - Unlock vault.
-- Save or remove an AI provider API key.
 - Confirm account deletion.
 
 The tool returns:
@@ -603,11 +602,8 @@ Use lower-case snake-case names. Each tool must provide:
 
 - `settings_get`
 - `settings_update`
-- `settings_manage_ai_keys`
 
-`settings_update` accepts explicit nested sections for goals, reports, appearance, preferences, and AI provider/model selection. It must not accept arbitrary object spreading into Prisma.
-
-`settings_manage_ai_keys` returns a secure browser action URL rather than accepting a key.
+`settings_update` accepts explicit sections for goals, reports, appearance, preferences, and timezone. It must not accept arbitrary object spreading into Prisma.
 
 #### Vault
 
@@ -621,13 +617,10 @@ Use lower-case snake-case names. Each tool must provide:
 
 #### Account data
 
-- `account_export`
 - `account_clear_activities`
-- `account_delete`
 
-`account_export` returns a short-lived download/resource link for large exports rather than injecting the complete account archive into the model context.
-
-`account_delete` requires a secure browser confirmation flow. It must not delete an account from one unconfirmed model call.
+Account export and account deletion stay in Settings → Data so the user can review the
+action in Jobmark itself. MCP exposes only the explicitly confirmed activity-clearing action.
 
 ### 9.2 Date and identifier rules
 
@@ -667,7 +660,6 @@ Protocol-level errors are reserved for malformed JSON-RPC or unknown tools. Vali
 - `CONFIRMATION_REQUIRED`
 - `CONFLICT`
 - `RATE_LIMITED`
-- `UPSTREAM_AI_FAILED`
 - `INTERNAL_ERROR`
 
 Error text must be actionable for the model but must not reveal stack traces, SQL, secret values, or whether another tenant owns a guessed ID.
@@ -742,20 +734,20 @@ Update at minimum:
 - FAQ.
 - Privacy policy.
 - Terms.
-- Settings AI descriptions.
+- Settings review descriptions.
 - Open Graph metadata.
 - Security documentation.
 - Deployment/environment documentation.
 
-### 11.4 Existing AI utilities
+### 11.4 Deterministic briefs and assistant handoffs
 
 Keep report generation, outreach generation, report/outreach improvement, and dictation polishing operational.
 
 Clarify in UI and documentation that:
 
-- These are Jobmark's built-in task-specific AI utilities.
-- They use the provider/model configured in Jobmark Settings.
-- The MCP client can alternatively read the underlying data, perform the work itself, and save the result through Jobmark tools.
+- Jobmark builds bounded, evidence-only briefs and predictable text cleanups from the user's record.
+- No external model service is required for the first draft.
+- A connected MCP assistant can read the underlying data, perform richer writing, and save the result through Jobmark tools.
 
 ## 12. Database and migrations
 
@@ -788,13 +780,13 @@ Apply separate limits by user/connection and tool class:
 
 - Read/list/search.
 - Ordinary writes.
-- AI-generating tools.
+- Brief-generation and assistant-handoff operations.
 - Secret/authorization attempts.
 - Destructive operations.
 
 The exact limits should be constants with tests. Rate-limit responses must include a retryable error and avoid leaking tenant information.
 
-AI-generating tools continue using the existing AI-specific limits and safe upstream error behavior.
+Brief-generation operations remain bounded and use the shared request limit. Assistant failures are handled by the external client rather than a Jobmark model service.
 
 ## 14. Deployment and production migration process
 
@@ -933,7 +925,7 @@ The refactor is complete only when all of the following are true:
 - Every remaining user-facing Jobmark capability in the parity matrix is available through MCP.
 - Web and MCP paths use the same domain functions.
 - Cross-account and vault protections are equivalent across transports.
-- Passwords and provider API keys never pass through normal model tool arguments.
+- Passwords and other secrets never pass through normal model tool arguments.
 - Destructive actions require server-enforced confirmation/step-up behavior.
 - Tool outputs are structured, bounded, and validated.
 - Retried creates do not duplicate data.
@@ -964,4 +956,3 @@ The refactor is complete only when all of the following are true:
 - Vercel MCP Adapter/deployment guidance: https://vercel.com/docs/mcp/deploy-mcp-servers-to-vercel
 - OpenAI custom MCP/app setup guidance: https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt-beta
 - Anthropic remote custom connector guidance: https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp
-

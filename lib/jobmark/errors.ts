@@ -73,13 +73,6 @@ export class RateLimitedError extends JobmarkError {
   }
 }
 
-export class UpstreamAIError extends JobmarkError {
-  constructor(message: string, public readonly provider?: string) {
-    super(message, 'UPSTREAM_AI_FAILED', { provider });
-    this.name = 'UpstreamAIError';
-  }
-}
-
 export class InternalError extends JobmarkError {
   constructor(message = 'Internal server error') {
     super(message, 'INTERNAL_ERROR');

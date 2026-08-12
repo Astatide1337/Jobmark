@@ -151,7 +151,7 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"
             >
-              Free to start. Export-ready. BYOK support planned.
+              Free to start. Export-ready. Assistant-ready.
             </motion.p>
           </motion.div>
 

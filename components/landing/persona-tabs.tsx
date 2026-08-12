@@ -88,7 +88,7 @@ function TrackVisual() {
     <div className="bg-card/60 border-border/40 space-y-4 rounded-lg border p-6">
       <div className="text-muted-foreground mb-4 flex items-center gap-3 text-sm">
         <Calendar className="text-primary h-4 w-4" />
-        <span>Today's Entries</span>
+        <span>Today&apos;s Entries</span>
       </div>
 
       {[
@@ -191,7 +191,7 @@ function ShareVisual() {
         </div>
 
         <div className="space-y-2 text-sm">
-          <p className="text-foreground font-medium">This Week's Highlights:</p>
+          <p className="text-foreground font-medium">This Week&apos;s Highlights:</p>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

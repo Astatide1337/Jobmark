@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { validateAccessToken } from '@/lib/mcp/auth/provider';
-import { checkRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
+import { checkMcpRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
 import { allTools, toolDefinitions } from '@/lib/mcp/tools';
 import { McpValidationError } from '@/lib/mcp/errors';
 import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
-import {
-  claimIdempotency,
-  completeIdempotency,
-  releaseIdempotency,
-} from '@/lib/mcp/idempotency';
+import { claimIdempotency, completeIdempotency, releaseIdempotency } from '@/lib/mcp/idempotency';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -43,6 +39,12 @@ const SERVER_INFO = {
   version: '1.0.0',
 };
 
+// MCP clients may surface server instructions alongside their own response.
+// Keep the handoff human-first: implementation names and opaque record IDs
+// are for the connection, never for the person using the assistant.
+const SERVER_INSTRUCTIONS =
+  'Jobmark is a private work record. Speak plainly and refer to people, projects, and activities by their names or meaningful details. Never show internal record IDs, database identifiers, tool names, scopes, or protocol steps in the user-facing response. For reviews and outreach, return an editable draft for the user to review and never send or change anything without clear confirmation.';
+
 function createErrorResponse(
   id: string | number | null,
   code: number,
@@ -54,6 +56,40 @@ function createErrorResponse(
 
 function createSuccessResponse(id: string | number | null, result: unknown): JsonRpcResponse {
   return { jsonrpc: '2.0', id, result };
+}
+
+const DOMAIN_ERROR_CODES: Record<string, number> = {
+  VALIDATION_ERROR: -32602,
+  NOT_FOUND: -32004,
+  FORBIDDEN: -32003,
+  VAULT_LOCKED: -32003,
+  USER_ACTION_REQUIRED: -32000,
+  CONFIRMATION_REQUIRED: -32000,
+  CONFLICT: -32009,
+  RATE_LIMITED: -32029,
+  INSUFFICIENT_SCOPE: -32003,
+  UNAUTHENTICATED: -32001,
+  INTERNAL_ERROR: -32603,
+};
+
+function normalizeJsonRpcError(error: unknown): {
+  code: number;
+  message: string;
+  data?: unknown;
+} {
+  const candidate = error as { code?: unknown; message?: unknown; data?: unknown };
+  if (typeof candidate.code === 'number' && typeof candidate.message === 'string') {
+    return { code: candidate.code, message: candidate.message, data: candidate.data };
+  }
+
+  const domainCode = typeof candidate.code === 'string' ? candidate.code : 'INTERNAL_ERROR';
+  const message =
+    typeof candidate.message === 'string' ? candidate.message : 'Internal server error';
+  const data =
+    candidate.data && typeof candidate.data === 'object'
+      ? { ...(candidate.data as Record<string, unknown>), code: domainCode }
+      : { code: domainCode };
+  return { code: DOMAIN_ERROR_CODES[domainCode] ?? -32603, message, data };
 }
 
 function getRequestedProtocolVersion(
@@ -78,9 +114,7 @@ function decodeMcpHeaderValue(value: string): string | null {
   try {
     const encoded = value.slice(prefix.length, -suffix.length);
     const binary = atob(encoded);
-    return new TextDecoder().decode(
-      Uint8Array.from(binary, character => character.charCodeAt(0))
-    );
+    return new TextDecoder().decode(Uint8Array.from(binary, character => character.charCodeAt(0)));
   } catch {
     return null;
   }
@@ -373,6 +407,87 @@ async function executeTool(
   return result;
 }
 
+async function executeMcpMethod({
+  method,
+  params,
+  request,
+  connectionId,
+  userId,
+  scopes,
+  vaultUnlockedUntil,
+}: {
+  method: string;
+  params?: Record<string, unknown>;
+  request: NextRequest;
+  connectionId: string;
+  userId: string;
+  scopes: string[];
+  vaultUnlockedUntil: Date | null;
+}): Promise<unknown> {
+  switch (method) {
+    case 'server/discover':
+      return {
+        resultType: 'complete',
+        supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
+        capabilities: SERVER_CAPABILITIES,
+        ttlMs: 300_000,
+        cacheScope: 'public',
+        instructions: SERVER_INSTRUCTIONS,
+      };
+    case 'initialize':
+      return {
+        protocolVersion: params?.protocolVersion ?? '2024-11-05',
+        capabilities: SERVER_CAPABILITIES,
+        serverInfo: SERVER_INFO,
+        instructions: SERVER_INSTRUCTIONS,
+      };
+    case 'notifications/initialized':
+    case 'ping':
+      return {};
+    case 'tools/list': {
+      const cursor = params?.cursor as string | undefined;
+      const limit = Math.min((params?.limit as number) ?? 50, 100);
+      let tools = toolDefinitions
+        .filter(definition => {
+          const requiredScopes = (definition.annotations as Record<string, unknown> | undefined)
+            ?.requiredScopes as string[] | undefined;
+          return !requiredScopes || requiredScopes.every(scope => hasScope(scopes, scope));
+        })
+        .map(toPublicToolDefinition);
+      if (cursor) {
+        const index = tools.findIndex(tool => tool.name === cursor);
+        tools = tools.slice(index + 1);
+      }
+      const page = tools.slice(0, limit);
+      return {
+        tools: page,
+        nextCursor: page.length === limit ? page[page.length - 1].name : undefined,
+        ttlMs: 300_000,
+        cacheScope: 'private',
+      };
+    }
+    case 'tools/call': {
+      const toolName = params?.name as string;
+      const toolParams = (params?.arguments as Record<string, unknown>) ?? {};
+      return executeTool(
+        connectionId,
+        userId,
+        scopes,
+        toolName,
+        toolParams,
+        vaultUnlockedUntil,
+        request.headers.get('idempotency-key') ?? undefined
+      );
+    }
+    case 'resources/list':
+      return { resources: [], nextCursor: undefined };
+    case 'prompts/list':
+      return { prompts: [], nextCursor: undefined };
+    default:
+      throw { code: -32601, message: 'Method not found', data: { code: 'METHOD_NOT_FOUND' } };
+  }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
@@ -388,7 +503,7 @@ export async function POST(request: NextRequest) {
 
   const { connectionId, userId, scopes } = authResult;
 
-  const rateLimit = await checkRateLimit(connectionId, RATE_LIMITS.mcp);
+  const rateLimit = await checkMcpRateLimit(connectionId);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       createErrorResponse(null, -32603, 'Rate limit exceeded', {
@@ -446,102 +561,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    let result: unknown;
-
-    switch (method) {
-      case 'server/discover': {
-        result = {
-          resultType: 'complete',
-          supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
-          capabilities: SERVER_CAPABILITIES,
-          ttlMs: 300_000,
-          cacheScope: 'public',
-          instructions:
-            'Use Jobmark tools to view and manage the connected user’s job-search record. Ask before making changes.',
-        };
-        break;
-      }
-
-      case 'initialize': {
-        const protocolVersion =
-          (params as Record<string, unknown>)?.protocolVersion ?? '2024-11-05';
-        result = {
-          protocolVersion,
-          capabilities: SERVER_CAPABILITIES,
-          serverInfo: SERVER_INFO,
-        };
-        break;
-      }
-
-      case 'notifications/initialized': {
-        result = {};
-        break;
-      }
-
-      case 'ping': {
-        result = {};
-        break;
-      }
-
-      case 'tools/list': {
-        const cursor = (params as Record<string, unknown>)?.cursor as string | undefined;
-        const limit = Math.min(((params as Record<string, unknown>)?.limit as number) ?? 50, 100);
-
-        let tools = toolDefinitions
-          .filter(definition => {
-            const requiredScopes = (definition.annotations as Record<string, unknown> | undefined)
-              ?.requiredScopes as string[] | undefined;
-            return !requiredScopes || requiredScopes.every(scope => hasScope(scopes, scope));
-          })
-          .map(toPublicToolDefinition);
-        if (cursor) {
-          const index = tools.findIndex(t => t.name === cursor);
-          tools = tools.slice(index + 1);
-        }
-
-        const page = tools.slice(0, limit);
-        result = {
-          tools: page,
-          nextCursor: page.length === limit ? page[page.length - 1].name : undefined,
-          ttlMs: 300_000,
-          cacheScope: 'private',
-        };
-        break;
-      }
-
-      case 'tools/call': {
-        const toolName = (params as Record<string, unknown>)?.name as string;
-        const toolParams =
-          ((params as Record<string, unknown>)?.arguments as Record<string, unknown>) ?? {};
-        const idempotencyKey = request.headers.get('idempotency-key') ?? undefined;
-
-        const toolResult = await executeTool(
-          connectionId,
-          userId,
-          scopes,
-          toolName,
-          toolParams,
-          authResult.vaultUnlockedUntil,
-          idempotencyKey
-        );
-        result = toolResult;
-        break;
-      }
-
-      case 'resources/list': {
-        result = { resources: [], nextCursor: undefined };
-        break;
-      }
-
-      case 'prompts/list': {
-        result = { prompts: [], nextCursor: undefined };
-        break;
-      }
-
-      default: {
-        throw { code: -32601, message: 'Method not found', data: { code: 'METHOD_NOT_FOUND' } };
-      }
-    }
+    let result = await executeMcpMethod({
+      method,
+      params,
+      request,
+      connectionId,
+      userId,
+      scopes,
+      vaultUnlockedUntil: authResult.vaultUnlockedUntil,
+    });
 
     if (isNotification) {
       return new NextResponse(null, {
@@ -559,15 +587,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    const err = error as { code?: number; message?: string; data?: { code?: string } };
+    const err = normalizeJsonRpcError(error);
 
-    console.log(
+    console.error(
       JSON.stringify({
         connection_id: connectionId,
         tool: method,
         duration_ms: duration,
         status: 'error',
-        error_code: err?.data?.code ?? 'INTERNAL_ERROR',
+        error_code:
+          err.data && typeof err.data === 'object' && 'code' in err.data
+            ? ((err.data as { code?: string }).code ?? 'INTERNAL_ERROR')
+            : 'INTERNAL_ERROR',
       })
     );
 
@@ -578,18 +609,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (err?.code && err?.message) {
-      return NextResponse.json(createErrorResponse(id, err.code, err.message, err.data), {
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp),
-      });
-    }
-
-    return NextResponse.json(
-      createErrorResponse(id, -32603, 'Internal error', { code: 'INTERNAL_ERROR' }),
-      {
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp),
-      }
-    );
+    return NextResponse.json(createErrorResponse(id, err.code, err.message, err.data), {
+      headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp),
+    });
   }
 }
 

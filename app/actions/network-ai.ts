@@ -1,25 +1,23 @@
 /**
- * AI Networking Actions
+ * Networking draft actions
  *
- * Why: Professional outreach is stressful and time-consuming. These
- * actions leverage LLMs to generate personalized message drafts based
- * on real relationship history.
+ * Why: Professional outreach is stressful and time-consuming. These actions
+ * build an editable, evidence-safe message from the user's relationship
+ * history. A user can then review it locally or ask a connected assistant to
+ * polish it, without routing the user's record through a model service inside
+ * Jobmark.
  *
  * Security & Accuracy:
- * The `OUTREACH_SYSTEM_PROMPT` explicitly forbids the AI from fabricating
- * details. It is instructed to only use the facts provided in the
- * `contactContext` to maintain professional integrity.
+ * The draft contains only facts stored in Jobmark; assistant handoffs also
+ * explicitly ask for an editable result and never an automatic send.
  */
 'use server';
 
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createStreamableValue } from '@ai-sdk/rsc';
-import { createAIClient } from '@/lib/ai';
-import { getUserAiConfig } from '@/app/actions/settings';
-import { formatDate } from '@/lib/network';
 import { format } from 'date-fns';
-import { assertAiRequestAllowed } from '@/lib/ai-rate-limit';
+import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
 
 export type OutreachDraftConfig = {
   contactId: string;
@@ -29,17 +27,8 @@ export type OutreachDraftConfig = {
   extraContext?: string;
 };
 
-const OUTREACH_SYSTEM_PROMPT = `You are a professional networking assistant. Generate a draft message ONLY. Never fabricate details about the contact. Use only the facts provided. If information is insufficient, note what's missing. This is a DRAFT for the user to review and send themselves.
-
-Guidelines:
-- Keep the tone consistent with the requested style
-- For email channel, include a Subject line at the top
-- Reference real details from the contact profile and interaction history
-- Do NOT invent accomplishments, shared experiences, or mutual connections
-- If the objective is unclear or context is thin, produce a shorter, safer draft and flag what extra info would help`;
-
 // ---------------------------------------------------------------------------
-// Streaming outreach draft generation
+// Deterministic outreach draft generation
 // ---------------------------------------------------------------------------
 
 export async function generateOutreachDraft({
@@ -59,7 +48,6 @@ export async function generateOutreachDraft({
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-  await assertAiRequestAllowed(session.user.id, 'outreach');
   if (
     !objective.trim() ||
     objective.length > 1_000 ||
@@ -85,61 +73,30 @@ export async function generateOutreachDraft({
     throw new Error('Contact not found');
   }
 
-  // Build context block from real data
-  let contactContext = `Contact Profile:\n- Name: ${contact.fullName}`;
-  if (contact.relationship) contactContext += `\n- Relationship: ${contact.relationship}`;
-  if (contact.personalityTraits)
-    contactContext += `\n- Personality traits: ${contact.personalityTraits}`;
-  if (contact.notes) contactContext += `\n- Notes: ${contact.notes}`;
-  if (contact.email) contactContext += `\n- Email: ${contact.email}`;
+  const content = buildOutreachDraft(
+    {
+      id: contact.id,
+      fullName: contact.fullName,
+      email: contact.email,
+      relationship: contact.relationship,
+      personalityTraits: contact.personalityTraits,
+      notes: contact.notes,
+      interactions: contact.interactions.map(interaction => ({
+        occurredAt: interaction.occurredAt,
+        channel: interaction.channel,
+        summary: interaction.summary,
+        nextStep: interaction.nextStep,
+      })),
+    },
+    { objective, tone, channel, extraContext }
+  );
 
-  if (contact.interactions.length > 0) {
-    contactContext += `\n\nRecent Interactions:`;
-    for (const interaction of contact.interactions) {
-      contactContext += `\n- [${formatDate(interaction.occurredAt)}] (${interaction.channel}) ${interaction.summary}`;
-      if (interaction.nextStep) contactContext += ` | Next step: ${interaction.nextStep}`;
-    }
-  } else {
-    contactContext += `\n\nNo prior interactions logged.`;
-  }
-
-  const userPrompt = `${contactContext}
-
-Objective: ${objective}
-Tone: ${tone}
-Channel: ${channel}${extraContext ? `\nAdditional context: ${extraContext}` : ''}
-
-Generate the outreach draft now.`;
-
-  // Config must be fetched before createStreamableValue to satisfy 'use server' constraints
-  const { provider, model, apiKey } = await getUserAiConfig();
-  const ai = createAIClient(provider, apiKey);
+  // Keep the existing stream contract used by the wizard. The draft is
+  // generated synchronously from verified record data, so there is no model
+  // call or background request to fail.
   const stream = createStreamableValue('');
-
-  (async () => {
-    try {
-      const completion = await ai.chat.completions.create({
-        model,
-        messages: [
-          { role: 'system', content: OUTREACH_SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt },
-        ],
-        stream: true,
-      });
-
-      for await (const chunk of completion) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          stream.update(content);
-        }
-      }
-    } catch (err) {
-      console.error('Outreach draft stream error:', err);
-      stream.error(new Error('Outreach generation failed. Please try again.'));
-    } finally {
-      stream.done();
-    }
-  })();
+  stream.update(content);
+  stream.done();
 
   return { output: stream.value };
 }
@@ -216,7 +173,6 @@ export async function improveOutreachDraft(
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
-  await assertAiRequestAllowed(session.user.id, 'outreach-edit');
   if (
     !selectedText.trim() ||
     selectedText.length > 20_000 ||
@@ -226,27 +182,5 @@ export async function improveOutreachDraft(
     throw new Error('Invalid edit request');
   }
 
-  try {
-    const { provider, model, apiKey } = await getUserAiConfig();
-    const ai = createAIClient(provider, apiKey);
-    const completion = await ai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content:
-            "You are a writing assistant. Rewrite the provided text according to the user's instruction. Return ONLY the rewritten text, nothing else.",
-        },
-        {
-          role: 'user',
-          content: `Original text:\n${selectedText}\n\nInstruction: ${instruction}`,
-        },
-      ],
-    });
-
-    return completion.choices[0]?.message?.content?.trim() ?? selectedText;
-  } catch (error) {
-    console.error('Failed to improve draft:', error);
-    throw new Error('Failed to improve draft. Please try again.');
-  }
+  return deterministicRewrite(selectedText, instruction);
 }

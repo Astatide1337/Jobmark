@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export interface ConnectedAiProvider {
+export interface ConnectedMcpProvider {
   key: string;
   name: string;
 }
@@ -23,8 +23,8 @@ export const MCP_PROVIDER_URLS: Record<string, string> = {
 };
 
 // These are the only provider URL handoffs we can verify against the current
-// web apps. Gemini currently ignores prompt query parameters, so it uses the
-// clipboard fallback instead of putting the user's draft in the URL.
+// web apps. Gemini currently ignores query parameters, so it uses the
+// clipboard fallback instead.
 const MCP_PROVIDER_PROMPT_PARAMS: Record<string, string> = {
   claude: 'q',
   chatgpt: 'q',
@@ -45,8 +45,12 @@ export function getMcpProviderLaunchUrl(providerKey: string, prompt?: string) {
 }
 
 interface McpDraftActionsProps {
-  connectedAiProviders: ConnectedAiProvider[];
-  onDraftWithProvider: (provider: ConnectedAiProvider) => void;
+  connectedMcpProviders: ConnectedMcpProvider[];
+  onDraftWithProvider: (provider: ConnectedMcpProvider) => void;
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  providerAction?: string;
 }
 
 export function ProviderIcon({ providerKey }: { providerKey: string }) {
@@ -59,29 +63,31 @@ export function ProviderIcon({ providerKey }: { providerKey: string }) {
 }
 
 export function McpDraftActions({
-  connectedAiProviders,
+  connectedMcpProviders,
   onDraftWithProvider,
+  eyebrow = 'Choose where to draft',
+  title = 'Use a connected assistant',
+  description = 'Choose an assistant to give your Jobmark draft another pass.',
+  providerAction = 'Draft with',
 }: McpDraftActionsProps) {
   return (
     <div className="border-border/50 bg-card/30 rounded-2xl border p-5">
       <div className="flex flex-col gap-1">
         <p className="text-primary text-xs font-semibold tracking-widest uppercase">
-          Choose where to draft
+          {eyebrow}
         </p>
-        <h3 className="text-foreground font-semibold">Use your connected AI</h3>
-        <p className="text-muted-foreground text-sm">
-          Choose an assistant to open with a ready-to-send prompt grounded in your Jobmark record.
-        </p>
-        {connectedAiProviders.some(provider => provider.key === 'gemini') && (
+        <h3 className="text-foreground font-semibold">{title}</h3>
+        <p className="text-muted-foreground text-sm">{description}</p>
+        {connectedMcpProviders.some(provider => provider.key === 'gemini') && (
           <p className="text-muted-foreground/80 mt-1 text-xs">
-            Gemini opens with your prompt copied. Paste it into the message box to begin.
+            Gemini opens with the instructions copied. Paste them into the message box to begin.
           </p>
         )}
       </div>
 
-      {connectedAiProviders.length > 0 ? (
+      {connectedMcpProviders.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-3">
-          {connectedAiProviders.map(provider => (
+          {connectedMcpProviders.map(provider => (
             <Button
               key={provider.key}
               type="button"
@@ -92,7 +98,7 @@ export function McpDraftActions({
               <ProviderIcon providerKey={provider.key} />
               <span className="ml-2">
                 {getMcpProviderLaunchUrl(provider.key)
-                  ? `Draft with ${provider.name}`
+                  ? `${providerAction} ${provider.name}`
                   : `Copy for ${provider.name}`}
               </span>
             </Button>
@@ -111,8 +117,8 @@ export function McpDraftActions({
 }
 
 interface McpProviderMenuProps {
-  connectedAiProviders: ConnectedAiProvider[];
-  onOpenProvider: (provider: ConnectedAiProvider) => void;
+  connectedMcpProviders: ConnectedMcpProvider[];
+  onOpenProvider: (provider: ConnectedMcpProvider) => void;
 }
 
 /**
@@ -120,8 +126,8 @@ interface McpProviderMenuProps {
  * direct action; multiple connections get a menu, so “Open in…” is never
  * ambiguous.
  */
-export function McpProviderMenu({ connectedAiProviders, onOpenProvider }: McpProviderMenuProps) {
-  if (connectedAiProviders.length === 0) {
+export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpProviderMenuProps) {
+  if (connectedMcpProviders.length === 0) {
     return (
       <Button
         asChild
@@ -136,8 +142,8 @@ export function McpProviderMenu({ connectedAiProviders, onOpenProvider }: McpPro
     );
   }
 
-  if (connectedAiProviders.length === 1) {
-    const provider = connectedAiProviders[0];
+  if (connectedMcpProviders.length === 1) {
+    const provider = connectedMcpProviders[0];
     const launchUrl = getMcpProviderLaunchUrl(provider.key);
     return (
       <Button
@@ -169,7 +175,7 @@ export function McpProviderMenu({ connectedAiProviders, onOpenProvider }: McpPro
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        {connectedAiProviders.map(provider => (
+        {connectedMcpProviders.map(provider => (
           <DropdownMenuItem
             key={provider.key}
             onSelect={() => onOpenProvider(provider)}

@@ -25,6 +25,8 @@ const outreachGenerateSchema = z.object({
   contactId: z.string(),
   goal: z.string().optional(),
   context: z.string().optional(),
+  tone: z.string().max(100).optional(),
+  channel: z.string().max(100).optional(),
 });
 
 const outreachCreateSchema = z.object({
@@ -108,13 +110,15 @@ export const outreachGenerateTool = {
   definition: {
     name: 'outreach_generate',
     title: 'Generate Outreach Draft',
-    description: 'Generate personalized outreach draft using AI based on contact history. Requires jobmark:write scope.',
+    description: 'Generate an editable outreach message from a contact and its history. The message is grounded in the record and ready for the user to review. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
         contactId: { type: 'string' },
         goal: { type: 'string' },
         context: { type: 'string' },
+        tone: { type: 'string' },
+        channel: { type: 'string' },
       },
       required: ['contactId'],
       additionalProperties: false,
@@ -255,7 +259,7 @@ export const outreachImproveTextTool = {
   definition: {
     name: 'outreach_improve_text',
     title: 'Improve Outreach Text',
-    description: 'Improve outreach text with AI assistance. Requires jobmark:write scope.',
+    description: 'Apply a predictable edit to a saved outreach draft. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
