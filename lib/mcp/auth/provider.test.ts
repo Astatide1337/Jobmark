@@ -572,4 +572,20 @@ describe('CIDDD client metadata SSRF and response limits', () => {
     await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
     expect(mocks.httpsRequest).toHaveBeenCalledTimes(3);
   });
+
+  it('treats metadata network failures as an unknown client instead of throwing', async () => {
+    mocks.httpsRequest.mockImplementationOnce(
+      (_url: URL, _options: object, _callback: ResponseCallback) => {
+        const request = new EventEmitter() as EventEmitter & {
+          destroy: ReturnType<typeof vi.fn>;
+          end: () => void;
+        };
+        request.destroy = vi.fn();
+        request.end = () => queueMicrotask(() => request.emit('error', new Error('network down')));
+        return request;
+      }
+    );
+
+    await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
+  });
 });

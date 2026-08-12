@@ -26,6 +26,7 @@ vi.mock('@/lib/mcp/auth/provider', () => ({
 
 vi.mock('@/lib/mcp/auth/rate-limit', () => ({
   checkRateLimit: mocks.rateLimit,
+  checkMcpRateLimit: mocks.rateLimit,
   createRateLimitHeaders: () => ({}),
   RATE_LIMITS: { mcp: { maxRequests: 60, windowMs: 60_000 } },
 }));
@@ -218,5 +219,53 @@ describe('MCP modern discovery and tool listing', () => {
       expect.objectContaining({ requestKey: 'retry-1' }),
       { content: [{ type: 'text', text: 'ok' }] }
     );
+  });
+
+  it('maps domain error codes to numeric JSON-RPC errors', async () => {
+    mocks.validateAccessToken.mockResolvedValue({
+      clientId: 'chatgpt',
+      userId: 'user-1',
+      scope: 'jobmark:read',
+    });
+    mocks.clientFindUnique.mockResolvedValue({ id: 'client-1' });
+    mocks.connectionFindFirst.mockResolvedValue({
+      id: 'connection-1',
+      userId: 'user-1',
+      scopes: ['jobmark:read'],
+      vaultUnlockedUntil: null,
+    });
+    mocks.rateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 59,
+      resetAt: Date.now() + 60_000,
+    });
+    mocks.executeTool.mockRejectedValue({
+      code: 'NOT_FOUND',
+      message: 'Project not found',
+      data: { resource: 'Project' },
+    });
+
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/mcp', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer test-token',
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+          'mcp-protocol-version': '2025-11-25',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 5,
+          method: 'tools/call',
+          params: { name: 'jobmark_list_projects', arguments: {} },
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: -32004, data: { code: 'NOT_FOUND', resource: 'Project' } },
+    });
   });
 });

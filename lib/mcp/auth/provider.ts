@@ -557,7 +557,7 @@ export async function resolveClientId(clientId: string): Promise<Client | null> 
 
   // CIDDD: Fetch metadata from the URL.
   try {
-    return resolveMetadataClient(metadataUrl, clientId, pinnedAddress);
+    return await resolveMetadataClient(metadataUrl, clientId, pinnedAddress);
   } catch {
     return null;
   }

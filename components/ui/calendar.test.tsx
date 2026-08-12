@@ -15,5 +15,6 @@ describe('Calendar', () => {
     expect(html).toContain('<svg');
     expect(html).toMatch(/aria-label="[^"]*previous month[^"]*"/i);
     expect(html).toMatch(/aria-label="[^"]*next month[^"]*"/i);
+    expect(html).toContain('z-10');
   });
 });

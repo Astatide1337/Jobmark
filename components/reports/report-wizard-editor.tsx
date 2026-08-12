@@ -21,10 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LiveEditor } from '@/components/reports/live-editor';
-import {
-  McpProviderMenu,
-  type ConnectedMcpProvider,
-} from '@/components/reports/mcp-draft-actions';
+import { McpProviderMenu, type ConnectedMcpProvider } from '@/components/reports/mcp-draft-actions';
 import { exportToPdf, exportToWord } from '@/lib/report-export';
 
 interface ReportWizardEditorProps {
@@ -114,17 +111,11 @@ export function ReportWizardEditor({
                 align="start"
                 className="w-[var(--radix-dropdown-menu-trigger-width)]"
               >
-                <DropdownMenuItem
-                  onClick={() => exportToPdf(reportContent)}
-                  className="group cursor-pointer"
-                >
+                <DropdownMenuItem onClick={onEmail} className="group cursor-pointer">
                   <Mail className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
                   <span className="group-focus:text-accent-foreground">Default Mail App</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => exportToWord(reportContent)}
-                  className="group cursor-pointer"
-                >
+                <DropdownMenuItem onClick={onGmail} className="group cursor-pointer">
                   <span className="text-foreground group-focus:text-accent-foreground mr-2 text-lg font-bold">
                     M
                   </span>
@@ -147,11 +138,17 @@ export function ReportWizardEditor({
                 align="start"
                 className="w-[var(--radix-dropdown-menu-trigger-width)]"
               >
-                <DropdownMenuItem onClick={onEmail} className="group cursor-pointer">
+                <DropdownMenuItem
+                  onClick={() => exportToPdf(reportContent)}
+                  className="group cursor-pointer"
+                >
                   <File className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
                   <span className="group-focus:text-accent-foreground">Download as PDF</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onGmail} className="group cursor-pointer">
+                <DropdownMenuItem
+                  onClick={() => exportToWord(reportContent)}
+                  className="group cursor-pointer"
+                >
                   <FileText className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
                   <span className="group-focus:text-accent-foreground">Download as Word</span>
                 </DropdownMenuItem>
@@ -172,11 +169,7 @@ export function ReportWizardEditor({
               onClick={onSave}
               disabled={isStreaming || isSaving || saved}
             >
-              {saved ? (
-                <CheckCircle className="mr-2 h-4 w-4" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
+              {saved ? <CheckCircle className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
               {saved ? 'Saved Draft' : 'Save Draft'}
             </Button>
             <McpProviderMenu

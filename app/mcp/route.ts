@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { validateAccessToken } from '@/lib/mcp/auth/provider';
-import { checkRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
+import { checkMcpRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
 import { allTools, toolDefinitions } from '@/lib/mcp/tools';
 import { McpValidationError } from '@/lib/mcp/errors';
 import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
@@ -56,6 +56,40 @@ function createErrorResponse(
 
 function createSuccessResponse(id: string | number | null, result: unknown): JsonRpcResponse {
   return { jsonrpc: '2.0', id, result };
+}
+
+const DOMAIN_ERROR_CODES: Record<string, number> = {
+  VALIDATION_ERROR: -32602,
+  NOT_FOUND: -32004,
+  FORBIDDEN: -32003,
+  VAULT_LOCKED: -32003,
+  USER_ACTION_REQUIRED: -32000,
+  CONFIRMATION_REQUIRED: -32000,
+  CONFLICT: -32009,
+  RATE_LIMITED: -32029,
+  INSUFFICIENT_SCOPE: -32003,
+  UNAUTHENTICATED: -32001,
+  INTERNAL_ERROR: -32603,
+};
+
+function normalizeJsonRpcError(error: unknown): {
+  code: number;
+  message: string;
+  data?: unknown;
+} {
+  const candidate = error as { code?: unknown; message?: unknown; data?: unknown };
+  if (typeof candidate.code === 'number' && typeof candidate.message === 'string') {
+    return { code: candidate.code, message: candidate.message, data: candidate.data };
+  }
+
+  const domainCode = typeof candidate.code === 'string' ? candidate.code : 'INTERNAL_ERROR';
+  const message =
+    typeof candidate.message === 'string' ? candidate.message : 'Internal server error';
+  const data =
+    candidate.data && typeof candidate.data === 'object'
+      ? { ...(candidate.data as Record<string, unknown>), code: domainCode }
+      : { code: domainCode };
+  return { code: DOMAIN_ERROR_CODES[domainCode] ?? -32603, message, data };
 }
 
 function getRequestedProtocolVersion(
@@ -469,7 +503,7 @@ export async function POST(request: NextRequest) {
 
   const { connectionId, userId, scopes } = authResult;
 
-  const rateLimit = await checkRateLimit(connectionId, RATE_LIMITS.mcp);
+  const rateLimit = await checkMcpRateLimit(connectionId);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       createErrorResponse(null, -32603, 'Rate limit exceeded', {
@@ -553,7 +587,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    const err = error as { code?: number; message?: string; data?: { code?: string } };
+    const err = normalizeJsonRpcError(error);
 
     console.error(
       JSON.stringify({
@@ -561,7 +595,10 @@ export async function POST(request: NextRequest) {
         tool: method,
         duration_ms: duration,
         status: 'error',
-        error_code: err?.data?.code ?? 'INTERNAL_ERROR',
+        error_code:
+          err.data && typeof err.data === 'object' && 'code' in err.data
+            ? ((err.data as { code?: string }).code ?? 'INTERNAL_ERROR')
+            : 'INTERNAL_ERROR',
       })
     );
 
@@ -572,18 +609,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (err?.code && err?.message) {
-      return NextResponse.json(createErrorResponse(id, err.code, err.message, err.data), {
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp),
-      });
-    }
-
-    return NextResponse.json(
-      createErrorResponse(id, -32603, 'Internal error', { code: 'INTERNAL_ERROR' }),
-      {
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp),
-      }
-    );
+    return NextResponse.json(createErrorResponse(id, err.code, err.message, err.data), {
+      headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp),
+    });
   }
 }
 

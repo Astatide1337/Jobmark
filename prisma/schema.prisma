@@ -470,7 +470,7 @@ model SecureActionNonce {
   nonceHash    String   @unique @db.Text
   userId       String
   connectionId String?
-  type         String // "vault_setup" | "vault_unlock" | "vault_change_password" | "ai_keys" | "account_delete" | "account_export"
+  type         String // vault setup/unlock/change-password actions
   used         Boolean  @default(false)
   expiresAt    DateTime
   createdAt    DateTime @default(now())

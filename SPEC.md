@@ -67,23 +67,23 @@ Jobmark currently mixes transport/UI concerns and domain behavior inside Server 
 
 ### 3.1 Existing domains that remain
 
-| Domain | Current implementation | Required MCP coverage |
-|---|---|---|
-| Activities | `app/actions/activities.ts` | List, create, delete, counts, dashboard statistics |
-| Projects | `app/actions/projects.ts` | List, read details, create, update, archive, restore, list project activities |
-| Goals | `app/actions/goals.ts` | List, create, update, delete |
-| Reports | `app/actions/reports.ts` | Count eligible activities, generate, improve text, save, list, read, update, delete |
-| Search | `app/actions/search.ts` | Search activities, projects, reports, contacts, and interactions |
-| Insights | `app/actions/insights.ts` | Activity totals, streaks, heatmap/trend data, project distribution, report totals |
-| Contacts | `app/actions/network.ts` | List, read, create, update, delete |
-| Interactions | `app/actions/network.ts` | List, create, update, delete, follow-up/network statistics |
-| Outreach | `app/actions/network-ai.ts` | Generate, save, list, update, delete, improve |
-| Focus | `app/actions/focus-config.ts` | Read, save, reset focus configuration |
-| Decompression | `app/actions/decompress.ts` | Log decompression session |
-| Dictation | `app/actions/dictation.ts` | Polish dictated text |
-| Settings | `app/actions/settings.ts` | Read and update user-facing settings |
-| Vault | `app/actions/project-lock.ts` | Status, setup/change/unlock/lock, list locked projects, move projects in/out |
-| Account data | `app/actions/settings.ts` | Export, clear activities, delete account |
+| Domain        | Current implementation        | Required MCP coverage                                                               |
+| ------------- | ----------------------------- | ----------------------------------------------------------------------------------- |
+| Activities    | `app/actions/activities.ts`   | List, create, delete, counts, dashboard statistics                                  |
+| Projects      | `app/actions/projects.ts`     | List, read details, create, update, archive, restore, list project activities       |
+| Goals         | `app/actions/goals.ts`        | List, create, update, delete                                                        |
+| Reports       | `app/actions/reports.ts`      | Count eligible activities, generate, improve text, save, list, read, update, delete |
+| Search        | `app/actions/search.ts`       | Search activities, projects, reports, contacts, and interactions                    |
+| Insights      | `app/actions/insights.ts`     | Activity totals, streaks, heatmap/trend data, project distribution, report totals   |
+| Contacts      | `app/actions/network.ts`      | List, read, create, update, delete                                                  |
+| Interactions  | `app/actions/network.ts`      | List, create, update, delete, follow-up/network statistics                          |
+| Outreach      | `app/actions/network-ai.ts`   | Generate, save, list, update, delete, improve                                       |
+| Focus         | `app/actions/focus-config.ts` | Read, save, reset focus configuration                                               |
+| Decompression | `app/actions/decompress.ts`   | Log decompression session                                                           |
+| Dictation     | `app/actions/dictation.ts`    | Polish dictated text                                                                |
+| Settings      | `app/actions/settings.ts`     | Read and update user-facing settings                                                |
+| Vault         | `app/actions/project-lock.ts` | Status, setup/change/unlock/lock, list locked projects, move projects in/out        |
+| Account data  | `app/actions/settings.ts`     | Export, clear activities, and delete account in Settings → Data                       |
 
 ### 3.2 Chat subsystem to retire
 
@@ -617,13 +617,10 @@ Use lower-case snake-case names. Each tool must provide:
 
 #### Account data
 
-- `account_export`
 - `account_clear_activities`
-- `account_delete`
 
-`account_export` returns a short-lived download/resource link for large exports rather than injecting the complete account archive into the model context.
-
-`account_delete` requires a secure browser confirmation flow. It must not delete an account from one unconfirmed model call.
+Account export and account deletion stay in Settings → Data so the user can review the
+action in Jobmark itself. MCP exposes only the explicitly confirmed activity-clearing action.
 
 ### 9.2 Date and identifier rules
 

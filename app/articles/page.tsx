@@ -111,6 +111,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       article.tags.includes('relationships') ||
       article.tags.includes('career-growth')
   );
+  const remaining = visibility.remaining;
 
   const sectioned = [
     {
@@ -130,6 +131,12 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       title: 'Improve Career Visibility',
       description: 'Use communication, networking, and consistent follow-through to stay visible.',
       items: visibility.items,
+    },
+    {
+      key: 'more-to-explore',
+      title: 'More to Explore',
+      description: 'Keep browsing practical ideas for your next step at work.',
+      items: remaining,
     },
   ].filter(section => section.items.length > 0);
 

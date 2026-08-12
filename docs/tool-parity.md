@@ -3,6 +3,7 @@
 Mapping between SPEC.md tool inventory and implemented MCP tools.
 
 ## Legend
+
 - ✅ = Implemented and matches SPEC
 - ⚠️ = Implemented with different name
 - ➕ = Extra tool not in SPEC (added for completeness)
@@ -10,133 +11,131 @@ Mapping between SPEC.md tool inventory and implemented MCP tools.
 
 ## Activities
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `activities_list` | `activities_list` | ✅ |
-| `activities_create` | `activities_create` | ✅ |
-| `activities_delete` | `activities_delete` | ✅ |
-| `activities_stats` | `dashboard_stats` | ⚠️ (renamed, covers stats) |
-| — | `activities_get` | ➕ (added for completeness) |
-| — | `activities_update` | ➕ (added for completeness) |
+| SPEC Tool           | Implemented Tool    | Status                      |
+| ------------------- | ------------------- | --------------------------- |
+| `activities_list`   | `activities_list`   | ✅                          |
+| `activities_create` | `activities_create` | ✅                          |
+| `activities_delete` | `activities_delete` | ✅                          |
+| `activities_stats`  | `dashboard_stats`   | ⚠️ (renamed, covers stats)  |
+| —                   | `activities_get`    | ➕ (added for completeness) |
+| —                   | `activities_update` | ➕ (added for completeness) |
 
 ## Projects
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `projects_list` | `projects_list` | ✅ |
-| `projects_get` | `projects_get` | ✅ |
-| `projects_create` | `projects_create` | ✅ |
-| `projects_update` | `projects_update` | ✅ |
-| `projects_set_archived` | `projects_set_archived` | ✅ |
-| — | `projects_delete` | ➕ (added for completeness) |
-| — | `projects_get_with_activities` | ➕ (added for completeness) |
+| SPEC Tool               | Implemented Tool               | Status                      |
+| ----------------------- | ------------------------------ | --------------------------- |
+| `projects_list`         | `projects_list`                | ✅                          |
+| `projects_get`          | `projects_get`                 | ✅                          |
+| `projects_create`       | `projects_create`              | ✅                          |
+| `projects_update`       | `projects_update`              | ✅                          |
+| `projects_set_archived` | `projects_set_archived`        | ✅                          |
+| —                       | `projects_delete`              | ➕ (added for completeness) |
+| —                       | `projects_get_with_activities` | ➕ (added for completeness) |
 
 ## Goals
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `goals_list` | `goals_list` | ✅ |
-| `goals_create` | `goals_create` | ✅ |
-| `goals_update` | `goals_update` | ✅ |
-| `goals_delete` | `goals_delete` | ✅ |
-| — | `goals_get` | ➕ (added for completeness) |
+| SPEC Tool      | Implemented Tool | Status                      |
+| -------------- | ---------------- | --------------------------- |
+| `goals_list`   | `goals_list`     | ✅                          |
+| `goals_create` | `goals_create`   | ✅                          |
+| `goals_update` | `goals_update`   | ✅                          |
+| `goals_delete` | `goals_delete`   | ✅                          |
+| —              | `goals_get`      | ➕ (added for completeness) |
 
 ## Reports
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `reports_list` | `reports_list` | ✅ |
-| `reports_get` | `reports_get` | ✅ |
-| `reports_check_activity_count` | — | ❌ (removed: not needed) |
-| `reports_generate` | `reports_generate` | ✅ |
-| `reports_create` | `reports_regenerate` | ⚠️ (renamed) |
-| `reports_update` | `reports_improve_text` | ⚠️ (renamed) |
-| `reports_delete` | `reports_delete` | ✅ |
-| `reports_improve_text` | `reports_improve_text` | ✅ |
+| SPEC Tool                      | Implemented Tool       | Status                   |
+| ------------------------------ | ---------------------- | ------------------------ |
+| `reports_list`                 | `reports_list`         | ✅                       |
+| `reports_get`                  | `reports_get`          | ✅                       |
+| `reports_check_activity_count` | —                      | ❌ (removed: not needed) |
+| `reports_generate`             | `reports_generate`     | ✅                       |
+| `reports_create`               | `reports_regenerate`   | ⚠️ (renamed)             |
+| `reports_update`               | `reports_improve_text` | ⚠️ (renamed)             |
+| `reports_delete`               | `reports_delete`       | ✅                       |
+| `reports_improve_text`         | `reports_improve_text` | ✅                       |
 
 ## Search & Insights
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `search_global` | `search_global` | ✅ |
-| `dashboard_stats` | `dashboard_stats` | ✅ |
-| `insights_get` | `insights_get` | ✅ |
+| SPEC Tool         | Implemented Tool  | Status |
+| ----------------- | ----------------- | ------ |
+| `search_global`   | `search_global`   | ✅     |
+| `dashboard_stats` | `dashboard_stats` | ✅     |
+| `insights_get`    | `insights_get`    | ✅     |
 
 ## Contacts
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `contacts_list` | `contacts_list` | ✅ |
-| `contacts_get` | `contacts_get` | ✅ |
-| `contacts_create` | `contacts_create` | ✅ |
-| `contacts_update` | `contacts_update` | ✅ |
-| `contacts_delete` | `contacts_delete` | ✅ |
+| SPEC Tool         | Implemented Tool  | Status |
+| ----------------- | ----------------- | ------ |
+| `contacts_list`   | `contacts_list`   | ✅     |
+| `contacts_get`    | `contacts_get`    | ✅     |
+| `contacts_create` | `contacts_create` | ✅     |
+| `contacts_update` | `contacts_update` | ✅     |
+| `contacts_delete` | `contacts_delete` | ✅     |
 
 ## Interactions
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `interactions_list` | `interactions_list` | ✅ |
-| `interactions_create` | `interactions_create` | ✅ |
-| `interactions_update` | `interactions_update` | ✅ |
-| `interactions_delete` | `interactions_delete` | ✅ |
-| `network_stats` | `network_stats` | ✅ |
+| SPEC Tool             | Implemented Tool      | Status |
+| --------------------- | --------------------- | ------ |
+| `interactions_list`   | `interactions_list`   | ✅     |
+| `interactions_create` | `interactions_create` | ✅     |
+| `interactions_update` | `interactions_update` | ✅     |
+| `interactions_delete` | `interactions_delete` | ✅     |
+| `network_stats`       | `network_stats`       | ✅     |
 
 ## Outreach
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `outreach_list` | `outreach_list` | ✅ |
-| `outreach_generate` | `outreach_generate` | ✅ |
-| `outreach_create` | `outreach_create` | ✅ |
-| `outreach_update` | `outreach_update` | ✅ |
-| `outreach_delete` | `outreach_delete` | ✅ |
-| `outreach_improve_text` | `outreach_improve_text` | ✅ |
+| SPEC Tool               | Implemented Tool        | Status |
+| ----------------------- | ----------------------- | ------ |
+| `outreach_list`         | `outreach_list`         | ✅     |
+| `outreach_generate`     | `outreach_generate`     | ✅     |
+| `outreach_create`       | `outreach_create`       | ✅     |
+| `outreach_update`       | `outreach_update`       | ✅     |
+| `outreach_delete`       | `outreach_delete`       | ✅     |
+| `outreach_improve_text` | `outreach_improve_text` | ✅     |
 
 ## Focus & Writing
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `focus_get` | `focus_get` | ✅ |
-| `focus_save` | `focus_save` | ✅ |
-| `focus_reset` | `focus_reset` | ✅ |
-| `focus_log_decompression` | `focus_log_decompression` | ✅ |
-| `dictation_polish` | `dictation_polish` | ✅ |
+| SPEC Tool                 | Implemented Tool          | Status |
+| ------------------------- | ------------------------- | ------ |
+| `focus_get`               | `focus_get`               | ✅     |
+| `focus_save`              | `focus_save`              | ✅     |
+| `focus_reset`             | `focus_reset`             | ✅     |
+| `focus_log_decompression` | `focus_log_decompression` | ✅     |
+| `dictation_polish`        | `dictation_polish`        | ✅     |
 
 ## Settings
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `settings_get` | `settings_get` | ✅ |
-| `settings_update` | `settings_update` | ✅ |
+| SPEC Tool         | Implemented Tool  | Status |
+| ----------------- | ----------------- | ------ |
+| `settings_get`    | `settings_get`    | ✅     |
+| `settings_update` | `settings_update` | ✅     |
 
 ## Vault
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `vault_status` | `vault_status` | ✅ |
-| `vault_list_projects` | `vault_list_projects` | ✅ |
-| `vault_begin_setup` | `vault_begin_setup` | ✅ |
-| `vault_begin_change_password` | `vault_begin_change_password` | ✅ |
-| `vault_begin_unlock` | `vault_begin_unlock` | ✅ |
-| `vault_lock` | `vault_lock` | ✅ |
-| `vault_set_project_locked` | `vault_set_project_locked` | ✅ |
+| SPEC Tool                     | Implemented Tool              | Status |
+| ----------------------------- | ----------------------------- | ------ |
+| `vault_status`                | `vault_status`                | ✅     |
+| `vault_list_projects`         | `vault_list_projects`         | ✅     |
+| `vault_begin_setup`           | `vault_begin_setup`           | ✅     |
+| `vault_begin_change_password` | `vault_begin_change_password` | ✅     |
+| `vault_begin_unlock`          | `vault_begin_unlock`          | ✅     |
+| `vault_lock`                  | `vault_lock`                  | ✅     |
+| `vault_set_project_locked`    | `vault_set_project_locked`    | ✅     |
 
 ## Account Data
 
-| SPEC Tool | Implemented Tool | Status |
-|-----------|-----------------|--------|
-| `account_export` | `account_export` | ✅ |
-| `account_clear_activities` | `account_clear_activities` | ✅ |
-| `account_delete` | `account_delete` | ✅ |
+| SPEC Tool                  | Implemented Tool           | Status |
+| -------------------------- | -------------------------- | ------ |
+| `account_clear_activities` | `account_clear_activities` | ✅     |
 
 ## Summary
 
-- **SPEC tools**: 57
-- **Implemented tools**: 61 (50 core + 11 extras)
-- **Coverage**: 56/57 SPEC tools implemented (98.2%)
+- **SPEC tools**: 55
+- **Implemented tools**: 59 (50 core + 9 extras)
+- **Coverage**: 55/55 SPEC tools implemented (100%)
 - **Missing**: `reports_check_activity_count` (removed: not needed, activity count is part of `reports_generate`)
-- **Extra tools**: 12 tools added for completeness (get, delete, update variants not in SPEC but useful)
+- **Extra tools**: 9 tools added for completeness (get, delete, update variants not in SPEC but useful)
 
 ## Notes
 

@@ -86,11 +86,11 @@ function parseAuthorizationQuery(searchParams: URLSearchParams): AuthorizationQu
 }
 
 function buildSignInRedirect(request: NextRequest): NextResponse {
-  const authBaseUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? request.nextUrl.origin;
-  const callbackUrl = new URL(
-    `${request.nextUrl.pathname}${request.nextUrl.search}`,
-    authBaseUrl
-  );
+  // Keep the OAuth transaction on the host that received it. Preview and
+  // production have different Auth.js/Google credentials, so using a global
+  // NEXTAUTH_URL here can send a preview login through production.
+  const authBaseUrl = request.nextUrl.origin;
+  const callbackUrl = new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, authBaseUrl);
   const signInUrl = new URL('/api/auth/signin', authBaseUrl);
   signInUrl.searchParams.set('callbackUrl', callbackUrl.toString());
   return NextResponse.redirect(signInUrl);
@@ -156,16 +156,16 @@ function parseAuthorizationForm(formData: FormData): AuthorizationForm {
 function isValidAuthorizationForm(form: AuthorizationForm): boolean {
   return Boolean(
     form.clientId &&
-      form.redirectUri &&
-      form.responseType === 'code' &&
-      (form.action !== 'allow' || form.scope) &&
-      form.state &&
-      form.codeChallenge &&
-      form.codeChallengeMethod === 'S256' &&
-      form.transaction &&
-      (form.action === 'allow' || form.action === 'deny') &&
-      isValidOAuthRedirectUri(form.redirectUri) &&
-      isValidCodeChallenge(form.codeChallenge)
+    form.redirectUri &&
+    form.responseType === 'code' &&
+    (form.action !== 'allow' || form.scope) &&
+    form.state &&
+    form.codeChallenge &&
+    form.codeChallengeMethod === 'S256' &&
+    form.transaction &&
+    (form.action === 'allow' || form.action === 'deny') &&
+    isValidOAuthRedirectUri(form.redirectUri) &&
+    isValidCodeChallenge(form.codeChallenge)
   );
 }
 

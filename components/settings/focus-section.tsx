@@ -815,10 +815,12 @@ function AffirmationEditor({
               className="border-border/40 bg-muted/20 focus:bg-background h-10"
             />
             <button
+              type="button"
               onClick={() => {
                 const newTexts = block.config.texts.filter((_, idx) => idx !== i);
                 onUpdate({ ...block, config: { ...block.config, texts: newTexts } });
               }}
+              aria-label={`Delete affirmation ${i + 1}`}
               className="text-muted-foreground/30 hover:text-destructive opacity-0 transition-all group-hover:opacity-100"
             >
               <Trash2 className="h-4 w-4" />

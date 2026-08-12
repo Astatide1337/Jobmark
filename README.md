@@ -5,6 +5,7 @@ Jobmark stores and organizes your professional history and connects it to the AI
 ## Overview
 
 Jobmark is a personal career management platform that lets you:
+
 - **Log accomplishments** — Quick capture of daily activities, wins, and metrics
 - **Organize projects** — Group related work with colors, archives, and progress tracking
 - **Set goals** — Track progress against measurable career objectives
@@ -120,7 +121,8 @@ Compose expects runtime secrets through `.env`; migrations should be applied exp
 
 **Vault**: `vault_status`, `vault_list_projects`, `vault_begin_setup`, `vault_begin_change_password`, `vault_begin_unlock`, `vault_lock`, `vault_set_project_locked`
 
-**Account Data**: `account_export`, `account_clear_activities`, `account_delete`
+**Account data**: export and account deletion are available from Settings → Data. The MCP
+connection can clear activities after an explicit confirmation: `account_clear_activities`.
 
 ## Assistant handoffs and privacy
 

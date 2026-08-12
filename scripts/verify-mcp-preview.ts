@@ -25,7 +25,7 @@ import {
   hashToken,
 } from '../lib/mcp/auth/provider';
 
-  const READ_SCOPE = 'jobmark:read';
+const READ_SCOPE = 'jobmark:read';
 const SAFE_TOOL = 'dashboard_stats';
 const MODERN_PROTOCOL_VERSION = '2026-07-28';
 
@@ -51,7 +51,6 @@ const READ_TOOL_NAMES = [
   'settings_get',
   'vault_status',
   'vault_list_projects',
-  'account_export',
 ] as const;
 
 type JsonRpcResponse = {
@@ -105,8 +104,7 @@ async function postJsonRpc(
 ): Promise<JsonRpcResponse> {
   const metadata = params._meta as Record<string, unknown> | undefined;
   const protocolVersion =
-    (metadata?.['io.modelcontextprotocol/protocolVersion'] as string | undefined) ??
-    '2025-11-25';
+    (metadata?.['io.modelcontextprotocol/protocolVersion'] as string | undefined) ?? '2025-11-25';
   const headers: Record<string, string> = {
     Accept: 'application/json, text/event-stream',
     Authorization: `Bearer ${accessToken}`,
@@ -146,12 +144,36 @@ async function postJsonRpc(
 
 async function getToolFixtures(userId: string): Promise<Partial<ToolFixtures>> {
   const [activity, contact, goal, interaction, project, report] = await Promise.all([
-    prisma.activity.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { id: true } }),
-    prisma.contact.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { id: true } }),
-    prisma.goal.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { id: true } }),
-    prisma.interactionLog.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { id: true } }),
-    prisma.project.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { id: true } }),
-    prisma.report.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' }, select: { id: true } }),
+    prisma.activity.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    }),
+    prisma.contact.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    }),
+    prisma.goal.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    }),
+    prisma.interactionLog.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    }),
+    prisma.project.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    }),
+    prisma.report.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    }),
   ]);
 
   return {
@@ -167,7 +189,11 @@ async function getToolFixtures(userId: string): Promise<Partial<ToolFixtures>> {
 function buildReadToolPlans(fixtures: Partial<ToolFixtures>): ToolCallPlan[] {
   return [
     { name: 'activities_list', arguments: { limit: 1 } },
-    { name: 'activities_get', arguments: { activityId: fixtures.activityId }, requires: 'activityId' },
+    {
+      name: 'activities_get',
+      arguments: { activityId: fixtures.activityId },
+      requires: 'activityId',
+    },
     { name: 'contacts_list', arguments: { limit: 1 } },
     { name: 'contacts_get', arguments: { contactId: fixtures.contactId }, requires: 'contactId' },
     { name: 'focus_get', arguments: {} },
@@ -191,7 +217,6 @@ function buildReadToolPlans(fixtures: Partial<ToolFixtures>): ToolCallPlan[] {
     { name: 'settings_get', arguments: {} },
     { name: 'vault_status', arguments: {} },
     { name: 'vault_list_projects', arguments: {} },
-    { name: 'account_export', arguments: { format: 'json', includeVault: false } },
   ];
 }
 
@@ -241,14 +266,20 @@ async function verifyReadTools(
     }
 
     try {
-      const response = await postJsonRpc(endpoint, accessToken, `tool-${passed + 4}`, 'tools/call', {
-        name: plan.name,
-        arguments: plan.arguments,
-        _meta: {
-          'io.modelcontextprotocol/protocolVersion': MODERN_PROTOCOL_VERSION,
-          'io.modelcontextprotocol/clientCapabilities': {},
-        },
-      });
+      const response = await postJsonRpc(
+        endpoint,
+        accessToken,
+        `tool-${passed + 4}`,
+        'tools/call',
+        {
+          name: plan.name,
+          arguments: plan.arguments,
+          _meta: {
+            'io.modelcontextprotocol/protocolVersion': MODERN_PROTOCOL_VERSION,
+            'io.modelcontextprotocol/clientCapabilities': {},
+          },
+        }
+      );
       assertToolResult(plan.name, response);
       passed += 1;
       console.info(`PASS ${plan.name}`);
@@ -263,7 +294,9 @@ async function verifyReadTools(
         continue;
       }
       failures.push(plan.name);
-      console.error(`FAIL ${plan.name}: ${error instanceof Error ? error.message : 'unknown error'}`);
+      console.error(
+        `FAIL ${plan.name}: ${error instanceof Error ? error.message : 'unknown error'}`
+      );
     }
   }
 
@@ -417,7 +450,10 @@ async function main(): Promise<void> {
         .filter((name): name is string => typeof name === 'string')
     );
     const missingReadTools = READ_TOOL_NAMES.filter(name => !listedNames.has(name));
-    assert(missingReadTools.length === 0, `tools/list omitted read tools: ${missingReadTools.join(', ')}`);
+    assert(
+      missingReadTools.length === 0,
+      `tools/list omitted read tools: ${missingReadTools.join(', ')}`
+    );
 
     const { passed, skipped } = await verifyReadTools(endpoint, token.token, user.id);
     console.info(
