@@ -43,7 +43,8 @@ export async function listInteractions(
 ): Promise<{ interactions: InteractionDTO[]; nextCursor: string | null }> {
   assertActor(actor);
 
-  const { contactId, limit = 50, cursor } = options;
+  const { contactId, cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
 
   const where: Prisma.InteractionLogWhereInput = { userId: actor.userId };
   if (contactId) where.contactId = contactId;
@@ -53,6 +54,7 @@ export async function listInteractions(
     orderBy: { occurredAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: { contact: { select: { id: true, fullName: true } } },
   });
 
@@ -149,10 +151,7 @@ export async function updateInteraction(
   return toInteractionDTO(updated);
 }
 
-export async function deleteInteraction(
-  actor: JobmarkActor,
-  interactionId: string
-): Promise<void> {
+export async function deleteInteraction(actor: JobmarkActor, interactionId: string): Promise<void> {
   assertActor(actor);
 
   const interaction = await prisma.interactionLog.findFirst({
@@ -174,8 +173,8 @@ export async function getNetworkStats(actor: JobmarkActor): Promise<{
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [totalContacts, totalInteractions, interactionsThisMonth, followUpsDue] =
-    await Promise.all([
+  const [totalContacts, totalInteractions, interactionsThisMonth, followUpsDue] = await Promise.all(
+    [
       prisma.contact.count({ where: { userId: actor.userId } }),
       prisma.interactionLog.count({ where: { userId: actor.userId } }),
       prisma.interactionLog.count({
@@ -184,7 +183,8 @@ export async function getNetworkStats(actor: JobmarkActor): Promise<{
       prisma.interactionLog.count({
         where: { userId: actor.userId, followUpDate: { lte: now, gte: monthStart } },
       }),
-    ]);
+    ]
+  );
 
   return { totalContacts, totalInteractions, interactionsThisMonth, followUpsDue };
 }

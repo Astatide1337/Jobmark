@@ -593,7 +593,7 @@ function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: 
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-foreground leading-relaxed break-all whitespace-pre-wrap">
+            <p className="text-foreground leading-relaxed break-words whitespace-pre-wrap">
               {activity.content}
             </p>
 
@@ -678,6 +678,7 @@ function DeleteActivityButton({
       size="sm"
       onClick={handleDelete}
       disabled={isPending}
+      aria-label="Delete activity"
       className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
     >
       <Trash2 className="h-4 w-4" />

@@ -128,12 +128,12 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
     return (
       <div className="text-muted-foreground py-12 text-center">
         <FileText className="mx-auto mb-4 h-12 w-12 opacity-20" />
-        <p className="text-foreground text-sm font-medium">No summaries yet.</p>
+        <p className="text-foreground text-sm font-medium">No saved drafts yet.</p>
         <p className="text-muted-foreground mt-1 text-sm">
           Generate a review draft to turn your work record into a clear narrative.
         </p>
         <Button variant="link" size="sm" asChild className="mt-3">
-          <Link href="/reports?tab=new">Build your first summary</Link>
+          <Link href="/reports?tab=new">Build your first review draft</Link>
         </Button>
       </div>
     );

@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { readStreamableValue } from '@ai-sdk/rsc';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -137,9 +136,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
         extraContext: config.extraContext.trim() || undefined,
       };
       const { output } = await generateOutreachDraft(finalConfig);
-      for await (const delta of readStreamableValue(output)) {
-        if (delta) setDraftContent(prev => prev + delta);
-      }
+      setDraftContent(output);
     } catch (err) {
       console.error('Draft generation failed:', err);
       toast.error('Failed to generate draft. Please try again.');
@@ -333,7 +330,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
               <h2 className="text-xl font-semibold">Add context</h2>
               <p className="text-muted-foreground mt-1 text-sm">
                 Jobmark will prepare a message from {contact.fullName}&apos;s record. Add anything
-                extra you want included.
+                you know should be reflected.
               </p>
             </div>
 
@@ -359,14 +356,15 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             </Card>
 
             <div className="space-y-2">
-              <Label>Additional context (optional)</Label>
+              <Label>Anything else to include? (Optional)</Label>
               <Textarea
                 value={config.extraContext}
                 onChange={e => setConfig(c => ({ ...c, extraContext: e.target.value }))}
-                placeholder="e.g. I saw they just got promoted, we met at the Austin conference last month…"
+                placeholder="e.g. We worked together on a project, or I want to ask about a referral"
                 rows={3}
                 className="resize-none rounded-xl"
               />
+              <p className="text-muted-foreground text-xs">Only add details you know are true.</p>
             </div>
 
             <div className="flex justify-between">
@@ -411,7 +409,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
               onDraftWithProvider={provider => handleDraftWithProvider(provider)}
               eyebrow="Optional next step"
               title="Want a little help polishing it?"
-              description="Jobmark will make a first draft here. Open a connected assistant when you want another pass."
+              description="Jobmark will make a first draft here. Open a connected AI app when you want another pass."
             />
 
             <div className="flex justify-between">

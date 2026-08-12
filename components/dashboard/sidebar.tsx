@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -14,6 +15,7 @@ import {
   Users,
   Newspaper,
   Link as LinkIcon,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -46,6 +48,15 @@ export function Sidebar({
   const pathname = usePathname();
   const currentPath = mode === 'demo' ? activePath : pathname;
 
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onMobileClose?.();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, onMobileClose]);
+
   const handleDemoClick = (id: string) => {
     if (mode === 'demo') {
       const element = document.getElementById(id);
@@ -59,19 +70,33 @@ export function Sidebar({
     <>
       {isMobileOpen && (
         <div
+          role="presentation"
+          aria-hidden="true"
           className="bg-background/80 fixed inset-0 z-40 backdrop-blur-sm lg:hidden"
           onClick={onMobileClose}
         />
       )}
 
       <aside
+        aria-label="Main navigation"
         className={cn(
           'border-border/50 bg-sidebar fixed inset-y-0 left-0 z-50 w-72 flex-col border-r transition-transform duration-300 lg:static lg:flex lg:w-64 lg:translate-x-0',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
           mode === 'app' ? 'lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto' : 'h-full'
         )}
       >
-        <div className="p-6">
+        <div className="relative p-6">
+          {isMobileOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 lg:hidden"
+              onClick={onMobileClose}
+              aria-label="Close navigation menu"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
           {mode === 'app' ? (
             <Link href="/dashboard" className="flex items-center gap-3">
               <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">

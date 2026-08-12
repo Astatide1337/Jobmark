@@ -64,7 +64,13 @@ export function DashboardHeader({
       <div className="flex items-center justify-between px-4 py-3 lg:px-6">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onMenuClick}
+            aria-label="Open navigation menu"
+          >
             <Menu className="h-5 w-5" />
           </Button>
 
@@ -101,9 +107,13 @@ export function DashboardHeader({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2"
+              aria-label={userName ? `Open account menu for ${userName}` : 'Open account menu'}
+            >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userImage || undefined} />
+                <AvatarImage src={userImage || undefined} alt="" />
                 <AvatarFallback className="bg-primary/20 text-primary text-sm">
                   {initials}
                 </AvatarFallback>

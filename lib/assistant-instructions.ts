@@ -13,7 +13,7 @@ export type OutreachAssistantInstructionsInput = {
 };
 
 /**
- * Plain-language handoff text for a connected assistant. Keep this separate
+ * Plain-language handoff text for a connected AI app. Keep this separate
  * from the MCP implementation so internal IDs, tool names, and protocol
  * instructions cannot accidentally become part of the user-visible prompt.
  */
@@ -49,9 +49,7 @@ export type ReviewAssistantInstructionsInput = {
 };
 
 /** Plain-language handoff text for the review workflow. */
-export function buildReviewAssistantInstructions(
-  input: ReviewAssistantInstructionsInput
-): string {
+export function buildReviewAssistantInstructions(input: ReviewAssistantInstructionsInput): string {
   const focus = cleanLine(input.focus);
 
   return [

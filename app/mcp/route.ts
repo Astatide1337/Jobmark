@@ -242,6 +242,7 @@ function logMcpAuthRejection(request: NextRequest, reason: McpAuthRejectionReaso
 async function validateMcpConnection(request: NextRequest): Promise<{
   connectionId: string;
   userId: string;
+  clientId: string;
   scopes: string[];
   vaultUnlockedUntil: Date | null;
 } | null> {
@@ -286,6 +287,7 @@ async function validateMcpConnection(request: NextRequest): Promise<{
   return {
     connectionId: connection.id,
     userId: validation.userId,
+    clientId: validation.clientId,
     scopes: validation.scope.split(' '),
     vaultUnlockedUntil: connection.vaultUnlockedUntil,
   };
@@ -321,6 +323,7 @@ function toPublicToolDefinition(definition: (typeof toolDefinitions)[number]) {
 async function executeTool(
   connectionId: string,
   userId: string,
+  clientId: string,
   scopes: string[],
   method: string,
   params: Record<string, unknown>,
@@ -381,7 +384,7 @@ async function executeTool(
     userId,
     source: 'mcp' as const,
     connectionId,
-    clientId: '',
+    clientId,
     scopes,
     vaultUnlocked: isVaultUnlocked,
     requestId: crypto.randomUUID(),
@@ -419,6 +422,7 @@ async function executeMcpMethod({
   request,
   connectionId,
   userId,
+  clientId,
   scopes,
   vaultUnlockedUntil,
 }: {
@@ -427,6 +431,7 @@ async function executeMcpMethod({
   request: NextRequest;
   connectionId: string;
   userId: string;
+  clientId: string;
   scopes: string[];
   vaultUnlockedUntil: Date | null;
 }): Promise<unknown> {
@@ -478,6 +483,7 @@ async function executeMcpMethod({
       return executeTool(
         connectionId,
         userId,
+        clientId,
         scopes,
         toolName,
         toolParams,
@@ -573,6 +579,7 @@ export async function POST(request: NextRequest) {
       request,
       connectionId,
       userId,
+      clientId: authResult.clientId,
       scopes,
       vaultUnlockedUntil: authResult.vaultUnlockedUntil,
     });

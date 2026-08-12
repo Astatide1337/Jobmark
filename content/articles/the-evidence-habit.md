@@ -41,7 +41,7 @@ When someone asks "what did you do?", vague answers sound weak. Specific answers
 
 **Problem 3: You lose negotiations.**
 
-Reviews, promotions, raises. These are evidence games. The person with the better documentation usually wins.
+Reviews, promotions, and compensation conversations all benefit from clear evidence. The person with the clearer record can make the conversation more concrete.
 
 ## The minimal viable habit
 

@@ -43,10 +43,10 @@ export function WorkflowStarter({
       cta: 'Create project',
     },
     {
-      title: 'Generate your first weekly summary',
+      title: 'Generate your first review draft',
       done: summaryCount > 0,
       href: '/reports?tab=new',
-      cta: 'Build summary',
+      cta: 'Build review draft',
     },
   ];
 
@@ -109,23 +109,23 @@ function getNextBestActionSuggestion(
   }
   if (summaryCount === 0) {
     return {
-      title: 'Turn recent work into your first reusable summary.',
-      body: 'A draft summary makes weekly updates and reviews much easier later.',
+      title: 'Turn recent work into your first review draft.',
+      body: 'A saved draft makes weekly updates and reviews much easier later.',
       href: '/reports?tab=new',
-      cta: 'Build Summary',
+      cta: 'Build Review Draft',
     };
   }
   if (hasMcpConnection) {
     return {
       title: 'Draft your next review brief.',
-      body: 'Use your connected AI assistant to turn your record into a manager-ready update.',
+      body: 'Use a connected AI app to turn your record into a manager-ready update.',
       href: '/reports?tab=new',
       cta: 'Build Review Draft',
     };
   }
   return {
     title: 'Use your record to prepare the next move.',
-    body: 'Review your summaries, then connect your AI assistant to sharpen the story.',
+    body: 'Review your drafts, then connect an AI app to sharpen the story.',
     href: '/chat',
     cta: 'Open MCP Connector',
   };
@@ -219,7 +219,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
             <Target className="text-primary h-6 w-6" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">No goals set yet</h3>
+            <h2 className="text-lg font-semibold">No goals set yet</h2>
             <p className="text-muted-foreground text-sm">
               Goals help connect daily evidence to the direction you want to move in.
             </p>
@@ -248,9 +248,9 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
                 <Target className="h-4 w-4" />
                 <span>Primary Goal</span>
               </div>
-              <h3 className="text-foreground/90 text-xl font-bold tracking-tight md:text-2xl">
+              <h2 className="text-foreground/90 text-xl font-bold tracking-tight md:text-2xl">
                 {settings.primaryGoal}
-              </h3>
+              </h2>
             </div>
             {settings.whyStatement && (
               <div className="border-primary/10 flex gap-2 border-t pt-3">
@@ -280,7 +280,11 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
   const variants = {
     enter: (dir: number) => ({ x: getGoalMotionX(shouldReduceMotion, dir, true), opacity: 0 }),
     center: { zIndex: 1, x: 0, opacity: 1 },
-    exit: (dir: number) => ({ zIndex: 0, x: getGoalMotionX(shouldReduceMotion, dir, false), opacity: 0 }),
+    exit: (dir: number) => ({
+      zIndex: 0,
+      x: getGoalMotionX(shouldReduceMotion, dir, false),
+      opacity: 0,
+    }),
   };
 
   return (
@@ -309,9 +313,9 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
                     Current Goal {goals.length > 1 && `(${currentIndex + 1}/${goals.length})`}
                   </span>
                 </div>
-                <h3 className="text-foreground/90 line-clamp-2 text-xl font-bold tracking-tight md:text-2xl">
+                <h2 className="text-foreground/90 line-clamp-2 text-xl font-bold tracking-tight md:text-2xl">
                   {currentGoal.title}
-                </h3>
+                </h2>
               </div>
               {currentGoal.why && (
                 <div className="flex gap-2">
@@ -379,12 +383,17 @@ export function ProjectChipSelector({ projects, selectedId, onSelect }: ProjectC
         className={cn(
           'flex items-center gap-2 rounded-xl border px-3 py-2 transition-all',
           'bg-background/50 hover:bg-background/80',
-          isExpanded ? 'border-primary/50 ring-primary/20 ring-2' : 'border-border/50 hover:border-border'
+          isExpanded
+            ? 'border-primary/50 ring-primary/20 ring-2'
+            : 'border-border/50 hover:border-border'
         )}
       >
         {selectedProject ? (
           <>
-            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: selectedProject.color }} />
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: selectedProject.color }}
+            />
             <span className="text-foreground text-sm">{selectedProject.name}</span>
           </>
         ) : (
@@ -394,7 +403,10 @@ export function ProjectChipSelector({ projects, selectedId, onSelect }: ProjectC
           </>
         )}
         <ChevronDown
-          className={cn('text-muted-foreground h-4 w-4 transition-transform', isExpanded && 'rotate-180')}
+          className={cn(
+            'text-muted-foreground h-4 w-4 transition-transform',
+            isExpanded && 'rotate-180'
+          )}
         />
       </button>
       <AnimatePresence>
@@ -452,7 +464,9 @@ function ProjectChip({
       onClick={onClick}
       className={cn(
         'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all',
-        isSelected ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+        isSelected
+          ? 'bg-primary/10 text-foreground'
+          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
       )}
     >
       {color ? (

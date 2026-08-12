@@ -108,9 +108,7 @@ function getMessageParts(
   latestInteraction: DraftInteraction | undefined
 ): { opening: string; ask?: string } {
   const isConcise = tone.toLowerCase().includes('concise') || tone.toLowerCase().includes('short');
-  const interactionSummary = latestInteraction
-    ? clean(latestInteraction.summary, 320)
-    : null;
+  const interactionSummary = latestInteraction ? clean(latestInteraction.summary, 320) : null;
 
   switch (purpose) {
     case 'referral':
@@ -169,10 +167,7 @@ function getMessageParts(
  * relationship detail. Missing specifics result in a pleasantly general
  * message that the user can personalize before sending.
  */
-export function buildOutreachDraft(
-  contact: DraftContact,
-  options: OutreachDraftOptions
-): string {
+export function buildOutreachDraft(contact: DraftContact, options: OutreachDraftOptions): string {
   const relationship = clean(contact.relationship);
   const extraContext = clean(options.extraContext, 1_000);
   const interactions = contact.interactions.slice(0, 5);
@@ -183,19 +178,18 @@ export function buildOutreachDraft(
   const latestInteraction = interactions[0];
   const formattedContext = formatExtraContext(extraContext);
   const relationshipContext =
-    !formattedContext && relationship && /teammate|collaborat|colleague|mentor|manager|client|friend/i.test(relationship)
+    !formattedContext &&
+    relationship &&
+    /teammate|collaborat|colleague|mentor|manager|client|friend/i.test(relationship)
       ? 'I’ve appreciated working with you.'
       : '';
-  const { opening, ask } = getMessageParts(
-    purpose,
-    tone,
-    formattedContext,
-    latestInteraction
-  );
+  const { opening, ask } = getMessageParts(purpose, tone, formattedContext, latestInteraction);
   const greeting = tone.toLowerCase().includes('professional')
     ? `Hello ${getFirstName(contact.fullName)},`
     : `Hi ${getFirstName(contact.fullName)},`;
-  const signoff = tone.toLowerCase().includes('professional') ? 'Thank you for considering it.' : 'Thanks again.';
+  const signoff = tone.toLowerCase().includes('professional')
+    ? 'Thank you for considering it.'
+    : 'Thanks again.';
   const isMessageChannel = channel.toLowerCase() === 'text' || channel.toLowerCase() === 'linkedin';
   const body = [
     greeting,
@@ -231,8 +225,8 @@ export type ReviewBriefOptions = {
 
 /**
  * Build a manager-ready review brief without making claims that are not in the
- * user's record. It gives an MCP assistant a strong, structured starting point
- * while remaining useful on its own when no assistant is connected.
+ * user's record. It gives a connected AI app a strong, structured starting
+ * point while remaining useful on its own.
  */
 export function buildReviewBrief(options: ReviewBriefOptions): string {
   const activities = options.activities;
@@ -284,13 +278,13 @@ export function buildReviewBrief(options: ReviewBriefOptions): string {
 
   lines.push(
     '',
-    'Keep the message grounded in what you actually know. If a connected assistant helps write it, review the result before sending.'
+    'Keep the message grounded in what you actually know. Review the result before sharing it.'
   );
 
   return lines.join('\n');
 }
 
-/** A small, predictable edit helper used when no assistant is connected. */
+/** A small, predictable edit helper that never invents new claims. */
 export function deterministicRewrite(text: string, instruction: string): string {
   const normalized = text.trim();
   const request = instruction.toLowerCase();
@@ -310,7 +304,7 @@ export function deterministicRewrite(text: string, instruction: string): string 
     return sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join(' ');
   }
 
-  // Do not pretend to rewrite content without an assistant. Preserve the
+  // Do not pretend to rewrite content without an AI app. Preserve the
   // source rather than inventing a claim or changing the user's meaning.
   return normalized;
 }

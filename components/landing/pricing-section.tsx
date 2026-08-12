@@ -1,8 +1,8 @@
 /**
- * Access & Trust Section
+ * Start & Trust Section
  *
  * Why: Provide low-friction access cues without heavy pricing emphasis.
- * It reinforces ownership and assistant choice without overpromising.
+ * It reinforces ownership and choice without overpromising.
  */
 'use client';
 
@@ -22,8 +22,8 @@ const accessPoints = [
     icon: Database,
   },
   {
-    title: 'Assistant-ready',
-    description: 'Connect a trusted assistant through Jobmark MCP when you want a second perspective.',
+    title: 'AI-app ready',
+    description: 'Connect a trusted AI app when you want a second perspective on your work.',
     icon: Link2,
   },
 ];
@@ -44,7 +44,9 @@ export function AccessSection() {
             className="mb-6 flex items-center justify-center gap-3"
           >
             <div className="bg-primary/50 h-px w-12" />
-            <span className="text-primary font-mono text-sm tracking-wide uppercase">Access</span>
+            <span className="text-primary font-mono text-sm tracking-wide uppercase">
+              Start free
+            </span>
             <div className="bg-primary/50 h-px w-12" />
           </motion.div>
 
@@ -103,7 +105,7 @@ export function AccessSection() {
             onClick={openAuthModal}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-medium transition-colors"
           >
-            Start Building Your Record
+            Start your record
             <ArrowRight className="h-4 w-4" />
           </button>
         </motion.div>

@@ -3,7 +3,7 @@
  *
  * Why: Speech-to-text is often messy and lacks punctuation. This action
  * applies a small, predictable cleanup pass locally on the server. Users can
- * still ask a connected MCP assistant for a more substantial rewrite.
+ * still open a connected AI app for a more substantial rewrite.
  */
 'use server';
 

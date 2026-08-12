@@ -19,7 +19,7 @@ const faqs = [
     id: 'what-is',
     question: 'What is Jobmark exactly?',
     answer:
-      'Jobmark is a career OS for documenting your work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+      'Jobmark helps you keep a clear record of your work and turn it into useful updates, reviews, and next steps.',
   },
   {
     id: 'different',
@@ -35,7 +35,7 @@ const faqs = [
   },
   {
     id: 'ai-work',
-    question: 'How do assistant handoffs work?',
+    question: 'How do connections to AI apps work?',
     answer:
       'Jobmark first turns your record into a factual draft. If you connect Claude, ChatGPT, or Gemini, you can ask for a richer rewrite while keeping the underlying record in Jobmark.',
   },

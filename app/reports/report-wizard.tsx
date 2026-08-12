@@ -9,7 +9,6 @@ import {
   checkActivityCount,
 } from '@/app/actions/reports';
 import { updateReportSettings } from '@/app/actions/settings';
-import { readStreamableValue } from '@ai-sdk/rsc';
 import debounce from 'lodash.debounce';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,12 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ArrowRight,
-  Sparkles,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
+import { ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -165,12 +159,10 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
 
       const { output } = await streamReport(finalConfig);
 
-      for await (const delta of readStreamableValue(output)) {
-        setReportContent(current => current + delta);
-      }
+      setReportContent(output);
     } catch (error) {
       console.error('Streaming error', error);
-      setReportContent('Error generating report. Please try again.');
+      setReportContent('We couldn’t create your draft. Try again.');
     } finally {
       setIsStreaming(false);
     }
@@ -243,7 +235,8 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
       if (providerSupportsPromptUrl(provider.key)) {
         promptDescription = `Open ${provider.name} to draft your review with Jobmark.`;
       } else if (provider.key === 'gemini') {
-        promptDescription = 'Your instructions are copied. Paste them into Gemini to start your draft.';
+        promptDescription =
+          'Your instructions are copied. Paste them into Gemini to start your draft.';
       }
       toast.success(`${provider.name} instructions copied`, {
         description: promptDescription,
@@ -369,9 +362,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
               </Popover>
 
               {/* Validation Warning */}
-              <div className="mt-2 h-6 text-center text-sm">
-                {validationStatus}
-              </div>
+              <div className="mt-2 h-6 text-center text-sm">{validationStatus}</div>
             </div>
 
             <div className="mt-8 flex justify-end">
@@ -431,9 +422,9 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             </div>
 
             <div className="space-y-4">
-              <Label>Extra Instructions (Optional)</Label>
+              <Label>What should this draft emphasize? (Optional)</Label>
               <Input
-                placeholder="Focus on the API refactor, mention stakeholder coordination, or call out a visible outcome."
+                placeholder="e.g. customer impact, cross-team work, or a measurable outcome"
                 value={config.notes || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setConfig({ ...config, notes: e.target.value })

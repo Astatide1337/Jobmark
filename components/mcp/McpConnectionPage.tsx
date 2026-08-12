@@ -71,7 +71,7 @@ const providers: Provider[] = [
     Icon: Claude.Color,
     connectUrl: 'https://claude.ai/settings/connectors',
     instructions:
-      'In Claude, open Settings, choose Connectors, then Add custom connector. Paste your Jobmark link and finish signing in.',
+      'Open Claude’s connector settings, choose Add custom connector, paste your connection link, and finish signing in.',
   },
   {
     id: 'chatgpt',
@@ -79,7 +79,7 @@ const providers: Provider[] = [
     Icon: ChatGptIcon,
     connectUrl: 'https://chatgpt.com/',
     instructions:
-      'In ChatGPT, open Settings, then Apps or Developer mode, and add a custom connector if your plan or workspace supports it.',
+      'Open ChatGPT’s app or connector settings, add a custom connection, and paste your connection link. Availability depends on your plan or workspace.',
   },
   {
     id: 'gemini',
@@ -87,7 +87,7 @@ const providers: Provider[] = [
     Icon: Gemini.Color,
     connectUrl: 'https://gemini.google.com/',
     instructions:
-      'In Gemini on the web, open Settings & help, then Connected Apps. Add your Jobmark link under Custom apps for Spark and choose Next.',
+      'Open Gemini’s connected apps settings, add a custom connection, and paste your connection link. Availability depends on your account or region.',
   },
 ];
 
@@ -113,12 +113,12 @@ export function McpConnectionPage({
         clientName:
           connectionBeingRevoked.oauthClient.clientName || connectionBeingRevoked.clientName,
       })
-    : 'this plugin';
+    : 'this app';
 
   const copyJobmarkLink = async () => {
     const copied = await copyTextToClipboard(jobmarkLink);
-    if (copied) toast.success('Jobmark link copied');
-    else toast.error('Could not copy the Jobmark link');
+    if (copied) toast.success('Connection link copied');
+    else toast.error('Could not copy the connection link');
   };
 
   const handleRevoke = async (connectionId: string) => {
@@ -128,10 +128,10 @@ export function McpConnectionPage({
         method: 'POST',
       });
       if (!response.ok) throw new Error('Could not revoke Jobmark access');
-      toast.success('Jobmark access revoked');
+      toast.success('App disconnected');
       window.location.reload();
     } catch {
-      toast.error('Could not revoke Jobmark access');
+      toast.error('Could not disconnect the app');
     } finally {
       setRevoking(null);
       setConnectionToRevoke(null);
@@ -174,9 +174,9 @@ export function McpConnectionPage({
 
         {!user ? (
           <section className="mx-auto max-w-5xl text-center">
-            <h2 className="text-foreground text-xl font-semibold">Choose where to use Jobmark</h2>
+            <h2 className="text-foreground text-xl font-semibold">Choose an AI app</h2>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              Pick a plugin and add Jobmark in a couple of clicks.
+              Pick an app and connect your Jobmark record in a couple of clicks.
             </p>
             <div className="mt-6">
               <ProviderCarousel onSelect={setSelectedProvider} />
@@ -185,9 +185,9 @@ export function McpConnectionPage({
         ) : (
           <section>
             <div className="mb-4">
-              <h2 className="text-foreground text-xl font-semibold">Choose an AI plugin</h2>
+              <h2 className="text-foreground text-xl font-semibold">Choose an AI app</h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Choose one and we’ll walk you through it.
+                Choose one and we’ll walk you through the setup.
               </p>
             </div>
             <ProviderCarousel onSelect={setSelectedProvider} />
@@ -197,10 +197,10 @@ export function McpConnectionPage({
         {user && visibleConnections.length > 0 && (
           <Card className="border-border/60 bg-card/45 rounded-3xl">
             <CardHeader>
-              <CardTitle>Your connected tools</CardTitle>
+              <CardTitle>Connected AI apps</CardTitle>
               <CardDescription>
-                Revoke Jobmark access at any time. This does not remove the connector from the AI
-                app.
+                Disconnect an app here to stop it from accessing your Jobmark record. You may also
+                need to remove the saved connection in that app.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -231,7 +231,7 @@ export function McpConnectionPage({
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     disabled={revoking === connection.id}
                     aria-busy={revoking === connection.id}
-                    aria-label={`Revoke ${getMcpProviderName(connection.oauthClient)} access`}
+                    aria-label={`Disconnect ${getMcpProviderName(connection.oauthClient)}`}
                     onClick={() => setConnectionToRevoke(connection.id)}
                   >
                     {revoking === connection.id ? (
@@ -239,7 +239,7 @@ export function McpConnectionPage({
                     ) : (
                       <Trash2 className="mr-2 h-4 w-4" />
                     )}
-                    Revoke access
+                    Disconnect
                   </Button>
                 </div>
               ))}
@@ -263,7 +263,7 @@ export function McpConnectionPage({
             </DialogHeader>
             <div className="border-border/60 bg-muted/20 rounded-2xl border p-4">
               <label htmlFor="jobmark-mcp-link" className="text-foreground text-sm font-medium">
-                Jobmark link
+                Connection link
               </label>
               <div className="mt-2">
                 <Input
@@ -300,12 +300,11 @@ export function McpConnectionPage({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke {connectionBeingRevokedName} access?</AlertDialogTitle>
+            <AlertDialogTitle>Disconnect {connectionBeingRevokedName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This revokes all {connectionBeingRevokedName} connections Jobmark knows about for this
-              account. It stops the AI plugin from accessing your Jobmark information, but it does
-              not remove the connector from the AI app. To remove it completely, delete it in the AI
-              app&apos;s connector settings. You can reconnect later.
+              Jobmark will stop sharing your record with {connectionBeingRevokedName}. To remove the
+              saved connection completely, also remove Jobmark in {connectionBeingRevokedName}
+              &apos;s settings. You can reconnect later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -321,7 +320,7 @@ export function McpConnectionPage({
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Revoke access
+              Disconnect
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -246,7 +246,7 @@ export const reportsImproveTextTool = {
     name: 'reports_improve_text',
     title: 'Improve Report Text',
     description:
-      'Apply a predictable edit to a saved report. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
+      'Apply a predictable edit to a saved report. For richer writing, use a connected AI app with Jobmark. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {

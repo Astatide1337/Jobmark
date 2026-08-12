@@ -9,7 +9,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 export const metadata: Metadata = {
   title: 'MCP Connector - Jobmark',
-  description: 'Connect Jobmark to your AI plugins',
+  description: 'Connect Jobmark to Claude, ChatGPT, or Gemini.',
 };
 
 export default async function ConnectionsPage() {
@@ -41,7 +41,7 @@ export default async function ConnectionsPage() {
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="MCP Connections"
+          title="MCP Connector"
         />
       }
     >

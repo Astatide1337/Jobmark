@@ -6,18 +6,16 @@
  * evidence-based briefs and manage report history without routing content
  * through a separate model service.
  *
- * Technical Implementation:
- * - `streamReport`: Keeps the existing streaming response contract while
- *   returning a deterministic brief built from the user's activity record.
- * - `improveText`: Applies small, deterministic edits when no assistant is
- *   connected. A connected MCP assistant can produce richer edits on demand.
+ * Implementation:
+ * - `streamReport`: Returns a deterministic brief built from the user's
+ *   activity record. The name remains for compatibility with the review UI.
+ * - `improveText`: Applies small, deterministic edits locally.
  */
 'use server';
 
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
-import { createStreamableValue } from '@ai-sdk/rsc';
 import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
 import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
@@ -142,13 +140,9 @@ export async function streamReport(config: ReportConfig) {
     })),
   });
 
-  // Keep the stream contract used by the existing client while making the
-  // generation itself deterministic and provider-independent.
-  const stream = createStreamableValue('');
-  stream.update(content);
-  stream.done();
-
-  return { output: stream.value };
+  // The draft is deterministic and complete; returning the text directly
+  // avoids a fake streaming layer and keeps this path provider-independent.
+  return { output: content };
 }
 
 // Copilot: Improve selected text

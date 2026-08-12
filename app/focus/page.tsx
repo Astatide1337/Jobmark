@@ -28,7 +28,7 @@ export const metadata = {
 export default async function FocusPage() {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect('/auth/signin');
+    redirect('/signin?callbackUrl=/focus');
   }
   const userId = session.user.id;
 

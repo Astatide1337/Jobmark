@@ -43,9 +43,9 @@ const steps = [
   },
   {
     id: 'mentor',
-    title: 'Connect your assistant',
-    subtitle: 'Your data, your assistant.',
-    description: 'Use your record with Claude, ChatGPT, or any MCP-compatible AI assistant.',
+    title: 'Use your record anywhere',
+    subtitle: 'Your work, your choice.',
+    description: 'Connect Claude, ChatGPT, or Gemini when you want help shaping your record.',
   },
   {
     id: 'insights',
@@ -98,7 +98,11 @@ export function ProductTour() {
               <div className="bg-primary/8 absolute -inset-4 rounded-full opacity-60 blur-3xl" />
 
               {/* Demo container */}
-              <div className="border-border/40 bg-card/90 relative h-full w-full overflow-hidden rounded-2xl border shadow-2xl shadow-black/20 backdrop-blur-sm">
+              <div
+                aria-hidden="true"
+                inert
+                className="border-border/40 bg-card/90 relative h-full w-full overflow-hidden rounded-2xl border shadow-2xl shadow-black/20 backdrop-blur-sm"
+              >
                 {/* Demo scenes */}
                 <DemoScene progress={smoothProgress} index={0}>
                   <QuickCaptureDemo />

@@ -162,18 +162,23 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
 
       <SortAndSearchBar topic={topic} query={query} sort={sort} />
 
-      <section className="border-border/60 bg-card/35 rounded-2xl border p-4 sm:p-5">
-        <p className="text-primary text-[11px] tracking-[0.16em] uppercase">How To Use This Desk</p>
-        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-          Pick the problem you want to solve next, read one article, then apply a single action in
-          Jobmark before moving on.
-        </p>
-      </section>
-
       {filteredArticles.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No articles matched your filters.</p>
+        <section className="border-border/60 bg-card/35 rounded-2xl border p-6">
+          <h2 className="text-foreground font-serif text-2xl font-semibold">
+            No articles matched those filters.
+          </h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Try a broader search or return to the full library.
+          </p>
+          <Link
+            href="/articles"
+            className="text-primary mt-4 inline-flex text-sm font-medium hover:underline"
+          >
+            Clear filters
+          </Link>
+        </section>
       ) : (
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <section>
           <div className="space-y-8">
             {leadArticle ? <StoryCard article={leadArticle} variant="lead" /> : null}
 
@@ -205,35 +210,6 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               </section>
             ))}
           </div>
-
-          <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-            <section className="border-border/60 bg-card/45 rounded-2xl border p-5">
-              <p className="text-foreground font-serif text-lg leading-snug font-semibold">
-                Reading should end in action.
-              </p>
-              <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-                Use one article to improve how you capture work, then take the next step immediately
-                in Jobmark.
-              </p>
-              <div className="mt-4 space-y-2 text-sm">
-                <Link
-                  href="/dashboard"
-                  className="text-primary inline-flex font-medium hover:underline"
-                >
-                  Open dashboard
-                </Link>
-                <Link
-                  href="/reports?tab=new"
-                  className="text-primary block font-medium hover:underline"
-                >
-                  Build a summary
-                </Link>
-                <Link href="/chat" className="text-primary block font-medium hover:underline">
-                  MCP Connector
-                </Link>
-              </div>
-            </section>
-          </aside>
         </section>
       )}
     </div>

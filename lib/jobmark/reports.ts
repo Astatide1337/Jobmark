@@ -67,7 +67,8 @@ export async function listReports(
 ): Promise<ReportsListResult> {
   assertActor(actor);
 
-  const { limit = 25, cursor } = options;
+  const { cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 25, 1), 100);
   const lockedIds = await getLockedProjectIds(actor.userId);
 
   const where: Prisma.ReportWhereInput = {
@@ -82,6 +83,7 @@ export async function listReports(
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: {
       project: { select: { id: true, name: true, color: true } },
     },

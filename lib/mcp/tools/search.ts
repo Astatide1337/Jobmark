@@ -171,7 +171,7 @@ export const insightsGetTool = {
           items: {
             type: 'object',
             properties: {
-              projectId: { type: 'string' },
+              projectId: { type: ['string', 'null'] },
               projectName: { type: 'string' },
               color: { type: 'string' },
               count: { type: 'number' },

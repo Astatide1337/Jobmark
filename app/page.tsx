@@ -111,7 +111,6 @@ export default async function Home() {
               <Link href="/articles" className="hover:text-foreground transition-colors">
                 Articles
               </Link>
-              <span className="text-muted-foreground/50">Made with ❤️</span>
             </div>
           </div>
         </footer>

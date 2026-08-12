@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { label: 'Features', href: '#product-tour' },
-  { label: 'Access', href: '#access' },
+  { label: 'Start free', href: '#access' },
   { label: 'FAQ', href: '#faq' },
   { label: 'Articles', href: '/articles' },
 ];
@@ -124,7 +124,7 @@ export function FloatingNav() {
                 onClick={openAuthModal}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
               >
-                Start Your Record
+                Start your record
               </button>
             </MagneticButton>
           </div>

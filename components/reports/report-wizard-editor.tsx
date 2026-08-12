@@ -69,7 +69,7 @@ export function ReportWizardEditor({
             Review Draft
             {isStreaming && (
               <span className="text-muted-foreground animate-pulse text-xs font-normal">
-                (Generating...)
+                (Preparing...)
               </span>
             )}
           </h2>
@@ -167,7 +167,7 @@ export function ReportWizardEditor({
               }}
             >
               <Copy className="mr-2 h-4 w-4" />
-              Copy Text
+              Copy draft
             </Button>
             <div className="h-4" />
             <Button

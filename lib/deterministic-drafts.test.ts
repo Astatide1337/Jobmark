@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildOutreachDraft,
-  buildReviewBrief,
-  deterministicRewrite,
-} from './deterministic-drafts';
+import { buildOutreachDraft, buildReviewBrief, deterministicRewrite } from './deterministic-drafts';
 
 describe('deterministic drafts', () => {
   it('builds an editable outreach message from a contact record', () => {
@@ -52,7 +48,9 @@ describe('deterministic drafts', () => {
     expect(draft).toContain('Subject: A quick referral question');
     expect(draft).toContain('Hi Jeevan,');
     expect(draft).toContain('We worked on Linktree together.');
-    expect(draft).toContain('Would you be open to a short conversation about whether a referral might make sense?');
+    expect(draft).toContain(
+      'Would you be open to a short conversation about whether a referral might make sense?'
+    );
     expect(draft).not.toContain('role');
     expect(draft).not.toContain('company');
   });
@@ -63,19 +61,27 @@ describe('deterministic drafts', () => {
       endDate: '2026-08-07',
       tone: 'professional',
       activities: [
-        { logDate: '2026-08-02T12:00:00.000Z', content: 'Shipped the onboarding flow', projectName: 'Web' },
+        {
+          logDate: '2026-08-02T12:00:00.000Z',
+          content: 'Shipped the onboarding flow',
+          projectName: 'Web',
+        },
       ],
     });
 
     expect(brief).toContain('Period: 2026-08-01 through 2026-08-07');
     expect(brief).toContain('Shipped the onboarding flow');
     expect(brief).toContain('What changed because of this work?');
-    expect(brief).toContain('connected assistant');
+    expect(brief).toContain('Review the result before sharing it.');
   });
 
   it('makes only predictable edits', () => {
     expect(deterministicRewrite('One. Two. Three.', 'make this concise')).toBe('One. Two.');
-    expect(deterministicRewrite('One. Two.', 'turn this into a bullet list')).toBe('- One.\n- Two.');
-    expect(deterministicRewrite('Keep my wording.', 'rewrite this warmly')).toBe('Keep my wording.');
+    expect(deterministicRewrite('One. Two.', 'turn this into a bullet list')).toBe(
+      '- One.\n- Two.'
+    );
+    expect(deterministicRewrite('Keep my wording.', 'rewrite this warmly')).toBe(
+      'Keep my wording.'
+    );
   });
 });

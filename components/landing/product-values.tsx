@@ -62,11 +62,11 @@ const values = [
     ),
   },
   {
-    id: 'assistant-ready',
-    title: 'Assistant-Ready by Design',
-    subtitle: 'You lead, your assistant refines',
+    id: 'ai-ready',
+    title: 'Ready for the AI apps you use',
+    subtitle: 'You lead, your AI app refines',
     description:
-      'Jobmark keeps the evidence and structure in your hands. When you connect an assistant, it can refine the story without replacing your voice.',
+      'Jobmark keeps the evidence and structure in your hands. When you connect an AI app, it can refine the story without replacing your voice.',
     icon: (
       <svg
         className="h-5 w-5"

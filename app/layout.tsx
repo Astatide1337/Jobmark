@@ -22,6 +22,10 @@ import { UIProvider, SmoothScrollProvider } from '@/components/providers/ui-prov
 import { auth } from '@/lib/auth';
 import './globals.css';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
+const productDescription =
+  'Jobmark helps you keep a clear record of your work, then turn it into useful updates, reviews, and next steps.';
+
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
@@ -40,10 +44,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.app'),
+  metadataBase: new URL(siteUrl),
   title: 'Jobmark - Build Your Career Record',
-  description:
-    'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+  description: productDescription,
   keywords: [
     'career record',
     'work evidence',
@@ -54,9 +57,8 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'Jobmark - Build Your Career Record',
-    description:
-      'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
-    url: 'https://jobmark.app',
+    description: productDescription,
+    url: siteUrl,
     siteName: 'Jobmark',
     type: 'website',
     images: [
@@ -71,8 +73,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Jobmark - Build Your Career Record',
-    description:
-      'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+    description: productDescription,
     images: ['/opengraph-image.png'],
   },
 };

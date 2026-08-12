@@ -66,7 +66,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="Reviews & Summaries"
+          title="Reviews"
         />
       }
     >
@@ -76,11 +76,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             <TabsList className="grid w-full max-w-lg grid-cols-2">
               <TabsTrigger value="new">
                 <Sparkles className="mr-2 h-4 w-4" />
-                New Summary
+                New review
               </TabsTrigger>
               <TabsTrigger value="history">
                 <History className="mr-2 h-4 w-4" />
-                History
+                Saved drafts
               </TabsTrigger>
             </TabsList>
           </div>

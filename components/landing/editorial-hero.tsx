@@ -103,7 +103,7 @@ export function EditorialHero() {
             >
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Career OS
+                Career record
               </span>
             </motion.div>
 
@@ -132,7 +132,7 @@ export function EditorialHero() {
                 onClick={openAuthModal}
                 className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
-                Start Building
+                Start your record
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
@@ -151,7 +151,7 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"
             >
-              Free to start. Export-ready. Assistant-ready.
+              Free to start. Export-ready. Ready when you want an AI app.
             </motion.p>
           </motion.div>
 

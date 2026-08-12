@@ -55,13 +55,15 @@ export async function listOutreach(
 ): Promise<{ outreach: OutreachPreviewDTO[]; nextCursor: string | null }> {
   assertActor(actor);
 
-  const { limit = 25, cursor } = options;
+  const { cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 25, 1), 100);
 
   const items = await prisma.outreachDraft.findMany({
     where: { userId: actor.userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: { contact: { select: { id: true, fullName: true } } },
   });
 

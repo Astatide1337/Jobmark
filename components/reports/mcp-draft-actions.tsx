@@ -66,21 +66,20 @@ export function McpDraftActions({
   connectedMcpProviders,
   onDraftWithProvider,
   eyebrow = 'Choose where to draft',
-  title = 'Use a connected assistant',
-  description = 'Choose an assistant to give your Jobmark draft another pass.',
+  title = 'Use a connected AI app',
+  description = 'Choose an AI app to give your Jobmark draft another pass.',
   providerAction = 'Draft with',
 }: McpDraftActionsProps) {
   return (
     <div className="border-border/50 bg-card/30 rounded-2xl border p-5">
       <div className="flex flex-col gap-1">
-        <p className="text-primary text-xs font-semibold tracking-widest uppercase">
-          {eyebrow}
-        </p>
+        <p className="text-primary text-xs font-semibold tracking-widest uppercase">{eyebrow}</p>
         <h3 className="text-foreground font-semibold">{title}</h3>
         <p className="text-muted-foreground text-sm">{description}</p>
         {connectedMcpProviders.some(provider => provider.key === 'gemini') && (
-          <p className="text-muted-foreground/80 mt-1 text-xs">
-            Gemini opens with the instructions copied. Paste them into the message box to begin.
+          <p className="text-muted-foreground mt-1 text-xs">
+            Gemini opens separately. Your instructions are copied so you can paste them into the
+            message box.
           </p>
         )}
       </div>
@@ -108,7 +107,7 @@ export function McpDraftActions({
         <Button asChild variant="outline" className="mt-4 h-11 rounded-xl px-4">
           <Link href="/settings/connections">
             <Link2 className="mr-2 h-4 w-4" />
-            Set up an MCP Connector
+            Connect an AI app
           </Link>
         </Button>
       )}
@@ -136,7 +135,7 @@ export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpPr
       >
         <Link href="/settings/connections">
           <Link2 className="mr-2 h-4 w-4" />
-          Set up an MCP Connector
+          Connect an AI app
         </Link>
       </Button>
     );

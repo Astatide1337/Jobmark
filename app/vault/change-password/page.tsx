@@ -20,9 +20,9 @@ function VaultChangePasswordForm() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
-          <CardTitle>Invalid Link</CardTitle>
-          <CardDescription>This change-password link is missing a required parameter.</CardDescription>
+          <AlertCircle className="text-destructive mx-auto h-12 w-12" />
+          <CardTitle>This link is no longer valid</CardTitle>
+          <CardDescription>Return to your AI app and start the connection again.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -70,57 +70,67 @@ function VaultChangePasswordForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <KeyRound className="mx-auto h-12 w-12 text-primary" />
-        <CardTitle>Change Vault Password</CardTitle>
-        <CardDescription>
-          Enter your current password and choose a new one. This link expires in 5 minutes.
-        </CardDescription>
+        <KeyRound className="text-primary mx-auto h-12 w-12" />
+        <CardTitle>Change project password</CardTitle>
+        <CardDescription>Enter your current password, then choose a new one.</CardDescription>
       </CardHeader>
       <CardContent>
         {status === 'success' ? (
-          <div className="text-center space-y-4">
+          <div className="space-y-4 text-center">
             <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-            <p className="text-sm text-muted-foreground">{message}</p>
-            <p className="text-xs text-muted-foreground">You can close this tab and return to your AI assistant.</p>
+            <p className="text-muted-foreground text-sm">{message}</p>
+            <p className="text-muted-foreground text-xs">
+              You can close this tab and return to your AI app.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
+              <label htmlFor="current-vault-password" className="sr-only">
+                Current project password
+              </label>
               <Input
+                id="current-vault-password"
                 type="password"
                 placeholder="Current vault password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
+                onChange={e => setCurrentPassword(e.target.value)}
                 required
                 minLength={12}
                 autoFocus
               />
             </div>
             <div>
+              <label htmlFor="new-vault-password" className="sr-only">
+                New project password
+              </label>
               <Input
+                id="new-vault-password"
                 type="password"
                 placeholder="New vault password (min 12 characters)"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
                 required
                 minLength={12}
               />
             </div>
             <div>
+              <label htmlFor="confirm-vault-password" className="sr-only">
+                Confirm new project password
+              </label>
               <Input
+                id="confirm-vault-password"
                 type="password"
                 placeholder="Confirm new vault password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 required
                 minLength={12}
               />
             </div>
-            {status === 'error' && (
-              <p className="text-sm text-destructive">{message}</p>
-            )}
+            {status === 'error' && <p className="text-destructive text-sm">{message}</p>}
             <Button type="submit" className="w-full" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Changing password...' : 'Change Password'}
+              {status === 'loading' ? 'Changing password...' : 'Change password'}
             </Button>
           </form>
         )}
@@ -131,7 +141,7 @@ function VaultChangePasswordForm() {
 
 export default function VaultChangePasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <Suspense>
         <VaultChangePasswordForm />
       </Suspense>

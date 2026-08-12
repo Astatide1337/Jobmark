@@ -20,7 +20,7 @@ describe('McpDraftActions', () => {
       <McpDraftActions connectedMcpProviders={[]} onDraftWithProvider={vi.fn()} />
     );
 
-    expect(markup).toContain('Set up an MCP Connector');
+    expect(markup).toContain('Connect an AI app');
     expect(markup).not.toContain('Draft with Claude');
     expect(markup).not.toContain('Draft with ChatGPT');
     expect(markup).not.toContain('Draft with Gemini');
@@ -39,9 +39,9 @@ describe('McpDraftActions', () => {
 
     expect(markup).toContain('Draft with Claude');
     expect(markup).toContain('Draft with Gemini');
-    expect(markup).toContain('Gemini opens with the instructions copied.');
+    expect(markup).toContain('Gemini opens separately. Your instructions are copied');
     expect(markup).not.toContain('Draft with ChatGPT');
-    expect(markup).not.toContain('Set up an MCP Connector');
+    expect(markup).not.toContain('Connect an MCP');
   });
 
   it('uses a direct open action for one provider and a chooser for multiple', () => {

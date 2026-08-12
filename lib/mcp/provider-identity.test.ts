@@ -53,11 +53,11 @@ describe('MCP provider identity', () => {
 
   it('keeps opaque client identifiers out of human-facing names', () => {
     expect(getMcpProviderName({ clientId: 'opaque-1', clientName: 'client:opaque-1' })).toBe(
-      'AI plugin'
+      'Other AI app'
     );
     expect(
       getMcpProviderName({ clientId: 'opaque-2', clientName: 'https://example.com/app' })
-    ).toBe('AI plugin');
+    ).toBe('Other AI app');
     expect(getMcpProviderName({ clientId: 'opaque-3', clientName: '  Acme Assistant  ' })).toBe(
       'Acme Assistant'
     );

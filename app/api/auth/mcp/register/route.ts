@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     JSON.stringify({
       event: 'mcp_client_registration_started',
       requestId,
-      clientName: typeof body.client_name === 'string' ? body.client_name : 'Unknown Client',
+      clientNameLength: typeof body.client_name === 'string' ? body.client_name.length : 0,
       redirectUriCount: Array.isArray(body.redirect_uris) ? body.redirect_uris.length : 0,
       tokenEndpointAuthMethod: body.token_endpoint_auth_method ?? 'none',
     })

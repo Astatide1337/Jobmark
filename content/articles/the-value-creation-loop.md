@@ -1,6 +1,6 @@
 ---
 title: The value-creation loop
-description: How to make yourself indispensable through consistent value delivery, not just checking boxes.
+description: How to make your work more useful through consistent value delivery, not just checking boxes.
 slug: the-value-creation-loop
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
@@ -79,7 +79,7 @@ If you're working late but can't explain what specific business outcome you're d
 
 Every week, ask: "What's the one thing I did this week that made something better for someone else?"
 
-If you can't answer that, your week was hollow.
+If you cannot answer that, the next step is to clarify the result you want the work to create.
 
 ## Quick test
 

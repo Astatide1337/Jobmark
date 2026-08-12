@@ -81,7 +81,7 @@ export function getMcpProviderName(identity: McpProviderIdentity): string {
   if (key === 'gemini') return 'Gemini';
 
   const clientName = identity.clientName?.trim().replace(/\s+/g, ' ');
-  if (!clientName || clientName.length > 80) return 'AI plugin';
-  if (/^client:/i.test(clientName) || /:\/\//.test(clientName)) return 'AI plugin';
+  if (!clientName || clientName.length > 80) return 'Other AI app';
+  if (/^client:/i.test(clientName) || /:\/\//.test(clientName)) return 'Other AI app';
   return clientName;
 }

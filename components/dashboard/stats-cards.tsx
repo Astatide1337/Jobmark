@@ -118,18 +118,22 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
         <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-all duration-300 hover:shadow-xl">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
-              <FileText className="text-muted-foreground/70 h-4 w-4" />
-              <span className="text-muted-foreground/60 text-[10px] font-bold tracking-widest uppercase">
+              <FileText className="text-muted-foreground h-4 w-4" />
+              <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                 Activities
               </span>
             </div>
             <p className="text-foreground text-3xl font-bold tracking-tight tabular-nums">
               {count}
             </p>
-            <p className="text-muted-foreground/80 mb-4 text-xs">This month</p>
+            <p className="text-muted-foreground mb-4 text-xs">This month</p>
 
             {/* Goal-Gradient Progress */}
-            <Progress value={progress} className="bg-muted/30 h-1.5 rounded-full" />
+            <Progress
+              value={progress}
+              aria-label={`Monthly activity goal: ${count} of ${goal}`}
+              className="bg-muted/30 h-1.5 rounded-full"
+            />
           </CardContent>
         </Card>
       </TooltipTrigger>
@@ -159,9 +163,9 @@ function CoverageStatCard({ streak }: { streak: number }) {
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <Flame
-                className={`h-4 w-4 ${streak > 0 ? 'text-primary' : 'text-muted-foreground/70'}`}
+                className={`h-4 w-4 ${streak > 0 ? 'text-primary' : 'text-muted-foreground'}`}
               />
-              <span className="text-muted-foreground/60 text-[10px] font-bold tracking-widest uppercase">
+              <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                 Coverage
               </span>
             </div>
@@ -171,7 +175,7 @@ function CoverageStatCard({ streak }: { streak: number }) {
               </p>
               {streak > 3 && <TrendingUp className="text-primary h-4 w-4" />}
             </div>
-            <p className="text-muted-foreground/80 text-xs">
+            <p className="text-muted-foreground text-xs">
               {streak === 1 ? 'Documented day' : 'Documented days'}
             </p>
           </CardContent>
@@ -198,15 +202,15 @@ function ProjectStatCard({ count, summaries }: { count: number; summaries: numbe
         <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-all duration-300 hover:shadow-xl">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
-              <FolderOpen className="text-muted-foreground/70 h-4 w-4" />
-              <span className="text-muted-foreground/60 text-[10px] font-bold tracking-widest uppercase">
+              <FolderOpen className="text-muted-foreground h-4 w-4" />
+              <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                 Projects
               </span>
             </div>
             <p className="text-foreground text-3xl font-bold tracking-tight tabular-nums">
               {count}
             </p>
-            <p className="text-muted-foreground/80 text-xs">Active projects</p>
+            <p className="text-muted-foreground text-xs">Active projects</p>
           </CardContent>
         </Card>
       </TooltipTrigger>

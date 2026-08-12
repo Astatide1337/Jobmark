@@ -2,7 +2,7 @@
  * Live Editor
  *
  * Why: Standard textareas are static. When a caller supplies an improvement
- * handler (for example, a connected MCP assistant flow), users can highlight
+ * handler (for example, a connected AI-app flow), users can highlight
  * text and request an edit. Without a handler the editor stays fully manual.
  *
  * Technical Implementation:
@@ -222,7 +222,7 @@ export function LiveEditor({
               <Input
                 value={instruction}
                 onChange={e => setInstruction(e.target.value)}
-                placeholder="Ask your connected assistant to edit this..."
+                placeholder="Ask an AI app to edit this..."
                 className="h-9 border-none bg-transparent px-2 text-sm shadow-none focus-visible:ring-0"
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleImprove();

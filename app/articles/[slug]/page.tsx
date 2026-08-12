@@ -6,7 +6,6 @@ import { getAllArticleSlugs, getArticleBySlug, getRelatedArticles } from '@/lib/
 import {
   ArticleHeader,
   ReadingProgress,
-  HowToUseArticle,
   CareerSignalCallout,
   RelatedStories,
 } from '../_components/article-detail';
@@ -16,7 +15,7 @@ interface ArticlePageProps {
 }
 
 function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.app';
+  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
 }
 
 export async function generateStaticParams() {
@@ -97,16 +96,18 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
 
-      <Link
-        href="/articles"
-        className="text-muted-foreground hover:text-primary mb-6 inline-flex text-sm transition"
-      >
-        ← Back to articles
-      </Link>
+      <div className="mb-6 flex flex-wrap items-center gap-4 text-sm">
+        <Link href="/articles" className="text-muted-foreground hover:text-primary transition">
+          ← Back to articles
+        </Link>
+        {article.category === 'help' && article.slug === 'connect-jobmark-to-ai' ? (
+          <Link href="/chat" className="text-primary hover:underline">
+            Open MCP Connector
+          </Link>
+        ) : null}
+      </div>
 
       <ArticleHeader article={article} />
-      <HowToUseArticle article={article} />
-
       <MarkdownRenderer content={article.content} className="article-prose max-w-none" />
 
       <CareerSignalCallout article={article} />
