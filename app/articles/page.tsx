@@ -5,9 +5,9 @@ import { getAllArticles } from '@/lib/articles';
 import { TopicChipsBar, SortAndSearchBar } from './_components/article-filters';
 
 const categoryLabels = {
-  all: 'All',
-  help: 'Help',
-  'career-development': 'Career Development',
+  all: 'All stories',
+  help: 'How to use Jobmark',
+  'career-development': 'Career development',
 } as const;
 
 type CategoryFilter = keyof typeof categoryLabels;
@@ -17,11 +17,11 @@ const validCategories = new Set<CategoryFilter>(['all', 'help', 'career-developm
 export const metadata: Metadata = {
   title: 'Articles | Jobmark',
   description:
-    'Browse practical articles for Jobmark and career development playbooks to improve reviews, promotions, and long-term growth.',
+    'Ideas and practical guides for keeping a clear record of your work and making your next career move.',
   openGraph: {
     title: 'Articles | Jobmark',
     description:
-      'Browse practical articles for Jobmark and career development playbooks to improve reviews, promotions, and long-term growth.',
+      'Ideas and practical guides for keeping a clear record of your work and making your next career move.',
     type: 'website',
   },
 };
@@ -63,155 +63,141 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
     return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
   });
 
-  const leadArticle = filteredArticles.find(article => article.featured) ?? filteredArticles[0];
-  const useShelfFirstLayout = Boolean(query) || topic !== 'all' || filteredArticles.length <= 4;
-  const remainingArticles = leadArticle
-    ? filteredArticles.filter(article => article.slug !== leadArticle.slug)
+  const isBrowsingResults = Boolean(query) || topic !== 'all' || sort !== 'newest';
+  const featuredArticle = !isBrowsingResults
+    ? (filteredArticles.find(article => article.slug === 'build-a-promotion-case-with-evidence') ??
+      filteredArticles.find(article => article.featured) ??
+      filteredArticles[0])
+    : undefined;
+  const gridArticles = featuredArticle
+    ? filteredArticles.filter(article => article.slug !== featuredArticle.slug)
     : filteredArticles;
-  const secondaryArticles = useShelfFirstLayout ? [] : remainingArticles.slice(0, 3);
-  const displayedSlugs = new Set([
-    ...(leadArticle ? [leadArticle.slug] : []),
-    ...secondaryArticles.map(article => article.slug),
-  ]);
-  const shelfArticles = filteredArticles.filter(article => !displayedSlugs.has(article.slug));
-
-  // An article can belong to several topics (for example, a promotion article
-  // may also be tagged as networking). Consume each article as it is placed so
-  // the shelves stay useful and never show the same card twice.
-  const takeShelfArticles = (
-    availableArticles: typeof shelfArticles,
-    matches: (article: (typeof shelfArticles)[number]) => boolean
-  ) => {
-    const items = availableArticles.filter(matches).slice(0, 4);
-    const selectedSlugs = new Set(items.map(article => article.slug));
-    return {
-      items,
-      remaining: availableArticles.filter(article => !selectedSlugs.has(article.slug)),
-    };
-  };
-
-  const buildRecord = takeShelfArticles(
-    shelfArticles,
-    article =>
-      article.tags.includes('accomplishments') ||
-      article.tags.includes('weekly-routine') ||
-      article.tags.includes('planning')
-  );
-  const reviews = takeShelfArticles(
-    buildRecord.remaining,
-    article =>
-      article.tags.includes('performance-review') ||
-      article.tags.includes('promotion') ||
-      article.tags.includes('impact')
-  );
-  const visibility = takeShelfArticles(
-    reviews.remaining,
-    article =>
-      article.tags.includes('networking') ||
-      article.tags.includes('relationships') ||
-      article.tags.includes('career-growth')
-  );
-  const remaining = visibility.remaining;
-
-  const sectioned = [
-    {
-      key: 'build-record',
-      title: 'Build Your Record',
-      description: 'Capture better evidence so future reviews do not rely on memory.',
-      items: buildRecord.items,
-    },
-    {
-      key: 'reviews',
-      title: 'Write Better Reviews',
-      description: 'Turn your work into clear summaries, self-reviews, and promotion material.',
-      items: reviews.items,
-    },
-    {
-      key: 'visibility',
-      title: 'Improve Career Visibility',
-      description: 'Use communication, networking, and consistent follow-through to stay visible.',
-      items: visibility.items,
-    },
-    {
-      key: 'more-to-explore',
-      title: 'More to Explore',
-      description: 'Keep browsing practical ideas for your next step at work.',
-      items: remaining,
-    },
-  ].filter(section => section.items.length > 0);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <section className="border-border/60 border-b pb-6 sm:pb-8">
-        <p className="text-muted-foreground text-sm">Practical Articles</p>
-        <h1 className="text-foreground mt-2 font-serif text-3xl leading-tight font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-          Practical articles for building a stronger work record
-        </h1>
-        <p className="text-muted-foreground mt-4 max-w-3xl text-sm sm:text-base">
-          Read practical playbooks that help you capture better evidence, write clearer updates, and
-          prepare stronger reviews inside Jobmark.
-        </p>
-      </section>
+    <div className="pb-12 sm:pb-20">
+      <header className="border-border/60 border-b pb-10 sm:pb-14">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-end">
+          <div>
+            <p className="text-primary text-xs font-semibold tracking-[0.2em] uppercase">
+              The Jobmark journal
+            </p>
+            <p className="text-muted-foreground mt-4 max-w-xs text-sm leading-6">
+              Practical ideas for people doing thoughtful work and trying to make it visible.
+            </p>
+          </div>
+          <div>
+            <h1 className="text-foreground max-w-4xl font-serif text-4xl leading-[0.98] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+              Keep the work. Make the next move clearer.
+            </h1>
+            <p className="text-muted-foreground mt-5 max-w-2xl text-base leading-7 sm:text-lg">
+              Notes on capturing what changed, telling a stronger story, and building a career on
+              more than memory.
+            </p>
+          </div>
+        </div>
 
-      <TopicChipsBar
-        categories={categoryLabels}
-        activeTopic={topic}
-        query={query || undefined}
-        sort={sort}
-      />
-
-      <SortAndSearchBar topic={topic} query={query} sort={sort} />
-
-      {filteredArticles.length === 0 ? (
-        <section className="border-border/60 bg-card/35 rounded-2xl border p-6">
-          <h2 className="text-foreground font-serif text-2xl font-semibold">
-            No articles matched those filters.
-          </h2>
-          <p className="text-muted-foreground mt-2 text-sm">
-            Try a broader search or return to the full library.
-          </p>
-          <Link
-            href="/articles"
-            className="text-primary mt-4 inline-flex text-sm font-medium hover:underline"
-          >
-            Clear filters
-          </Link>
-        </section>
-      ) : (
-        <section>
-          <div className="space-y-8">
-            {leadArticle ? <StoryCard article={leadArticle} variant="lead" /> : null}
-
-            {secondaryArticles.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {secondaryArticles.map(article => (
-                  <StoryCard key={article.slug} article={article} />
-                ))}
-              </div>
-            ) : null}
-
-            {sectioned.map(section => (
-              <section
-                key={section.key}
-                className="border-border/60 bg-card/40 rounded-2xl border p-5 sm:p-6"
+        <nav aria-label="Article topics" className="mt-10 overflow-x-auto">
+          <div className="flex min-w-max items-center gap-6 sm:gap-9">
+            {(
+              [
+                ['career-development', 'Work and growth'],
+                ['help', 'Using Jobmark'],
+              ] as const
+            ).map(([hrefTopic, label]) => (
+              <Link
+                key={hrefTopic}
+                href={`/articles?topic=${hrefTopic}`}
+                className="text-muted-foreground hover:text-foreground group inline-flex items-center gap-2 font-serif text-xl transition-colors sm:text-2xl"
               >
-                <div className="border-border/50 mb-4 border-b pb-3">
-                  <h2 className="text-foreground font-serif text-2xl font-semibold">
-                    {section.title}
-                  </h2>
-                  <p className="text-muted-foreground mt-1 text-sm">{section.description}</p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {section.items.map(article => (
-                    <StoryCard key={article.slug} article={article} variant="compact" />
-                  ))}
-                </div>
-              </section>
+                {label}
+                <span
+                  className="text-primary text-base transition-transform group-hover:translate-x-1"
+                  aria-hidden="true"
+                >
+                  →
+                </span>
+              </Link>
             ))}
           </div>
+        </nav>
+      </header>
+
+      <div className="pt-8 sm:pt-10">
+        {!isBrowsingResults && featuredArticle ? (
+          <section aria-labelledby="featured-story-heading">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h2
+                id="featured-story-heading"
+                className="text-foreground font-serif text-2xl font-semibold"
+              >
+                Featured story
+              </h2>
+              <Link
+                href="/articles?sort=newest"
+                className="text-muted-foreground hover:text-primary text-sm transition-colors"
+              >
+                Browse all <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+            <StoryCard article={featuredArticle} variant="lead" />
+          </section>
+        ) : null}
+
+        <section
+          className={featuredArticle ? 'mt-14 sm:mt-20' : undefined}
+          aria-labelledby="article-library-heading"
+        >
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
+                {isBrowsingResults ? 'Filtered stories' : 'From the journal'}
+              </p>
+              <h2
+                id="article-library-heading"
+                className="text-foreground mt-2 font-serif text-3xl font-semibold sm:text-4xl"
+              >
+                {isBrowsingResults ? `${filteredArticles.length} stories` : 'Latest stories'}
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {filteredArticles.length} {filteredArticles.length === 1 ? 'story' : 'stories'}
+            </p>
+          </div>
+
+          <div className="border-border/70 border-y py-4">
+            <TopicChipsBar
+              categories={categoryLabels}
+              activeTopic={topic}
+              query={query || undefined}
+              sort={sort}
+            />
+            <SortAndSearchBar topic={topic} query={query} sort={sort} />
+          </div>
+
+          {filteredArticles.length === 0 ? (
+            <section className="border-border/70 mt-8 rounded-2xl border border-dashed p-8 text-center sm:p-12">
+              <h3 className="text-foreground font-serif text-2xl font-semibold">
+                No stories matched that search.
+              </h3>
+              <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm leading-6">
+                Try a different phrase or return to the full journal.
+              </p>
+              <Link
+                href="/articles"
+                className="text-primary mt-5 inline-flex text-sm font-medium hover:underline"
+              >
+                Clear filters
+              </Link>
+            </section>
+          ) : (
+            <div className="mt-8 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+              {gridArticles.map(article => (
+                <StoryCard key={article.slug} article={article} />
+              ))}
+            </div>
+          )}
         </section>
-      )}
+      </div>
     </div>
   );
 }
