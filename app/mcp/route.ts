@@ -82,9 +82,15 @@ function normalizeJsonRpcError(error: unknown): {
     return { code: candidate.code, message: candidate.message, data: candidate.data };
   }
 
-  const domainCode = typeof candidate.code === 'string' ? candidate.code : 'INTERNAL_ERROR';
+  const candidateDomainCode = typeof candidate.code === 'string' ? candidate.code : null;
+  const domainCode = candidateDomainCode ?? 'INTERNAL_ERROR';
+  const isKnownDomainError =
+    candidateDomainCode !== null &&
+    Object.prototype.hasOwnProperty.call(DOMAIN_ERROR_CODES, domainCode);
   const message =
-    typeof candidate.message === 'string' ? candidate.message : 'Internal server error';
+    isKnownDomainError && typeof candidate.message === 'string'
+      ? candidate.message
+      : 'Internal server error';
   const data =
     candidate.data && typeof candidate.data === 'object'
       ? { ...(candidate.data as Record<string, unknown>), code: domainCode }

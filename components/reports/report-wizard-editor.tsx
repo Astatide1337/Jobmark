@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import {
   ChevronLeft,
-  Sparkles,
+  Copy,
   Save,
   CheckCircle,
   Mail,
@@ -23,6 +23,8 @@ import {
 import { LiveEditor } from '@/components/reports/live-editor';
 import { McpProviderMenu, type ConnectedMcpProvider } from '@/components/reports/mcp-draft-actions';
 import { exportToPdf, exportToWord } from '@/lib/report-export';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { toast } from 'sonner';
 
 interface ReportWizardEditorProps {
   reportContent: string;
@@ -158,9 +160,13 @@ export function ReportWizardEditor({
             <Button
               variant="outline"
               className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
-              onClick={() => navigator.clipboard.writeText(reportContent)}
+              onClick={async () => {
+                const copied = await copyTextToClipboard(reportContent);
+                if (copied) toast.success('Copied to clipboard');
+                else toast.error('Could not copy the draft');
+              }}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Copy className="mr-2 h-4 w-4" />
               Copy Text
             </Button>
             <div className="h-4" />

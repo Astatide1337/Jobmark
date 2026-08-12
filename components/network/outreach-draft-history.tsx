@@ -29,6 +29,7 @@ import { exportToPdf, exportToWord } from '@/lib/report-export';
 import { LiveEditor } from '@/components/reports/live-editor';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 interface OutreachDraft {
   id: string;
@@ -254,9 +255,10 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(draft.content);
-                        toast.success('Copied to clipboard!');
+                      onClick={async () => {
+                        const copied = await copyTextToClipboard(draft.content);
+                        if (copied) toast.success('Copied to clipboard');
+                        else toast.error('Could not copy the draft');
                       }}
                     >
                       <Copy className="mr-1 h-4 w-4" />

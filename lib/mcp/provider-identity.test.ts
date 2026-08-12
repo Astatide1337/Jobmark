@@ -50,4 +50,16 @@ describe('MCP provider identity', () => {
   it('keeps unknown clients separate by OAuth client identifier', () => {
     expect(getMcpProviderKey({ clientId: 'Acme-Client' })).toBe('client:acme-client');
   });
+
+  it('keeps opaque client identifiers out of human-facing names', () => {
+    expect(getMcpProviderName({ clientId: 'opaque-1', clientName: 'client:opaque-1' })).toBe(
+      'AI plugin'
+    );
+    expect(
+      getMcpProviderName({ clientId: 'opaque-2', clientName: 'https://example.com/app' })
+    ).toBe('AI plugin');
+    expect(getMcpProviderName({ clientId: 'opaque-3', clientName: '  Acme Assistant  ' })).toBe(
+      'Acme Assistant'
+    );
+  });
 });

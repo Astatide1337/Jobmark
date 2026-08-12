@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { LiveEditor } from './live-editor';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 interface Report {
   id: string;
@@ -298,11 +299,12 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         const contentToCopy =
                           editingId === report.id ? editContent : report.content;
-                        navigator.clipboard.writeText(contentToCopy);
-                        toast.success('Copied to clipboard!');
+                        const copied = await copyTextToClipboard(contentToCopy);
+                        if (copied) toast.success('Copied to clipboard');
+                        else toast.error('Could not copy the report');
                       }}
                     >
                       Copy for Review

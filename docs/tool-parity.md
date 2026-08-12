@@ -44,16 +44,16 @@ Mapping between SPEC.md tool inventory and implemented MCP tools.
 
 ## Reports
 
-| SPEC Tool                      | Implemented Tool       | Status                   |
-| ------------------------------ | ---------------------- | ------------------------ |
-| `reports_list`                 | `reports_list`         | ✅                       |
-| `reports_get`                  | `reports_get`          | ✅                       |
-| `reports_check_activity_count` | —                      | ❌ (removed: not needed) |
-| `reports_generate`             | `reports_generate`     | ✅                       |
-| `reports_create`               | `reports_regenerate`   | ⚠️ (renamed)             |
-| `reports_update`               | `reports_improve_text` | ⚠️ (renamed)             |
-| `reports_delete`               | `reports_delete`       | ✅                       |
-| `reports_improve_text`         | `reports_improve_text` | ✅                       |
+| SPEC Tool                      | Implemented Tool       | Status                                                                   |
+| ------------------------------ | ---------------------- | ------------------------------------------------------------------------ |
+| `reports_list`                 | `reports_list`         | ✅                                                                       |
+| `reports_get`                  | `reports_get`          | ✅                                                                       |
+| `reports_check_activity_count` | —                      | ❌ (intentionally not exposed; generation validates the activity count)  |
+| `reports_generate`             | `reports_generate`     | ✅                                                                       |
+| `reports_create`               | —                      | ❌ (use `reports_generate` or the app’s deterministic draft flow)        |
+| `reports_update`               | —                      | ❌ (editing is available in the app; MCP exposes `reports_improve_text`) |
+| `reports_delete`               | `reports_delete`       | ✅                                                                       |
+| `reports_improve_text`         | `reports_improve_text` | ✅                                                                       |
 
 ## Search & Insights
 
@@ -132,14 +132,14 @@ Mapping between SPEC.md tool inventory and implemented MCP tools.
 ## Summary
 
 - **SPEC tools**: 55
-- **Implemented tools**: 59 (50 core + 9 extras)
-- **Coverage**: 55/55 SPEC tools implemented (100%)
-- **Missing**: `reports_check_activity_count` (removed: not needed, activity count is part of `reports_generate`)
-- **Extra tools**: 9 tools added for completeness (get, delete, update variants not in SPEC but useful)
+- **SPEC inventory**: 55 entries
+- **Current registered tools**: 57
+- **Contract note**: the two report authoring entries above are intentionally represented by the deterministic generation and improve-text tools; `reports_check_activity_count` is folded into generation validation.
+- **Additional tools**: CRUD and retrieval helpers are marked ➕ in the tables above.
 
 ## Notes
 
 1. `reports_check_activity_count` was removed because activity count is automatically checked during `reports_generate` (max 500 activities).
 2. `activities_stats` was renamed to `dashboard_stats` to match the broader dashboard analytics scope.
-3. `reports_create` and `reports_update` were renamed to `reports_regenerate` and `reports_improve_text` respectively for clarity.
+3. Report generation and text improvement remain separate so assistants can create a grounded brief without pretending to be a general-purpose editor.
 4. Extra tools (get, delete, update variants) were added to provide complete CRUD coverage for all entities.

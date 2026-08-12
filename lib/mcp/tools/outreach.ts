@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import {
   listOutreach,
@@ -9,10 +8,7 @@ import {
   improveOutreachText,
 } from '@/lib/jobmark/outreach';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-  McpNotFoundError,
-} from '../errors';
+import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
@@ -33,14 +29,14 @@ const outreachCreateSchema = z.object({
   contactId: z.string(),
   title: z.string().min(1).max(200),
   content: z.string(),
-  metadata: z.record(z.string(), z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.json()).optional().nullable(),
 });
 
 const outreachUpdateSchema = z.object({
   outreachId: z.string(),
   title: z.string().min(1).max(200).optional(),
   content: z.string().optional(),
-  metadata: z.record(z.string(), z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.json()).optional().nullable(),
 });
 
 const outreachDeleteSchema = z.object({ outreachId: z.string() });
@@ -110,7 +106,8 @@ export const outreachGenerateTool = {
   definition: {
     name: 'outreach_generate',
     title: 'Generate Outreach Draft',
-    description: 'Generate an editable outreach message from a contact and its history. The message is grounded in the record and ready for the user to review. Requires jobmark:write scope.',
+    description:
+      'Generate an editable outreach message from a contact and its history. The message is grounded in the record and ready for the user to review. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -169,7 +166,12 @@ export const outreachCreateTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -207,7 +209,11 @@ export const outreachUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -241,7 +247,11 @@ export const outreachDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -259,7 +269,8 @@ export const outreachImproveTextTool = {
   definition: {
     name: 'outreach_improve_text',
     title: 'Improve Outreach Text',
-    description: 'Apply a predictable edit to a saved outreach draft. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
+    description:
+      'Apply a predictable edit to a saved outreach draft. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -284,7 +295,11 @@ export const outreachImproveTextTool = {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
 
-    const improved = await improveOutreachText(actor, result.data.outreachId, result.data.instructions);
+    const improved = await improveOutreachText(
+      actor,
+      result.data.outreachId,
+      result.data.instructions
+    );
     return createStructuredResult(improved, 'Outreach text improved');
   },
 };

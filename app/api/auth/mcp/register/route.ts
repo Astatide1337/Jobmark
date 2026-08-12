@@ -213,7 +213,6 @@ export async function POST(request: NextRequest) {
     JSON.stringify({
       event: 'mcp_client_registration_completed',
       requestId,
-      clientId: client.client_id,
     })
   );
 

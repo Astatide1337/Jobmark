@@ -99,7 +99,7 @@ Compose expects runtime secrets through `.env`; migrations should be applied exp
 
 ### Available Tools (50+)
 
-**Projects**: `projects_list`, `projects_get`, `projects_create`, `projects_update`, `projects_archive`, `projects_delete`
+**Projects**: `projects_list`, `projects_get`, `projects_create`, `projects_update`, `projects_set_archived`, `projects_delete`
 
 **Activities**: `activities_list`, `activities_get`, `activities_create`, `activities_update`, `activities_delete`
 

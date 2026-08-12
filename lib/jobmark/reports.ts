@@ -6,7 +6,13 @@
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { getLockedProjectIds } from '@/lib/project-lock';
-import { JobmarkActor, assertActor, NotFoundError, ValidationError, VaultLockedError } from './index';
+import {
+  JobmarkActor,
+  assertActor,
+  NotFoundError,
+  ValidationError,
+  VaultLockedError,
+} from './index';
 import { z } from 'zod';
 import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
 
@@ -127,9 +133,8 @@ export async function checkActivityCount(actor: JobmarkActor): Promise<{
   assertActor(actor);
 
   const lockedIds = await getLockedProjectIds(actor.userId);
-  const lockedFilter = lockedIds.length > 0
-    ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] }
-    : {};
+  const lockedFilter =
+    lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
 
   const count = await prisma.activity.count({
     where: { userId: actor.userId, ...lockedFilter },
@@ -156,35 +161,12 @@ export async function generateReport(
   if (projectId && !project) throw new NotFoundError('Project');
   if (project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
-  const activities = await prisma.activity.findMany({
-    where: {
-      userId: actor.userId,
-      projectId: projectId ?? undefined,
-      ...(projectId === null && lockedIds.length > 0
-        ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] }
-        : {}),
-    },
-    orderBy: { logDate: 'asc' },
-    take: 501,
-    include: { project: { select: { name: true } } },
-  });
-
-  if (activities.length === 0) throw new ValidationError('No activities found for this report');
-  if (activities.length > 500) {
-    throw new ValidationError('Too many activities; narrow the project scope before generating');
-  }
-
-  const content = buildReviewBrief({
-    startDate: activities[0].logDate.toISOString().slice(0, 10),
-    endDate: activities[activities.length - 1].logDate.toISOString().slice(0, 10),
-    tone: 'professional',
-    notes: customInstructions,
-    activities: activities.map(activity => ({
-      logDate: activity.logDate,
-      content: activity.content,
-      projectName: activity.project?.name ?? null,
-    })),
-  });
+  const content = await buildGeneratedReportContent(
+    actor,
+    projectId,
+    customInstructions,
+    lockedIds
+  );
 
   const report = await prisma.report.create({
     data: {
@@ -198,6 +180,29 @@ export async function generateReport(
   });
 
   return toReportDTO(report);
+}
+
+/** Rebuild an existing deterministic brief in place from its saved scope. */
+export async function regenerateReport(actor: JobmarkActor, reportId: string): Promise<ReportDTO> {
+  assertActor(actor);
+
+  const report = await prisma.report.findFirst({
+    where: { id: reportId, userId: actor.userId },
+    include: { project: { select: { id: true, name: true, color: true, locked: true } } },
+  });
+
+  if (!report) throw new NotFoundError('Report');
+  if (report.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
+
+  const lockedIds = await getLockedProjectIds(actor.userId);
+  const content = await buildGeneratedReportContent(actor, report.projectId, undefined, lockedIds);
+  const updated = await prisma.report.update({
+    where: { id: report.id },
+    data: { content, metadata: { generated: true, deterministic: true } },
+    include: { project: { select: { id: true, name: true, color: true } } },
+  });
+
+  return toReportDTO(updated);
 }
 
 export async function createReport(actor: JobmarkActor, input: ReportInput): Promise<ReportDTO> {
@@ -303,6 +308,43 @@ export async function deleteReport(actor: JobmarkActor, reportId: string): Promi
 type ReportWithProject = Prisma.ReportGetPayload<{
   include: { project: { select: { id: true; name: true; color: true } } };
 }>;
+
+async function buildGeneratedReportContent(
+  actor: JobmarkActor,
+  projectId: string | null,
+  customInstructions: string | undefined,
+  lockedIds: string[]
+): Promise<string> {
+  const activities = await prisma.activity.findMany({
+    where: {
+      userId: actor.userId,
+      projectId: projectId ?? undefined,
+      ...(projectId === null && lockedIds.length > 0
+        ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] }
+        : {}),
+    },
+    orderBy: { logDate: 'asc' },
+    take: 501,
+    include: { project: { select: { name: true } } },
+  });
+
+  if (activities.length === 0) throw new ValidationError('No activities found for this report');
+  if (activities.length > 500) {
+    throw new ValidationError('Too many activities; narrow the project scope before generating');
+  }
+
+  return buildReviewBrief({
+    startDate: activities[0].logDate.toISOString().slice(0, 10),
+    endDate: activities[activities.length - 1].logDate.toISOString().slice(0, 10),
+    tone: 'professional',
+    notes: customInstructions,
+    activities: activities.map(activity => ({
+      logDate: activity.logDate,
+      content: activity.content,
+      projectName: activity.project?.name ?? null,
+    })),
+  });
+}
 
 function toReportDTO(report: ReportWithProject): ReportDTO {
   return {

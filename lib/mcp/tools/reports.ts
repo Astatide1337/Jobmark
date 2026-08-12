@@ -1,26 +1,19 @@
-
 import { z } from 'zod';
 import {
   listReports,
   getReport,
   generateReport,
-  createReport,
-  updateReport,
+  regenerateReport,
   deleteReport,
   improveReportText,
 } from '@/lib/jobmark/reports';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-  McpNotFoundError,
-  McpVaultLockedError,
-} from '../errors';
+import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 
 const reportListSchema = z.object({
   limit: z.number().int().min(1).max(50).optional(),
   cursor: z.string().optional(),
-  projectId: z.string().optional(),
 });
 
 const reportGenerateSchema = z.object({
@@ -43,7 +36,6 @@ export const reportsListTool = {
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 50 },
         cursor: { type: 'string' },
-        projectId: { type: 'string' },
       },
       additionalProperties: false,
     },
@@ -57,8 +49,6 @@ export const reportsListTool = {
             properties: {
               id: { type: 'string' },
               title: { type: 'string' },
-              periodStart: { type: 'string' },
-              periodEnd: { type: 'string' },
               projectId: { type: ['string', 'null'] },
               project: {
                 type: ['object', 'null'],
@@ -68,9 +58,8 @@ export const reportsListTool = {
                   color: { type: 'string' },
                 },
               },
-              status: { type: 'string' },
+              contentPreview: { type: 'string' },
               createdAt: { type: 'string' },
-              updatedAt: { type: 'string' },
             },
           },
         },
@@ -114,8 +103,6 @@ export const reportsGetTool = {
         id: { type: 'string' },
         title: { type: 'string' },
         content: { type: 'string' },
-        periodStart: { type: 'string' },
-        periodEnd: { type: 'string' },
         projectId: { type: ['string', 'null'] },
         project: {
           type: ['object', 'null'],
@@ -125,9 +112,8 @@ export const reportsGetTool = {
             color: { type: 'string' },
           },
         },
-        status: { type: 'string' },
+        metadata: { type: ['object', 'null'], additionalProperties: true },
         createdAt: { type: 'string' },
-        updatedAt: { type: 'string' },
       },
     },
     annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
@@ -151,7 +137,8 @@ export const reportsGenerateTool = {
   definition: {
     name: 'reports_generate',
     title: 'Generate Report',
-    description: 'Build and save a deterministic review brief from the activity record. Requires jobmark:write scope.',
+    description:
+      'Build and save a deterministic review brief from the activity record. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -165,12 +152,26 @@ export const reportsGenerateTool = {
       properties: {
         id: { type: 'string' },
         title: { type: 'string' },
-        periodStart: { type: 'string' },
-        periodEnd: { type: 'string' },
-        status: { type: 'string' },
+        projectId: { type: ['string', 'null'] },
+        project: {
+          type: ['object', 'null'],
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            color: { type: 'string' },
+          },
+        },
+        content: { type: 'string' },
+        metadata: { type: ['object', 'null'], additionalProperties: true },
+        createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -179,7 +180,11 @@ export const reportsGenerateTool = {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
 
-    const report = await generateReport(actor, result.data.projectId ?? null, result.data.customInstructions);
+    const report = await generateReport(
+      actor,
+      result.data.projectId ?? null,
+      result.data.customInstructions
+    );
     return createStructuredResult(report, `Generated report: ${report.title}`);
   },
 };
@@ -188,7 +193,8 @@ export const reportsRegenerateTool = {
   definition: {
     name: 'reports_regenerate',
     title: 'Regenerate Report',
-    description: 'Regenerate a saved report brief from the current activity record. Requires jobmark:write scope.',
+    description:
+      'Regenerate a saved report brief from the current activity record. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -202,10 +208,26 @@ export const reportsRegenerateTool = {
       properties: {
         id: { type: 'string' },
         title: { type: 'string' },
-        status: { type: 'string' },
+        projectId: { type: ['string', 'null'] },
+        project: {
+          type: ['object', 'null'],
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            color: { type: 'string' },
+          },
+        },
+        content: { type: 'string' },
+        metadata: { type: ['object', 'null'], additionalProperties: true },
+        createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -214,7 +236,7 @@ export const reportsRegenerateTool = {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
 
-    const report = await generateReport(actor, result.data.reportId);
+    const report = await regenerateReport(actor, result.data.reportId);
     return createStructuredResult(report, `Regenerated report: ${report.title}`);
   },
 };
@@ -223,7 +245,8 @@ export const reportsImproveTextTool = {
   definition: {
     name: 'reports_improve_text',
     title: 'Improve Report Text',
-    description: 'Apply a predictable edit to a saved report. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
+    description:
+      'Apply a predictable edit to a saved report. For richer writing, use your connected assistant with Jobmark MCP. Requires jobmark:write scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -236,10 +259,15 @@ export const reportsImproveTextTool = {
     outputSchema: {
       type: 'object',
       properties: {
-        improvedText: { type: 'string' },
+        improvedContent: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -248,7 +276,10 @@ export const reportsImproveTextTool = {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
 
-    const improved = await improveReportText(actor, { reportId: result.data.reportId, instructions: result.data.instruction });
+    const improved = await improveReportText(actor, {
+      reportId: result.data.reportId,
+      instructions: result.data.instruction,
+    });
     return createStructuredResult(improved, 'Improved text generated');
   },
 };
@@ -272,7 +303,11 @@ export const reportsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

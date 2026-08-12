@@ -6,6 +6,7 @@ import { Claude, Gemini, OpenAI } from '@lobehub/icons';
 import { CircleHelp, ExternalLink, Link2, Loader2, PlugZap, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getMcpProviderKey, getMcpProviderName } from '@/lib/mcp/provider-identity';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -115,12 +116,9 @@ export function McpConnectionPage({
     : 'this plugin';
 
   const copyJobmarkLink = async () => {
-    try {
-      await navigator.clipboard.writeText(jobmarkLink);
-      toast.success('Jobmark link copied');
-    } catch {
-      toast.error('Could not copy the Jobmark link');
-    }
+    const copied = await copyTextToClipboard(jobmarkLink);
+    if (copied) toast.success('Jobmark link copied');
+    else toast.error('Could not copy the Jobmark link');
   };
 
   const handleRevoke = async (connectionId: string) => {

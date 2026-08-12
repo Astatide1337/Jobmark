@@ -34,10 +34,7 @@ import {
   FileText,
   File,
 } from 'lucide-react';
-import {
-  generateOutreachDraft,
-  saveOutreachDraftToHistory,
-} from '@/app/actions/network-ai';
+import { generateOutreachDraft, saveOutreachDraftToHistory } from '@/app/actions/network-ai';
 import { exportToPdf, exportToWord } from '@/lib/report-export';
 import { LiveEditor } from '@/components/reports/live-editor';
 import {
@@ -517,9 +514,10 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
               <Button
                 variant="outline"
                 className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
-                onClick={() => {
-                  navigator.clipboard.writeText(draftContent);
-                  toast.success('Copied to clipboard!');
+                onClick={async () => {
+                  const copied = await copyTextToClipboard(draftContent);
+                  if (copied) toast.success('Copied to clipboard');
+                  else toast.error('Could not copy the draft');
                 }}
               >
                 <Copy className="mr-2 h-4 w-4" />
