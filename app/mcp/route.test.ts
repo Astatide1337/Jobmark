@@ -73,7 +73,11 @@ function modernRequest(body: Record<string, unknown>, method: string): NextReque
 
 describe('MCP modern discovery and tool listing', () => {
   it('returns discover metadata and then a non-empty tools/list page', async () => {
-    mocks.validateAccessToken.mockResolvedValue({ clientId: 'chatgpt', userId: 'user-1', scope: 'jobmark:read' });
+    mocks.validateAccessToken.mockResolvedValue({
+      clientId: 'chatgpt',
+      userId: 'user-1',
+      scope: 'jobmark:read',
+    });
     mocks.clientFindUnique.mockResolvedValue({ id: 'client-1' });
     mocks.connectionFindFirst.mockResolvedValue({
       id: 'connection-1',
@@ -81,14 +85,23 @@ describe('MCP modern discovery and tool listing', () => {
       scopes: ['jobmark:read'],
       vaultUnlockedUntil: null,
     });
-    mocks.rateLimit.mockResolvedValue({ allowed: true, remaining: 59, resetAt: Date.now() + 60_000 });
+    mocks.rateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 59,
+      resetAt: Date.now() + 60_000,
+    });
 
-    const discover = await POST(modernRequest({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'server/discover',
-      params: { _meta: metadata },
-    }, 'server/discover'));
+    const discover = await POST(
+      modernRequest(
+        {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'server/discover',
+          params: { _meta: metadata },
+        },
+        'server/discover'
+      )
+    );
     expect(discover.status).toBe(200);
     const discoverBody = await discover.json();
     expect(discoverBody.result).toMatchObject({
@@ -97,15 +110,21 @@ describe('MCP modern discovery and tool listing', () => {
       capabilities: { tools: {} },
       ttlMs: 300_000,
       cacheScope: 'public',
+      instructions: expect.stringContaining('Never show internal record IDs'),
       _meta: { 'io.modelcontextprotocol/serverInfo': { name: 'jobmark-mcp' } },
     });
 
-    const tools = await POST(modernRequest({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'tools/list',
-      params: { _meta: metadata },
-    }, 'tools/list'));
+    const tools = await POST(
+      modernRequest(
+        {
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'tools/list',
+          params: { _meta: metadata },
+        },
+        'tools/list'
+      )
+    );
     expect(tools.status).toBe(200);
     const toolsBody = await tools.json();
     expect(toolsBody.result.resultType).toBe('complete');
@@ -121,15 +140,26 @@ describe('MCP modern discovery and tool listing', () => {
       scope: 'jobmark:read',
     });
     mocks.clientFindUnique.mockResolvedValue({ id: 'client-1' });
-    mocks.connectionFindFirst.mockResolvedValue({ id: 'connection-1', userId: 'user-1', scopes: ['jobmark:read'] });
-    mocks.rateLimit.mockResolvedValue({ allowed: true, remaining: 59, resetAt: Date.now() + 60_000 });
+    mocks.connectionFindFirst.mockResolvedValue({
+      id: 'connection-1',
+      userId: 'user-1',
+      scopes: ['jobmark:read'],
+    });
+    mocks.rateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 59,
+      resetAt: Date.now() + 60_000,
+    });
 
-    const request = modernRequest({
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'tools/list',
-      params: { _meta: { ...metadata, 'io.modelcontextprotocol/protocolVersion': '2025-11-25' } },
-    }, 'tools/list');
+    const request = modernRequest(
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/list',
+        params: { _meta: { ...metadata, 'io.modelcontextprotocol/protocolVersion': '2025-11-25' } },
+      },
+      'tools/list'
+    );
     const response = await POST(request);
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32020 } });
@@ -148,7 +178,11 @@ describe('MCP modern discovery and tool listing', () => {
       scopes: ['jobmark:read'],
       vaultUnlockedUntil: null,
     });
-    mocks.rateLimit.mockResolvedValue({ allowed: true, remaining: 59, resetAt: Date.now() + 60_000 });
+    mocks.rateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 59,
+      resetAt: Date.now() + 60_000,
+    });
     mocks.claimIdempotency.mockResolvedValue({ kind: 'owner' });
     mocks.executeTool.mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] });
     mocks.completeIdempotency.mockResolvedValue(undefined);

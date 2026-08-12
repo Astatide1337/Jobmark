@@ -65,6 +65,27 @@ export interface Article extends ArticleSummary {
 const includeDrafts = process.env.NODE_ENV !== 'production';
 
 function toISODate(input: string | Date, fieldName: string, filePath: string): string {
+  // Frontmatter commonly uses YYYY-MM-DD for an editorial calendar date.
+  // Preserve that representation so the UI can render the same day in every
+  // timezone instead of shifting it when it becomes a UTC timestamp.
+  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    const parsedCalendarDate = new Date(`${input}T00:00:00.000Z`);
+    if (
+      Number.isNaN(parsedCalendarDate.getTime()) ||
+      parsedCalendarDate.toISOString().slice(0, 10) !== input
+    ) {
+      throw new Error(`Invalid ${fieldName} in ${filePath}: ${input}`);
+    }
+    return input;
+  }
+
+  if (input instanceof Date && !Number.isNaN(input.getTime())) {
+    const iso = input.toISOString();
+    if (iso.endsWith('T00:00:00.000Z')) {
+      return iso.slice(0, 10);
+    }
+  }
+
   const date = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(date.getTime())) {
     throw new Error(`Invalid ${fieldName} in ${filePath}: ${input}`);
@@ -140,37 +161,44 @@ export async function getAllArticleSlugs(): Promise<string[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const filePath = path.join(contentDirectory, `${slug}.md`);
-
-  try {
-    const raw = await readFile(filePath, 'utf8');
-    const parsed = matter(raw);
-    const frontmatter = articleFrontmatterSchema.parse(parsed.data);
-
-    if (frontmatter.slug !== slug) {
-      throw new Error(
-        `Slug mismatch in ${filePath}. Frontmatter slug \"${frontmatter.slug}\" must match path slug \"${slug}\".`
-      );
-    }
-
-    if (!includeDrafts && frontmatter.draft) {
-      return null;
-    }
-
-    return {
-      ...frontmatter,
-      publishedAt: toISODate(frontmatter.publishedAt, 'publishedAt', filePath),
-      updatedAt: frontmatter.updatedAt
-        ? toISODate(frontmatter.updatedAt, 'updatedAt', filePath)
-        : undefined,
-      readingTimeMinutes: estimateReadingTimeMinutes(parsed.content),
-      content: parsed.content,
-    };
-  } catch (error) {
-    // Any error means this slug doesn't represent a valid article
-    // Treat as non-existent so Next.js renders 404
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     return null;
   }
+
+  const filePath = path.join(contentDirectory, `${slug}.md`);
+
+  let raw: string;
+  try {
+    raw = await readFile(filePath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+
+  const parsed = matter(raw);
+  const frontmatter = articleFrontmatterSchema.parse(parsed.data);
+
+  if (frontmatter.slug !== slug) {
+    throw new Error(
+      `Slug mismatch in ${filePath}. Frontmatter slug \"${frontmatter.slug}\" must match path slug \"${slug}\".`
+    );
+  }
+
+  if (!includeDrafts && frontmatter.draft) {
+    return null;
+  }
+
+  return {
+    ...frontmatter,
+    publishedAt: toISODate(frontmatter.publishedAt, 'publishedAt', filePath),
+    updatedAt: frontmatter.updatedAt
+      ? toISODate(frontmatter.updatedAt, 'updatedAt', filePath)
+      : undefined,
+    readingTimeMinutes: estimateReadingTimeMinutes(parsed.content),
+    content: parsed.content,
+  };
 }
 
 export async function getRelatedArticles(

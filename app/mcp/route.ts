@@ -5,11 +5,7 @@ import { checkRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/a
 import { allTools, toolDefinitions } from '@/lib/mcp/tools';
 import { McpValidationError } from '@/lib/mcp/errors';
 import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
-import {
-  claimIdempotency,
-  completeIdempotency,
-  releaseIdempotency,
-} from '@/lib/mcp/idempotency';
+import { claimIdempotency, completeIdempotency, releaseIdempotency } from '@/lib/mcp/idempotency';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -42,6 +38,12 @@ const SERVER_INFO = {
   name: 'jobmark-mcp',
   version: '1.0.0',
 };
+
+// MCP clients may surface server instructions alongside their own response.
+// Keep the handoff human-first: implementation names and opaque record IDs
+// are for the connection, never for the person using the assistant.
+const SERVER_INSTRUCTIONS =
+  'Jobmark is a private work record. Speak plainly and refer to people, projects, and activities by their names or meaningful details. Never show internal record IDs, database identifiers, tool names, scopes, or protocol steps in the user-facing response. For reviews and outreach, return an editable draft for the user to review and never send or change anything without clear confirmation.';
 
 function createErrorResponse(
   id: string | number | null,
@@ -78,9 +80,7 @@ function decodeMcpHeaderValue(value: string): string | null {
   try {
     const encoded = value.slice(prefix.length, -suffix.length);
     const binary = atob(encoded);
-    return new TextDecoder().decode(
-      Uint8Array.from(binary, character => character.charCodeAt(0))
-    );
+    return new TextDecoder().decode(Uint8Array.from(binary, character => character.charCodeAt(0)));
   } catch {
     return null;
   }
@@ -398,14 +398,14 @@ async function executeMcpMethod({
         capabilities: SERVER_CAPABILITIES,
         ttlMs: 300_000,
         cacheScope: 'public',
-        instructions:
-          'Use Jobmark tools to view and manage the connected user’s job-search record. Ask before making changes.',
+        instructions: SERVER_INSTRUCTIONS,
       };
     case 'initialize':
       return {
         protocolVersion: params?.protocolVersion ?? '2024-11-05',
         capabilities: SERVER_CAPABILITIES,
         serverInfo: SERVER_INFO,
+        instructions: SERVER_INSTRUCTIONS,
       };
     case 'notifications/initialized':
     case 'ping':

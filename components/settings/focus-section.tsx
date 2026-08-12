@@ -353,14 +353,22 @@ function SortableBlockCard({
     >
       <div className="flex items-center gap-2 p-3">
         <button
+          type="button"
           {...attributes}
           {...listeners}
+          aria-label={`Reorder ${BLOCK_LABELS[block.type]} block`}
           className="text-muted-foreground/30 hover:text-muted-foreground cursor-grab px-1.5 active:cursor-grabbing"
         >
           <GripVertical className="h-5 w-5" />
         </button>
 
-        <div className="flex flex-1 cursor-pointer items-center gap-3" onClick={onToggleExpand}>
+        <button
+          type="button"
+          className="flex flex-1 items-center gap-3 text-left"
+          onClick={onToggleExpand}
+          aria-expanded={isExpanded}
+          aria-controls={`focus-block-${block.id}`}
+        >
           <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
             {BLOCK_ICONS[block.type]}
           </div>
@@ -378,10 +386,12 @@ function SortableBlockCard({
           <div className="text-muted-foreground/40 group-hover:text-muted-foreground pr-2 transition-colors">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
-        </div>
+        </button>
 
         <button
+          type="button"
           onClick={onDelete}
+          aria-label={`Delete ${BLOCK_LABELS[block.type]} block`}
           className="text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive bg-background absolute -top-2 -right-2 rounded-full border p-1.5 opacity-0 shadow-sm transition-all group-hover:opacity-100"
         >
           <X className="h-3.5 w-3.5" />
@@ -391,6 +401,7 @@ function SortableBlockCard({
       <AnimatePresence>
         {isExpanded && (
           <motion.div
+            id={`focus-block-${block.id}`}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}

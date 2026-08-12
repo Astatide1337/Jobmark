@@ -124,11 +124,14 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
           className="border-border/50 bg-card hover:border-primary/50 overflow-hidden rounded-xl border transition-colors"
         >
           {/* Header */}
-          <div
-            className="flex cursor-pointer items-center justify-between p-4"
-            onClick={() => toggleExpand(draft.id)}
-          >
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3 p-4">
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left"
+              onClick={() => toggleExpand(draft.id)}
+              aria-expanded={expandedId === draft.id}
+              aria-controls={`outreach-draft-${draft.id}-content`}
+            >
               <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
                 <FileText className="text-primary h-5 w-5" />
               </div>
@@ -138,12 +141,13 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                   {format(new Date(draft.createdAt), 'MMM d, yyyy · h:mm a')}
                 </p>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-destructive hover:text-destructive h-8 w-8"
+                aria-label={`Delete ${draft.title}`}
                 onClick={e => handleDelete(draft.id, e)}
                 disabled={isDeleting === draft.id}
               >
@@ -153,6 +157,9 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
+                aria-label={`${expandedId === draft.id ? 'Collapse' : 'Expand'} ${draft.title}`}
+                aria-expanded={expandedId === draft.id}
+                aria-controls={`outreach-draft-${draft.id}-content`}
                 onClick={e => {
                   e.stopPropagation();
                   toggleExpand(draft.id);
@@ -171,6 +178,7 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
           <AnimatePresence>
             {expandedId === draft.id && (
               <motion.div
+                id={`outreach-draft-${draft.id}-content`}
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}

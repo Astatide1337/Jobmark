@@ -68,17 +68,17 @@ const providers: Provider[] = [
     id: 'claude',
     name: 'Claude',
     Icon: Claude.Color,
-    connectUrl: 'https://claude.ai/customize/connectors',
+    connectUrl: 'https://claude.ai/settings/connectors',
     instructions:
-      'In Claude, open Customize, then Connectors. Choose Add, then Custom connector, and paste your Jobmark link.',
+      'In Claude, open Settings, choose Connectors, then Add custom connector. Paste your Jobmark link and finish signing in.',
   },
   {
     id: 'chatgpt',
     name: 'ChatGPT',
     Icon: ChatGptIcon,
-    connectUrl: 'https://chatgpt.com/#settings/Plugins',
+    connectUrl: 'https://chatgpt.com/',
     instructions:
-      'In ChatGPT Settings, open Plugins, turn on Developer mode, then create a plugin.',
+      'In ChatGPT, open Settings, then Apps or Developer mode, and add a custom connector if your plan or workspace supports it.',
   },
   {
     id: 'gemini',
@@ -86,7 +86,7 @@ const providers: Provider[] = [
     Icon: Gemini.Color,
     connectUrl: 'https://gemini.google.com/',
     instructions:
-      'In Gemini, open Settings & help, then Connected Apps. Under Custom apps for Spark, paste your Jobmark link and choose Next.',
+      'In Gemini on the web, open Settings & help, then Connected Apps. Add your Jobmark link under Custom apps for Spark and choose Next.',
   },
 ];
 

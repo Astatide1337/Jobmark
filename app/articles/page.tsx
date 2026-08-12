@@ -75,45 +75,61 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
   ]);
   const shelfArticles = filteredArticles.filter(article => !displayedSlugs.has(article.slug));
 
+  // An article can belong to several topics (for example, a promotion article
+  // may also be tagged as networking). Consume each article as it is placed so
+  // the shelves stay useful and never show the same card twice.
+  const takeShelfArticles = (
+    availableArticles: typeof shelfArticles,
+    matches: (article: (typeof shelfArticles)[number]) => boolean
+  ) => {
+    const items = availableArticles.filter(matches).slice(0, 4);
+    const selectedSlugs = new Set(items.map(article => article.slug));
+    return {
+      items,
+      remaining: availableArticles.filter(article => !selectedSlugs.has(article.slug)),
+    };
+  };
+
+  const buildRecord = takeShelfArticles(
+    shelfArticles,
+    article =>
+      article.tags.includes('accomplishments') ||
+      article.tags.includes('weekly-routine') ||
+      article.tags.includes('planning')
+  );
+  const reviews = takeShelfArticles(
+    buildRecord.remaining,
+    article =>
+      article.tags.includes('performance-review') ||
+      article.tags.includes('promotion') ||
+      article.tags.includes('impact')
+  );
+  const visibility = takeShelfArticles(
+    reviews.remaining,
+    article =>
+      article.tags.includes('networking') ||
+      article.tags.includes('relationships') ||
+      article.tags.includes('career-growth')
+  );
+
   const sectioned = [
     {
       key: 'build-record',
       title: 'Build Your Record',
       description: 'Capture better evidence so future reviews do not rely on memory.',
-      items: shelfArticles
-        .filter(
-          article =>
-            article.tags.includes('accomplishments') ||
-            article.tags.includes('weekly-routine') ||
-            article.tags.includes('planning')
-        )
-        .slice(0, 4),
+      items: buildRecord.items,
     },
     {
       key: 'reviews',
       title: 'Write Better Reviews',
       description: 'Turn your work into clear summaries, self-reviews, and promotion material.',
-      items: shelfArticles
-        .filter(
-          article =>
-            article.tags.includes('performance-review') ||
-            article.tags.includes('promotion') ||
-            article.tags.includes('impact')
-        )
-        .slice(0, 4),
+      items: reviews.items,
     },
     {
       key: 'visibility',
       title: 'Improve Career Visibility',
       description: 'Use communication, networking, and consistent follow-through to stay visible.',
-      items: shelfArticles
-        .filter(
-          article =>
-            article.tags.includes('networking') ||
-            article.tags.includes('relationships') ||
-            article.tags.includes('career-growth')
-        )
-        .slice(0, 4),
+      items: visibility.items,
     },
   ].filter(section => section.items.length > 0);
 

@@ -146,11 +146,14 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
           className="bg-card hover:border-primary/50 overflow-hidden rounded-xl border transition-all"
         >
           {/* Header / Summary */}
-          <div
-            onClick={() => toggleExpand(report.id)}
-            className="hover:bg-muted/30 flex cursor-pointer items-center justify-between p-4"
-          >
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between gap-3 p-4">
+            <button
+              type="button"
+              onClick={() => toggleExpand(report.id)}
+              aria-expanded={expandedId === report.id}
+              aria-controls={`report-${report.id}-content`}
+              className="hover:bg-muted/30 flex min-w-0 flex-1 items-center gap-4 rounded-lg text-left"
+            >
               <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-xl">
                 <FileText className="h-5 w-5" />
               </div>
@@ -163,19 +166,27 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                   Reopen, refine, export, or reuse in your next review cycle.
                 </p>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-destructive transition-colors"
+                aria-label={`Delete ${report.title}`}
                 onClick={e => handleDelete(report.id, e)}
                 disabled={isDeleting === report.id}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`${expandedId === report.id ? 'Collapse' : 'Expand'} ${report.title}`}
+                aria-expanded={expandedId === report.id}
+                aria-controls={`report-${report.id}-content`}
+                onClick={() => toggleExpand(report.id)}
+              >
                 {expandedId === report.id ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
@@ -189,6 +200,7 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
           <AnimatePresence>
             {expandedId === report.id && (
               <motion.div
+                id={`report-${report.id}-content`}
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
