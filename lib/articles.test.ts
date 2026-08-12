@@ -24,6 +24,6 @@ describe('article content', () => {
       title: 'Connect an AI app to Jobmark',
       publishedAt: '2026-08-09',
     });
-    expect(article?.content).toContain('Connect an AI app');
+    expect(article?.content).toContain('Link an AI app you already use');
   });
 });

@@ -5,23 +5,23 @@ import { getAllArticles } from '@/lib/articles';
 import { TopicChipsBar, SortAndSearchBar } from './_components/article-filters';
 
 const categoryLabels = {
-  all: 'All stories',
+  all: 'All',
   help: 'How to use Jobmark',
   'career-development': 'Career development',
 } as const;
 
 type CategoryFilter = keyof typeof categoryLabels;
+const articlesDescription =
+  'Practical notes for capturing progress, telling a clearer story, and taking your next step.';
 
 const validCategories = new Set<CategoryFilter>(['all', 'help', 'career-development']);
 
 export const metadata: Metadata = {
   title: 'Articles | Jobmark',
-  description:
-    'Ideas and practical guides for keeping a clear record of your work and making your next career move.',
+  description: articlesDescription,
   openGraph: {
     title: 'Articles | Jobmark',
-    description:
-      'Ideas and practical guides for keeping a clear record of your work and making your next career move.',
+    description: articlesDescription,
     type: 'website',
   },
 };
@@ -76,50 +76,14 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
   return (
     <div className="pb-12 sm:pb-20">
       <header className="border-border/60 border-b pb-10 sm:pb-14">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-end">
-          <div>
-            <p className="text-primary text-xs font-semibold tracking-[0.2em] uppercase">
-              The Jobmark journal
-            </p>
-            <p className="text-muted-foreground mt-4 max-w-xs text-sm leading-6">
-              Practical ideas for people doing thoughtful work and trying to make it visible.
-            </p>
-          </div>
-          <div>
-            <h1 className="text-foreground max-w-4xl font-serif text-4xl leading-[0.98] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
-              Keep the work. Make the next move clearer.
-            </h1>
-            <p className="text-muted-foreground mt-5 max-w-2xl text-base leading-7 sm:text-lg">
-              Notes on capturing what changed, telling a stronger story, and building a career on
-              more than memory.
-            </p>
-          </div>
+        <div className="max-w-3xl">
+          <h1 className="text-foreground max-w-3xl font-serif text-4xl leading-[0.98] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+            Jobmark Articles
+          </h1>
+          <p className="text-muted-foreground mt-5 max-w-2xl text-base leading-7 sm:text-lg">
+            {articlesDescription}
+          </p>
         </div>
-
-        <nav aria-label="Article topics" className="mt-10 overflow-x-auto">
-          <div className="flex min-w-max items-center gap-6 sm:gap-9">
-            {(
-              [
-                ['career-development', 'Work and growth'],
-                ['help', 'Using Jobmark'],
-              ] as const
-            ).map(([hrefTopic, label]) => (
-              <Link
-                key={hrefTopic}
-                href={`/articles?topic=${hrefTopic}`}
-                className="text-muted-foreground hover:text-foreground group inline-flex items-center gap-2 font-serif text-xl transition-colors sm:text-2xl"
-              >
-                {label}
-                <span
-                  className="text-primary text-base transition-transform group-hover:translate-x-1"
-                  aria-hidden="true"
-                >
-                  →
-                </span>
-              </Link>
-            ))}
-          </div>
-        </nav>
       </header>
 
       <div className="pt-8 sm:pt-10">
@@ -132,12 +96,6 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               >
                 Featured story
               </h2>
-              <Link
-                href="/articles?sort=newest"
-                className="text-muted-foreground hover:text-primary text-sm transition-colors"
-              >
-                Browse all <span aria-hidden="true">→</span>
-              </Link>
             </div>
             <StoryCard article={featuredArticle} variant="lead" />
           </section>
@@ -147,21 +105,13 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           className={featuredArticle ? 'mt-14 sm:mt-20' : undefined}
           aria-labelledby="article-library-heading"
         >
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-                {isBrowsingResults ? 'Filtered stories' : 'From the journal'}
-              </p>
-              <h2
-                id="article-library-heading"
-                className="text-foreground mt-2 font-serif text-3xl font-semibold sm:text-4xl"
-              >
-                {isBrowsingResults ? `${filteredArticles.length} stories` : 'Latest stories'}
-              </h2>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {filteredArticles.length} {filteredArticles.length === 1 ? 'story' : 'stories'}
-            </p>
+          <div className="mb-6">
+            <h2
+              id="article-library-heading"
+              className="text-foreground font-serif text-3xl font-semibold sm:text-4xl"
+            >
+              {isBrowsingResults ? `${filteredArticles.length} stories` : 'Latest stories'}
+            </h2>
           </div>
 
           <div className="border-border/70 border-y py-4">

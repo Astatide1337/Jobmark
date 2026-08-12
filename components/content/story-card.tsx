@@ -69,10 +69,6 @@ export function StoryCard({ article, variant = 'standard', className }: StoryCar
       >
         <div className="flex flex-col justify-center p-6 sm:p-9 lg:p-12">
           <div className="text-muted-foreground mb-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-primary font-semibold tracking-[0.14em] uppercase">
-              Featured story
-            </span>
-            <span className="text-border">/</span>
             <span>{categoryLabel(article.category)}</span>
             <span className="text-border">/</span>
             <span>{dateUtils.format(article.publishedAt)}</span>
@@ -87,8 +83,7 @@ export function StoryCard({ article, variant = 'standard', className }: StoryCar
           </p>
 
           <p className="text-muted-foreground mt-7 text-xs">
-            {article.readingTimeMinutes} min read <span className="text-border mx-1.5">·</span> Read
-            story{' '}
+            {article.readingTimeMinutes} min read{' '}
             <span
               aria-hidden="true"
               className="text-primary transition-transform group-hover:translate-x-1"
@@ -118,8 +113,7 @@ export function StoryCard({ article, variant = 'standard', className }: StoryCar
 
         <p className="text-muted-foreground mt-3 text-sm leading-6">{article.description}</p>
         <p className="text-muted-foreground mt-5 text-xs">
-          {article.readingTimeMinutes} min read <span className="text-border mx-1.5">·</span> Read
-          story{' '}
+          {article.readingTimeMinutes} min read{' '}
           <span
             aria-hidden="true"
             className="text-primary transition-transform group-hover:translate-x-1"

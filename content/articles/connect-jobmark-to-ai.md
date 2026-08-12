@@ -12,11 +12,11 @@ tags:
 author: Jobmark
 featured: false
 difficulty: starter
-primaryAction: Connect an AI app
+primaryAction: Open MCP Connector
 primaryHref: /chat
 ---
 
-Your work record is most useful when it is close at hand. Connect an AI app you already use, then ask it to help you make sense of the work you have captured.
+Keep your work record within reach. Link an AI app you already use, then ask it to help you make sense of the work you have captured.
 
 It can help you shape a review draft, find evidence for a conversation, or prepare an outreach message. You stay in control: Jobmark never sends a message for you.
 
@@ -24,14 +24,14 @@ It can help you shape a review draft, find evidence for a conversation, or prepa
 
 Make sure you can sign in to Jobmark and to the app you want to use. Connect only apps you trust with your work record.
 
-## Connect an AI app
+## Set it up
 
 1. Open **MCP Connector** in Jobmark.
 2. Choose **Claude**, **ChatGPT**, or **Gemini**.
 3. Select **Copy link & open**. Jobmark copies the connection link and opens the app.
-4. Paste the link wherever the app asks for a custom app or connection, then approve access.
+4. Paste the link wherever the app asks for a custom connection, then approve access.
 
-That is it. When you ask the app about your work, it can use the record you have chosen to keep in Jobmark.
+After that, the app can use the record you have chosen to keep in Jobmark when you ask about your work.
 
 To disconnect an app, choose **Disconnect** in MCP Connector. This stops access from Jobmark; you may also need to remove the saved connection in the app’s settings.
 
