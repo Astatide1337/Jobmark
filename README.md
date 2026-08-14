@@ -75,6 +75,24 @@ docker compose up
 
 Compose expects runtime secrets through `.env`; migrations should be applied explicitly before starting production traffic.
 
+## Kubernetes delivery
+
+The production and preview deployments use the GitOps repository rather than
+Vercel:
+
+- pushes to `main` publish `ghcr.io/astatide1337/jobmark:main`;
+- pushes to `preview` publish `ghcr.io/astatide1337/jobmark:preview`;
+- Argo CD deploys the image only after its channel tag is promoted to the
+  immutable `tag@sha256:digest` form in GitOps;
+- the production namespace uses Neon’s `production` branch, while the preview
+  namespace uses Neon’s `dev` branch;
+- Prisma migrations run from the same image in an Argo pre-sync Job, using the
+  direct Neon endpoint and the namespace-local runtime Secret.
+
+The Kubernetes runtime Secrets are SOPS-encrypted in GitOps. Do not copy the
+Vercel environment file into the cluster: local Vercel pulls can contain stale
+Neon endpoint values, and preview must never point at the production branch.
+
 ## MCP Integration
 
 ### Quick Start (Claude Desktop)
