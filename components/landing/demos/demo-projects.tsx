@@ -107,7 +107,7 @@ export function DemoProjects() {
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">Organize your workstreams.</p>
+          <p className="text-muted-foreground">Keep related work together.</p>
         </div>
 
         {viewingId && selectedProject ? (
@@ -139,7 +139,7 @@ export function DemoProjects() {
 
               <div className="space-y-4">
                 <h4 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                  Recent Activity (Demo)
+                  Recent notes
                 </h4>
                 <div className="border-border/50 relative space-y-8 border-l-2 pl-6">
                   {[1, 2, 3].map(i => (

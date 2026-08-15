@@ -16,6 +16,7 @@ import {
   Link as LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 const navItems = [
   { href: '/dashboard', icon: Pen, label: 'Capture', demoId: 'journal' },
@@ -74,15 +75,15 @@ export function Sidebar({
         <div className="p-6">
           {mode === 'app' ? (
             <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Pen className="text-primary h-4 w-4" />
+              <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground text-lg font-semibold">Jobmark</span>
             </Link>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Pen className="text-primary h-4 w-4" />
+              <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground text-lg font-semibold">Jobmark</span>
             </div>

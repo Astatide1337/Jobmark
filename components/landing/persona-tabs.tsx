@@ -39,46 +39,42 @@ interface Tab {
 const tabs: Tab[] = [
   {
     id: 'track',
-    label: 'Build Your Record',
+    label: 'Record the work',
     icon: <Trophy className="h-4 w-4" />,
-    headline: 'Capture proof while it is fresh',
+    headline: 'Write it down while you still remember',
     description:
-      'Log work in seconds and build a durable record of impact that is easy to search and reuse.',
+      'A quick note is enough. Add a project and a few useful details, then move on with your day.',
     features: [
-      'Fast daily capture',
-      'Evidence timeline',
-      'Search by project',
-      'Lightweight tagging',
+      'Quick daily notes',
+      'One timeline for your work',
+      'Find anything by project',
+      'Tags that stay lightweight',
     ],
     visual: <TrackVisual />,
   },
   {
     id: 'prove',
-    label: 'Prepare Reviews',
+    label: 'Prepare for reviews',
     icon: <TrendingUp className="h-4 w-4" />,
-    headline: 'Turn evidence into reviews and promotion cases',
+    headline: 'Walk into reviews with something concrete',
     description:
-      'When review time arrives, you already have structured proof to pull from and refine.',
+      'Pull together the work behind a quarter or a promotion conversation without reconstructing it from memory.',
     features: [
-      'Review-ready summaries',
-      'Promotion case drafts',
-      'Impact highlights',
-      'Exportable formats',
+      'Review summaries',
+      'Promotion evidence',
+      'Highlights by impact',
+      'Exportable drafts',
     ],
     visual: <ProveVisual />,
   },
   {
     id: 'share',
-    label: 'Stay Visible',
+    label: 'Share an update',
     icon: <Share2 className="h-4 w-4" />,
-    headline: 'Send updates without scrambling',
-    description: 'Turn your record into weekly updates, standups, and status notes in minutes.',
-    features: [
-      'Weekly summaries',
-      'Standup-ready notes',
-      'Copy and share drafts',
-      'Consistent visibility',
-    ],
+    headline: 'Say what happened without starting from scratch',
+    description:
+      'Use the notes you already have to write a clear weekly update, standup note, or status message.',
+    features: ['Weekly updates', 'Standup notes', 'Copy and share', 'A consistent record'],
     visual: <ShareVisual />,
   },
 ];
@@ -88,7 +84,7 @@ function TrackVisual() {
     <div className="bg-card/60 border-border/40 space-y-4 rounded-lg border p-6">
       <div className="text-muted-foreground mb-4 flex items-center gap-3 text-sm">
         <Calendar className="text-primary h-4 w-4" />
-        <span>Today&apos;s Entries</span>
+        <span>Recent notes</span>
       </div>
 
       {[
@@ -135,12 +131,12 @@ function ProveVisual() {
     <div className="bg-card/60 border-border/40 space-y-4 rounded-lg border p-6">
       <div className="text-muted-foreground mb-4 flex items-center gap-3 text-sm">
         <Sparkles className="text-primary h-4 w-4" />
-        <span>Generated Report Preview</span>
+        <span>Draft for Q4</span>
       </div>
 
       <div className="space-y-4">
         <div className="bg-background/50 border-border/20 rounded-lg border p-4">
-          <h4 className="mb-2 text-sm font-medium">Key Achievements - Q4</h4>
+          <h4 className="mb-2 text-sm font-medium">What moved forward in Q4</h4>
           <ul className="text-muted-foreground space-y-2 text-sm">
             {[
               'Led migration to new payment system, reducing failures by 40%',
@@ -164,11 +160,11 @@ function ProveVisual() {
         <div className="flex gap-2">
           <div className="bg-primary/5 border-primary/20 flex-1 rounded-lg border p-3 text-center">
             <div className="text-primary text-2xl font-bold">47</div>
-            <div className="text-muted-foreground text-xs">Entries logged</div>
+            <div className="text-muted-foreground text-xs">Notes recorded</div>
           </div>
           <div className="bg-primary/5 border-primary/20 flex-1 rounded-lg border p-3 text-center">
             <div className="text-primary text-2xl font-bold">12</div>
-            <div className="text-muted-foreground text-xs">Features shipped</div>
+            <div className="text-muted-foreground text-xs">Projects touched</div>
           </div>
         </div>
       </div>
@@ -181,7 +177,7 @@ function ShareVisual() {
     <div className="bg-card/60 border-border/40 space-y-4 rounded-lg border p-6">
       <div className="text-muted-foreground mb-4 flex items-center gap-3 text-sm">
         <FileText className="text-primary h-4 w-4" />
-        <span>Weekly Update</span>
+        <span>Weekly update</span>
       </div>
 
       <div className="bg-background/50 border-border/20 space-y-3 rounded-lg border p-4">
@@ -191,7 +187,7 @@ function ShareVisual() {
         </div>
 
         <div className="space-y-2 text-sm">
-          <p className="text-foreground font-medium">This Week&apos;s Highlights:</p>
+          <p className="text-foreground font-medium">This week:</p>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -199,8 +195,8 @@ function ShareVisual() {
             className="text-muted-foreground leading-relaxed"
           >
             <p>
-              Completed the checkout redesign ahead of schedule. Collaborated with design on the new
-              dashboard components. Fixed 3 high-priority bugs reported by customers.
+              Finished the checkout redesign, worked with design on the new dashboard, and fixed
+              three high-priority customer issues.
             </p>
           </motion.div>
         </div>
@@ -212,7 +208,7 @@ function ShareVisual() {
             transition={{ delay: 0.3 }}
             className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs"
           >
-            Copy to Clipboard
+            Copy update
           </motion.button>
           <motion.button
             initial={{ opacity: 0, y: 5 }}
@@ -246,7 +242,7 @@ export function PersonaTabs() {
           >
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
-              Use Cases
+              A better work habit
             </span>
           </motion.div>
 
@@ -257,7 +253,7 @@ export function PersonaTabs() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-6 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
           >
-            Built for how careers <span className="text-primary">actually work</span>
+            Keep the details. <span className="text-primary">Skip the scramble.</span>
           </motion.h2>
         </div>
 

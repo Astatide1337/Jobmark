@@ -5,16 +5,15 @@
  * uses advanced Motion physics to communicate a premium, technical brand.
  *
  * Motion Architecture:
- * - Parallax: Headlines and the 3D dashboard move at different speeds during
+ * - Parallax: Headlines and the dashboard move at different speeds during
  *   scroll to create depth.
- * - 3D Tilt: The dashboard mockup uses real-time mouse tracking (spring-loaded)
- *   to follow the user's cursor, making the UI feel physical and interactive.
- * - Perspective: Uses `perspective-1200` to anchor the 3D transforms.
+ * - Interaction: The dashboard remains a normal 2D hit-test surface so its
+ *   embedded controls work reliably with a mouse, keyboard, or touch input.
  */
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { DemoDashboard } from './demos/demo-dashboard';
@@ -23,8 +22,6 @@ import { useAuthModal } from '@/components/auth';
 
 export function EditorialHero() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const dashboardRef = useRef<HTMLDivElement>(null);
-  const [isHovering, setIsHovering] = useState(false);
   const { openAuthModal } = useAuthModal();
 
   // Scroll-based animations
@@ -37,50 +34,11 @@ export function EditorialHero() {
   const textY = useTransform(scrollYProgress, [0, 1], [0, 150]);
   const textOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  // Dashboard scroll transforms - flattens as user scrolls
-  const scrollRotateX = useTransform(scrollYProgress, [0, 0.6], [12, 0]);
-  const scrollRotateY = useTransform(scrollYProgress, [0, 0.6], [-6, 0]);
+  // Keep the preview responsive to scroll without putting its controls inside
+  // a 3D hit-testing layer. The dashboard itself is an interactive demo.
   const scrollScale = useTransform(scrollYProgress, [0, 0.3], [1.05, 1]);
   const dashboardY = useTransform(scrollYProgress, [0, 1], [0, 150]);
   const dashboardOpacity = useTransform(scrollYProgress, [0.4, 0.7], [1, 0]);
-
-  // Mouse tracking for tilt effect
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  // Smooth spring physics for mouse tracking
-  const springConfig = { damping: 25, stiffness: 150 };
-  const tiltX = useSpring(mouseX, springConfig);
-  const tiltY = useSpring(mouseY, springConfig);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dashboardRef.current || !isHovering) return;
-
-      const rect = dashboardRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      // Calculate distance from center (-1 to 1)
-      const x = (e.clientX - centerX) / (rect.width / 2);
-      const y = (e.clientY - centerY) / (rect.height / 2);
-
-      // Apply subtle tilt based on mouse position (max 3 degrees)
-      mouseX.set(y * 3); // Inverted for natural feel
-      mouseY.set(-x * 3);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isHovering, mouseX, mouseY]);
-
-  // Reset tilt when not hovering
-  useEffect(() => {
-    if (!isHovering) {
-      mouseX.set(0);
-      mouseY.set(0);
-    }
-  }, [isHovering, mouseX, mouseY]);
 
   return (
     <section ref={containerRef} className="relative flex min-h-screen items-center py-20 lg:py-0">
@@ -88,11 +46,11 @@ export function EditorialHero() {
       <div className="from-primary/5 pointer-events-none absolute inset-0 bg-linear-to-b via-transparent to-transparent" />
 
       <div className="mx-auto w-full max-w-[1400px] px-6 lg:px-10">
-        <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:justify-between lg:gap-24 xl:gap-32">
+        <div className="flex flex-col gap-16 xl:flex-row xl:items-center xl:justify-between xl:gap-24 2xl:gap-32">
           {/* Left Side - Editorial Typography */}
           <motion.div
             style={{ y: textY, opacity: textOpacity }}
-            className="relative z-10 space-y-8 lg:max-w-xl"
+            className="relative z-10 w-full space-y-8 xl:max-w-xl"
           >
             {/* Eyebrow */}
             <motion.div
@@ -103,7 +61,7 @@ export function EditorialHero() {
             >
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Career OS
+                Your work, remembered
               </span>
             </motion.div>
 
@@ -117,8 +75,8 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-muted-foreground max-w-lg text-xl leading-relaxed"
             >
-              Capture what you did, organize it into evidence, and turn it into updates, reviews,
-              and promotion-ready summaries.
+              Jobmark gives you one place to note what you shipped, solved, and learned—so reviews,
+              updates, and next steps can start from something real.
             </motion.p>
 
             {/* CTAs */}
@@ -132,7 +90,7 @@ export function EditorialHero() {
                 onClick={openAuthModal}
                 className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
-                Start Building
+                Start recording
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
@@ -140,7 +98,7 @@ export function EditorialHero() {
                 href="#product-tour"
                 className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 px-6 py-4 text-base transition-colors"
               >
-                See the workflow
+                See how it works
               </Link>
             </motion.div>
 
@@ -151,44 +109,25 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"
             >
-              Free to start. Export-ready. Assistant-ready.
+              Free to start. Your record stays yours.
             </motion.p>
           </motion.div>
 
           {/* Right Side - Linear-style 3D Dashboard */}
           <motion.div
-            style={{
-              y: dashboardY,
-              opacity: dashboardOpacity,
-            }}
-            className="perspective-1200 lg:max-w-[1000px] lg:flex-1"
+            style={{ y: dashboardY, opacity: dashboardOpacity }}
+            className="w-full min-w-0 xl:max-w-[1000px] xl:flex-1"
           >
             <motion.div
-              ref={dashboardRef}
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
-              initial={{ opacity: 0, y: 80, rotateX: 25, rotateY: -10 }}
-              animate={{ opacity: 1, y: 0, rotateX: 12, rotateY: -6 }}
+              initial={{ opacity: 0, y: 80 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.4, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                transformStyle: 'preserve-3d',
-                rotateX: scrollRotateX,
-                rotateY: scrollRotateY,
-                scale: scrollScale,
-              }}
-              className="relative"
+              style={{ scale: scrollScale }}
+              className="relative w-full min-w-0"
             >
-              {/* Mouse-tracking tilt layer */}
-              <motion.div
-                style={{
-                  rotateX: tiltX,
-                  rotateY: tiltY,
-                  transformStyle: 'preserve-3d',
-                }}
-                className="relative"
-              >
+              <div className="relative">
                 {/* Aurora glow effect - animated gradient behind dashboard */}
-                <div className="absolute -inset-12 opacity-60 lg:-inset-16">
+                <div className="pointer-events-none absolute -inset-12 opacity-60 lg:-inset-16">
                   {/* Primary aurora layer */}
                   <motion.div
                     animate={{
@@ -220,7 +159,7 @@ export function EditorialHero() {
                 {/* Dashboard container with border glow */}
                 <div className="group relative">
                   {/* Animated border glow */}
-                  <div className="from-primary/50 via-primary/20 to-primary/50 absolute -inset-px rounded-xl bg-linear-to-br opacity-50 blur-sm transition-opacity duration-500 group-hover:opacity-70" />
+                  <div className="from-primary/50 via-primary/20 to-primary/50 pointer-events-none absolute -inset-px rounded-xl bg-linear-to-br opacity-50 blur-sm transition-opacity duration-500 group-hover:opacity-70" />
 
                   {/* Subtle animated shine on border */}
                   <motion.div
@@ -237,25 +176,22 @@ export function EditorialHero() {
                       ease: 'easeInOut',
                       repeatDelay: 2,
                     }}
-                    className="absolute -inset-px rounded-xl opacity-40"
+                    className="pointer-events-none absolute -inset-px rounded-xl opacity-40"
                     style={{ backgroundSize: '200% 100%' }}
                   />
 
                   {/* Main dashboard */}
-                  <div
-                    className="border-border/40 bg-card/80 relative overflow-hidden rounded-xl border shadow-2xl shadow-black/30 backdrop-blur-sm"
-                    style={{ transform: 'translateZ(20px)' }}
-                  >
+                  <div className="border-border/40 bg-card/80 relative overflow-hidden rounded-xl border shadow-2xl shadow-black/30 backdrop-blur-sm">
                     <DemoDashboard />
                   </div>
 
                   {/* Reflection effect at bottom */}
                   <div
-                    className="from-card/10 absolute right-4 -bottom-8 left-4 h-16 rounded-xl bg-linear-to-b to-transparent opacity-30 blur-xl"
+                    className="from-card/10 pointer-events-none absolute right-4 -bottom-8 left-4 h-16 rounded-xl bg-linear-to-b to-transparent opacity-30 blur-xl"
                     style={{ transform: 'rotateX(180deg) translateZ(-10px)' }}
                   />
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           </motion.div>
         </div>

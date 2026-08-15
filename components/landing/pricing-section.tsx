@@ -1,8 +1,8 @@
 /**
- * Access & Trust Section
+ * Start & Trust Section
  *
  * Why: Provide low-friction access cues without heavy pricing emphasis.
- * It reinforces ownership and assistant choice without overpromising.
+ * It reinforces ownership and choice without overpromising.
  */
 'use client';
 
@@ -12,18 +12,18 @@ import { useAuthModal } from '@/components/auth';
 
 const accessPoints = [
   {
-    title: 'Start free',
-    description: 'Capture work immediately and build a career record as you go.',
+    title: 'Free to begin',
+    description: 'No setup ritual. Capture the first thing you want to remember.',
     icon: Shield,
   },
   {
-    title: 'Portable by default',
-    description: 'Your record is exportable so you keep control of your work evidence.',
+    title: 'Yours to keep',
+    description: 'Export your record whenever you need it. Your work is not trapped here.',
     icon: Database,
   },
   {
-    title: 'Assistant-ready',
-    description: 'Connect a trusted assistant through Jobmark MCP when you want a second perspective.',
+    title: 'Bring your assistant',
+    description: 'Connect Claude, ChatGPT, or Gemini when you want help shaping a draft.',
     icon: Link2,
   },
 ];
@@ -44,7 +44,9 @@ export function AccessSection() {
             className="mb-6 flex items-center justify-center gap-3"
           >
             <div className="bg-primary/50 h-px w-12" />
-            <span className="text-primary font-mono text-sm tracking-wide uppercase">Access</span>
+            <span className="text-primary font-mono text-sm tracking-wide uppercase">
+              Start small
+            </span>
             <div className="bg-primary/50 h-px w-12" />
           </motion.div>
 
@@ -55,7 +57,7 @@ export function AccessSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-4 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
           >
-            Start with confidence
+            Make the next review easier.
           </motion.h2>
 
           <motion.p
@@ -65,7 +67,7 @@ export function AccessSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-muted-foreground text-lg"
           >
-            A low-friction start with ownership and control built in.
+            Start with one note. Keep the record as it grows.
           </motion.p>
         </div>
 
@@ -103,7 +105,7 @@ export function AccessSection() {
             onClick={openAuthModal}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-medium transition-colors"
           >
-            Start Building Your Record
+            Start recording
             <ArrowRight className="h-4 w-4" />
           </button>
         </motion.div>

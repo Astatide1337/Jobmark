@@ -27,13 +27,14 @@ export function ProblemStatement() {
 
       <motion.div style={{ opacity, y }} className="mx-auto max-w-4xl px-6 text-center">
         <p className="text-foreground/90 font-serif text-2xl leading-[1.3] sm:text-3xl md:text-4xl lg:text-5xl">
-          <span className="text-muted-foreground">You do real work every week, but </span>
-          <span className="text-foreground">the evidence fades fast.</span>
+          <span className="text-muted-foreground">Most of your best work is easy to forget. </span>
+          <span className="text-foreground">The details disappear first.</span>
           <span className="text-muted-foreground">
             {' '}
-            Wins get buried in Slack. Self-assessments become vague. Promotion cases feel thin.
+            A fix in Slack, a decision in a meeting, a launch that took a month—by review time, you
+            are rebuilding the story from memory.
           </span>
-          <span className="text-primary"> Visibility drops.</span>
+          <span className="text-primary"> Write it down once. Find it when it matters.</span>
         </p>
 
         <motion.div
@@ -51,7 +52,7 @@ export function ProblemStatement() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-muted-foreground mt-8 text-lg"
         >
-          Jobmark turns daily work into a career-ready record.
+          Jobmark gives those moments somewhere to land.
         </motion.p>
       </motion.div>
     </section>
