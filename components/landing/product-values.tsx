@@ -66,7 +66,7 @@ const values = [
     title: 'Use AI on your terms',
     subtitle: 'You stay in charge',
     description:
-      'Jobmark keeps the source record and the facts. Connect an assistant when you want help shaping the words—not inventing the work.',
+      'Jobmark keeps the source record and the facts. Connect an assistant when you want help shaping the words, not inventing the work.',
     icon: (
       <svg
         className="h-5 w-5"
