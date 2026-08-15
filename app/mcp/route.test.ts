@@ -132,6 +132,32 @@ describe('MCP modern discovery and tool listing', () => {
     expect(toolsBody.result.cacheScope).toBe('private');
     expect(toolsBody.result.tools).toHaveLength(1);
     expect(toolsBody.result.tools[0]).not.toHaveProperty('annotations.requiredScopes');
+
+    for (const [id, method, resultKey] of [
+      [3, 'resources/list', 'resources'],
+      [4, 'prompts/list', 'prompts'],
+    ] as const) {
+      const response = await POST(
+        modernRequest(
+          {
+            jsonrpc: '2.0',
+            id,
+            method,
+            params: { _meta: metadata },
+          },
+          method
+        )
+      );
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.result).toMatchObject({
+        resultType: 'complete',
+        ttlMs: 300_000,
+        cacheScope: 'public',
+        [resultKey]: [],
+      });
+    }
   });
 
   it('uses the configured public URL in the unauthenticated challenge', async () => {
