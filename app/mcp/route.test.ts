@@ -134,6 +134,28 @@ describe('MCP modern discovery and tool listing', () => {
     expect(toolsBody.result.tools[0]).not.toHaveProperty('annotations.requiredScopes');
   });
 
+  it('uses the configured public URL in the unauthenticated challenge', async () => {
+    const previousPublicBaseUrl = process.env.MCP_PUBLIC_BASE_URL;
+    process.env.MCP_PUBLIC_BASE_URL = 'https://jobmark.astatide.com';
+
+    try {
+      const response = await POST(
+        new NextRequest('https://0.0.0.0:3000/mcp', {
+          method: 'POST',
+          headers: { accept: 'application/json, text/event-stream' },
+        })
+      );
+
+      expect(response.status).toBe(401);
+      expect(response.headers.get('WWW-Authenticate')).toBe(
+        'Bearer realm="mcp://jobmark", resource_metadata="https://jobmark.astatide.com/.well-known/oauth-protected-resource/mcp"'
+      );
+    } finally {
+      if (previousPublicBaseUrl === undefined) delete process.env.MCP_PUBLIC_BASE_URL;
+      else process.env.MCP_PUBLIC_BASE_URL = previousPublicBaseUrl;
+    }
+  });
+
   it('rejects a modern header/body protocol mismatch before dispatch', async () => {
     mocks.validateAccessToken.mockResolvedValue({
       clientId: 'chatgpt',
