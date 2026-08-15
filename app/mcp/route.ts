@@ -6,6 +6,7 @@ import { allTools, toolDefinitions } from '@/lib/mcp/tools';
 import { McpValidationError } from '@/lib/mcp/errors';
 import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
 import { claimIdempotency, completeIdempotency, releaseIdempotency } from '@/lib/mcp/idempotency';
+import { getMcpPublicBaseUrl } from '@/lib/mcp/auth/public-origin';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -208,8 +209,8 @@ function addModernResultMetadata(result: unknown): unknown {
 }
 
 function getAuthenticateHeader(request: NextRequest): string {
-  const origin = new URL(request.url).origin;
-  return `Bearer realm="mcp://jobmark", resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp"`;
+  const baseUrl = getMcpPublicBaseUrl(request);
+  return `Bearer realm="mcp://jobmark", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource/mcp"`;
 }
 
 type McpAuthRejectionReason =
