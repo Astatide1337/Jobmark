@@ -43,7 +43,9 @@ export function RotatingHeadline({
   const currentHeadline = headlines[currentIndex];
 
   return (
-    <div className={className}>
+    <div
+      className={`relative h-[8rem] w-full overflow-hidden sm:h-[9rem] lg:h-[11rem] ${className}`}
+    >
       <AnimatePresence mode="wait">
         <motion.h1
           key={currentIndex}
@@ -51,7 +53,7 @@ export function RotatingHeadline({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-7xl"
+          className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-7xl"
         >
           <span className="text-foreground">{currentHeadline.text}</span>
           {currentHeadline.highlight && (
@@ -68,8 +70,8 @@ export function RotatingHeadline({
 
 // Pre-configured headlines for Jobmark
 export const jobmarkHeadlines: HeadlinePart[] = [
-  { text: 'Build your', highlight: 'career.' },
-  { text: 'Prove your', highlight: 'impact.' },
-  { text: 'Document the', highlight: 'work.' },
-  { text: 'Turn work into', highlight: 'progress.' },
+  { text: 'Remember what you', highlight: 'did.' },
+  { text: 'Be ready when', highlight: 'it matters.' },
+  { text: 'Keep a record of', highlight: 'the work.' },
+  { text: 'Make your progress', highlight: 'visible.' },
 ];

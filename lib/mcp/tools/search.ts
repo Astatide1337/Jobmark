@@ -1,33 +1,27 @@
-
 import { z } from 'zod';
-import {
-  globalSearch,
-} from '@/lib/jobmark/search';
+import { globalSearch } from '@/lib/jobmark/search';
 import { getDashboardStats, getInsights } from '@/lib/jobmark/insights';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-} from '../errors';
+import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
 const searchGlobalSchema = z.object({
   query: z.string().min(1).max(200),
   limit: z.number().int().min(1).max(50).optional(),
-  projectId: z.string().optional(),
 });
 
 export const searchGlobalTool = {
   definition: {
     name: 'search_global',
     title: 'Global Search',
-    description: 'Search across activities, projects, reports, goals, and contacts. Requires jobmark:read scope.',
+    description:
+      'Search across activities, projects, reports, contacts, and interactions. Requires jobmark:read scope.',
     inputSchema: {
       type: 'object',
       properties: {
         query: { type: 'string', minLength: 1, maxLength: 200 },
         limit: { type: 'number', minimum: 1, maximum: 50, default: 20 },
-        projectId: { type: 'string' },
       },
       required: ['query'],
       additionalProperties: false,
@@ -35,67 +29,25 @@ export const searchGlobalTool = {
     outputSchema: {
       type: 'object',
       properties: {
-        activities: {
+        results: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string' },
-              content: { type: 'string' },
-              logDate: { type: 'string' },
-              projectId: { type: ['string', 'null'] },
-              project: { type: ['object', 'null'] },
-            },
-          },
-        },
-        projects: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' },
-              color: { type: 'string' },
-              description: { type: ['string', 'null'] },
-            },
-          },
-        },
-        reports: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
+              type: {
+                type: 'string',
+                enum: ['activity', 'project', 'report', 'contact', 'interaction'],
+              },
               id: { type: 'string' },
               title: { type: 'string' },
-              periodStart: { type: 'string' },
-              periodEnd: { type: 'string' },
+              snippet: { type: 'string' },
+              metadata: { type: 'object', additionalProperties: true },
             },
           },
         },
-        goals: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              title: { type: 'string' },
-              period: { type: 'string' },
-            },
-          },
-        },
-        contacts: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' },
-              email: { type: ['string', 'null'] },
-              company: { type: ['string', 'null'] },
-            },
-          },
-        },
+        query: { type: 'string' },
       },
+      required: ['results', 'query'],
     },
     annotations: { readOnlyHint: true, requiredScopes: ['jobmark:read'] },
   },
@@ -106,8 +58,13 @@ export const searchGlobalTool = {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
 
-    const data = await globalSearch(actor, result.data.query, { limit: getLimit('search', result.data.limit) });
-    return createStructuredResult({ results: data, query: result.data.query }, `Search results for: ${result.data.query}`);
+    const data = await globalSearch(actor, result.data.query, {
+      limit: getLimit('search', result.data.limit),
+    });
+    return createStructuredResult(
+      { results: data, query: result.data.query },
+      `Search results for: ${result.data.query}`
+    );
   },
 };
 
@@ -129,7 +86,6 @@ export const dashboardStatsTool = {
           properties: {
             thisMonth: { type: 'number' },
             thisWeek: { type: 'number' },
-            today: { type: 'number' },
             total: { type: 'number' },
           },
         },
@@ -138,29 +94,33 @@ export const dashboardStatsTool = {
           properties: {
             active: { type: 'number' },
             archived: { type: 'number' },
-            locked: { type: 'number' },
           },
         },
         goals: {
           type: 'object',
           properties: {
-            active: { type: 'number' },
-            completed: { type: 'number' },
+            total: { type: 'number' },
           },
         },
         reports: {
           type: 'object',
           properties: {
             total: { type: 'number' },
-            pending: { type: 'number' },
           },
         },
         contacts: {
           type: 'object',
           properties: {
             total: { type: 'number' },
-            recent: { type: 'number' },
           },
+        },
+        streak: {
+          type: 'object',
+          properties: {
+            current: { type: 'number' },
+            longest: { type: 'number' },
+          },
+          required: ['current', 'longest'],
         },
       },
     },
@@ -180,26 +140,23 @@ export const insightsGetTool = {
     description: 'Get heatmap and trend insights. Requires jobmark:read scope.',
     inputSchema: {
       type: 'object',
-      properties: {
-        year: { type: 'integer', minimum: 2020, maximum: 2030 },
-      },
+      properties: {},
       additionalProperties: false,
     },
     outputSchema: {
       type: 'object',
       properties: {
-        heatmap: {
+        activityHeatmap: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
               date: { type: 'string' },
               count: { type: 'number' },
-              level: { type: 'number' },
             },
           },
         },
-        weeklyTrends: {
+        weeklyTrend: {
           type: 'array',
           items: {
             type: 'object',
@@ -214,12 +171,31 @@ export const insightsGetTool = {
           items: {
             type: 'object',
             properties: {
-              projectId: { type: 'string' },
+              projectId: { type: ['string', 'null'] },
               projectName: { type: 'string' },
               color: { type: 'string' },
               count: { type: 'number' },
             },
           },
+        },
+        reportStats: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            byProject: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  projectId: { type: 'string' },
+                  name: { type: 'string' },
+                  count: { type: 'number' },
+                },
+                required: ['projectId', 'name', 'count'],
+              },
+            },
+          },
+          required: ['total', 'byProject'],
         },
       },
     },
@@ -227,9 +203,9 @@ export const insightsGetTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({ year: z.number().int().min(2020).max(2030).optional() }).safeParse(input);
+    const result = z.object({}).safeParse(input);
     if (!result.success) {
-      throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
+      throw new McpValidationError('Invalid input');
     }
 
     const data = await getInsights(actor);

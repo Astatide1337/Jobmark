@@ -22,9 +22,7 @@ secondaryAction: Open dashboard
 secondaryHref: /dashboard
 ---
 
-Networking feels fake. You meet someone, exchange pleasantries, pretend to care about their job, hope something useful comes of it.
-
-No wonder people avoid it.
+Networking can feel forced when every interaction is treated like a transaction. A smaller, more thoughtful rhythm is easier to sustain.
 
 But relationships matter. Opportunities come from people who know you. Trust is built before it's needed.
 

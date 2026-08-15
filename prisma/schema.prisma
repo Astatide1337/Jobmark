@@ -182,6 +182,7 @@ model Report {
   conversations Conversation[]
 
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([projectId])
 }
 

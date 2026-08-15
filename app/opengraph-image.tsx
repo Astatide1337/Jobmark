@@ -105,7 +105,7 @@ export default function OGImage() {
             textTransform: 'uppercase',
           }}
         >
-          Career OS
+          Career record
         </div>
         <div
           style={{

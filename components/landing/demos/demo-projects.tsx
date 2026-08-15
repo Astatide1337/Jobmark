@@ -16,6 +16,8 @@ import { projectColors } from '@/lib/constants';
 import { DashboardFrame } from './dashboard-frame';
 import { ProjectList } from '@/components/projects/project-list';
 
+const DEMO_ACTIVITY_DATE = new Date('2026-08-14T12:00:00.000Z');
+
 // Mock Projects that look realistic
 const projects = [
   {
@@ -25,7 +27,7 @@ const projects = [
     color: '#6366f1', // Indigo
     archived: false,
     _count: { activities: 24 },
-    activities: [{ createdAt: new Date() }],
+    activities: [{ createdAt: DEMO_ACTIVITY_DATE }],
   },
   {
     id: '2',
@@ -34,7 +36,7 @@ const projects = [
     color: '#10b981', // Emerald
     archived: false,
     _count: { activities: 12 },
-    activities: [{ createdAt: new Date() }],
+    activities: [{ createdAt: DEMO_ACTIVITY_DATE }],
   },
   {
     id: '3',
@@ -43,7 +45,7 @@ const projects = [
     color: '#f59e0b', // Amber
     archived: false,
     _count: { activities: 8 },
-    activities: [{ createdAt: new Date() }],
+    activities: [{ createdAt: DEMO_ACTIVITY_DATE }],
   },
 ];
 
@@ -107,7 +109,7 @@ export function DemoProjects() {
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">Organize your workstreams.</p>
+          <p className="text-muted-foreground">Keep related work together.</p>
         </div>
 
         {viewingId && selectedProject ? (
@@ -139,7 +141,7 @@ export function DemoProjects() {
 
               <div className="space-y-4">
                 <h4 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                  Recent Activity (Demo)
+                  Recent notes
                 </h4>
                 <div className="border-border/50 relative space-y-8 border-l-2 pl-6">
                   {[1, 2, 3].map(i => (

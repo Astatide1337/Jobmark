@@ -108,9 +108,7 @@ function getMessageParts(
   latestInteraction: DraftInteraction | undefined
 ): { opening: string; ask?: string } {
   const isConcise = tone.toLowerCase().includes('concise') || tone.toLowerCase().includes('short');
-  const interactionSummary = latestInteraction
-    ? clean(latestInteraction.summary, 320)
-    : null;
+  const interactionSummary = latestInteraction ? clean(latestInteraction.summary, 320) : null;
 
   switch (purpose) {
     case 'referral':
@@ -169,10 +167,7 @@ function getMessageParts(
  * relationship detail. Missing specifics result in a pleasantly general
  * message that the user can personalize before sending.
  */
-export function buildOutreachDraft(
-  contact: DraftContact,
-  options: OutreachDraftOptions
-): string {
+export function buildOutreachDraft(contact: DraftContact, options: OutreachDraftOptions): string {
   const relationship = clean(contact.relationship);
   const extraContext = clean(options.extraContext, 1_000);
   const interactions = contact.interactions.slice(0, 5);
@@ -183,19 +178,18 @@ export function buildOutreachDraft(
   const latestInteraction = interactions[0];
   const formattedContext = formatExtraContext(extraContext);
   const relationshipContext =
-    !formattedContext && relationship && /teammate|collaborat|colleague|mentor|manager|client|friend/i.test(relationship)
+    !formattedContext &&
+    relationship &&
+    /teammate|collaborat|colleague|mentor|manager|client|friend/i.test(relationship)
       ? 'I’ve appreciated working with you.'
       : '';
-  const { opening, ask } = getMessageParts(
-    purpose,
-    tone,
-    formattedContext,
-    latestInteraction
-  );
+  const { opening, ask } = getMessageParts(purpose, tone, formattedContext, latestInteraction);
   const greeting = tone.toLowerCase().includes('professional')
     ? `Hello ${getFirstName(contact.fullName)},`
     : `Hi ${getFirstName(contact.fullName)},`;
-  const signoff = tone.toLowerCase().includes('professional') ? 'Thank you for considering it.' : 'Thanks again.';
+  const signoff = tone.toLowerCase().includes('professional')
+    ? 'Thank you for considering it.'
+    : 'Thanks again.';
   const isMessageChannel = channel.toLowerCase() === 'text' || channel.toLowerCase() === 'linkedin';
   const body = [
     greeting,
@@ -231,8 +225,8 @@ export type ReviewBriefOptions = {
 
 /**
  * Build a manager-ready review brief without making claims that are not in the
- * user's record. It gives an MCP assistant a strong, structured starting point
- * while remaining useful on its own when no assistant is connected.
+ * user's record. It gives a connected AI app a strong, structured starting
+ * point while remaining useful on its own.
  */
 export function buildReviewBrief(options: ReviewBriefOptions): string {
   const activities = options.activities;
@@ -284,33 +278,120 @@ export function buildReviewBrief(options: ReviewBriefOptions): string {
 
   lines.push(
     '',
-    'Keep the message grounded in what you actually know. If a connected assistant helps write it, review the result before sending.'
+    'Keep the message grounded in what you actually know. Review the result before sharing it.'
   );
 
   return lines.join('\n');
 }
 
-/** A small, predictable edit helper used when no assistant is connected. */
+/**
+ * The MCP edit tools still accept plain-language instructions, so keep this
+ * helper intentionally conservative. It never invents new claims.
+ */
 export function deterministicRewrite(text: string, instruction: string): string {
-  const normalized = text.trim();
+  const normalized = text;
   const request = instruction.toLowerCase();
   if (!normalized) return '';
 
   if (request.includes('bullet') || request.includes('list')) {
-    return normalized
-      .split(/\n+|(?<=[.!?])\s+/)
-      .map(part => part.trim())
-      .filter(Boolean)
-      .map(part => `- ${part.replace(/^[*-]\s*/, '')}`)
-      .join('\n');
+    // Keep the MCP compatibility path aligned with the local editor: use
+    // existing line boundaries instead of guessing where sentences end.
+    // Guessing would corrupt decimals, abbreviations, URLs, or other facts.
+    const lines = normalized.split(/\r\n|\n/).filter(line => line.trim());
+    return lines.length > 0 && lines.every(isBulletLine)
+      ? normalized
+      : applyQuickEdit(normalized, 'bullets');
   }
 
-  if (request.includes('short') || request.includes('concise')) {
-    const sentences = normalized.split(/(?<=[.!?])\s+/).filter(Boolean);
-    return sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join(' ');
-  }
-
-  // Do not pretend to rewrite content without an assistant. Preserve the
+  // Do not pretend to rewrite content without an AI app. Preserve the
   // source rather than inventing a claim or changing the user's meaning.
-  return normalized;
+  return normalized.trim() ? normalized : '';
+}
+
+export type QuickEditAction = 'bullets' | 'numbered' | 'checklist';
+
+/**
+ * Apply one of the small edits that Jobmark can perform locally and
+ * predictably. These are deliberately separate from the MCP edit helper so
+ * the in-app editor can offer named actions instead of pretending that a
+ * free-form instruction is an AI request.
+ */
+export function applyQuickEdit(text: string, action: QuickEditAction): string {
+  const normalized = text;
+  if (!normalized.trim()) return text;
+
+  // Keep spaces and newlines at the selection boundary intact. A selected
+  // fragment often includes the space before the next word; removing it while
+  // replacing the fragment would make the edit unexpectedly change adjacent
+  // text.
+  const leadingWhitespace = normalized.match(/^\s*/)?.[0] ?? '';
+  const trailingWhitespace = normalized.match(/\s*$/)?.[0] ?? '';
+  const coreEnd = normalized.length - trailingWhitespace.length;
+  const core = normalized.slice(leadingWhitespace.length, coreEnd);
+
+  const preserveBoundary = (editedCore: string) =>
+    leadingWhitespace + editedCore + trailingWhitespace;
+
+  // Only use existing line boundaries. Splitting on punctuation can corrupt
+  // decimals, abbreviations, URLs, and other source text.
+  const lines = core.split(/\r\n|\n/);
+  const lineBreak = normalized.includes('\r\n') ? '\r\n' : '\n';
+  const contentLines = lines.filter(line => line.trim());
+  const stripMarker = (line: string) =>
+    line.replace(
+      /^[ \t]*(?:(?:[-*•](?:[ \t]+|$))|(?:\d+[.)](?:[ \t]+|$))|(?:\[[ xX]\](?:[ \t]+|$)))+/,
+      ''
+    );
+
+  if (action === 'bullets') {
+    const removing = contentLines.length > 0 && contentLines.every(isBulletLine);
+    return preserveBoundary(
+      lines
+        .map(line => {
+          if (!line.trim()) return line;
+          const withoutMarker = stripMarker(line);
+          return removing ? withoutMarker : `- ${withoutMarker}`;
+        })
+        .join(lineBreak)
+    );
+  }
+
+  if (action === 'numbered') {
+    const removing = contentLines.length > 0 && contentLines.every(isNumberedLine);
+    let number = 0;
+    return preserveBoundary(
+      lines
+        .map(line => {
+          if (!line.trim()) return line;
+          const withoutMarker = stripMarker(line);
+          if (removing) return withoutMarker;
+          number += 1;
+          return `${number}. ${withoutMarker}`;
+        })
+        .join(lineBreak)
+    );
+  }
+
+  const removing = contentLines.length > 0 && contentLines.every(isChecklistLine);
+  return preserveBoundary(
+    lines
+      .map(line => {
+        if (!line.trim()) return line;
+        const withoutMarker = stripMarker(line);
+        return removing ? withoutMarker : `- [ ] ${withoutMarker}`;
+      })
+      .join(lineBreak)
+  );
+}
+
+function isBulletLine(line: string): boolean {
+  return /^[ \t]*[-*•](?:[ \t]+|$)/.test(line);
+}
+
+function isNumberedLine(line: string): boolean {
+  return /^[ \t]*\d+[.)](?:[ \t]+|$)/.test(line);
+}
+
+function isChecklistLine(line: string): boolean {
+  return /^[ \t]*[-*•](?:[ \t]+|$)\[[ xX]\](?:[ \t]+|$)/.test(line);
 }

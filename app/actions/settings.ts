@@ -413,8 +413,28 @@ export async function deleteUserAccount() {
   }
 
   try {
-    await prisma.user.delete({
-      where: { id: session.user.id },
+    const userId = session.user.id;
+    const connections = await prisma.mcpConnection.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    const connectionIds = connections.map(connection => connection.id);
+
+    await prisma.$transaction(async transaction => {
+      if (connectionIds.length > 0) {
+        await transaction.mcpIdempotency.deleteMany({
+          where: { connectionId: { in: connectionIds } },
+        });
+      }
+      await transaction.secureActionNonce.deleteMany({ where: { userId } });
+      await transaction.oAuthAuthorizationCode.deleteMany({ where: { userId } });
+      await transaction.oAuthAccessToken.deleteMany({ where: { userId } });
+      await transaction.oAuthRefreshToken.deleteMany({ where: { userId } });
+      await transaction.oAuthConsent.deleteMany({ where: { userId } });
+      await transaction.oAuthClient.deleteMany({ where: { userId } });
+      await transaction.user.delete({
+        where: { id: userId },
+      });
     });
 
     // Clear the session cookie so the browser is signed out

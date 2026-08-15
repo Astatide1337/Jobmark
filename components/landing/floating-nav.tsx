@@ -14,14 +14,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Pen } from 'lucide-react';
 import { MagneticButton } from '@/components/ui/magnetic-button';
 import { useAuthModal } from '@/components/auth';
 import { cn } from '@/lib/utils';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 const navItems = [
-  { label: 'Features', href: '#product-tour' },
-  { label: 'Access', href: '#access' },
+  { label: 'How it works', href: '#product-tour' },
+  { label: 'Start free', href: '#access' },
   { label: 'FAQ', href: '#faq' },
   { label: 'Articles', href: '/articles' },
 ];
@@ -89,8 +89,8 @@ export function FloatingNav() {
                 href="/"
                 className="hover:bg-primary/10 flex items-center gap-2 rounded-full px-3 py-2 transition-colors"
               >
-                <div className="bg-primary/10 border-primary/20 flex h-6 w-6 items-center justify-center rounded-md border">
-                  <Pen className="text-primary h-3 w-3" />
+                <div className="bg-primary flex h-6 w-6 items-center justify-center rounded-md">
+                  <JobmarkMark className="h-4 w-4" sizes="16px" />
                 </div>
                 <span className="text-foreground hidden font-serif text-sm font-semibold sm:inline">
                   Jobmark
@@ -124,7 +124,7 @@ export function FloatingNav() {
                 onClick={openAuthModal}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
               >
-                Start Your Record
+                Start recording
               </button>
             </MagneticButton>
           </div>

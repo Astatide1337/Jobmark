@@ -33,8 +33,8 @@ export default function PrivacyPage() {
             <p>
               When you sign in with Google, we receive your name, email address, and profile photo
               from Google. Inside the app, we store the work entries, projects, goals, and reports
-              you create. We also store your settings preferences and active MCP connection records
-              so you can see which assistants have access.
+              you create. We also store your settings preferences and active connection records so
+              you can see which AI apps have access.
             </p>
             <p className="mt-3">
               We do not collect payment information, precise location data, or behavioral analytics.
@@ -46,8 +46,8 @@ export default function PrivacyPage() {
             <p>
               Your data powers the app: building evidence-based briefs from your work log and
               contacts, and displaying your activity history. When you choose to open a brief in a
-              connected MCP assistant, that assistant receives the information needed for the task.
-              We do not sell your data or use it for advertising.
+              connected AI app, that app receives the information needed for the task. We do not
+              sell your data or use it for advertising.
             </p>
           </section>
 
@@ -65,9 +65,9 @@ export default function PrivacyPage() {
                 application data on servers in the US-East region.
               </li>
               <li>
-                <strong className="text-foreground">Connected MCP assistants</strong> — when
-                you choose one, Jobmark hands the selected brief or prompt to that assistant. Each
-                provider handles the content under its own terms and privacy policy.
+                <strong className="text-foreground">Connected AI apps</strong> — when you choose
+                one, Jobmark hands the selected brief or prompt to that app. Each provider handles
+                the content under its own terms and privacy policy.
               </li>
             </ul>
           </section>

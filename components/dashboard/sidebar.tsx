@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Pen,
@@ -14,8 +14,10 @@ import {
   Users,
   Newspaper,
   Link as LinkIcon,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 const navItems = [
   { href: '/dashboard', icon: Pen, label: 'Capture', demoId: 'journal' },
@@ -33,6 +35,7 @@ const settingsItem = { href: '/settings', icon: Settings, label: 'Settings', dem
 interface SidebarProps {
   mode?: 'app' | 'demo';
   activePath?: string;
+  onDemoNavigate?: (href: string) => void;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
 }
@@ -40,18 +43,26 @@ interface SidebarProps {
 export function Sidebar({
   mode = 'app',
   activePath = '/',
+  onDemoNavigate,
   isMobileOpen,
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
   const currentPath = mode === 'demo' ? activePath : pathname;
 
-  const handleDemoClick = (id: string) => {
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onMobileClose?.();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, onMobileClose]);
+
+  const handleDemoClick = (href: string) => {
     if (mode === 'demo') {
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      onDemoNavigate?.(href);
+      onMobileClose?.();
     }
   };
 
@@ -59,30 +70,49 @@ export function Sidebar({
     <>
       {isMobileOpen && (
         <div
-          className="bg-background/80 fixed inset-0 z-40 backdrop-blur-sm lg:hidden"
+          role="presentation"
+          aria-hidden="true"
+          className={cn(
+            'bg-background/80 fixed inset-0 z-40 backdrop-blur-sm',
+            mode === 'demo' ? 'sm:hidden' : 'lg:hidden'
+          )}
           onClick={onMobileClose}
         />
       )}
 
       <aside
+        aria-label="Main navigation"
         className={cn(
           'border-border/50 bg-sidebar fixed inset-y-0 left-0 z-50 w-72 flex-col border-r transition-transform duration-300 lg:static lg:flex lg:w-64 lg:translate-x-0',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full',
-          mode === 'app' ? 'lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto' : 'h-full'
+          mode === 'app'
+            ? 'lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto'
+            : 'sm:static sm:flex sm:h-full sm:w-64 sm:translate-x-0'
         )}
       >
-        <div className="p-6">
+        <div className="relative p-6">
+          {isMobileOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('absolute top-4 right-4', mode === 'demo' ? 'sm:hidden' : 'lg:hidden')}
+              onClick={onMobileClose}
+              aria-label="Close navigation menu"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
           {mode === 'app' ? (
             <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Pen className="text-primary h-4 w-4" />
+              <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground text-lg font-semibold">Jobmark</span>
             </Link>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Pen className="text-primary h-4 w-4" />
+              <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground text-lg font-semibold">Jobmark</span>
             </div>
@@ -103,9 +133,7 @@ export function Sidebar({
                   ? currentPath === item.href || currentPath?.startsWith(item.href + '/')
                   : currentPath === item.href
               }
-              onClick={
-                mode === 'demo' ? () => handleDemoClick(item.demoId) : () => onMobileClose?.()
-              }
+              onClick={mode === 'demo' ? () => handleDemoClick(item.href) : () => onMobileClose?.()}
             />
           ))}
         </nav>
@@ -117,7 +145,9 @@ export function Sidebar({
             icon={settingsItem.icon}
             label={settingsItem.label}
             isActive={currentPath === settingsItem.href}
-            onClick={mode === 'demo' ? () => {} : () => onMobileClose?.()}
+            onClick={
+              mode === 'demo' ? () => handleDemoClick(settingsItem.href) : () => onMobileClose?.()
+            }
           />
         </div>
       </aside>
@@ -144,30 +174,32 @@ function NavItem({
   const content = (
     <>
       {isActive && (
-        <motion.div
-          layoutId={mode === 'demo' ? 'demo-sidebar-active' : 'sidebar-active'}
+        <div
+          aria-hidden="true"
           className="bg-sidebar-accent absolute inset-0 rounded-xl shadow-sm"
-          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
         />
       )}
 
-      <Icon className="group-hover:text-primary relative z-10 h-4 w-4 transition-colors" />
-      <span className="group-hover:text-primary relative z-10 transition-colors">{label}</span>
+      <Icon className="relative z-10 h-4 w-4 transition-colors" />
+      <span className="relative z-10 transition-colors">{label}</span>
     </>
   );
 
   if (mode === 'demo') {
     return (
-      <Button
-        variant={isActive ? 'default' : 'ghost'}
+      <button
+        type="button"
         className={cn(
-          'relative z-10 w-full justify-start gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-          isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : ''
+          'group relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+          isActive
+            ? 'text-sidebar-accent-foreground'
+            : 'text-muted-foreground hover:text-foreground'
         )}
+        aria-current={isActive ? 'page' : undefined}
         onClick={onClick}
       >
         {content}
-      </Button>
+      </button>
     );
   }
 
@@ -178,9 +210,10 @@ function NavItem({
       className={cn(
         'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
         isActive
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+          ? 'text-sidebar-accent-foreground'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
       )}
+      aria-current={isActive ? 'page' : undefined}
     >
       {content}
     </Link>

@@ -3,21 +3,20 @@
  *
  * Why: Professional outreach is stressful and time-consuming. These actions
  * build an editable, evidence-safe message from the user's relationship
- * history. A user can then review it locally or ask a connected assistant to
+ * history. A user can then review it locally or ask a connected AI app to
  * polish it, without routing the user's record through a model service inside
  * Jobmark.
  *
  * Security & Accuracy:
- * The draft contains only facts stored in Jobmark; assistant handoffs also
+ * The draft contains only facts stored in Jobmark; AI-app handoffs also
  * explicitly ask for an editable result and never an automatic send.
  */
 'use server';
 
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { createStreamableValue } from '@ai-sdk/rsc';
 import { format } from 'date-fns';
-import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { buildOutreachDraft } from '@/lib/deterministic-drafts';
 
 export type OutreachDraftConfig = {
   contactId: string;
@@ -91,14 +90,9 @@ export async function generateOutreachDraft({
     { objective, tone, channel, extraContext }
   );
 
-  // Keep the existing stream contract used by the wizard. The draft is
-  // generated synchronously from verified record data, so there is no model
-  // call or background request to fail.
-  const stream = createStreamableValue('');
-  stream.update(content);
-  stream.done();
-
-  return { output: stream.value };
+  // The draft is generated synchronously from verified record data, so there
+  // is no model call or background request to stream.
+  return { output: content };
 }
 
 export async function saveOutreachDraftToHistory(
@@ -163,24 +157,4 @@ export async function updateOutreachDraft(
   });
 
   return { success: true };
-}
-
-export async function improveOutreachDraft(
-  selectedText: string,
-  instruction: string
-): Promise<string> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-  if (
-    !selectedText.trim() ||
-    selectedText.length > 20_000 ||
-    !instruction.trim() ||
-    instruction.length > 4_000
-  ) {
-    throw new Error('Invalid edit request');
-  }
-
-  return deterministicRewrite(selectedText, instruction);
 }

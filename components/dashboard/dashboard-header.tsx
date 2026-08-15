@@ -20,9 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Pen, Settings, LogOut, Calendar, ChevronDown, Menu } from 'lucide-react';
+import { Settings, LogOut, Calendar, ChevronDown, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 interface DashboardHeaderProps {
   userName?: string | null;
@@ -30,6 +31,7 @@ interface DashboardHeaderProps {
   showDate?: boolean;
   title?: string;
   onMenuClick?: () => void;
+  demoMode?: boolean;
 }
 
 export function DashboardHeader({
@@ -38,6 +40,7 @@ export function DashboardHeader({
   showDate = false,
   title,
   onMenuClick,
+  demoMode = false,
 }: DashboardHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -64,14 +67,24 @@ export function DashboardHeader({
       <div className="flex items-center justify-between px-4 py-3 lg:px-6">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={demoMode ? 'sm:hidden' : 'lg:hidden'}
+            onClick={onMenuClick}
+            aria-label="Open navigation menu"
+          >
             <Menu className="h-5 w-5" />
           </Button>
 
           {/* Mobile Logo */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <div className="bg-primary/20 flex h-8 w-8 items-center justify-center rounded-lg">
-              <Pen className="text-primary h-4 w-4" />
+          <div
+            className={
+              demoMode ? 'flex items-center gap-2 sm:hidden' : 'flex items-center gap-2 lg:hidden'
+            }
+          >
+            <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+              <JobmarkMark className="h-5 w-5" sizes="20px" />
             </div>
           </div>
 
@@ -85,7 +98,7 @@ export function DashboardHeader({
             {!title && showDate && (
               <div className="text-muted-foreground hidden items-center gap-2 lg:flex">
                 <Calendar className="h-4 w-4" />
-                <span className="text-sm">
+                <span className="text-sm" suppressHydrationWarning>
                   {new Date().toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'long',
@@ -99,11 +112,16 @@ export function DashboardHeader({
 
         {/* User Menu */}
 
-        <DropdownMenu>
+        {/* Keep the page scroll owner intact while the account menu is open. */}
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2"
+              aria-label={userName ? `Open account menu for ${userName}` : 'Open account menu'}
+            >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userImage || undefined} />
+                <AvatarImage src={userImage || undefined} alt="" />
                 <AvatarFallback className="bg-primary/20 text-primary text-sm">
                   {initials}
                 </AvatarFallback>

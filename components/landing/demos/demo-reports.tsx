@@ -40,13 +40,14 @@ export function DemoReports() {
     <DashboardFrame activePath="/reports">
       <div className="space-y-6">
         <div>
-          <h2 className="mb-2 text-3xl font-bold tracking-tight">Reviews & Summaries</h2>
-          <p className="text-muted-foreground">Turn your record into review-ready drafts.</p>
+          <h2 className="mb-2 text-3xl font-bold tracking-tight">Review drafts</h2>
+          <p className="text-muted-foreground">Start with the work you have already recorded.</p>
         </div>
         <ReportHistory
           initialReports={reports}
           onUpdate={async () => {}}
           onDelete={async () => {}}
+          displayTimeZone="UTC"
         />
       </div>
     </DashboardFrame>

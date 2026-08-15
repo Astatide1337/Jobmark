@@ -26,13 +26,19 @@ import { z } from 'zod';
 const activityCreateSchema = z.object({
   content: z.string().min(10, 'Activity must be at least 10 characters').max(1000),
   projectId: z.string().optional().nullable(),
-  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  logDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 const activityUpdateSchema = z.object({
   content: z.string().min(10).max(1000).optional(),
   projectId: z.string().optional().nullable(),
-  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  logDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export type ActivityInput = z.infer<typeof activityCreateSchema>;
@@ -56,11 +62,28 @@ export type ActivitiesListResult = {
 
 export async function listActivities(
   actor: JobmarkActor,
-  options: { limit?: number; cursor?: string; hideArchived?: boolean } = {}
+  options: {
+    limit?: number;
+    cursor?: string;
+    hideArchived?: boolean;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
+  } = {}
 ): Promise<ActivitiesListResult> {
   assertActor(actor);
 
-  const { limit = 50, cursor, hideArchived = false } = options;
+  const {
+    limit: requestedLimit = 50,
+    cursor,
+    hideArchived = false,
+    projectId,
+    dateFrom,
+    dateTo,
+    search,
+  } = options;
+  const limit = Math.min(Math.max(requestedLimit, 1), 100);
   const lockedIds = await getLockedProjectIds(actor.userId);
 
   const where: Prisma.ActivityWhereInput = { userId: actor.userId };
@@ -71,6 +94,16 @@ export async function listActivities(
   if (hideArchived) {
     filters.push({ OR: [{ projectId: null }, { project: { archived: false } }] });
   }
+  if (projectId) filters.push({ projectId });
+  if (dateFrom || dateTo) {
+    filters.push({
+      logDate: {
+        ...(dateFrom ? { gte: calendarDateToUtcMidnight(dateFrom) } : {}),
+        ...(dateTo ? { lt: calendarDateToUtcMidnight(shiftCalendarDate(dateTo, 1)) } : {}),
+      },
+    });
+  }
+  if (search?.trim()) filters.push({ content: { contains: search.trim(), mode: 'insensitive' } });
   if (filters.length > 0) where.AND = filters;
 
   const activities = await prisma.activity.findMany({
@@ -78,6 +111,7 @@ export async function listActivities(
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: {
       project: { select: { id: true, name: true, color: true, archived: true } },
     },
@@ -117,9 +151,10 @@ export async function getActivityStats(actor: JobmarkActor): Promise<{
     select: { timeZone: true, dailyTarget: true, weeklyTarget: true, monthlyTarget: true },
   });
 
-  const timeZone = userSettings?.timeZone && isValidTimeZone(userSettings.timeZone)
-    ? userSettings.timeZone
-    : DEFAULT_TIME_ZONE;
+  const timeZone =
+    userSettings?.timeZone && isValidTimeZone(userSettings.timeZone)
+      ? userSettings.timeZone
+      : DEFAULT_TIME_ZONE;
 
   const todayDate = getCalendarDate(now, timeZone);
   const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
@@ -130,9 +165,8 @@ export async function getActivityStats(actor: JobmarkActor): Promise<{
   const endOfWeek = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 7 - dayOfWeek));
 
   const lockedIds = await getLockedProjectIds(actor.userId);
-  const lockedFilter = lockedIds.length > 0
-    ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] }
-    : {};
+  const lockedFilter =
+    lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
 
   const [settings, thisMonthCount, todayCount, thisWeekCount, projectCount, totalCount] =
     await Promise.all([
@@ -181,7 +215,7 @@ export async function getActivityStats(actor: JobmarkActor): Promise<{
   });
 
   const recentDates = recentActivities.map(
-    (a) => `${a.logDate.toISOString().slice(0, 10)}T12:00:00.000Z`
+    a => `${a.logDate.toISOString().slice(0, 10)}T12:00:00.000Z`
   );
 
   return {
@@ -201,9 +235,8 @@ export async function getActivity(actor: JobmarkActor, activityId: string): Prom
   assertActor(actor);
 
   const lockedIds = await getLockedProjectIds(actor.userId);
-  const lockedFilter = lockedIds.length > 0
-    ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] }
-    : {};
+  const lockedFilter =
+    lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
 
   const activity = await prisma.activity.findFirst({
     where: { id: activityId, userId: actor.userId, ...lockedFilter },
@@ -215,7 +248,10 @@ export async function getActivity(actor: JobmarkActor, activityId: string): Prom
   return toActivityDTO(activity);
 }
 
-export async function createActivity(actor: JobmarkActor, input: ActivityInput): Promise<ActivityDTO> {
+export async function createActivity(
+  actor: JobmarkActor,
+  input: ActivityInput
+): Promise<ActivityDTO> {
   assertActor(actor);
 
   const result = activityCreateSchema.safeParse(input);
@@ -230,9 +266,10 @@ export async function createActivity(actor: JobmarkActor, input: ActivityInput):
         select: { timeZone: true },
       });
 
-  const timeZone = settings?.timeZone && isValidTimeZone(settings.timeZone)
-    ? settings.timeZone
-    : DEFAULT_TIME_ZONE;
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
   const defaultLogDate = calendarDateToUtcMidnight(getCalendarDate(new Date(), timeZone));
   const logDate = result.data.logDate
     ? calendarDateToUtcMidnight(result.data.logDate)
@@ -283,9 +320,7 @@ export async function updateActivity(
   const data: Prisma.ActivityUncheckedUpdateInput = {
     content: result.data.content,
     projectId: result.data.projectId,
-    logDate: result.data.logDate
-      ? calendarDateToUtcMidnight(result.data.logDate)
-      : undefined,
+    logDate: result.data.logDate ? calendarDateToUtcMidnight(result.data.logDate) : undefined,
   };
 
   const updated = await prisma.activity.update({

@@ -20,7 +20,6 @@ import {
   getActivities,
   type ActivityFormState,
 } from '@/app/actions/activities';
-import { improveText } from '@/app/actions/reports';
 import { polishDictation } from '@/app/actions/dictation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -197,18 +196,8 @@ export function QuickCapture({
     ? (payload: FormData) => handleDemoSubmit(payload)
     : wrappedFormAction;
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [isMac, setIsMac] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Writing enhancement state
-  const [selection, setSelection] = useState<{ start: number; end: number; text: string } | null>(
-    null
-  );
-  const [instruction, setInstruction] = useState('');
-  const [isImproving, setIsImproving] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
   // Dictation state
   const [isListening, setIsListening] = useState(false);
@@ -222,11 +211,6 @@ export function QuickCapture({
     }
     return projects;
   }, [projects, settings?.hideArchived]);
-
-  // Detect OS on mount
-  useEffect(() => {
-    setIsMac(navigator.platform.toLowerCase().includes('mac'));
-  }, []);
 
   useEffect(() => {
     if (state.success) {
@@ -266,49 +250,6 @@ export function QuickCapture({
     document.addEventListener('keydown', handleGlobalKeyDown);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isValidLength, isPending]);
-
-  // Handle text selection for writing enhancement
-  const handleSelect = () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    if (textarea.selectionStart !== textarea.selectionEnd) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const text = content.substring(start, end);
-
-      setSelection({ start, end, text });
-      // Position is handled by the ref callback in the render loop or useEffect
-    } else {
-      setSelection(null);
-      setMenuPosition(null);
-    }
-  };
-
-  // Handle a deterministic writing improvement
-  const handleImprove = async () => {
-    if (!selection || !instruction) return;
-    setIsImproving(true);
-
-    try {
-      const improved = await improveText(selection.text, instruction);
-      if (improved) {
-        const before = content.substring(0, selection.start);
-        const after = content.substring(selection.end);
-
-        const newContent = before + improved + after;
-        setContent(newContent);
-
-        setSelection(null);
-        setInstruction('');
-        setMenuPosition(null);
-      }
-    } catch (error) {
-      console.error('Improvement failed', error);
-    } finally {
-      setIsImproving(false);
-    }
-  };
 
   // Dictation Logic
   const toggleListening = () => {
@@ -370,29 +311,17 @@ export function QuickCapture({
     }
   };
 
-  const dismissToolbar = () => {
-    setSelection(null);
-    setInstruction('');
-    setMenuPosition(null);
-  };
-
   return (
     <QuickCaptureView
       formRef={formRef}
-      containerRef={containerRef}
       textareaRef={textareaRef}
       currentAction={currentAction}
       isPending={isPending}
       content={content}
-      selection={selection}
-      menuPosition={menuPosition}
-      instruction={instruction}
-      isImproving={isImproving}
       isPolishing={isPolishing}
       isListening={isListening}
       charCount={charCount}
       isValidLength={isValidLength}
-      isMac={isMac}
       todayCount={todayCount}
       dailyGoal={dailyGoal}
       projects={projects}
@@ -404,14 +333,7 @@ export function QuickCapture({
       dateLabel={getDateLabel()}
       onContentChange={value => {
         setContent(value);
-        if (selection) {
-          setSelection(null);
-          setMenuPosition(null);
-        }
       }}
-      onSelectionChange={setSelection}
-      onMenuPositionChange={setMenuPosition}
-      onInstructionChange={setInstruction}
       onDatePickerOpenChange={setDatePickerOpen}
       onDateChange={date => {
         if (date) {
@@ -420,9 +342,6 @@ export function QuickCapture({
         }
       }}
       onProjectChange={setSelectedProject}
-      onSelect={handleSelect}
-      onImprove={handleImprove}
-      onDismissToolbar={dismissToolbar}
       onToggleListening={toggleListening}
     />
   );
@@ -593,7 +512,7 @@ function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: 
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-foreground leading-relaxed break-all whitespace-pre-wrap">
+            <p className="text-foreground leading-relaxed break-words whitespace-pre-wrap">
               {activity.content}
             </p>
 
@@ -678,6 +597,7 @@ function DeleteActivityButton({
       size="sm"
       onClick={handleDelete}
       disabled={isPending}
+      aria-label="Delete activity"
       className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
     >
       <Trash2 className="h-4 w-4" />

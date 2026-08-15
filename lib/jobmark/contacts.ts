@@ -43,13 +43,15 @@ export async function listContacts(
 ): Promise<{ contacts: ContactDTO[]; nextCursor: string | null }> {
   assertActor(actor);
 
-  const { limit = 50, cursor } = options;
+  const { cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
 
   const contacts = await prisma.contact.findMany({
     where: { userId: actor.userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: { _count: { select: { interactions: true, outreachDrafts: true } } },
   });
 

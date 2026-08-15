@@ -21,9 +21,9 @@ describe('article content', () => {
 
     expect(article).toMatchObject({
       slug: 'connect-jobmark-to-ai',
-      title: 'Use Jobmark with your AI assistant',
+      title: 'Connect an AI app to Jobmark',
       publishedAt: '2026-08-09',
     });
-    expect(article?.content).toContain('Connect Jobmark');
+    expect(article?.content).toContain('Link an AI app you already use');
   });
 });

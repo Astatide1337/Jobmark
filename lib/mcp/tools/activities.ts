@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import {
   listActivities,
@@ -9,11 +8,7 @@ import {
   deleteActivity,
 } from '@/lib/jobmark/activities';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-  McpNotFoundError,
-  McpVaultLockedError,
-} from '../errors';
+import { McpValidationError, McpNotFoundError, McpVaultLockedError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
@@ -21,8 +16,14 @@ const activityListSchema = z.object({
   limit: z.number().int().min(1).max(100).optional(),
   cursor: z.string().optional(),
   projectId: z.string().optional(),
-  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateFrom: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  dateTo: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   search: z.string().max(200).optional(),
 });
 
@@ -37,7 +38,10 @@ const activityCreateSchema = z.object({
 const activityUpdateSchema = z.object({
   activityId: z.string(),
   content: z.string().min(1).max(5000).optional(),
-  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  logDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   projectId: z.string().optional().nullable(),
 });
 
@@ -100,6 +104,10 @@ export const activitiesListTool = {
     const data = await listActivities(actor, {
       limit: getLimit('activities', result.data.limit),
       cursor: result.data.cursor,
+      projectId: result.data.projectId,
+      dateFrom: result.data.dateFrom,
+      dateTo: result.data.dateTo,
+      search: result.data.search,
     });
     return createStructuredResult(data, `Found ${data.activities.length} activities`);
   },
@@ -179,7 +187,12 @@ export const activitiesCreateTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -226,7 +239,11 @@ export const activitiesUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -267,7 +284,11 @@ export const activitiesDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

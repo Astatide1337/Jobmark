@@ -102,7 +102,7 @@ Three questions:
 
 Target 4/5. Consistency wins.
 
-## 10-minute version for crazy weeks
+## 10-minute version for busy weeks
 
 If your week is packed, do only:
 

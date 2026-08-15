@@ -131,4 +131,4 @@ At this point, you're not writing from scratch. You're editing a record you alre
 3. Pick one gap to close next week.
 4. Draft one sentence for review writing.
 
-Do this for 8-12 weeks. Your promotion case stops sounding like a plea. It sounds like a decision.
+Do this consistently for several weeks. Your promotion case becomes easier to discuss because it is grounded in a clear record.

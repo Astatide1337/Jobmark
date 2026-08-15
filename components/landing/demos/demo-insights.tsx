@@ -47,7 +47,7 @@ export function DemoInsights() {
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Insights</h2>
-          <p className="text-muted-foreground">Discover trends in your productivity.</p>
+          <p className="text-muted-foreground">See where your work is going.</p>
         </div>
 
         {/* Summary Cards */}
@@ -91,13 +91,13 @@ function generateMockHeatmapData() {
   const random = makePrng(0xdeadbeef);
 
   const rawData = [];
-  const today = new Date();
+  const today = new Date('2026-08-14T12:00:00.000Z');
   for (let i = 364; i >= 0; i--) {
     const date = new Date(today);
-    date.setDate(date.getDate() - i);
+    date.setUTCDate(date.getUTCDate() - i);
     const dateStr = date.toISOString().split('T')[0];
 
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const isWeekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
     let count = 0;
     if (random() > 0.4) {
       count = Math.floor(random() * 5);
@@ -107,7 +107,7 @@ function generateMockHeatmapData() {
     rawData.push({
       date: dateStr,
       count,
-      dayOfWeek: date.getDay(),
+      dayOfWeek: date.getUTCDay(),
     });
   }
 
@@ -136,11 +136,11 @@ function generateMockHeatmapData() {
   heatmapGrid.forEach((week, weekIndex) => {
     const validDays = week.filter(d => d.date);
     if (validDays.length > 0) {
-      const firstDay = new Date(validDays[0].date);
-      const month = firstDay.getMonth();
+      const firstDay = new Date(`${validDays[0].date}T12:00:00.000Z`);
+      const month = firstDay.getUTCMonth();
       if (month !== lastMonth) {
         monthLabels.push({
-          month: firstDay.toLocaleDateString('en-US', { month: 'short' }),
+          month: firstDay.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
           weekIndex,
         });
         lastMonth = month;

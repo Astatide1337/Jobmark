@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getAllArticles } from '@/lib/articles';
 
 function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.app';
+  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

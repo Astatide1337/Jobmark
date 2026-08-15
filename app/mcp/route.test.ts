@@ -316,4 +316,47 @@ describe('MCP modern discovery and tool listing', () => {
       error: { code: -32004, data: { code: 'NOT_FOUND', resource: 'Project' } },
     });
   });
+
+  it('does not return raw internal errors to MCP clients', async () => {
+    mocks.validateAccessToken.mockResolvedValue({
+      clientId: 'chatgpt',
+      userId: 'user-1',
+      scope: 'jobmark:read',
+    });
+    mocks.clientFindUnique.mockResolvedValue({ id: 'client-1' });
+    mocks.connectionFindFirst.mockResolvedValue({
+      id: 'connection-1',
+      userId: 'user-1',
+      scopes: ['jobmark:read'],
+      vaultUnlockedUntil: null,
+    });
+    mocks.rateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 59,
+      resetAt: Date.now() + 60_000,
+    });
+    mocks.executeTool.mockRejectedValue(new Error('database password should never escape'));
+
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/mcp', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer test-token',
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+          'mcp-protocol-version': '2025-11-25',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 6,
+          method: 'tools/call',
+          params: { name: 'jobmark_list_projects', arguments: {} },
+        }),
+      })
+    );
+
+    const body = await response.json();
+    expect(body.error.message).toBe('Internal server error');
+    expect(JSON.stringify(body)).not.toContain('database password');
+  });
 });

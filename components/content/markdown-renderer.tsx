@@ -36,14 +36,20 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
               />
             ),
             p: ({ ...props }) => <p className="text-foreground/85" {...props} />,
-            a: ({ ...props }) => (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary decoration-primary/50 font-medium underline underline-offset-3"
-                {...props}
-              />
-            ),
+            a: ({ href, children, ...props }) => {
+              const isExternal = Boolean(href && /^(?:https?:)?\/\//i.test(href));
+              return (
+                <a
+                  href={href}
+                  target={isExternal ? '_blank' : undefined}
+                  rel={isExternal ? 'noopener noreferrer' : undefined}
+                  className="text-primary decoration-primary/50 font-medium underline underline-offset-3"
+                  {...props}
+                >
+                  {children}
+                </a>
+              );
+            },
             strong: ({ ...props }) => <strong className="text-foreground font-bold" {...props} />,
             ul: ({ ...props }) => <ul className="ml-4 list-disc space-y-2 pl-4" {...props} />,
             ol: ({ ...props }) => (

@@ -13,7 +13,7 @@ const outreachCreateSchema = z.object({
   contactId: z.string(),
   title: z.string().min(1).max(200),
   content: z.string(),
-  metadata: z.record(z.string(), z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.json()).optional().nullable(),
 });
 
 const outreachUpdateSchema = outreachCreateSchema.partial().omit({ contactId: true });
@@ -55,13 +55,15 @@ export async function listOutreach(
 ): Promise<{ outreach: OutreachPreviewDTO[]; nextCursor: string | null }> {
   assertActor(actor);
 
-  const { limit = 25, cursor } = options;
+  const { cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 25, 1), 100);
 
   const items = await prisma.outreachDraft.findMany({
     where: { userId: actor.userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: { contact: { select: { id: true, fullName: true } } },
   });
 

@@ -6,21 +6,18 @@
  * evidence-based briefs and manage report history without routing content
  * through a separate model service.
  *
- * Technical Implementation:
- * - `streamReport`: Keeps the existing streaming response contract while
- *   returning a deterministic brief built from the user's activity record.
- * - `improveText`: Applies small, deterministic edits when no assistant is
- *   connected. A connected MCP assistant can produce richer edits on demand.
+ * Implementation:
+ * - `streamReport`: Returns a deterministic brief built from the user's
+ *   activity record. The name remains for compatibility with the review UI.
  */
 'use server';
 
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
-import { createStreamableValue } from '@ai-sdk/rsc';
 import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
-import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { buildReviewBrief } from '@/lib/deterministic-drafts';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -142,29 +139,9 @@ export async function streamReport(config: ReportConfig) {
     })),
   });
 
-  // Keep the stream contract used by the existing client while making the
-  // generation itself deterministic and provider-independent.
-  const stream = createStreamableValue('');
-  stream.update(content);
-  stream.done();
-
-  return { output: stream.value };
-}
-
-// Copilot: Improve selected text
-export async function improveText(selection: string, instruction: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
-  if (
-    !selection.trim() ||
-    selection.length > 20_000 ||
-    !instruction.trim() ||
-    instruction.length > 4_000
-  ) {
-    throw new Error('Invalid edit request');
-  }
-
-  return deterministicRewrite(selection, instruction);
+  // The draft is deterministic and complete; returning the text directly
+  // avoids a fake streaming layer and keeps this path provider-independent.
+  return { output: content };
 }
 
 // Check if activities exist for the given config

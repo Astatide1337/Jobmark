@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Claude, Gemini, OpenAI } from '@lobehub/icons';
 import { ArrowRight, ChevronDown, Link2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,21 +67,20 @@ export function McpDraftActions({
   connectedMcpProviders,
   onDraftWithProvider,
   eyebrow = 'Choose where to draft',
-  title = 'Use a connected assistant',
-  description = 'Choose an assistant to give your Jobmark draft another pass.',
+  title = 'Use a connected AI app',
+  description = 'Choose an AI app to give your Jobmark draft another pass.',
   providerAction = 'Draft with',
 }: McpDraftActionsProps) {
   return (
     <div className="border-border/50 bg-card/30 rounded-2xl border p-5">
       <div className="flex flex-col gap-1">
-        <p className="text-primary text-xs font-semibold tracking-widest uppercase">
-          {eyebrow}
-        </p>
+        <p className="text-primary text-xs font-semibold tracking-widest uppercase">{eyebrow}</p>
         <h3 className="text-foreground font-semibold">{title}</h3>
         <p className="text-muted-foreground text-sm">{description}</p>
         {connectedMcpProviders.some(provider => provider.key === 'gemini') && (
-          <p className="text-muted-foreground/80 mt-1 text-xs">
-            Gemini opens with the instructions copied. Paste them into the message box to begin.
+          <p className="text-muted-foreground mt-1 text-xs">
+            Gemini opens separately. Your instructions are copied so you can paste them into the
+            message box.
           </p>
         )}
       </div>
@@ -108,7 +108,7 @@ export function McpDraftActions({
         <Button asChild variant="outline" className="mt-4 h-11 rounded-xl px-4">
           <Link href="/settings/connections">
             <Link2 className="mr-2 h-4 w-4" />
-            Set up an MCP Connector
+            Connect an AI app
           </Link>
         </Button>
       )}
@@ -119,6 +119,7 @@ export function McpDraftActions({
 interface McpProviderMenuProps {
   connectedMcpProviders: ConnectedMcpProvider[];
   onOpenProvider: (provider: ConnectedMcpProvider) => void;
+  className?: string;
 }
 
 /**
@@ -126,17 +127,24 @@ interface McpProviderMenuProps {
  * direct action; multiple connections get a menu, so “Open in…” is never
  * ambiguous.
  */
-export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpProviderMenuProps) {
+export function McpProviderMenu({
+  connectedMcpProviders,
+  onOpenProvider,
+  className,
+}: McpProviderMenuProps) {
   if (connectedMcpProviders.length === 0) {
     return (
       <Button
         asChild
         variant="outline"
-        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+        className={cn(
+          'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+          className
+        )}
       >
         <Link href="/settings/connections">
           <Link2 className="mr-2 h-4 w-4" />
-          Set up an MCP Connector
+          Connect an AI app
         </Link>
       </Button>
     );
@@ -149,7 +157,10 @@ export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpPr
       <Button
         type="button"
         variant="outline"
-        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+        className={cn(
+          'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+          className
+        )}
         onClick={() => onOpenProvider(provider)}
       >
         <ProviderIcon providerKey={provider.key} />
@@ -167,7 +178,10 @@ export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpPr
         <Button
           type="button"
           variant="outline"
-          className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+          className={cn(
+            'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+            className
+          )}
         >
           <ArrowRight className="mr-2 h-4 w-4" />
           Choose where to continue

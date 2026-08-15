@@ -452,14 +452,22 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
   const steps = patternDef.steps;
   const [stepIndex, setStepIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const phaseKey = `${pattern}-${stepIndex}`;
+  const [previousPhaseKey, setPreviousPhaseKey] = useState(phaseKey);
+
+  if (phaseKey !== previousPhaseKey) {
+    setPreviousPhaseKey(phaseKey);
+    setVisible(true);
+  }
 
   useEffect(() => {
     const currentStep = steps[stepIndex];
-
-    const fadeOut = setTimeout(() => setVisible(false), (currentStep.duration - 0.8) * 1000);
+    const fadeOut = setTimeout(
+      () => setVisible(false),
+      Math.max(0, (currentStep.duration - 0.8) * 1000)
+    );
 
     const advance = setTimeout(() => {
-      setVisible(true);
       setStepIndex(prev => (prev + 1) % steps.length);
     }, currentStep.duration * 1000);
 
@@ -470,12 +478,13 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
   }, [stepIndex, steps]);
 
   return (
-    <div className="pointer-events-none origin-center scale-[0.4] opacity-80">
+    <div className="pointer-events-none w-full opacity-80">
       <BreathingDisplay
         pattern={pattern}
         stepIndex={stepIndex}
         cycleIndex={0}
         totalCycles={1}
+        size="settings"
         visible={visible}
       />
     </div>
@@ -573,10 +582,8 @@ function BreathingCarousel({
               </div>
 
               {/* Visual Preview */}
-              <div className="relative mt-2 flex h-32 w-full max-w-[200px] items-center justify-center overflow-hidden rounded-2xl bg-black/60 shadow-inner">
-                <div className="scale-[0.5]">
-                  <BreathingPreview pattern={block.config.pattern} />
-                </div>
+              <div className="relative mt-2 flex h-36 w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl bg-black/60 shadow-inner">
+                <BreathingPreview pattern={block.config.pattern} />
                 <div className="absolute inset-0 z-10" />
               </div>
             </motion.div>

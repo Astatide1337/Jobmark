@@ -22,6 +22,10 @@ import { UIProvider, SmoothScrollProvider } from '@/components/providers/ui-prov
 import { auth } from '@/lib/auth';
 import './globals.css';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
+const productDescription =
+  'Jobmark gives you a simple place to record your work while it is fresh, then find it when reviews, updates, and next steps matter.';
+
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
@@ -40,10 +44,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.app'),
-  title: 'Jobmark - Build Your Career Record',
-  description:
-    'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+  metadataBase: new URL(siteUrl),
+  title: 'Jobmark - Keep your work on record',
+  description: productDescription,
   keywords: [
     'career record',
     'work evidence',
@@ -53,10 +56,9 @@ export const metadata: Metadata = {
     'impact tracking',
   ],
   openGraph: {
-    title: 'Jobmark - Build Your Career Record',
-    description:
-      'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
-    url: 'https://jobmark.app',
+    title: 'Jobmark - Keep your work on record',
+    description: productDescription,
+    url: siteUrl,
     siteName: 'Jobmark',
     type: 'website',
     images: [
@@ -70,9 +72,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jobmark - Build Your Career Record',
-    description:
-      'Jobmark is a career OS for documenting work, building evidence of impact, and turning it into reviews, updates, and promotion-ready summaries.',
+    title: 'Jobmark - Keep your work on record',
+    description: productDescription,
     images: ['/opengraph-image.png'],
   },
 };
@@ -85,9 +86,9 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark overflow-x-clip" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased`}
+        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} overflow-x-clip font-sans antialiased`}
       >
         <SettingsProvider isAuthenticated={Boolean(session?.user?.id)}>
           <UIProvider>
