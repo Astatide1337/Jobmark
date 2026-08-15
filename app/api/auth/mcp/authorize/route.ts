@@ -18,6 +18,7 @@ import {
   verifyAuthorizationTransaction,
 } from '@/lib/mcp/auth/authorization-transaction';
 import { isValidOAuthRedirectUri } from '@/lib/mcp/auth/redirect-uri';
+import { getMcpPublicBaseUrl } from '@/lib/mcp/auth/public-origin';
 
 function isOAuthScope(scope: string): scope is OAuthScope {
   return OAuthScopes.includes(scope as OAuthScope);
@@ -86,10 +87,9 @@ function parseAuthorizationQuery(searchParams: URLSearchParams): AuthorizationQu
 }
 
 function buildSignInRedirect(request: NextRequest): NextResponse {
-  // Keep the OAuth transaction on the host that received it. Preview and
-  // production have different Auth.js/Google credentials, so using a global
-  // NEXTAUTH_URL here can send a preview login through production.
-  const authBaseUrl = request.nextUrl.origin;
+  // MCP clients must be sent to the public host. The request URL can be the
+  // pod address (0.0.0.0:3000) when traffic arrives through a tunnel.
+  const authBaseUrl = getMcpPublicBaseUrl(request);
   const callbackUrl = new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, authBaseUrl);
   const signInUrl = new URL('/api/auth/signin', authBaseUrl);
   signInUrl.searchParams.set('callbackUrl', callbackUrl.toString());
@@ -103,7 +103,7 @@ async function buildConsentRedirect(
   clientId: string,
   scope: string
 ): Promise<NextResponse> {
-  const consentUrl = new URL('/mcp/consent', request.url);
+  const consentUrl = new URL('/mcp/consent', getMcpPublicBaseUrl(request));
   consentUrl.searchParams.set('client_id', clientId);
   consentUrl.searchParams.set('redirect_uri', params.redirectUri);
   consentUrl.searchParams.set('scope', scope);
@@ -215,7 +215,7 @@ function authorizationErrorRedirect(
   error: 'invalid_request' | 'unauthorized_client' | 'invalid_scope',
   state: string | null
 ): NextResponse {
-  const url = new URL('/mcp/authorize', request.url);
+  const url = new URL('/mcp/authorize', getMcpPublicBaseUrl(request));
   url.searchParams.set('error', error);
   if (state) url.searchParams.set('state', state);
   return NextResponse.redirect(url);
