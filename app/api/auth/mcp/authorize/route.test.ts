@@ -96,33 +96,44 @@ describe('MCP authorization consent callback', () => {
   });
 
   it('shows consent again when the client explicitly requests it', async () => {
-    const requestUrl = new URL('https://jobmark.example.com/api/auth/mcp/authorize');
-    requestUrl.search = new URLSearchParams({
-      response_type: 'code',
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      scope: 'jobmark:read offline_access',
-      state: 'test-state',
-      code_challenge: 'A'.repeat(43),
-      code_challenge_method: 'S256',
-      prompt: 'consent',
-    }).toString();
+    const previousPublicBaseUrl = process.env.MCP_PUBLIC_BASE_URL;
+    process.env.MCP_PUBLIC_BASE_URL = 'https://jobmark-preview.example';
 
-    const response = await GET(new NextRequest(requestUrl));
-    const location = new URL(response.headers.get('location') ?? '');
+    try {
+      const requestUrl = new URL('https://0.0.0.0:3000/api/auth/mcp/authorize');
+      requestUrl.search = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: 'jobmark:read offline_access',
+        state: 'test-state',
+        code_challenge: 'A'.repeat(43),
+        code_challenge_method: 'S256',
+        prompt: 'consent',
+      }).toString();
 
-    expect(response.status).toBe(307);
-    expect(location.pathname).toBe('/mcp/consent');
-    expect(location.searchParams.has('client_name')).toBe(false);
+      const response = await GET(new NextRequest(requestUrl));
+      const location = new URL(response.headers.get('location') ?? '');
+
+      expect(response.status).toBe(307);
+      expect(location.origin).toBe('https://jobmark-preview.example');
+      expect(location.pathname).toBe('/mcp/consent');
+      expect(location.searchParams.has('client_name')).toBe(false);
+    } finally {
+      if (previousPublicBaseUrl === undefined) delete process.env.MCP_PUBLIC_BASE_URL;
+      else process.env.MCP_PUBLIC_BASE_URL = previousPublicBaseUrl;
+    }
   });
 
-  it('keeps an unauthenticated preview login on the current host', async () => {
+  it('uses the public MCP host for an unauthenticated login behind a tunnel', async () => {
     const previousNextAuthUrl = process.env.NEXTAUTH_URL;
+    const previousPublicBaseUrl = process.env.MCP_PUBLIC_BASE_URL;
     process.env.NEXTAUTH_URL = 'https://jobmark.app';
+    process.env.MCP_PUBLIC_BASE_URL = 'https://jobmark-preview.example';
     mocks.auth.mockResolvedValue(null);
 
     try {
-      const requestUrl = new URL('https://preview.jobmark.example/api/auth/mcp/authorize');
+      const requestUrl = new URL('https://0.0.0.0:3000/api/auth/mcp/authorize');
       requestUrl.search = new URLSearchParams({
         response_type: 'code',
         client_id: clientId,
@@ -136,37 +147,48 @@ describe('MCP authorization consent callback', () => {
       const response = await GET(new NextRequest(requestUrl));
       const location = new URL(response.headers.get('location') ?? '');
 
-      expect(location.origin).toBe('https://preview.jobmark.example');
+      expect(location.origin).toBe('https://jobmark-preview.example');
       expect(location.pathname).toBe('/api/auth/signin');
       expect(new URL(location.searchParams.get('callbackUrl') ?? '').origin).toBe(
-        'https://preview.jobmark.example'
+        'https://jobmark-preview.example'
       );
     } finally {
       if (previousNextAuthUrl === undefined) delete process.env.NEXTAUTH_URL;
       else process.env.NEXTAUTH_URL = previousNextAuthUrl;
+      if (previousPublicBaseUrl === undefined) delete process.env.MCP_PUBLIC_BASE_URL;
+      else process.env.MCP_PUBLIC_BASE_URL = previousPublicBaseUrl;
     }
   });
 
   it('encodes state when redirecting malformed requests to the Jobmark error page', async () => {
-    const requestUrl = new URL('https://jobmark.example.com/api/auth/mcp/authorize');
-    requestUrl.search = new URLSearchParams({
-      response_type: 'token',
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      scope: 'jobmark:read offline_access',
-      state: 'state with & separators',
-      code_challenge: 'A'.repeat(43),
-      code_challenge_method: 'S256',
-    }).toString();
+    const previousPublicBaseUrl = process.env.MCP_PUBLIC_BASE_URL;
+    process.env.MCP_PUBLIC_BASE_URL = 'https://jobmark.example';
 
-    const response = await GET(new NextRequest(requestUrl));
-    const location = new URL(response.headers.get('location') ?? '');
+    try {
+      const requestUrl = new URL('https://0.0.0.0:3000/api/auth/mcp/authorize');
+      requestUrl.search = new URLSearchParams({
+        response_type: 'token',
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: 'jobmark:read offline_access',
+        state: 'state with & separators',
+        code_challenge: 'A'.repeat(43),
+        code_challenge_method: 'S256',
+      }).toString();
 
-    expect(response.status).toBe(307);
-    expect(location.pathname).toBe('/mcp/authorize');
-    expect(location.searchParams.get('error')).toBe('invalid_request');
-    expect(location.searchParams.get('state')).toBe('state with & separators');
-    expect(location.searchParams.has('separators')).toBe(false);
+      const response = await GET(new NextRequest(requestUrl));
+      const location = new URL(response.headers.get('location') ?? '');
+
+      expect(response.status).toBe(307);
+      expect(location.origin).toBe('https://jobmark.example');
+      expect(location.pathname).toBe('/mcp/authorize');
+      expect(location.searchParams.get('error')).toBe('invalid_request');
+      expect(location.searchParams.get('state')).toBe('state with & separators');
+      expect(location.searchParams.has('separators')).toBe(false);
+    } finally {
+      if (previousPublicBaseUrl === undefined) delete process.env.MCP_PUBLIC_BASE_URL;
+      else process.env.MCP_PUBLIC_BASE_URL = previousPublicBaseUrl;
+    }
   });
 
   it('redirects an approved connection as GET and preserves selected permissions', async () => {
