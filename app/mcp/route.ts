@@ -481,9 +481,19 @@ async function executeMcpMethod({
       );
     }
     case 'resources/list':
-      return { resources: [], nextCursor: undefined };
+      return {
+        resources: [],
+        nextCursor: undefined,
+        ttlMs: 300_000,
+        cacheScope: 'public',
+      };
     case 'prompts/list':
-      return { prompts: [], nextCursor: undefined };
+      return {
+        prompts: [],
+        nextCursor: undefined,
+        ttlMs: 300_000,
+        cacheScope: 'public',
+      };
     default:
       throw { code: -32601, message: 'Method not found', data: { code: 'METHOD_NOT_FOUND' } };
   }
