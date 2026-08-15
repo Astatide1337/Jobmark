@@ -34,7 +34,7 @@ export function SectionDivider({
     <div
       ref={ref}
       className={cn(
-        'relative flex w-full items-center justify-center px-6 py-8 md:py-12',
+        'pointer-events-none relative flex w-full items-center justify-center px-6 py-8 md:py-12',
         className
       )}
     >

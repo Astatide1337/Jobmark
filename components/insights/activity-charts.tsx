@@ -28,26 +28,35 @@ import {
   Tooltip as RechartsTooltip,
 } from 'recharts';
 import type { ProjectDistribution } from '@/app/actions/insights';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ActivityChartsProps {
   weeklyTrend: number[];
   projectDistribution: ProjectDistribution[];
+  compact?: boolean;
 }
 
 // Consistent card styling
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
-const subscribeToMount = () => () => {};
-const getServerMountState = () => false;
-const getClientMountState = () => true;
 
 function useMounted() {
-  return useSyncExternalStore(subscribeToMount, getClientMountState, getServerMountState);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 1000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return mounted;
 }
 
-export function ActivityCharts({ weeklyTrend, projectDistribution }: ActivityChartsProps) {
+export function ActivityCharts({
+  weeklyTrend,
+  projectDistribution,
+  compact = false,
+}: ActivityChartsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className={compact ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 gap-4 lg:grid-cols-2'}>
       <WeeklyTrendChart data={weeklyTrend} />
       <ProjectDistributionChart data={projectDistribution} />
     </div>
@@ -116,7 +125,13 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
             </div>
           )}
           {hasData && mounted && (
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={0}
+              minHeight={0}
+              initialDimension={{ width: 1, height: 1 }}
+            >
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -250,7 +265,13 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
           <div className="relative z-0 shrink-0">
             <div className="relative h-40 w-40">
               {mounted && (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                  minWidth={0}
+                  minHeight={0}
+                  initialDimension={{ width: 1, height: 1 }}
+                >
                   <PieChart>
                     <Pie
                       data={chartData}

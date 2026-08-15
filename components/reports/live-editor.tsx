@@ -1,69 +1,110 @@
 /**
- * Live Editor
+ * Saved-draft editor.
  *
- * Why: Standard textareas are static. When a caller supplies an improvement
- * handler (for example, a connected AI-app flow), users can highlight
- * text and request an edit. Without a handler the editor stays fully manual.
- *
- * Technical Implementation:
- * - Mirroring: Overlays a transparent `textarea` on top of a "Backdrop"
- *   div. This allows us to use standard browser selection behavior while
- *   visually rendering high-quality highlights and floating menus.
- * - Absolute Positioning: The floating toolbar calculates its position
- *   relative to the viewport selection, ensuring it always appears
- *   right where the user is working.
+ * The editor stays manual by default. Selecting text exposes a few small,
+ * predictable formatting actions that run locally; it does not pretend to be
+ * an AI editor or send the selected text to a model service. Richer writing
+ * help is available through the connected AI-app actions beside the editor.
  */
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
-import { Loader2, Sparkles, X, ArrowUp } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { List, ListChecks, ListOrdered, Loader2, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useUI } from '@/components/providers/ui-provider';
+import { applyQuickEdit, type QuickEditAction } from '@/lib/deterministic-drafts';
 
 interface LiveEditorProps {
   value: string;
   onChange: (val: string) => void;
   isStreaming: boolean;
   className?: string;
-  onImprove?: (selection: string, instruction: string) => Promise<string>;
   placeholder?: string;
+  enableQuickEdit?: boolean;
 }
+
+const quickEditActions: Array<{
+  action: QuickEditAction;
+  label: string;
+  icon: typeof List;
+}> = [
+  { action: 'bullets', label: 'Bullets', icon: List },
+  { action: 'numbered', label: 'Numbered list', icon: ListOrdered },
+  { action: 'checklist', label: 'Checklist', icon: ListChecks },
+];
 
 export function LiveEditor({
   value,
   onChange,
   isStreaming,
   className,
-  onImprove,
   placeholder,
+  enableQuickEdit = false,
 }: LiveEditorProps) {
   const { uiV2 } = useUI();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightSpanRef = useRef<HTMLSpanElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const [selection, setSelection] = useState<{ start: number; end: number; text: string } | null>(
     null
   );
-  const [instruction, setInstruction] = useState('');
-  const [isImproving, setIsImproving] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [editHistory, setEditHistory] = useState<string[]>([]);
 
-  // Handle Selection
+  const closeQuickEditMenu = (restoreFocus = false, caretPosition?: number) => {
+    setSelection(null);
+    setMenuPosition(null);
+    if (restoreFocus) {
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        textarea.focus();
+        if (caretPosition !== undefined) textarea.setSelectionRange(caretPosition, caretPosition);
+      });
+    }
+  };
+
+  const updateMenuPos = () => {
+    if (highlightSpanRef.current) {
+      const spanRect = highlightSpanRef.current.getBoundingClientRect();
+      const menuRect = menuRef.current?.getBoundingClientRect();
+      const menuWidth = menuRect?.width ?? 360;
+      const menuHeight = menuRect?.height ?? 48;
+      const selectionCenter = spanRect.left + spanRect.width / 2;
+      const minLeft = menuWidth / 2 + 8;
+      const maxLeft = Math.max(minLeft, window.innerWidth - menuWidth / 2 - 8);
+      const belowTop = spanRect.bottom + 8;
+      const aboveTop = spanRect.top - menuHeight - 8;
+      const preferredTop =
+        belowTop + menuHeight <= window.innerHeight - 8 || aboveTop < 8 ? belowTop : aboveTop;
+      const top = Math.max(8, Math.min(preferredTop, window.innerHeight - menuHeight - 8));
+      const nextPosition = {
+        top,
+        left: Math.max(minLeft, Math.min(maxLeft, selectionCenter)),
+      };
+      setMenuPosition(previous =>
+        previous && previous.top === nextPosition.top && previous.left === nextPosition.left
+          ? previous
+          : nextPosition
+      );
+    }
+  };
+
   const handleSelect = () => {
+    if (!enableQuickEdit) return;
     const textarea = textareaRef.current;
     if (!textarea) return;
 
     if (textarea.selectionStart !== textarea.selectionEnd) {
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const text = value.substring(start, end);
-
-      setSelection({ start, end, text });
+      setSelection({ start, end, text: value.substring(start, end) });
       requestAnimationFrame(updateMenuPos);
     } else {
       setSelection(null);
@@ -71,61 +112,51 @@ export function LiveEditor({
     }
   };
 
-  const updateMenuPos = () => {
-    if (highlightSpanRef.current && containerRef.current) {
-      const spanRect = highlightSpanRef.current.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      // Calculate top relative to the viewport first, then adjust for container
-      // However, since menu is inside AnimatePresence -> likely fixed or absolute relative to container
-      // If we use fixed positioning for the menu (Portal), we use spanRect directly.
-      // If we use absolute positioning inside the container, we need relative coords.
-
-      const top = spanRect.bottom - containerRect.top;
-      const left = spanRect.left - containerRect.left + spanRect.width / 2;
-
-      setMenuPosition({ top, left });
-    }
-  };
-
-  // Re-calculate position on resize or scroll
   useEffect(() => {
     const handleScroll = () => updateMenuPos();
     const scrollContainer = scrollContainerRef.current;
     window.addEventListener('resize', updateMenuPos);
     scrollContainer?.addEventListener('scroll', handleScroll);
+    if (selection) requestAnimationFrame(updateMenuPos);
 
     return () => {
       window.removeEventListener('resize', updateMenuPos);
       scrollContainer?.removeEventListener('scroll', handleScroll);
     };
-  }, [selection]);
+  }, [selection, menuPosition]);
 
-  const handleImprove = async () => {
-    if (!selection || !instruction || !onImprove) return;
-    setIsImproving(true);
-
-    try {
-      const improved = await onImprove(selection.text, instruction);
-      if (improved) {
-        const before = value.substring(0, selection.start);
-        const after = value.substring(selection.end);
-
-        const newValue = before + improved + after;
-        onChange(newValue);
-
-        setSelection(null);
-        setInstruction('');
-        setMenuPosition(null);
-      }
-    } catch (error) {
-      console.error('Improvement failed', error);
-    } finally {
-      setIsImproving(false);
-    }
+  const handleTextChange = (nextValue: string) => {
+    // A manual edit makes an older quick-edit undo unsafe, so only keep an
+    // undo point while the user is working from the same editor state.
+    setEditHistory([]);
+    setSelection(null);
+    setMenuPosition(null);
+    onChange(nextValue);
   };
 
-  // Construct the mirrored content
+  const handleQuickEdit = (action: QuickEditAction) => {
+    if (!selection || isStreaming) return;
+    if (value.slice(selection.start, selection.end) !== selection.text) {
+      closeQuickEditMenu(true);
+      return;
+    }
+
+    const editedText = applyQuickEdit(selection.text, action);
+    if (!editedText || editedText === selection.text) return;
+
+    setEditHistory(history => [...history, value]);
+    onChange(value.substring(0, selection.start) + editedText + value.substring(selection.end));
+    closeQuickEditMenu(true, selection.start + editedText.length);
+  };
+
+  const handleUndo = () => {
+    if (editHistory.length === 0) return;
+    const previousValue = editHistory[editHistory.length - 1];
+    setEditHistory(history => history.slice(0, -1));
+    onChange(previousValue);
+    closeQuickEditMenu(true);
+  };
+
   const { before, selected, after } = useMemo(() => {
     if (!selection) return { before: value, selected: '', after: '' };
     return {
@@ -151,9 +182,7 @@ export function LiveEditor({
           uiV2 && 'overflow-visible'
         )}
       >
-        {/* Wrapper to ensure height matches content */}
         <div className="relative min-h-full">
-          {/* 1. Backdrop Highlight Layer (Mirrors Textarea) - DRIVES HEIGHT */}
           <div
             aria-hidden="true"
             className="pointer-events-none relative p-6 break-words whitespace-pre-wrap text-transparent"
@@ -172,18 +201,28 @@ export function LiveEditor({
             ) : (
               value
             )}
-            {/* Ensure last line break renders height */}
             <br />
           </div>
 
-          {/* 2. Actual Textarea - ABSOLUTE OVERLAY MATCHING PARENT */}
           <textarea
             ref={textareaRef}
             value={value}
-            onChange={e => onChange(e.target.value)}
-            onSelect={handleSelect}
+            onChange={e => handleTextChange(e.target.value)}
+            onSelect={enableQuickEdit ? handleSelect : undefined}
+            // Some browsers do not dispatch React's normalized `select` event
+            // consistently for a controlled textarea. The end-of-selection
+            // events keep the formatting menu reliable for both mouse and
+            // keyboard selection without changing the editor's value.
+            onMouseUp={enableQuickEdit ? handleSelect : undefined}
+            onKeyUp={enableQuickEdit ? handleSelect : undefined}
+            onKeyDown={e => {
+              if (e.key === 'Escape' && selection) {
+                e.preventDefault();
+                closeQuickEditMenu();
+              }
+            }}
             className="text-foreground absolute inset-0 z-10 h-full w-full resize-none overflow-hidden bg-transparent p-6 font-sans text-base leading-relaxed break-words focus:outline-none"
-            placeholder={placeholder ?? 'Content will stream here...'}
+            placeholder={placeholder ?? 'Content will appear here...'}
             spellCheck="false"
           />
         </div>
@@ -192,79 +231,83 @@ export function LiveEditor({
       {isStreaming && (
         <div className="pointer-events-none absolute right-4 bottom-4 z-20">
           <span className="text-muted-foreground flex animate-pulse items-center gap-2 text-xs">
-            <Loader2 className="h-3 w-3 animate-spin" /> Generating...
+            <Loader2 className="h-3 w-3 animate-spin" /> Preparing…
           </span>
         </div>
       )}
 
-      {/* Floating Copilot Toolbar */}
-      <AnimatePresence>
-        {onImprove && selection && menuPosition && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 16, scale: 1 }} // 16px below the selection
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            style={{
-              top: menuPosition.top,
-              left: menuPosition.left,
-              transform: 'translateX(-50%)',
-            }}
-            className="absolute z-50 flex origin-top flex-col items-center"
+      {editHistory.length > 0 && !isStreaming && (
+        <div className="bg-background/90 border-border/50 text-muted-foreground absolute right-4 bottom-4 z-20 flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs shadow-sm backdrop-blur-sm">
+          <span>Quick edit applied</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="text-foreground hover:text-primary h-7 px-2"
+            onClick={handleUndo}
           >
-            {/* Arrow pointer */}
-            <div className="border-b-popover absolute -top-[6px] left-1/2 h-0 w-0 -translate-x-1/2 border-r-[6px] border-b-[6px] border-l-[6px] border-r-transparent border-l-transparent drop-shadow-sm" />
+            <Undo2 className="mr-1 h-3.5 w-3.5" />
+            Undo
+          </Button>
+        </div>
+      )}
 
-            <div className="bg-popover border-border flex w-[380px] items-center gap-3 rounded-xl border p-2 shadow-xl backdrop-blur-md">
-              <div className="bg-primary/10 text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
-                <Sparkles className="h-4 w-4" />
-              </div>
-
-              <Input
-                value={instruction}
-                onChange={e => setInstruction(e.target.value)}
-                placeholder="Ask an AI app to edit this..."
-                className="h-9 border-none bg-transparent px-2 text-sm shadow-none focus-visible:ring-0"
-                onKeyDown={e => {
-                  if (e.key === 'Enter') handleImprove();
-                }}
-                autoFocus
-              />
-
-              <div className="border-border/50 flex items-center gap-1 border-l pr-1 pl-1">
+      {enableQuickEdit && selection && menuPosition && typeof document !== 'undefined'
+        ? createPortal(
+            <motion.div
+              key="quick-edit-menu"
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              style={{
+                position: 'fixed',
+                top: menuPosition.top,
+                left: menuPosition.left,
+                translate: '-50% 0',
+              }}
+              className="fixed z-[100] flex origin-top flex-col items-center"
+            >
+              <div className="border-b-popover absolute -top-[6px] left-1/2 h-0 w-0 -translate-x-1/2 border-r-[6px] border-b-[6px] border-l-[6px] border-r-transparent border-l-transparent drop-shadow-sm" />
+              <div
+                ref={menuRef}
+                className="bg-popover border-border flex max-w-[calc(100vw-2rem)] items-center gap-1 rounded-xl border p-1.5 shadow-xl backdrop-blur-md"
+                role="toolbar"
+                aria-label="Quick edits"
+              >
+                <span className="text-muted-foreground px-2 text-xs font-medium">Format</span>
+                {quickEditActions.map(({ action, label, icon: Icon }) => (
+                  <Button
+                    key={action}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 gap-1.5 rounded-lg px-2 text-xs"
+                    onMouseDown={event => event.preventDefault()}
+                    onClick={() => handleQuickEdit(action)}
+                    disabled={isStreaming}
+                    aria-label={`Toggle ${label.toLowerCase()} for selected text`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </Button>
+                ))}
                 <Button
+                  type="button"
                   size="icon"
                   variant="ghost"
-                  className={cn(
-                    'hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-lg transition-all active:scale-90',
-                    instruction && 'text-primary'
-                  )}
-                  onClick={handleImprove}
-                  disabled={!instruction || isImproving}
-                  aria-label="Submit text improvement"
-                >
-                  {isImproving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowUp className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted/40 h-8 w-8 rounded-lg transition-all active:scale-90"
+                  className="text-muted-foreground hover:text-foreground h-8 w-8 rounded-lg"
+                  onMouseDown={event => event.preventDefault()}
                   onClick={() => {
-                    setSelection(null);
-                    setMenuPosition(null);
+                    closeQuickEditMenu(true);
                   }}
-                  aria-label="Cancel selection"
+                  aria-label="Close quick edit menu"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

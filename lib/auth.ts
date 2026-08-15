@@ -11,11 +11,45 @@
 import 'server-only';
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
+import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/db';
 import { validateServerEnvironment } from '@/lib/env';
 
 validateServerEnvironment();
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+const DEV_USER_EMAIL = 'dev-user@jobmark.local';
+const DEV_USER_NAME = 'Demo User';
+const DEV_LOGIN_TOKEN = 'dev-login';
+
+const developmentProvider = Credentials({
+  id: 'dev',
+  name: 'Local development',
+  credentials: {
+    token: { label: 'Development token', type: 'text' },
+  },
+  async authorize(credentials) {
+    if (credentials?.token !== DEV_LOGIN_TOKEN) return null;
+
+    const user = await prisma.user.upsert({
+      where: { email: DEV_USER_EMAIL },
+      update: { name: DEV_USER_NAME },
+      create: {
+        email: DEV_USER_EMAIL,
+        name: DEV_USER_NAME,
+        emailVerified: new Date(),
+      },
+    });
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+    };
+  },
+});
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -24,13 +58,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
     }),
+    ...(isDevelopment ? [developmentProvider] : []),
   ],
   pages: {
     signIn: '/signin',
     error: '/',
   },
   session: {
-    strategy: 'database',
+    strategy: isDevelopment ? 'jwt' : 'database',
     maxAge: 30 * 24 * 60 * 60, // 30 days per ProductSpec
   },
   callbacks: {

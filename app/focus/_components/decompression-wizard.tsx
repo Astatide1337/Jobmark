@@ -135,7 +135,7 @@ export default function DecompressionWizard({ blocks }: DecompressionWizardProps
         {!isComplete ? (
           <motion.div
             key={currentIndex}
-            className="flex flex-col items-center"
+            className="flex w-full max-w-2xl flex-col items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

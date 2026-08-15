@@ -284,27 +284,114 @@ export function buildReviewBrief(options: ReviewBriefOptions): string {
   return lines.join('\n');
 }
 
-/** A small, predictable edit helper that never invents new claims. */
+/**
+ * The MCP edit tools still accept plain-language instructions, so keep this
+ * helper intentionally conservative. It never invents new claims.
+ */
 export function deterministicRewrite(text: string, instruction: string): string {
-  const normalized = text.trim();
+  const normalized = text;
   const request = instruction.toLowerCase();
   if (!normalized) return '';
 
   if (request.includes('bullet') || request.includes('list')) {
-    return normalized
-      .split(/\n+|(?<=[.!?])\s+/)
-      .map(part => part.trim())
-      .filter(Boolean)
-      .map(part => `- ${part.replace(/^[*-]\s*/, '')}`)
-      .join('\n');
-  }
-
-  if (request.includes('short') || request.includes('concise')) {
-    const sentences = normalized.split(/(?<=[.!?])\s+/).filter(Boolean);
-    return sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join(' ');
+    // Keep the MCP compatibility path aligned with the local editor: use
+    // existing line boundaries instead of guessing where sentences end.
+    // Guessing would corrupt decimals, abbreviations, URLs, or other facts.
+    const lines = normalized.split(/\r\n|\n/).filter(line => line.trim());
+    return lines.length > 0 && lines.every(isBulletLine)
+      ? normalized
+      : applyQuickEdit(normalized, 'bullets');
   }
 
   // Do not pretend to rewrite content without an AI app. Preserve the
   // source rather than inventing a claim or changing the user's meaning.
-  return normalized;
+  return normalized.trim() ? normalized : '';
+}
+
+export type QuickEditAction = 'bullets' | 'numbered' | 'checklist';
+
+/**
+ * Apply one of the small edits that Jobmark can perform locally and
+ * predictably. These are deliberately separate from the MCP edit helper so
+ * the in-app editor can offer named actions instead of pretending that a
+ * free-form instruction is an AI request.
+ */
+export function applyQuickEdit(text: string, action: QuickEditAction): string {
+  const normalized = text;
+  if (!normalized.trim()) return text;
+
+  // Keep spaces and newlines at the selection boundary intact. A selected
+  // fragment often includes the space before the next word; removing it while
+  // replacing the fragment would make the edit unexpectedly change adjacent
+  // text.
+  const leadingWhitespace = normalized.match(/^\s*/)?.[0] ?? '';
+  const trailingWhitespace = normalized.match(/\s*$/)?.[0] ?? '';
+  const coreEnd = normalized.length - trailingWhitespace.length;
+  const core = normalized.slice(leadingWhitespace.length, coreEnd);
+
+  const preserveBoundary = (editedCore: string) =>
+    leadingWhitespace + editedCore + trailingWhitespace;
+
+  // Only use existing line boundaries. Splitting on punctuation can corrupt
+  // decimals, abbreviations, URLs, and other source text.
+  const lines = core.split(/\r\n|\n/);
+  const lineBreak = normalized.includes('\r\n') ? '\r\n' : '\n';
+  const contentLines = lines.filter(line => line.trim());
+  const stripMarker = (line: string) =>
+    line.replace(
+      /^[ \t]*(?:(?:[-*•](?:[ \t]+|$))|(?:\d+[.)](?:[ \t]+|$))|(?:\[[ xX]\](?:[ \t]+|$)))+/,
+      ''
+    );
+
+  if (action === 'bullets') {
+    const removing = contentLines.length > 0 && contentLines.every(isBulletLine);
+    return preserveBoundary(
+      lines
+        .map(line => {
+          if (!line.trim()) return line;
+          const withoutMarker = stripMarker(line);
+          return removing ? withoutMarker : `- ${withoutMarker}`;
+        })
+        .join(lineBreak)
+    );
+  }
+
+  if (action === 'numbered') {
+    const removing = contentLines.length > 0 && contentLines.every(isNumberedLine);
+    let number = 0;
+    return preserveBoundary(
+      lines
+        .map(line => {
+          if (!line.trim()) return line;
+          const withoutMarker = stripMarker(line);
+          if (removing) return withoutMarker;
+          number += 1;
+          return `${number}. ${withoutMarker}`;
+        })
+        .join(lineBreak)
+    );
+  }
+
+  const removing = contentLines.length > 0 && contentLines.every(isChecklistLine);
+  return preserveBoundary(
+    lines
+      .map(line => {
+        if (!line.trim()) return line;
+        const withoutMarker = stripMarker(line);
+        return removing ? withoutMarker : `- [ ] ${withoutMarker}`;
+      })
+      .join(lineBreak)
+  );
+}
+
+function isBulletLine(line: string): boolean {
+  return /^[ \t]*[-*•](?:[ \t]+|$)/.test(line);
+}
+
+function isNumberedLine(line: string): boolean {
+  return /^[ \t]*\d+[.)](?:[ \t]+|$)/.test(line);
+}
+
+function isChecklistLine(line: string): boolean {
+  return /^[ \t]*[-*•](?:[ \t]+|$)\[[ xX]\](?:[ \t]+|$)/.test(line);
 }

@@ -47,6 +47,7 @@ export function DemoReports() {
           initialReports={reports}
           onUpdate={async () => {}}
           onDelete={async () => {}}
+          displayTimeZone="UTC"
         />
       </div>
     </DashboardFrame>

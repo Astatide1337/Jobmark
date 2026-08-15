@@ -18,15 +18,16 @@ import type { InsightsData } from '@/app/actions/insights';
 
 interface InsightsSummaryProps {
   data: InsightsData;
+  compact?: boolean;
 }
 
 // Consistent card styling applied globally
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-md';
 
-export function InsightsSummary({ data }: InsightsSummaryProps) {
+export function InsightsSummary({ data, compact = false }: InsightsSummaryProps) {
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className={cn('grid grid-cols-2 gap-4', !compact && 'lg:grid-cols-4')}>
         <MetricCard
           icon={FileText}
           label="Entries"

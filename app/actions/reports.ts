@@ -9,7 +9,6 @@
  * Implementation:
  * - `streamReport`: Returns a deterministic brief built from the user's
  *   activity record. The name remains for compatibility with the review UI.
- * - `improveText`: Applies small, deterministic edits locally.
  */
 'use server';
 
@@ -18,7 +17,7 @@ import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
-import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { buildReviewBrief } from '@/lib/deterministic-drafts';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -143,22 +142,6 @@ export async function streamReport(config: ReportConfig) {
   // The draft is deterministic and complete; returning the text directly
   // avoids a fake streaming layer and keeps this path provider-independent.
   return { output: content };
-}
-
-// Copilot: Improve selected text
-export async function improveText(selection: string, instruction: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
-  if (
-    !selection.trim() ||
-    selection.length > 20_000 ||
-    !instruction.trim() ||
-    instruction.length > 4_000
-  ) {
-    throw new Error('Invalid edit request');
-  }
-
-  return deterministicRewrite(selection, instruction);
 }
 
 // Check if activities exist for the given config

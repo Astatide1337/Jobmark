@@ -30,6 +30,7 @@ interface DashboardHeaderProps {
   showDate?: boolean;
   title?: string;
   onMenuClick?: () => void;
+  demoMode?: boolean;
 }
 
 export function DashboardHeader({
@@ -38,6 +39,7 @@ export function DashboardHeader({
   showDate = false,
   title,
   onMenuClick,
+  demoMode = false,
 }: DashboardHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -67,7 +69,7 @@ export function DashboardHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className={demoMode ? 'sm:hidden' : 'lg:hidden'}
             onClick={onMenuClick}
             aria-label="Open navigation menu"
           >
@@ -75,7 +77,11 @@ export function DashboardHeader({
           </Button>
 
           {/* Mobile Logo */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div
+            className={
+              demoMode ? 'flex items-center gap-2 sm:hidden' : 'flex items-center gap-2 lg:hidden'
+            }
+          >
             <div className="bg-primary/20 flex h-8 w-8 items-center justify-center rounded-lg">
               <Pen className="text-primary h-4 w-4" />
             </div>
@@ -91,7 +97,7 @@ export function DashboardHeader({
             {!title && showDate && (
               <div className="text-muted-foreground hidden items-center gap-2 lg:flex">
                 <Calendar className="h-4 w-4" />
-                <span className="text-sm">
+                <span className="text-sm" suppressHydrationWarning>
                   {new Date().toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'long',
@@ -105,7 +111,8 @@ export function DashboardHeader({
 
         {/* User Menu */}
 
-        <DropdownMenu>
+        {/* Keep the page scroll owner intact while the account menu is open. */}
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"

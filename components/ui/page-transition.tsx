@@ -47,7 +47,11 @@ export function PageTransition({ children, className }: PageTransitionProps) {
 
   return (
     <motion.div
-      initial="initial"
+      // Why: This wrapper is not mounted inside an AnimatePresence boundary,
+      // so an initial opacity state can remain stuck after a server-rendered
+      // route is hydrated. Keep the first paint visible and animate only
+      // updates that provide a real transition boundary.
+      initial={false}
       animate="animate"
       exit="exit"
       variants={pageVariants}
