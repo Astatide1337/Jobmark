@@ -5,7 +5,7 @@
  * outreach messages. This preserves "the best" drafts for future reuse.
  *
  * Integration:
- * - LiveEditor: Wraps each draft in an interactive editor for manual polish.
+ * - Saved-draft editor: Supports manual editing and small local quick edits.
  * - Export: Connects to the PDF/Word generation utilities in `lib/report-export`.
  */
 'use client';
@@ -20,16 +20,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { FileText, Trash2, ChevronDown, ChevronUp, Download, Copy } from 'lucide-react';
-import {
-  deleteOutreachDraft,
-  updateOutreachDraft,
-  improveOutreachDraft,
-} from '@/app/actions/network-ai';
+import { deleteOutreachDraft, updateOutreachDraft } from '@/app/actions/network-ai';
 import { exportToPdf, exportToWord } from '@/lib/report-export';
 import { LiveEditor } from '@/components/reports/live-editor';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { copyTextToClipboard } from '@/lib/clipboard';
+import {
+  McpProviderMenu,
+  getMcpProviderLaunchUrl,
+  providerSupportsPromptUrl,
+  type ConnectedMcpProvider,
+} from '@/components/reports/mcp-draft-actions';
+import { buildSavedDraftAssistantInstructions } from '@/lib/assistant-instructions';
 
 interface OutreachDraft {
   id: string;
@@ -40,9 +43,13 @@ interface OutreachDraft {
 
 interface OutreachDraftHistoryProps {
   initialDrafts: OutreachDraft[];
+  connectedMcpProviders?: ConnectedMcpProvider[];
 }
 
-export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProps) {
+export function OutreachDraftHistory({
+  initialDrafts,
+  connectedMcpProviders = [],
+}: OutreachDraftHistoryProps) {
   const [drafts, setDrafts] = useState<OutreachDraft[]>(initialDrafts);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -102,6 +109,30 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
       toast.error('Failed to save draft.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const contentFor = (draft: OutreachDraft) =>
+    editingId === draft.id ? editContent : draft.content;
+
+  const openDraftWithProvider = async (provider: ConnectedMcpProvider, content: string) => {
+    const prompt = buildSavedDraftAssistantInstructions('outreach', content);
+    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
+    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
+    const copyPromise = copyTextToClipboard(prompt);
+    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
+
+    try {
+      const copied = await copyPromise;
+      if (!copied) throw new Error('clipboard_unavailable');
+      toast.success(`${provider.name} instructions copied`, {
+        description:
+          launchPrompt && providerSupportsPromptUrl(provider.key)
+            ? `Open ${provider.name} to continue your message.`
+            : `Open ${provider.name} and paste the instructions to continue.`,
+      });
+    } catch {
+      toast.error('Could not copy the drafting instructions');
     }
   };
 
@@ -192,7 +223,7 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                       value={editContent}
                       onChange={setEditContent}
                       isStreaming={false}
-                      onImprove={improveOutreachDraft}
+                      enableQuickEdit
                       className="min-h-[300px] rounded-xl"
                     />
                   </div>
@@ -203,20 +234,12 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                 )}
 
                 {/* Action bar */}
-                <div className="bg-muted/40 flex items-center justify-between border-t p-3">
-                  <div className="flex items-center gap-2">
+                <div className="bg-muted/40 flex flex-col gap-3 border-t p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     {editingId === draft.id ? (
                       <>
                         <Button variant="ghost" size="sm" onClick={cancelEdit}>
                           Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => saveEdit(draft.id)}
-                          disabled={isSaving}
-                          className="rounded-lg"
-                        >
-                          Save Changes
                         </Button>
                       </>
                     ) : (
@@ -226,7 +249,17 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <McpProviderMenu
+                      connectedMcpProviders={connectedMcpProviders}
+                      onOpenProvider={provider =>
+                        openDraftWithProvider(
+                          provider,
+                          editingId === draft.id ? editContent : draft.content
+                        )
+                      }
+                      className="h-9 w-auto shrink-0"
+                    />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -237,14 +270,14 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() =>
-                            exportToPdf(draft.content, { filename: `${draft.title}.pdf` })
+                            exportToPdf(contentFor(draft), { filename: `${draft.title}.pdf` })
                           }
                         >
                           Download as PDF
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() =>
-                            exportToWord(draft.content, { filename: `${draft.title}.doc` })
+                            exportToWord(contentFor(draft), { filename: `${draft.title}.doc` })
                           }
                         >
                           Download as Word
@@ -256,7 +289,7 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                       variant="ghost"
                       size="sm"
                       onClick={async () => {
-                        const copied = await copyTextToClipboard(draft.content);
+                        const copied = await copyTextToClipboard(contentFor(draft));
                         if (copied) toast.success('Copied to clipboard');
                         else toast.error('Could not copy the draft');
                       }}
@@ -264,6 +297,16 @@ export function OutreachDraftHistory({ initialDrafts }: OutreachDraftHistoryProp
                       <Copy className="mr-1 h-4 w-4" />
                       Copy
                     </Button>
+                    {editingId === draft.id && (
+                      <Button
+                        size="sm"
+                        onClick={() => saveEdit(draft.id)}
+                        disabled={isSaving}
+                        className="rounded-lg"
+                      >
+                        Save Changes
+                      </Button>
+                    )}
                   </div>
                 </div>
               </motion.div>

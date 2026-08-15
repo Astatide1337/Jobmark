@@ -63,3 +63,18 @@ export function buildReviewAssistantInstructions(input: ReviewAssistantInstructi
     .filter(Boolean)
     .join('\n');
 }
+
+export function buildSavedDraftAssistantInstructions(
+  kind: 'review' | 'outreach',
+  draft: string
+): string {
+  const label = kind === 'review' ? 'review' : 'outreach';
+  return [
+    `Help me improve this saved Jobmark ${label} draft.`,
+    'Preserve every factual detail from the draft and my Jobmark record. Do not invent outcomes, dates, relationships, or shared history.',
+    'Return an editable draft for me to review. Do not send anything.',
+    '',
+    'Draft:',
+    draft,
+  ].join('\n');
+}

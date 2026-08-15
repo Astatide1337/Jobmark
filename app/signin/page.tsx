@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoogleIcon } from '@/components/auth/google-icon';
-import { signInWithGoogle } from '@/app/actions/auth';
+import { signInWithDevUser, signInWithGoogle } from '@/app/actions/auth';
 
 export const metadata: Metadata = {
   title: 'Sign in | Jobmark',
@@ -84,6 +84,22 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             Continue with Google
           </Button>
         </form>
+
+        {process.env.NODE_ENV === 'development' && (
+          <>
+            <div className="text-muted-foreground my-4 flex items-center gap-3 text-[11px] tracking-wider uppercase">
+              <span className="bg-border/50 h-px flex-1" />
+              <span>Local development</span>
+              <span className="bg-border/50 h-px flex-1" />
+            </div>
+            <form action={signInWithDevUser}>
+              <input type="hidden" name="callbackUrl" value={callbackUrl} />
+              <Button type="submit" size="lg" className="h-12 w-full text-sm font-semibold">
+                Continue as Demo User
+              </Button>
+            </form>
+          </>
+        )}
 
         <p className="text-muted-foreground mt-7 text-center text-xs leading-5">
           By continuing, you agree to Jobmark’s{' '}

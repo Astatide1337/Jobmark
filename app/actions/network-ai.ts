@@ -16,7 +16,7 @@
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { format } from 'date-fns';
-import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { buildOutreachDraft } from '@/lib/deterministic-drafts';
 
 export type OutreachDraftConfig = {
   contactId: string;
@@ -157,24 +157,4 @@ export async function updateOutreachDraft(
   });
 
   return { success: true };
-}
-
-export async function improveOutreachDraft(
-  selectedText: string,
-  instruction: string
-): Promise<string> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-  if (
-    !selectedText.trim() ||
-    selectedText.length > 20_000 ||
-    !instruction.trim() ||
-    instruction.length > 4_000
-  ) {
-    throw new Error('Invalid edit request');
-  }
-
-  return deterministicRewrite(selectedText, instruction);
 }

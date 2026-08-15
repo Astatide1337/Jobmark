@@ -86,9 +86,9 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark overflow-x-clip" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased`}
+        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} overflow-x-clip font-sans antialiased`}
       >
         <SettingsProvider isAuthenticated={Boolean(session?.user?.id)}>
           <UIProvider>

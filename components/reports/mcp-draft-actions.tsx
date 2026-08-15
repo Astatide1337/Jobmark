@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Claude, Gemini, OpenAI } from '@lobehub/icons';
 import { ArrowRight, ChevronDown, Link2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +119,7 @@ export function McpDraftActions({
 interface McpProviderMenuProps {
   connectedMcpProviders: ConnectedMcpProvider[];
   onOpenProvider: (provider: ConnectedMcpProvider) => void;
+  className?: string;
 }
 
 /**
@@ -125,13 +127,20 @@ interface McpProviderMenuProps {
  * direct action; multiple connections get a menu, so “Open in…” is never
  * ambiguous.
  */
-export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpProviderMenuProps) {
+export function McpProviderMenu({
+  connectedMcpProviders,
+  onOpenProvider,
+  className,
+}: McpProviderMenuProps) {
   if (connectedMcpProviders.length === 0) {
     return (
       <Button
         asChild
         variant="outline"
-        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+        className={cn(
+          'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+          className
+        )}
       >
         <Link href="/settings/connections">
           <Link2 className="mr-2 h-4 w-4" />
@@ -148,7 +157,10 @@ export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpPr
       <Button
         type="button"
         variant="outline"
-        className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+        className={cn(
+          'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+          className
+        )}
         onClick={() => onOpenProvider(provider)}
       >
         <ProviderIcon providerKey={provider.key} />
@@ -166,7 +178,10 @@ export function McpProviderMenu({ connectedMcpProviders, onOpenProvider }: McpPr
         <Button
           type="button"
           variant="outline"
-          className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
+          className={cn(
+            'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+            className
+          )}
         >
           <ArrowRight className="mr-2 h-4 w-4" />
           Choose where to continue

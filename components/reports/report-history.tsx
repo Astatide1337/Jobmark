@@ -5,7 +5,8 @@
  * Users can revisit, edit, or re-export historical data at any time.
  *
  * Key Pattern: Uses a collapsible list to keep the interface clean while
- * allowing deep-dives into specific report contents via the `LiveEditor`.
+ * allowing deep-dives into specific report contents via the saved-draft
+ * editor.
  */
 'use client';
 
@@ -37,6 +38,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { LiveEditor } from './live-editor';
 import { copyTextToClipboard } from '@/lib/clipboard';
+import {
+  McpProviderMenu,
+  getMcpProviderLaunchUrl,
+  providerSupportsPromptUrl,
+  type ConnectedMcpProvider,
+} from './mcp-draft-actions';
+import { buildSavedDraftAssistantInstructions } from '@/lib/assistant-instructions';
 
 interface Report {
   id: string;
@@ -49,9 +57,17 @@ interface ReportHistoryProps {
   initialReports: Report[];
   onUpdate?: (id: string, content: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  connectedMcpProviders?: ConnectedMcpProvider[];
+  displayTimeZone?: string;
 }
 
-export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHistoryProps) {
+export function ReportHistory({
+  initialReports,
+  onUpdate,
+  onDelete,
+  connectedMcpProviders = [],
+  displayTimeZone,
+}: ReportHistoryProps) {
   const [reports, setReports] = useState(initialReports);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -124,6 +140,27 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
     }
   };
 
+  const openDraftWithProvider = async (provider: ConnectedMcpProvider, content: string) => {
+    const prompt = buildSavedDraftAssistantInstructions('review', content);
+    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
+    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
+    const copyPromise = copyTextToClipboard(prompt);
+    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
+
+    try {
+      const copied = await copyPromise;
+      if (!copied) throw new Error('clipboard_unavailable');
+      toast.success(`${provider.name} instructions copied`, {
+        description:
+          launchPrompt && providerSupportsPromptUrl(provider.key)
+            ? `Open ${provider.name} to continue your review.`
+            : `Open ${provider.name} and paste the instructions to continue.`,
+      });
+    } catch {
+      toast.error('Could not copy the drafting instructions');
+    }
+  };
+
   if (reports.length === 0) {
     return (
       <div className="text-muted-foreground py-12 text-center">
@@ -160,8 +197,8 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
               </div>
               <div>
                 <h3 className="text-base font-semibold">{report.title}</h3>
-                <p className="text-muted-foreground text-xs">
-                  {format(new Date(report.createdAt), 'MMM d, yyyy • h:mm a')}
+                <p className="text-muted-foreground text-xs" suppressHydrationWarning>
+                  {formatReportDate(report.createdAt, displayTimeZone)}
                 </p>
                 <p className="text-muted-foreground/80 mt-1 text-xs">
                   Reopen, refine, export, or reuse in your next review cycle.
@@ -214,6 +251,7 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                       value={editContent}
                       onChange={setEditContent}
                       isStreaming={false}
+                      enableQuickEdit
                       className="min-h-[300px] rounded-xl"
                     />
                   </div>
@@ -224,22 +262,13 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                 )}
 
                 {/* Action Bar */}
-                <div className="bg-muted/40 flex items-center justify-between border-t p-3">
+                <div className="bg-muted/40 flex flex-col gap-3 border-t p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   {editingId === report.id ? (
                     // Edit Mode Actions
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={cancelEdit} disabled={isSaving}>
                         <X className="mr-2 h-4 w-4" />
                         Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => saveEdit(report.id)}
-                        disabled={isSaving}
-                        className="bg-primary text-primary-foreground"
-                      >
-                        <Save className="mr-2 h-4 w-4" />
-                        {isSaving ? 'Saving...' : 'Save Changes'}
                       </Button>
                     </div>
                   ) : (
@@ -250,7 +279,17 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                     </Button>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <McpProviderMenu
+                      connectedMcpProviders={connectedMcpProviders}
+                      onOpenProvider={provider =>
+                        openDraftWithProvider(
+                          provider,
+                          editingId === report.id ? editContent : report.content
+                        )
+                      }
+                      className="h-9 w-auto shrink-0"
+                    />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">
@@ -307,8 +346,19 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
                         else toast.error('Could not copy the report');
                       }}
                     >
-                      Copy for Review
+                      Copy
                     </Button>
+                    {editingId === report.id && (
+                      <Button
+                        size="sm"
+                        onClick={() => saveEdit(report.id)}
+                        disabled={isSaving}
+                        className="bg-primary text-primary-foreground"
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -318,4 +368,21 @@ export function ReportHistory({ initialReports, onUpdate, onDelete }: ReportHist
       ))}
     </div>
   );
+}
+
+function formatReportDate(value: Date, timeZone?: string): string {
+  if (!timeZone) return format(new Date(value), 'MMM d, yyyy • h:mm a');
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).formatToParts(new Date(value));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find(part => part.type === type)?.value ?? '';
+
+  return `${get('month')} ${get('day')}, ${get('year')} • ${get('hour')}:${get('minute')} ${get('dayPeriod')}`;
 }

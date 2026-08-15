@@ -166,9 +166,10 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
     try {
       const copied = await copyPromise;
       if (!copied) throw new Error('clipboard_unavailable');
-      const description = providerSupportsPromptUrl(provider.key)
-        ? `Open ${provider.name} to draft with your Jobmark record.`
-        : `Your instructions are copied. Paste them into ${provider.name} to start.`;
+      const description =
+        launchPrompt && providerSupportsPromptUrl(provider.key)
+          ? `Open ${provider.name} to draft with your Jobmark record.`
+          : `Your instructions are copied. Paste them into ${provider.name} to start.`;
       toast.success(`${provider.name} instructions copied`, { description });
     } catch {
       toast.error('Could not copy the drafting instructions');

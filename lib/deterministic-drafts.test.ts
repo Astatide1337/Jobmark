@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildOutreachDraft, buildReviewBrief, deterministicRewrite } from './deterministic-drafts';
+import {
+  applyQuickEdit,
+  buildOutreachDraft,
+  buildReviewBrief,
+  deterministicRewrite,
+} from './deterministic-drafts';
 
 describe('deterministic drafts', () => {
   it('builds an editable outreach message from a contact record', () => {
@@ -76,12 +81,33 @@ describe('deterministic drafts', () => {
   });
 
   it('makes only predictable edits', () => {
-    expect(deterministicRewrite('One. Two. Three.', 'make this concise')).toBe('One. Two.');
-    expect(deterministicRewrite('One. Two.', 'turn this into a bullet list')).toBe(
-      '- One.\n- Two.'
+    expect(deterministicRewrite('One. Two. Three.', 'make this concise')).toBe('One. Two. Three.');
+    expect(deterministicRewrite('One. Two.', 'turn this into a bullet list')).toBe('- One. Two.');
+    expect(deterministicRewrite('Version 2.0 is ready. Dr. Lee approved.', 'make a list')).toBe(
+      '- Version 2.0 is ready. Dr. Lee approved.'
     );
     expect(deterministicRewrite('Keep my wording.', 'rewrite this warmly')).toBe(
       'Keep my wording.'
     );
+  });
+
+  it('offers named quick edits without changing the underlying meaning', () => {
+    expect(applyQuickEdit('One. Two.', 'bullets')).toBe('- One. Two.');
+    expect(applyQuickEdit('- One.\n- Two.', 'bullets')).toBe('One.\nTwo.');
+    expect(applyQuickEdit('One\nTwo', 'numbered')).toBe('1. One\n2. Two');
+    expect(applyQuickEdit('1. One\n2. Two', 'numbered')).toBe('One\nTwo');
+    expect(applyQuickEdit('One\nTwo', 'checklist')).toBe('- [ ] One\n- [ ] Two');
+    expect(applyQuickEdit('- [x] One\n- [ ] Two', 'checklist')).toBe('One\nTwo');
+    expect(applyQuickEdit('  One. Two.  ', 'bullets')).toBe('  - One. Two.  ');
+    expect(applyQuickEdit('Version 2.0 is ready. Dr. Lee approved.', 'bullets')).toBe(
+      '- Version 2.0 is ready. Dr. Lee approved.'
+    );
+    expect(applyQuickEdit('before\nA sentence\nafter', 'bullets')).toBe(
+      '- before\n- A sentence\n- after'
+    );
+  });
+
+  it('does not mutate empty selections', () => {
+    expect(applyQuickEdit('   ', 'bullets')).toBe('   ');
   });
 });

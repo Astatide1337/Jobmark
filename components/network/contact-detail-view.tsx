@@ -210,15 +210,15 @@ export function ContactDetailView({
             </TabsContent>
 
             <TabsContent value="outreach" className="space-y-6">
-              <OutreachWizard
-                contact={contact}
-                connectedMcpProviders={connectedMcpProviders}
-              />
+              <OutreachWizard contact={contact} connectedMcpProviders={connectedMcpProviders} />
               <div className="space-y-3">
                 <h3 className="text-muted-foreground px-1 text-sm font-semibold tracking-widest uppercase">
                   Saved Drafts
                 </h3>
-                <OutreachDraftHistory initialDrafts={initialDrafts} />
+                <OutreachDraftHistory
+                  initialDrafts={initialDrafts}
+                  connectedMcpProviders={connectedMcpProviders}
+                />
               </div>
             </TabsContent>
           </Tabs>

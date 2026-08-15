@@ -18,13 +18,21 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
   const [cycleIndex, setCycleIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const phaseKey = `${cycleIndex}-${stepIndex}`;
+  const [previousPhaseKey, setPreviousPhaseKey] = useState(phaseKey);
+
+  if (phaseKey !== previousPhaseKey) {
+    setPreviousPhaseKey(phaseKey);
+    setVisible(true);
+  }
 
   const currentStep = steps[stepIndex];
 
   useEffect(() => {
-    setVisible(true);
-    const fadeOut = setTimeout(() => setVisible(false), (currentStep.duration - 0.8) * 1000);
-
+    const fadeOut = setTimeout(
+      () => setVisible(false),
+      Math.max(0, (currentStep.duration - 0.8) * 1000)
+    );
     const advance = setTimeout(() => {
       const nextStep = stepIndex + 1;
       if (nextStep < steps.length) {
@@ -54,6 +62,7 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
       stepIndex={stepIndex}
       cycleIndex={cycleIndex}
       totalCycles={cycles}
+      size="full"
       visible={visible}
     />
   );

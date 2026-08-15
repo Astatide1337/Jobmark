@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Pen } from 'lucide-react';
 import Link from 'next/link';
-import { signInWithGoogle } from '@/app/actions/auth';
+import { signInWithDevUser, signInWithGoogle } from '@/app/actions/auth';
 import { GoogleIcon } from '@/components/auth/google-icon';
 
 interface AuthModalContextType {
@@ -88,6 +88,13 @@ function AuthModal({ open }: AuthModalProps) {
               Continue with Google
             </Button>
           </form>
+          {process.env.NODE_ENV === 'development' && (
+            <form action={signInWithDevUser}>
+              <Button type="submit" size="lg" className="h-12 w-full text-base">
+                Continue as Demo User
+              </Button>
+            </form>
+          )}
         </div>
 
         <p className="text-muted-foreground mt-6 text-center text-xs">

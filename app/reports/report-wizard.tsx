@@ -232,7 +232,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
       const copied = await copyPromise;
       if (!copied) throw new Error('clipboard_unavailable');
       let promptDescription = `Open ${provider.name} and paste the instructions to start your review.`;
-      if (providerSupportsPromptUrl(provider.key)) {
+      if (launchPrompt && providerSupportsPromptUrl(provider.key)) {
         promptDescription = `Open ${provider.name} to draft your review with Jobmark.`;
       } else if (provider.key === 'gemini') {
         promptDescription =

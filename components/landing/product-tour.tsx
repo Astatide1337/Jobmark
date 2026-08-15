@@ -17,7 +17,7 @@
 
 import { useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, type MotionValue } from 'framer-motion';
-import { DemoChat } from './demos/demo-chat';
+import { DemoMcpConnector } from './demos/demo-chat';
 import { DemoReports } from './demos/demo-reports';
 import { DemoInsights } from './demos/demo-insights';
 
@@ -120,7 +120,7 @@ export function ProductTour() {
                 <DemoScene progress={smoothProgress} index={3}>
                   <div className="h-full w-full origin-top-left scale-[0.55]">
                     <div className="h-[182%] w-[182%]">
-                      <DemoChat />
+                      <DemoMcpConnector />
                     </div>
                   </div>
                 </DemoScene>

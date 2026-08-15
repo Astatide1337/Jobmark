@@ -13,13 +13,7 @@
  */
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useMemo,
-  useSyncExternalStore,
-} from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { ReactLenis } from 'lenis/react';
 import { usePathname } from 'next/navigation';
 
@@ -29,9 +23,6 @@ interface UIContextType {
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
-const subscribeToMount = () => () => {};
-const getServerMountState = () => false;
-const getClientMountState = () => true;
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
   // Defaulting to true for our cleanup implementation pass
@@ -43,11 +34,12 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { uiV2 } = useUI();
-  const mounted = useSyncExternalStore(
-    subscribeToMount,
-    getClientMountState,
-    getServerMountState
-  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 1000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Determine if smooth scroll should be enabled
   // 1. Must be mounted (client-side)
