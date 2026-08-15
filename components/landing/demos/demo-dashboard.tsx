@@ -42,7 +42,7 @@ const DEMO_REPORTS = [
     id: 'demo-weekly-update',
     title: 'Weekly Engineering Update',
     content:
-      '## Summary\nShipped the dashboard polish and clarified the API scope.\n\n### Key Wins\n- Reviewed two pull requests\n- Resolved the payment-flow edge case\n- Aligned the next sprint with the team\n\n### Next Steps\n- Share the update with the manager\n- Turn the next milestone into a review draft',
+      '## Summary\nShipped the dashboard polish and clarified the API scope.\n\n### Key Wins\n- Reviewed two pull requests\n- Resolved the payment-flow edge case\n- Aligned the next sprint with the team\n\n### Next Steps\n- Share the update with the manager\n- Use the next milestone as the starting point for a review draft',
     createdAt: new Date('2026-08-12T16:00:00.000Z'),
   },
   {
@@ -111,7 +111,7 @@ function DemoOverview({ goalAdded, onAddGoal }: { goalAdded: boolean; onAddGoal:
       transition={{ duration: 0.22, ease: 'easeOut' }}
     >
       <div>
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">Good morning, User.</h1>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Good morning.</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Write down what you did while it is fresh.
         </p>
@@ -128,12 +128,12 @@ function DemoOverview({ goalAdded, onAddGoal }: { goalAdded: boolean; onAddGoal:
           </div>
           <div>
             <h2 className="text-lg font-semibold">
-              {goalAdded ? 'Your next goal' : 'No goals yet'}
+              {goalAdded ? 'Your next goal' : 'Nothing on the horizon yet'}
             </h2>
             <p className="text-muted-foreground text-sm">
               {goalAdded
                 ? 'Finish the review draft before Friday.'
-                : 'Goals help you know what to work on next.'}
+                : 'Add one when you want a clear next step.'}
             </p>
           </div>
           {!goalAdded && (
@@ -158,8 +158,8 @@ function DemoOverview({ goalAdded, onAddGoal }: { goalAdded: boolean; onAddGoal:
 
       <div className="border-border/40 bg-card/40 rounded-2xl border p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-foreground text-sm font-semibold">Recent Activity</h2>
-          <span className="text-muted-foreground text-xs">Evidence captured this week: 3/5</span>
+          <h2 className="text-foreground text-sm font-semibold">Recent notes</h2>
+          <span className="text-muted-foreground text-xs">3 notes this week</span>
         </div>
         <div className="space-y-2">
           {['Reviewed two pull requests', 'Presented the quarterly findings'].map(activity => (
@@ -184,7 +184,7 @@ function DemoProjectsView() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Organize your workstreams.</p>
+            <p className="text-muted-foreground mt-1 text-sm">Keep related work together.</p>
           </div>
           <Button size="sm" onClick={() => setCreated(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -312,7 +312,7 @@ function DemoReportsView() {
                   New review
                 </p>
                 <h2 className="text-foreground mt-1 text-lg font-semibold">
-                  Turn recent work into a clear update.
+                  Build a clear update from recent work.
                 </h2>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
                   Choose the evidence window and writing style. Jobmark does the organizing first.
@@ -370,9 +370,7 @@ function DemoInsightsView() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Insights</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Discover trends in your productivity.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">See where your work is going.</p>
         </div>
         <InsightsSummary data={DEMO_INSIGHTS} compact />
         <ActivityCharts
@@ -492,7 +490,7 @@ function DemoModuleView({ path }: { path: string }) {
   const definition = definitions[path] ?? {
     eyebrow: 'Jobmark',
     title: 'Keep your record moving.',
-    description: 'Capture the work while it is still fresh.',
+    description: 'Write it down while it is still fresh.',
     icon: BarChart3,
     rows: [],
   };

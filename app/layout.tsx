@@ -24,7 +24,7 @@ import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
 const productDescription =
-  'Jobmark helps you keep a clear record of your work, then turn it into useful updates, reviews, and next steps.';
+  'Jobmark gives you a simple place to record your work while it is fresh, then find it when reviews, updates, and next steps matter.';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -45,7 +45,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'Jobmark - Build Your Career Record',
+  title: 'Jobmark - Keep your work on record',
   description: productDescription,
   keywords: [
     'career record',
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     'impact tracking',
   ],
   openGraph: {
-    title: 'Jobmark - Build Your Career Record',
+    title: 'Jobmark - Keep your work on record',
     description: productDescription,
     url: siteUrl,
     siteName: 'Jobmark',
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jobmark - Build Your Career Record',
+    title: 'Jobmark - Keep your work on record',
     description: productDescription,
     images: ['/opengraph-image.png'],
   },

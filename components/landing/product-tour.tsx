@@ -24,34 +24,34 @@ import { DemoInsights } from './demos/demo-insights';
 const steps = [
   {
     id: 'capture',
-    title: 'Capture the work',
-    subtitle: 'Fast, low friction.',
-    description: 'Log what you shipped or solved in seconds. No rigid templates or busywork.',
+    title: 'Keep a running record',
+    subtitle: 'A few seconds at a time.',
+    description: 'Write down what you shipped, solved, or learned before the details disappear.',
   },
   {
     id: 'timeline',
-    title: 'Organize into evidence',
-    subtitle: 'Structured by default.',
-    description: 'Your record becomes searchable proof of impact, grouped by project and theme.',
+    title: 'Make the record useful',
+    subtitle: 'Organized as you go.',
+    description: 'Add projects and tags so a small note becomes easy to find later.',
   },
   {
     id: 'reports',
-    title: 'Generate career-ready output',
-    subtitle: 'From evidence to narrative.',
-    description:
-      'Produce reviews, updates, and promotion summaries from the work you already captured.',
+    title: 'Prepare the conversation',
+    subtitle: 'Start with the facts.',
+    description: 'Pull together a review or progress update from work you have already recorded.',
   },
   {
     id: 'mentor',
-    title: 'Use your record anywhere',
-    subtitle: 'Your work, your choice.',
-    description: 'Connect Claude, ChatGPT, or Gemini when you want help shaping your record.',
+    title: 'Bring your own assistant',
+    subtitle: 'When you want another pair of eyes.',
+    description:
+      'Connect Claude, ChatGPT, or Gemini to shape a draft without handing over the source of truth.',
   },
   {
     id: 'insights',
-    title: 'Grow over time',
-    subtitle: 'Patterns you can act on.',
-    description: 'See patterns in your work and focus on the habits that move your career forward.',
+    title: 'Notice your patterns',
+    subtitle: 'Make room for the next move.',
+    description: 'See where your time and energy are going so the next step is easier to choose.',
   },
 ];
 
@@ -249,16 +249,16 @@ function QuickCaptureDemo() {
         {/* Header */}
         <div className="text-center">
           <div className="bg-primary/10 text-primary mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium">
-            Quick Capture
+            New note
           </div>
-          <p className="text-muted-foreground text-sm">What did you accomplish?</p>
+          <p className="text-muted-foreground text-sm">What happened?</p>
         </div>
 
         {/* Input area */}
         <div className="border-primary/30 bg-background/80 rounded-xl border p-4 backdrop-blur-sm">
           <p className="text-sm leading-relaxed">
-            Completed the quarterly report and presented findings to the team. Received positive
-            feedback on the data visualizations.
+            Finished the quarterly report and walked the team through the findings. The new charts
+            made the decision much easier.
           </p>
           <span className="bg-primary ml-0.5 inline-block h-4 w-0.5 animate-pulse" />
         </div>
@@ -287,8 +287,8 @@ function QuickCaptureDemo() {
 // Timeline Demo
 function TimelineDemo() {
   const entries = [
-    { text: 'Reviewed pull request for auth module', project: 'Mobile App', time: '2h ago' },
-    { text: 'Completed quarterly report presentation', project: 'Q4 Planning', time: 'Yesterday' },
+    { text: 'Reviewed the auth pull request', project: 'Mobile App', time: '2h ago' },
+    { text: 'Presented the quarterly findings', project: 'Q4 Planning', time: 'Yesterday' },
     {
       text: 'Synced with design team on new layouts',
       project: 'Website Redesign',
@@ -300,8 +300,8 @@ function TimelineDemo() {
     <div className="from-card to-card/50 flex h-full flex-col bg-gradient-to-b p-6">
       {/* Header */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold">Your Timeline</h3>
-        <p className="text-muted-foreground text-sm">This week&apos;s accomplishments</p>
+        <h3 className="text-lg font-semibold">Work this week</h3>
+        <p className="text-muted-foreground text-sm">A few things worth keeping</p>
       </div>
 
       {/* Timeline */}

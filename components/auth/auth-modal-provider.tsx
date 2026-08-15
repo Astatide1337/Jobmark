@@ -9,10 +9,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pen } from 'lucide-react';
 import Link from 'next/link';
 import { signInWithDevUser, signInWithGoogle } from '@/app/actions/auth';
 import { GoogleIcon } from '@/components/auth/google-icon';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 interface AuthModalContextType {
   openAuthModal: () => void;
@@ -63,8 +63,8 @@ function AuthModal({ open }: AuthModalProps) {
       >
         <div className="mb-2 flex justify-center">
           <div className="flex items-center gap-3">
-            <div className="bg-primary/20 border-primary/30 flex h-11 w-11 items-center justify-center rounded-xl border">
-              <Pen className="text-primary h-5 w-5" />
+            <div className="bg-primary flex h-11 w-11 items-center justify-center rounded-xl">
+              <JobmarkMark className="h-6 w-6" sizes="24px" />
             </div>
           </div>
         </div>

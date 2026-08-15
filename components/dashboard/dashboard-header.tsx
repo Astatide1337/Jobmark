@@ -20,9 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Pen, Settings, LogOut, Calendar, ChevronDown, Menu } from 'lucide-react';
+import { Settings, LogOut, Calendar, ChevronDown, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 interface DashboardHeaderProps {
   userName?: string | null;
@@ -82,8 +83,8 @@ export function DashboardHeader({
               demoMode ? 'flex items-center gap-2 sm:hidden' : 'flex items-center gap-2 lg:hidden'
             }
           >
-            <div className="bg-primary/20 flex h-8 w-8 items-center justify-center rounded-lg">
-              <Pen className="text-primary h-4 w-4" />
+            <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+              <JobmarkMark className="h-5 w-5" sizes="20px" />
             </div>
           </div>
 

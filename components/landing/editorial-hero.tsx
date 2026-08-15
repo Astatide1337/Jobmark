@@ -61,7 +61,7 @@ export function EditorialHero() {
             >
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Career record
+                Your work, remembered
               </span>
             </motion.div>
 
@@ -75,8 +75,8 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-muted-foreground max-w-lg text-xl leading-relaxed"
             >
-              Capture what you did, organize it into evidence, and turn it into updates, reviews,
-              and promotion-ready summaries.
+              Jobmark gives you one place to note what you shipped, solved, and learned—so reviews,
+              updates, and next steps can start from something real.
             </motion.p>
 
             {/* CTAs */}
@@ -90,7 +90,7 @@ export function EditorialHero() {
                 onClick={openAuthModal}
                 className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
-                Start your record
+                Start recording
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
@@ -98,7 +98,7 @@ export function EditorialHero() {
                 href="#product-tour"
                 className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 px-6 py-4 text-base transition-colors"
               >
-                See the workflow
+                See how it works
               </Link>
             </motion.div>
 
@@ -109,7 +109,7 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"
             >
-              Free to start. Export-ready. Ready when you want an AI app.
+              Free to start. Your record stays yours.
             </motion.p>
           </motion.div>
 

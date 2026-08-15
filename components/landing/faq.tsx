@@ -17,38 +17,38 @@ import { ChevronDown } from 'lucide-react';
 const faqs = [
   {
     id: 'what-is',
-    question: 'What is Jobmark exactly?',
+    question: 'What is Jobmark?',
     answer:
-      'Jobmark helps you keep a clear record of your work and turn it into useful updates, reviews, and next steps.',
+      'Jobmark is a place to keep a running record of your work—what you shipped, solved, learned, or moved forward—and find it when you need it.',
   },
   {
     id: 'different',
-    question: 'Is this just a notes app?',
+    question: 'Is Jobmark just a notes app?',
     answer:
-      'Notes capture raw thoughts, but they do not organize evidence or turn it into career-ready output. Jobmark is structured for impact, not just storage.',
+      'It starts with notes, but keeps them connected to projects, reviews, and the work around them. The goal is not to collect more writing; it is to make the writing useful later.',
   },
   {
     id: 'notion',
-    question: 'Why not just use Notion or Docs?',
+    question: 'Why not use Notion or Docs?',
     answer:
-      'Generic tools are flexible, but they do not build a career record for you. Jobmark is built around evidence, timelines, and review-ready output from the start.',
+      'You can. Notion and Docs are flexible places to store almost anything. Jobmark is narrower: it gives your work a simple home and keeps the path from note to review in one place.',
   },
   {
     id: 'ai-work',
-    question: 'How do connections to AI apps work?',
+    question: 'Can I connect an AI assistant?',
     answer:
-      'Jobmark first turns your record into a factual draft. If you connect Claude, ChatGPT, or Gemini, you can ask for a richer rewrite while keeping the underlying record in Jobmark.',
+      'Yes. Connect Claude, ChatGPT, or Gemini when you want help shaping a draft. Jobmark keeps the source record and the facts in your hands.',
   },
   {
     id: 'export',
-    question: 'Can I export everything?',
-    answer: 'Yes. Your work record should remain portable so you can reuse it wherever you need.',
+    question: 'Can I export my record?',
+    answer: 'Yes. Your record is yours to take with you and reuse wherever it is useful.',
   },
   {
     id: 'who',
-    question: 'Who is this for?',
+    question: 'Who is Jobmark for?',
     answer:
-      'People who want stronger reviews, clearer promotion cases, and better weekly visibility without keeping a separate system of record.',
+      'Anyone who has to explain what they have been working on—especially when reviews, promotion conversations, or weekly updates keep arriving faster than memory can keep up.',
   },
 ];
 
@@ -85,7 +85,7 @@ export function FAQ() {
             transition={{ delay: 0.1 }}
             className="mb-4 font-serif text-4xl font-bold md:text-5xl"
           >
-            Questions & Answers
+            Questions, answered
           </motion.h2>
 
           <motion.p
@@ -95,7 +95,7 @@ export function FAQ() {
             transition={{ delay: 0.2 }}
             className="text-muted-foreground text-lg"
           >
-            Everything you might want to know.
+            A few practical things people ask before they start.
           </motion.p>
         </div>
 
@@ -126,7 +126,7 @@ export function FAQ() {
           transition={{ delay: 0.5 }}
           className="text-muted-foreground mt-12 text-center"
         >
-          Have another question?{' '}
+          Still curious?{' '}
           <a
             href="mailto:hello@jobmark.app"
             className="text-primary underline-offset-4 hover:underline"

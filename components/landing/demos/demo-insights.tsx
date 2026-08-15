@@ -47,7 +47,7 @@ export function DemoInsights() {
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Insights</h2>
-          <p className="text-muted-foreground">Discover trends in your productivity.</p>
+          <p className="text-muted-foreground">See where your work is going.</p>
         </div>
 
         {/* Summary Cards */}

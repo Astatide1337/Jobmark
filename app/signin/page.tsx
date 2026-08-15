@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, PenLine } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoogleIcon } from '@/components/auth/google-icon';
 import { signInWithDevUser, signInWithGoogle } from '@/app/actions/auth';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 export const metadata: Metadata = {
   title: 'Sign in | Jobmark',
@@ -51,8 +52,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </Link>
 
         <div className="mb-8 text-center">
-          <div className="bg-primary/15 border-primary/25 shadow-primary/10 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-lg">
-            <PenLine className="text-primary h-6 w-6" aria-hidden="true" />
+          <div className="bg-primary shadow-primary/10 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg">
+            <JobmarkMark className="h-8 w-8" sizes="32px" />
           </div>
           <p className="text-primary mb-3 text-xs font-semibold tracking-[0.24em] uppercase">
             Jobmark
