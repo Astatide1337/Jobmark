@@ -19,7 +19,7 @@ const faqs = [
     id: 'what-is',
     question: 'What is Jobmark?',
     answer:
-      'Jobmark is a place to keep a running record of your work—what you shipped, solved, learned, or moved forward—and find it when you need it.',
+      'Jobmark is a place to keep a running record of your work: what you shipped, solved, learned, or moved forward. Find it when you need it.',
   },
   {
     id: 'different',
@@ -48,7 +48,7 @@ const faqs = [
     id: 'who',
     question: 'Who is Jobmark for?',
     answer:
-      'Anyone who has to explain what they have been working on—especially when reviews, promotion conversations, or weekly updates keep arriving faster than memory can keep up.',
+      'Anyone who has to explain what they have been working on, especially when reviews, promotion conversations, or weekly updates keep arriving faster than memory can keep up.',
   },
 ];
 

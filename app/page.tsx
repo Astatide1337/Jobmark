@@ -67,7 +67,7 @@ export default async function Home() {
         <VideoSection />
 
         {/* Divider */}
-        <SectionDivider delay={0.1} />
+        <SectionDivider delay={0.1} className="py-4 md:py-6" />
 
         {/* Access Section */}
         <AccessSection />

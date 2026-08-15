@@ -31,7 +31,7 @@ export function ProblemStatement() {
           <span className="text-foreground">The details disappear first.</span>
           <span className="text-muted-foreground">
             {' '}
-            A fix in Slack, a decision in a meeting, a launch that took a month—by review time, you
+            A fix in Slack, a decision in a meeting, a launch that took a month. By review time, you
             are rebuilding the story from memory.
           </span>
           <span className="text-primary"> Write it down once. Find it when it matters.</span>

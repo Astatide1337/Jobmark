@@ -54,7 +54,7 @@ export function EditorialHero() {
           >
             {/* Eyebrow */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               className="flex items-center gap-3"
@@ -70,18 +70,18 @@ export function EditorialHero() {
 
             {/* Subheadline */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-muted-foreground max-w-lg text-xl leading-relaxed"
             >
-              Jobmark gives you one place to note what you shipped, solved, and learned—so reviews,
+              Jobmark gives you one place to note what you shipped, solved, and learned. Reviews,
               updates, and next steps can start from something real.
             </motion.p>
 
             {/* CTAs */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
               className="flex flex-col items-start gap-4 pt-2 sm:flex-row sm:items-center"
@@ -104,7 +104,7 @@ export function EditorialHero() {
 
             {/* Subtle trust indicator */}
             <motion.p
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"

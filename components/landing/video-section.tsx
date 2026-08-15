@@ -6,7 +6,6 @@
  */
 'use client';
 
-import { Clock3, VolumeX } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { JOBMARK_PRODUCT_VIDEO_URL } from '@/components/brand/brand-assets';
 
@@ -15,11 +14,11 @@ export function VideoSection() {
 
   return (
     <section
-      className="relative overflow-hidden py-24 lg:py-32"
+      className="relative overflow-hidden py-16 lg:py-24"
       aria-labelledby="product-film-title"
     >
       <div className="mx-auto max-w-7xl px-6">
-        <div className="grid items-end gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-20">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -30,7 +29,7 @@ export function VideoSection() {
             <div className="flex items-center gap-3">
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                A look inside
+                A record that stays useful
               </span>
             </div>
 
@@ -38,24 +37,14 @@ export function VideoSection() {
               id="product-film-title"
               className="font-serif text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl lg:text-6xl"
             >
-              From a quick note to a clear review.
+              Keep the details that make the work yours.
             </h2>
 
-            <p className="text-muted-foreground max-w-lg text-lg leading-relaxed">
-              Write down what happened while it is fresh. When the conversation comes around, you
-              have the details—not a blank document and a vague feeling that you did a lot.
+            <p className="text-foreground/75 max-w-lg text-lg leading-[1.6] sm:text-xl">
+              Capture the work while it is fresh. Keep the project, progress, and context close by.
+              When an update, review, or next step comes up, you can start with the record instead
+              of rebuilding the story.
             </p>
-
-            <div className="text-muted-foreground flex flex-wrap gap-x-6 gap-y-3 pt-1 text-sm">
-              <span className="flex items-center gap-2">
-                <Clock3 className="text-primary h-4 w-4" aria-hidden="true" />
-                45-second product film
-              </span>
-              <span className="flex items-center gap-2">
-                <VolumeX className="text-primary h-4 w-4" aria-hidden="true" />
-                Plays silently
-              </span>
-            </div>
           </motion.div>
 
           <motion.div
@@ -89,10 +78,6 @@ export function VideoSection() {
                 preload="metadata"
                 aria-label="Jobmark product film showing a note becoming a project record, progress view, and review draft"
               />
-
-              <div className="absolute top-5 left-5 z-20 rounded-full border border-black/10 bg-white/70 px-3 py-1.5 text-[10px] font-semibold tracking-[0.16em] text-black/60 uppercase backdrop-blur-sm">
-                Jobmark / in practice
-              </div>
             </div>
 
             <p className="sr-only">
