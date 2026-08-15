@@ -13,7 +13,7 @@ export type OutreachAssistantInstructionsInput = {
 };
 
 /**
- * Plain-language handoff text for a connected assistant. Keep this separate
+ * Plain-language handoff text for a connected AI app. Keep this separate
  * from the MCP implementation so internal IDs, tool names, and protocol
  * instructions cannot accidentally become part of the user-visible prompt.
  */
@@ -49,9 +49,7 @@ export type ReviewAssistantInstructionsInput = {
 };
 
 /** Plain-language handoff text for the review workflow. */
-export function buildReviewAssistantInstructions(
-  input: ReviewAssistantInstructionsInput
-): string {
+export function buildReviewAssistantInstructions(input: ReviewAssistantInstructionsInput): string {
   const focus = cleanLine(input.focus);
 
   return [
@@ -64,4 +62,19 @@ export function buildReviewAssistantInstructions(
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+export function buildSavedDraftAssistantInstructions(
+  kind: 'review' | 'outreach',
+  draft: string
+): string {
+  const label = kind === 'review' ? 'review' : 'outreach';
+  return [
+    `Help me improve this saved Jobmark ${label} draft.`,
+    'Preserve every factual detail from the draft and my Jobmark record. Do not invent outcomes, dates, relationships, or shared history.',
+    'Return an editable draft for me to review. Do not send anything.',
+    '',
+    'Draft:',
+    draft,
+  ].join('\n');
 }

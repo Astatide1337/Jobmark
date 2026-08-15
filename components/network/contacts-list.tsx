@@ -138,7 +138,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
           <Select value={sortBy} onValueChange={v => setSortBy(v as typeof sortBy)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px]" aria-label="Sort contacts">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>

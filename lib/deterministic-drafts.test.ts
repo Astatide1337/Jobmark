@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyQuickEdit,
   buildOutreachDraft,
   buildReviewBrief,
   deterministicRewrite,
@@ -52,7 +53,9 @@ describe('deterministic drafts', () => {
     expect(draft).toContain('Subject: A quick referral question');
     expect(draft).toContain('Hi Jeevan,');
     expect(draft).toContain('We worked on Linktree together.');
-    expect(draft).toContain('Would you be open to a short conversation about whether a referral might make sense?');
+    expect(draft).toContain(
+      'Would you be open to a short conversation about whether a referral might make sense?'
+    );
     expect(draft).not.toContain('role');
     expect(draft).not.toContain('company');
   });
@@ -63,19 +66,48 @@ describe('deterministic drafts', () => {
       endDate: '2026-08-07',
       tone: 'professional',
       activities: [
-        { logDate: '2026-08-02T12:00:00.000Z', content: 'Shipped the onboarding flow', projectName: 'Web' },
+        {
+          logDate: '2026-08-02T12:00:00.000Z',
+          content: 'Shipped the onboarding flow',
+          projectName: 'Web',
+        },
       ],
     });
 
     expect(brief).toContain('Period: 2026-08-01 through 2026-08-07');
     expect(brief).toContain('Shipped the onboarding flow');
     expect(brief).toContain('What changed because of this work?');
-    expect(brief).toContain('connected assistant');
+    expect(brief).toContain('Review the result before sharing it.');
   });
 
   it('makes only predictable edits', () => {
-    expect(deterministicRewrite('One. Two. Three.', 'make this concise')).toBe('One. Two.');
-    expect(deterministicRewrite('One. Two.', 'turn this into a bullet list')).toBe('- One.\n- Two.');
-    expect(deterministicRewrite('Keep my wording.', 'rewrite this warmly')).toBe('Keep my wording.');
+    expect(deterministicRewrite('One. Two. Three.', 'make this concise')).toBe('One. Two. Three.');
+    expect(deterministicRewrite('One. Two.', 'turn this into a bullet list')).toBe('- One. Two.');
+    expect(deterministicRewrite('Version 2.0 is ready. Dr. Lee approved.', 'make a list')).toBe(
+      '- Version 2.0 is ready. Dr. Lee approved.'
+    );
+    expect(deterministicRewrite('Keep my wording.', 'rewrite this warmly')).toBe(
+      'Keep my wording.'
+    );
+  });
+
+  it('offers named quick edits without changing the underlying meaning', () => {
+    expect(applyQuickEdit('One. Two.', 'bullets')).toBe('- One. Two.');
+    expect(applyQuickEdit('- One.\n- Two.', 'bullets')).toBe('One.\nTwo.');
+    expect(applyQuickEdit('One\nTwo', 'numbered')).toBe('1. One\n2. Two');
+    expect(applyQuickEdit('1. One\n2. Two', 'numbered')).toBe('One\nTwo');
+    expect(applyQuickEdit('One\nTwo', 'checklist')).toBe('- [ ] One\n- [ ] Two');
+    expect(applyQuickEdit('- [x] One\n- [ ] Two', 'checklist')).toBe('One\nTwo');
+    expect(applyQuickEdit('  One. Two.  ', 'bullets')).toBe('  - One. Two.  ');
+    expect(applyQuickEdit('Version 2.0 is ready. Dr. Lee approved.', 'bullets')).toBe(
+      '- Version 2.0 is ready. Dr. Lee approved.'
+    );
+    expect(applyQuickEdit('before\nA sentence\nafter', 'bullets')).toBe(
+      '- before\n- A sentence\n- after'
+    );
+  });
+
+  it('does not mutate empty selections', () => {
+    expect(applyQuickEdit('   ', 'bullets')).toBe('   ');
   });
 });

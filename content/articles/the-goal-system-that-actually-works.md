@@ -15,13 +15,9 @@ featured: true
 ctaVariant: default
 ---
 
-Most goal-setting advice is garbage.
+Many goal-setting routines fail because they stay too broad to guide a real week.
 
-Write down your goals. Visualize success. Dream big.
-
-None of that works.
-
-Research from Locke and Latham, studied over decades, shows something different. Specific beats vague. Challenging beats easy. Feedback makes everything better.
+Writing a goal down is a useful start, but progress usually needs a clear outcome, a manageable next step, and a way to check what changed.
 
 ## The three rules
 

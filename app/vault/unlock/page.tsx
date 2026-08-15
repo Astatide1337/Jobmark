@@ -18,9 +18,9 @@ function VaultUnlockForm() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
-          <CardTitle>Invalid Link</CardTitle>
-          <CardDescription>This unlock link is missing a required parameter.</CardDescription>
+          <AlertCircle className="text-destructive mx-auto h-12 w-12" />
+          <CardTitle>This link is no longer valid</CardTitle>
+          <CardDescription>Return to your AI app and start the connection again.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -55,37 +55,39 @@ function VaultUnlockForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <Lock className="mx-auto h-12 w-12 text-primary" />
-        <CardTitle>Unlock Vault</CardTitle>
-        <CardDescription>
-          Enter your vault password to unlock protected projects. This link expires in 5 minutes.
-        </CardDescription>
+        <Lock className="text-primary mx-auto h-12 w-12" />
+        <CardTitle>Unlock protected project</CardTitle>
+        <CardDescription>Enter your password to use this protected project.</CardDescription>
       </CardHeader>
       <CardContent>
         {status === 'success' ? (
-          <div className="text-center space-y-4">
+          <div className="space-y-4 text-center">
             <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-            <p className="text-sm text-muted-foreground">{message}</p>
-            <p className="text-xs text-muted-foreground">You can close this tab and return to your AI assistant.</p>
+            <p className="text-muted-foreground text-sm">{message}</p>
+            <p className="text-muted-foreground text-xs">
+              You can close this tab and return to your AI app.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
+              <label htmlFor="vault-unlock-password" className="sr-only">
+                Project password
+              </label>
               <Input
+                id="vault-unlock-password"
                 type="password"
                 placeholder="Vault password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 minLength={12}
                 autoFocus
               />
             </div>
-            {status === 'error' && (
-              <p className="text-sm text-destructive">{message}</p>
-            )}
+            {status === 'error' && <p className="text-destructive text-sm">{message}</p>}
             <Button type="submit" className="w-full" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Unlocking...' : 'Unlock Vault'}
+              {status === 'loading' ? 'Unlocking...' : 'Unlock project'}
             </Button>
           </form>
         )}
@@ -96,7 +98,7 @@ function VaultUnlockForm() {
 
 export default function VaultUnlockPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <Suspense>
         <VaultUnlockForm />
       </Suspense>

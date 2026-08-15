@@ -2,13 +2,11 @@
 
 import type { RefObject } from 'react';
 import { format } from 'date-fns';
-import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowUp, Calendar as CalendarIcon, Loader2, Send, Sparkles, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Send, Sparkles } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DictateButton } from '@/components/ui/dictate-button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -25,20 +23,14 @@ interface QuickCaptureProject {
 
 interface QuickCaptureViewProps {
   formRef: RefObject<HTMLFormElement | null>;
-  containerRef: RefObject<HTMLDivElement | null>;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   currentAction: (formData: FormData) => void | Promise<void>;
   isPending: boolean;
   content: string;
-  selection: { start: number; end: number; text: string } | null;
-  menuPosition: { top: number; left: number } | null;
-  instruction: string;
-  isImproving: boolean;
   isPolishing: boolean;
   isListening: boolean;
   charCount: number;
   isValidLength: boolean;
-  isMac: boolean;
   todayCount: number;
   dailyGoal: number;
   projects: QuickCaptureProject[];
@@ -49,34 +41,22 @@ interface QuickCaptureViewProps {
   state: ActivityFormState;
   dateLabel: string;
   onContentChange: (value: string) => void;
-  onSelectionChange: (selection: { start: number; end: number; text: string } | null) => void;
-  onMenuPositionChange: (position: { top: number; left: number } | null) => void;
-  onInstructionChange: (instruction: string) => void;
   onDatePickerOpenChange: (open: boolean) => void;
   onDateChange: (date: Date | undefined) => void;
   onProjectChange: (projectId: string) => void;
-  onSelect: () => void;
-  onImprove: () => void;
-  onDismissToolbar: () => void;
   onToggleListening: () => void;
 }
 
 export function QuickCaptureView({
   formRef,
-  containerRef,
   textareaRef,
   currentAction,
   isPending,
   content,
-  selection,
-  menuPosition,
-  instruction,
-  isImproving,
   isPolishing,
   isListening,
   charCount,
   isValidLength,
-  isMac,
   todayCount,
   dailyGoal,
   projects,
@@ -87,15 +67,9 @@ export function QuickCaptureView({
   state,
   dateLabel,
   onContentChange,
-  onSelectionChange,
-  onMenuPositionChange,
-  onInstructionChange,
   onDatePickerOpenChange,
   onDateChange,
   onProjectChange,
-  onSelect,
-  onImprove,
-  onDismissToolbar,
   onToggleListening,
 }: QuickCaptureViewProps) {
   return (
@@ -123,142 +97,35 @@ export function QuickCaptureView({
             )}
           </span>
         </div>
-        <CardDescription>What work should be part of your record {dateLabel}?</CardDescription>
+        <CardDescription>What did you do {dateLabel}?</CardDescription>
       </CardHeader>
       <CardContent>
         <form ref={formRef} action={currentAction}>
           <div className="space-y-4">
             <div className="group relative">
-              <div ref={containerRef} className="relative w-full">
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    'pointer-events-none absolute inset-0 z-0 break-words whitespace-pre-wrap text-transparent',
-                    'min-h-[100px] w-full rounded-xl border border-transparent px-3 py-2 text-sm',
-                    'bg-transparent'
-                  )}
-                >
-                  {selection ? (
-                    <>
-                      {content.substring(0, selection.start)}
-                      <span
-                        ref={el => {
-                          if (el && !menuPosition) {
-                            const container = textareaRef.current;
-                            if (container) {
-                              const spanRect = el.getBoundingClientRect();
-                              const containerRect = container.getBoundingClientRect();
-                              const top = spanRect.bottom - containerRect.top;
-                              const left = spanRect.left - containerRect.left + spanRect.width / 2;
-                              onMenuPositionChange({ top, left });
-                            }
-                          }
-                        }}
-                        className="bg-primary/20 rounded-[2px] text-transparent"
-                      >
-                        {content.substring(selection.start, selection.end)}
-                      </span>
-                      {content.substring(selection.end)}
-                    </>
-                  ) : (
-                    content
-                  )}
-                  <br />
-                </div>
+              <Textarea
+                ref={textareaRef}
+                name="content"
+                value={content}
+                onChange={e => onContentChange(e.target.value)}
+                placeholder="Shipped the dashboard polish, reviewed two PRs, and clarified scope for the API work."
+                className="border-border/50 focus:bg-background/50 relative z-10 min-h-[100px] resize-none bg-transparent pr-16 transition-colors"
+                disabled={isPending}
+                data-quick-capture="true"
+              />
 
-                <Textarea
-                  ref={textareaRef}
-                  name="content"
-                  value={content}
-                  onChange={e => onContentChange(e.target.value)}
-                  onSelect={onSelect}
-                  placeholder="Shipped the dashboard polish, reviewed two PRs, and clarified scope for the API work."
-                  className="border-border/50 focus:bg-background/50 relative z-10 min-h-[100px] resize-none bg-transparent pr-16 transition-colors"
-                  disabled={isPending}
-                  data-quick-capture="true"
-                />
-
-                {isPolishing && (
-                  <div className="absolute right-2 bottom-2 z-30">
-                    <div className="bg-background/80 border-border/50 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs shadow-sm backdrop-blur-sm">
-                      <Sparkles className="h-3 w-3 animate-pulse" />
-                      Polishing...
-                    </div>
+              {isPolishing && (
+                <div className="absolute right-2 bottom-2 z-30">
+                  <div className="bg-background/80 border-border/50 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs shadow-sm backdrop-blur-sm">
+                    <Sparkles className="h-3 w-3 animate-pulse" />
+                    Polishing...
                   </div>
-                )}
-              </div>
-
+                </div>
+              )}
               <div className="text-muted-foreground pointer-events-none absolute right-3 bottom-3 z-20 text-xs">
                 <span className={charCount < 10 ? 'text-destructive' : ''}>{charCount}</span>
                 /1000
               </div>
-
-              <AnimatePresence>
-                {selection && menuPosition && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 6, scale: 1 }}
-                    exit={{ opacity: 0, y: 0, scale: 0.95 }}
-                    style={{
-                      top: menuPosition.top,
-                      left: menuPosition.left,
-                      transform: 'translateX(-50%)',
-                    }}
-                    className="absolute z-50 flex origin-top flex-col items-center bg-transparent"
-                  >
-                    <div className="border-b-popover absolute -top-[6px] left-1/2 h-0 w-0 -translate-x-1/2 border-r-[6px] border-b-[6px] border-l-[6px] border-r-transparent border-l-transparent drop-shadow-sm" />
-                    <div className="bg-popover border-border flex w-[340px] items-center gap-2 rounded-xl border p-1 shadow-xl">
-                      <div className="bg-primary/10 text-primary ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-                        <Sparkles className="h-4 w-4" />
-                      </div>
-                      <Input
-                        value={instruction}
-                        onChange={e => onInstructionChange(e.target.value)}
-                        placeholder="Try: 'make it shorter' or 'turn it into bullets'"
-                        className="h-9 border-none bg-transparent px-2 text-sm shadow-none focus-visible:ring-0"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            onImprove();
-                          }
-                          if (e.key === 'Escape') onDismissToolbar();
-                        }}
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-1 border-l pr-1 pl-1">
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          aria-label="Apply text edit"
-                          className={cn(
-                            'hover:bg-primary/10 hover:text-primary h-8 w-8',
-                            instruction && 'text-primary'
-                          )}
-                          onClick={onImprove}
-                          disabled={!instruction || isImproving}
-                        >
-                          {isImproving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <ArrowUp className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          aria-label="Close text toolbar"
-                          className="text-muted-foreground hover:text-foreground hover:bg-muted/40 h-8 w-8 transition-all active:scale-90"
-                          onClick={onDismissToolbar}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
 
             <div className="text-muted-foreground space-y-1 text-xs leading-relaxed">
@@ -326,10 +193,10 @@ export function QuickCaptureView({
               <p className="text-destructive text-sm">{state.message}</p>
             )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-muted-foreground text-xs">
                 <kbd className="bg-muted border-border/50 rounded-md border px-1.5 py-0.5 text-[10px]">
-                  {isMac ? '⌘' : 'Ctrl'}
+                  ⌘/Ctrl
                 </kbd>
                 {' + '}
                 <kbd className="bg-muted border-border/50 rounded-md border px-1.5 py-0.5 text-[10px]">
@@ -343,7 +210,7 @@ export function QuickCaptureView({
               <Button
                 type="submit"
                 disabled={!isValidLength || isPending}
-                className="min-w-[120px]"
+                className="min-w-[120px] sm:w-auto"
               >
                 {isPending ? (
                   <>
@@ -353,7 +220,7 @@ export function QuickCaptureView({
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Save to Record
+                    Save entry
                   </>
                 )}
               </Button>

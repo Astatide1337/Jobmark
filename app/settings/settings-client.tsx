@@ -232,24 +232,27 @@ function GoalsSection({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label>Daily Target</Label>
+              <Label htmlFor="daily-target">Daily Target</Label>
               <Input
+                id="daily-target"
                 type="number"
                 value={dailyTarget}
                 onChange={e => setDailyTarget(parseInt(e.target.value) || 0)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Weekly Target</Label>
+              <Label htmlFor="weekly-target">Weekly Target</Label>
               <Input
+                id="weekly-target"
                 type="number"
                 value={weeklyTarget}
                 onChange={e => setWeeklyTarget(parseInt(e.target.value) || 0)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Monthly Target</Label>
+              <Label htmlFor="monthly-target">Monthly Target</Label>
               <Input
+                id="monthly-target"
                 type="number"
                 value={monthlyTarget}
                 onChange={e => setMonthlyTarget(parseInt(e.target.value) || 0)}
@@ -278,7 +281,7 @@ function GoalsSection({
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Your Goals</h3>
+          <h2 className="text-lg font-medium">Your Goals</h2>
           <span className="text-muted-foreground text-sm">{goals.length} goals set</span>
         </div>
 
@@ -378,7 +381,9 @@ function GoalsSection({
                     </div>
                   )}
                   {goal.why && (
-                    <p className="text-muted-foreground mt-2 text-sm italic">&quot;{goal.why}&quot;</p>
+                    <p className="text-muted-foreground mt-2 text-sm italic">
+                      &quot;{goal.why}&quot;
+                    </p>
                   )}
                 </div>
                 <Button
@@ -386,6 +391,7 @@ function GoalsSection({
                   size="icon"
                   className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all active:scale-95"
                   onClick={() => handleDeleteGoal(goal.id)}
+                  aria-label={`Delete goal ${goal.title}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -439,9 +445,7 @@ function ReportsSection({ settings: initialSettings }: { settings: UserSettingsD
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Custom Instructions</CardTitle>
-          <CardDescription>
-            Additional focus for your review draft.
-          </CardDescription>
+          <CardDescription>Additional focus for your review draft.</CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea

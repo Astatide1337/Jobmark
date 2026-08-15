@@ -14,11 +14,21 @@ export async function signInWithGoogle(formData?: FormData) {
   await signIn('google', { redirectTo: callbackUrl });
 }
 
+export async function signInWithDevUser(formData?: FormData) {
+  if (process.env.NODE_ENV !== 'development') {
+    throw new Error('Local development sign-in is disabled outside development.');
+  }
+
+  const callbackUrl = safeAuthRedirect(formData?.get('callbackUrl'));
+  await signIn('dev', { token: 'dev-login', redirectTo: callbackUrl });
+}
+
 /** Start Google sign-in and return to the selected MCP app's simple setup. */
 export async function signInToMcp(formData: FormData) {
   const requestedProvider = formData.get('provider');
   const provider =
-    typeof requestedProvider === 'string' && ['claude', 'chatgpt', 'gemini'].includes(requestedProvider)
+    typeof requestedProvider === 'string' &&
+    ['claude', 'chatgpt', 'gemini'].includes(requestedProvider)
       ? requestedProvider
       : null;
   const redirectTo = provider ? `/chat?connect=${provider}` : '/chat';

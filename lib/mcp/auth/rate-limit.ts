@@ -1,4 +1,6 @@
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+import 'server-only';
+
+import { prisma } from '@/lib/db';
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -20,39 +22,56 @@ export async function checkRateLimit(
 ): Promise<{ allowed: boolean; remaining: number; resetAt: number; retryAfter?: number }> {
   const key = `${config.keyPrefix}:${identifier}`;
   const now = Date.now();
-  const windowStart = now - config.windowMs;
-  
-  const entry = rateLimitStore.get(key);
-  
-  if (!entry || entry.resetAt < now) {
-    // First request in window or window expired
-    rateLimitStore.set(key, { count: 1, resetAt: now + config.windowMs });
-    return { allowed: true, remaining: config.maxRequests - 1, resetAt: now + config.windowMs };
+  const nowDate = new Date(now);
+  const rows = await prisma.$queryRaw<Array<{ count: number; windowStart: Date }>>`
+    INSERT INTO "RateLimitBucket" ("key", "windowStart", "count", "updatedAt")
+    VALUES (${key}, ${nowDate}, 1, ${nowDate})
+    ON CONFLICT ("key") DO UPDATE
+    SET "count" = CASE
+      WHEN "RateLimitBucket"."windowStart" <= ${nowDate} - (${config.windowMs} * INTERVAL '1 millisecond') THEN 1
+      ELSE "RateLimitBucket"."count" + 1
+    END,
+    "windowStart" = CASE
+      WHEN "RateLimitBucket"."windowStart" <= ${nowDate} - (${config.windowMs} * INTERVAL '1 millisecond') THEN ${nowDate}
+      ELSE "RateLimitBucket"."windowStart"
+    END,
+    "updatedAt" = ${nowDate}
+    RETURNING "count", "windowStart"
+  `;
+
+  const row = rows[0];
+  if (!row) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: now + config.windowMs,
+      retryAfter: Math.ceil(config.windowMs / 1000),
+    };
   }
-  
-  if (entry.count >= config.maxRequests) {
-    // Rate limited
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    return { allowed: false, remaining: 0, resetAt: entry.resetAt, retryAfter: Math.max(1, retryAfter) };
-  }
-  
-  // Increment count
-  entry.count++;
-  rateLimitStore.set(key, entry);
-  
-  return { allowed: true, remaining: config.maxRequests - entry.count, resetAt: entry.resetAt };
+
+  const windowStart = new Date(row.windowStart).getTime();
+  const resetAt = windowStart + config.windowMs;
+  const allowed = row.count <= config.maxRequests;
+  return {
+    allowed,
+    remaining: Math.max(0, config.maxRequests - row.count),
+    resetAt,
+    ...(allowed ? {} : { retryAfter: Math.max(1, Math.ceil((resetAt - now) / 1000)) }),
+  };
 }
 
-export async function checkMcpRateLimit(connectionId: string): Promise<{ allowed: boolean; remaining: number; resetAt: number; retryAfter?: number }> {
+export async function checkMcpRateLimit(
+  connectionId: string
+): Promise<{ allowed: boolean; remaining: number; resetAt: number; retryAfter?: number }> {
   // Check both sustained and burst limits
   const [sustained, burst] = await Promise.all([
     checkRateLimit(connectionId, RATE_LIMITS.mcp),
     checkRateLimit(connectionId, RATE_LIMITS.mcpBurst),
   ]);
-  
+
   if (!sustained.allowed) return sustained;
   if (!burst.allowed) return burst;
-  
+
   return {
     allowed: true,
     remaining: Math.min(sustained.remaining, burst.remaining),
@@ -75,10 +94,10 @@ export function createRateLimitHeaders(
     'X-RateLimit-Remaining': result.remaining.toString(),
     'X-RateLimit-Reset': Math.ceil(result.resetAt / 1000).toString(),
   };
-  
+
   if (!result.allowed && result.retryAfter) {
     headers['Retry-After'] = result.retryAfter.toString();
   }
-  
+
   return headers;
 }

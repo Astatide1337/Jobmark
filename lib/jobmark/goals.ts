@@ -34,13 +34,15 @@ export async function listGoals(
 ): Promise<{ goals: GoalDTO[]; nextCursor: string | null }> {
   assertActor(actor);
 
-  const { limit = 100, cursor } = options;
+  const { cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 100, 1), 100);
 
   const goals = await prisma.goal.findMany({
     where: { userId: actor.userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
   });
 
   let nextCursor: string | null = null;

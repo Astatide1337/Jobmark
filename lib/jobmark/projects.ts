@@ -6,12 +6,21 @@
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { getLockedProjectIds } from '@/lib/project-lock';
-import { JobmarkActor, assertActor, NotFoundError, ValidationError, VaultLockedError } from './index';
+import {
+  JobmarkActor,
+  assertActor,
+  NotFoundError,
+  ValidationError,
+  VaultLockedError,
+} from './index';
 import { z } from 'zod';
 
 const projectCreateSchema = z.object({
   name: z.string().min(1).max(50),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#6366f1'),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .default('#6366f1'),
   description: z.string().max(200).optional().nullable(),
 });
 
@@ -39,11 +48,17 @@ export type ProjectsListResult = {
 
 export async function listProjects(
   actor: JobmarkActor,
-  options: { includeArchived?: boolean; includeLocked?: boolean; limit?: number; cursor?: string } = {}
+  options: {
+    includeArchived?: boolean;
+    includeLocked?: boolean;
+    limit?: number;
+    cursor?: string;
+  } = {}
 ): Promise<ProjectsListResult> {
   assertActor(actor);
 
-  const { includeArchived = false, includeLocked = false, limit = 100, cursor } = options;
+  const { includeArchived = false, includeLocked = false, cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 100, 1), 100);
   const lockedIds = await getLockedProjectIds(actor.userId);
 
   const where: Prisma.ProjectWhereInput = { userId: actor.userId };
@@ -55,6 +70,7 @@ export async function listProjects(
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: { _count: { select: { activities: true, reports: true } } },
   });
 
@@ -98,7 +114,8 @@ export async function getProjectWithActivities(
 }> {
   assertActor(actor);
 
-  const { limit = 50, cursor } = options;
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
+  const { cursor } = options;
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: actor.userId },
@@ -113,6 +130,7 @@ export async function getProjectWithActivities(
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : undefined,
     include: { project: { select: { id: true, name: true, color: true, archived: true } } },
   });
 
@@ -124,7 +142,7 @@ export async function getProjectWithActivities(
 
   return {
     project: toProjectDTO(project),
-    activities: activities.map((a) => ({
+    activities: activities.map(a => ({
       id: a.id,
       content: a.content,
       logDate: a.logDate.toISOString().split('T')[0],

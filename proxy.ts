@@ -4,6 +4,13 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // API handlers return their own JSON auth/error responses. Redirecting an
+  // unauthenticated API call to the landing page turns a useful 401 into an
+  // HTML response and breaks clients such as MCP and the vault handoff.
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
   // Check for session token
   const sessionToken =
     request.cookies.get('authjs.session-token') ||
@@ -59,7 +66,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - API handlers (they own their authentication response)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth|api/chat).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)',
   ],
 };

@@ -18,10 +18,7 @@ import { redirect } from 'next/navigation';
 import { getActivities, getActivityStats } from '@/app/actions/activities';
 import { getProjects } from '@/app/actions/projects';
 import { getUserSettings } from '@/app/actions/settings';
-import {
-  QuickCapture,
-  ActivityTimeline,
-} from './dashboard-client';
+import { QuickCapture, ActivityTimeline } from './dashboard-client';
 import {
   GoalMotivator,
   NextBestAction,
@@ -33,7 +30,7 @@ import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 
 import { getGoals } from '@/app/actions/goals';
-import { getReports } from '@/app/actions/reports';
+import { getLockedProjectIds } from '@/lib/project-lock';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -45,13 +42,21 @@ export default async function DashboardPage() {
   // Get user settings first to know if we should hide archived
   const settings = await getUserSettings();
   const hideArchived = settings?.hideArchived ?? false;
+  const lockedProjectIds = await getLockedProjectIds(session.user.id);
 
   const [activities, stats, projects, goals, reports, activeMcpConnections] = await Promise.all([
     getActivities(20, 0, hideArchived),
     getActivityStats(),
     getProjects('active'),
     getGoals(),
-    getReports(),
+    prisma.report.count({
+      where: {
+        userId: session.user.id,
+        ...(lockedProjectIds.length > 0
+          ? { OR: [{ projectId: null }, { projectId: { notIn: lockedProjectIds } }] }
+          : {}),
+      },
+    }),
     prisma.mcpConnection.count({
       where: { userId: session.user.id, revokedAt: null },
     }),
@@ -92,7 +97,7 @@ export default async function DashboardPage() {
           <WorkflowStarter
             activityCount={stats.totalCount}
             projectCount={projects.length}
-            summaryCount={reports.length}
+            summaryCount={reports}
           />
         )}
 
@@ -122,7 +127,7 @@ export default async function DashboardPage() {
             dates={stats.recentDates}
             projects={stats.projects}
             monthlyGoal={stats.monthlyGoal}
-            summaries={reports.length}
+            summaries={reports}
             serverDate={new Date().toISOString()}
           />
         </div>
@@ -131,7 +136,7 @@ export default async function DashboardPage() {
           <NextBestAction
             activityCount={stats.totalCount}
             projectCount={projects.length}
-            summaryCount={reports.length}
+            summaryCount={reports}
             hasMcpConnection={activeMcpConnections > 0}
           />
         </div>

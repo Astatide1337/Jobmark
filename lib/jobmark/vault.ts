@@ -4,10 +4,24 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { JobmarkActor, assertActor, ValidationError, NotFoundError, UserActionRequiredError, VaultLockedError } from './index';
+import {
+  JobmarkActor,
+  assertActor,
+  ValidationError,
+  NotFoundError,
+  UserActionRequiredError,
+  VaultLockedError,
+} from './index';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 const { hash, compare } = bcrypt;
+
+function getPublicAppUrl(): string {
+  const value =
+    process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL;
+  if (!value) throw new Error('Public app URL is not configured');
+  return value.replace(/\/$/, '');
+}
 
 const vaultSetupSchema = z.object({
   password: z.string().min(12).max(128),
@@ -49,7 +63,9 @@ export async function getVaultStatus(actor: JobmarkActor): Promise<VaultStatusDT
   return {
     configured: !!settings?.vaultPasswordHash,
     unlocked: actor.vaultUnlocked,
-    unlockedUntil: actor.vaultUnlocked ? new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString() : null,
+    unlockedUntil: actor.vaultUnlocked
+      ? new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()
+      : null,
     lockedProjectCount: lockedProjects,
   };
 }
@@ -84,10 +100,14 @@ export async function beginVaultSetup(
   }
 
   const nonce = await createSecureActionNonce(actor.userId, actor.connectionId, 'vault_setup');
-  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/vault/setup?nonce=${nonce}`;
+  const actionUrl = `${getPublicAppUrl()}/vault/setup?nonce=${nonce}`;
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  throw new UserActionRequiredError('Open Jobmark to set up your vault password', actionUrl, expiresAt);
+  throw new UserActionRequiredError(
+    'Open Jobmark to set up your vault password',
+    actionUrl,
+    expiresAt
+  );
 }
 
 export async function beginVaultChangePassword(
@@ -104,8 +124,12 @@ export async function beginVaultChangePassword(
     throw new ValidationError('Vault not configured. Use setup instead.');
   }
 
-  const nonce = await createSecureActionNonce(actor.userId, actor.connectionId, 'vault_change_password');
-  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/vault/change-password?nonce=${nonce}`;
+  const nonce = await createSecureActionNonce(
+    actor.userId,
+    actor.connectionId,
+    'vault_change_password'
+  );
+  const actionUrl = `${getPublicAppUrl()}/vault/change-password?nonce=${nonce}`;
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
   throw new UserActionRequiredError(
@@ -134,14 +158,10 @@ export async function beginVaultUnlock(
   }
 
   const nonce = await createSecureActionNonce(actor.userId, actor.connectionId, 'vault_unlock');
-  const actionUrl = `${process.env.NEXT_PUBLIC_APP_URL}/vault/unlock?nonce=${nonce}`;
+  const actionUrl = `${getPublicAppUrl()}/vault/unlock?nonce=${nonce}`;
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  throw new UserActionRequiredError(
-    'Open Jobmark to unlock your vault',
-    actionUrl,
-    expiresAt
-  );
+  throw new UserActionRequiredError('Open Jobmark to unlock your vault', actionUrl, expiresAt);
 }
 
 export async function lockVault(actor: JobmarkActor): Promise<void> {
@@ -214,14 +234,29 @@ export async function consumeSecureActionNonce(
     where: { nonceHash },
   });
 
-  if (!nonce || nonce.used || nonce.expiresAt < new Date() || nonce.userId !== userId || nonce.type !== type) {
+  const now = new Date();
+  if (
+    !nonce ||
+    nonce.used ||
+    nonce.expiresAt < now ||
+    nonce.userId !== userId ||
+    nonce.type !== type
+  ) {
     return null;
   }
 
-  await prisma.secureActionNonce.update({
-    where: { id: nonce.id },
+  const consumed = await prisma.secureActionNonce.updateMany({
+    where: {
+      id: nonce.id,
+      userId,
+      type,
+      used: false,
+      expiresAt: { gte: now },
+    },
     data: { used: true },
   });
+
+  if (consumed.count !== 1) return null;
 
   return { connectionId: nonce.connectionId };
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Search } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,7 +29,7 @@ export function TopicChipsBar<TCategory extends string>({
   sort,
 }: TopicChipsBarProps<TCategory>) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex max-w-full flex-wrap gap-x-5 gap-y-2">
       {(Object.entries(categories) as Array<[TCategory, string]>).map(([value, label]) => {
         const isActive = activeTopic === value;
         const params = new URLSearchParams();
@@ -53,9 +53,11 @@ export function TopicChipsBar<TCategory extends string>({
             key={value}
             href={href}
             className={cn(
-              buttonVariants({ variant: isActive ? 'default' : 'outline', size: 'sm' }),
-              'rounded-xl',
-              isActive ? 'shadow-primary/10' : 'text-muted-foreground hover:text-foreground'
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'h-auto rounded-none px-0 py-1 text-sm',
+              isActive
+                ? 'text-foreground border-primary border-b-2 font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
             )}
           >
             {label}
@@ -135,15 +137,19 @@ export function SortAndSearchBar({ topic, query, sort }: SortAndSearchBarProps) 
         event.preventDefault();
         applyFilters(queryValue, sortValue);
       }}
-      className="border-border/60 bg-background/90 sticky top-2 z-20 flex flex-col gap-3 rounded-2xl border p-3 backdrop-blur sm:flex-row sm:items-center"
+      className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center"
     >
-      <Input
-        type="search"
-        value={queryValue}
-        onChange={event => setQueryValue(event.target.value)}
-        placeholder="Search articles by problem or workflow"
-        className="h-10 w-full"
-      />
+      <div className="relative w-full sm:max-w-md">
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <Input
+          type="search"
+          value={queryValue}
+          onChange={event => setQueryValue(event.target.value)}
+          placeholder="Search stories"
+          aria-label="Search stories"
+          className="h-10 w-full pl-9"
+        />
+      </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

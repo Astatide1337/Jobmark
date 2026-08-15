@@ -35,5 +35,5 @@ export const DEFAULT_LIMITS = {
 
 export function getLimit(toolName: string, requested?: number): number {
   const max = (DEFAULT_LIMITS as Record<string, number>)[toolName] ?? 50;
-  return Math.min(requested ?? max, max);
+  return Math.min(Math.max(requested ?? max, 1), max);
 }

@@ -86,10 +86,10 @@ function ConsentForm() {
             <Shield className="h-7 w-7" />
           </div>
           <CardTitle className="relative text-2xl tracking-tight">
-            Connect this plugin to Jobmark
+            Connect this app to Jobmark
           </CardTitle>
           <CardDescription className="relative mx-auto mt-3 max-w-sm leading-relaxed">
-            Choose what the plugin can access. You can revoke Jobmark access at any time.
+            Choose what this app can access. You can disconnect it from Jobmark at any time.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-6 pt-0">
@@ -145,7 +145,7 @@ function ConsentForm() {
               type="button"
             >
               <Check className="mr-2 h-4 w-4" />
-              Connect plugin
+              Connect app
             </Button>
           </div>
         </CardContent>

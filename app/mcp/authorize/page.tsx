@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export const metadata: Metadata = {
   title: 'Connection could not start | Jobmark',
-  description: 'Return to your AI plugin and start the Jobmark connection again.',
+  description: 'Return to your AI app and start the Jobmark connection again.',
 };
 
 type AuthorizationErrorPageProps = {
@@ -14,9 +14,9 @@ type AuthorizationErrorPageProps = {
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
-  invalid_request: 'The AI plugin sent an incomplete or outdated connection request.',
-  unauthorized_client: 'Jobmark could not recognize this AI plugin.',
-  invalid_scope: 'The AI plugin requested permissions that are not available.',
+  invalid_request: 'The AI app sent an incomplete or outdated connection request.',
+  unauthorized_client: 'Jobmark could not recognize this AI app.',
+  invalid_scope: 'The AI app requested permissions that are not available.',
 };
 
 function getErrorMessage(error: string | undefined): string {
@@ -59,7 +59,7 @@ export default async function AuthorizationErrorPage({
           <div className="border-border/60 bg-muted/20 rounded-2xl border p-4 text-sm leading-6">
             <p className="text-foreground font-medium">Start a fresh connection</p>
             <p className="text-muted-foreground mt-1">
-              Return to your AI plugin, open its Jobmark connector, and choose{' '}
+              Return to your AI app, open its Jobmark connection, and choose{' '}
               <strong>Reconnect</strong> or <strong>Add connection</strong>. This creates a new,
               secure request.
             </p>
