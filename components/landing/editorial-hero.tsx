@@ -17,15 +17,11 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { DemoDashboard } from './demos/demo-dashboard';
-import { RotatingHeadline } from '@/components/ui/rotating-headline';
+import { FlipWords } from '@/components/ui/flip-words';
 import { useAuthModal } from '@/components/auth';
 
-const jobmarkHeadlines = [
-  { text: 'Remember what you', highlight: 'did.' },
-  { text: 'Be ready for', highlight: 'reviews.' },
-  { text: 'Keep your', highlight: 'notes together.' },
-  { text: 'See your', highlight: 'progress.' },
-];
+const headlinePrefixes = ['Remember what you', 'Be ready for', 'Keep your', 'See your'];
+const headlineHighlights = ['did.', 'reviews.', 'notes together.', 'progress.'];
 
 export function EditorialHero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,8 +68,22 @@ export function EditorialHero() {
               </span>
             </motion.div>
 
-            {/* Main Headline - Rotating Headlines */}
-            <RotatingHeadline headlines={jobmarkHeadlines} interval={3000} />
+            {/* Main Headline - official Aceternity Flip Words */}
+            <div className="relative h-[13rem] w-full overflow-visible sm:h-[12rem] lg:h-[13rem]">
+              <h1 className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-7xl">
+                <FlipWords
+                  words={headlinePrefixes}
+                  duration={3000}
+                  className="text-foreground !px-0"
+                />
+                <br />
+                <FlipWords
+                  words={headlineHighlights}
+                  duration={3000}
+                  className="text-primary !px-0"
+                />
+              </h1>
+            </div>
 
             {/* Subheadline */}
             <motion.p

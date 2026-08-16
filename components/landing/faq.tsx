@@ -5,13 +5,12 @@
  * and pricing. It provides definitive answers in a clean,
  * collapsible format to avoid information overload.
  *
- * Logic: Uses an accordion pattern with `AnimatePresence` to handle
- * height-based entry/exit animations smoothly.
+ * Logic: Keeps answers mounted and animates only the surrounding grid row so
+ * changing an item does not fade or remount the text.
  */
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
 const faqs = [
@@ -123,6 +122,8 @@ function FAQItem({
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`faq-${faq.id}-content`}
         className="group flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left"
       >
         <span
@@ -133,35 +134,28 @@ function FAQItem({
           {faq.question}
         </span>
 
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="text-muted-foreground flex-shrink-0"
-        >
-          <ChevronDown className="h-5 w-5" />
-        </motion.div>
+        <ChevronDown
+          className={`text-muted-foreground h-5 w-5 flex-shrink-0 transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
-      {/* Answer - Expandable */}
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              height: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
-              opacity: { duration: 0.25 },
-            }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-5">
-              <div className="bg-border/20 mb-4 h-px" />
-              <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Keep the answer mounted; only the row height changes. */}
+      <div
+        id={`faq-${faq.id}-content`}
+        aria-hidden={!isOpen}
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${
+          isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="px-5 pb-5">
+            <div className="bg-border/20 mb-4 h-px" />
+            <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

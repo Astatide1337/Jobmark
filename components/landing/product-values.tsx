@@ -5,13 +5,12 @@
  * This accordion component allows users to explore the "Why" behind the
  * features, building trust through transparency.
  *
- * Design: Features a custom warm-amber gradient on active items to maintain
+ * Design: Features a warm-amber gradient on active items to maintain
  * the "Café" brand identity.
  */
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
 // All icons use warm cafe colors - variations of amber/brown
@@ -160,18 +159,13 @@ function AccordionItem({
 }) {
   return (
     <div className="relative">
-      {/* Background gradient when open - warm amber tones */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="from-primary/10 via-primary/5 absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r to-transparent"
-          />
-        )}
-      </AnimatePresence>
+      {/* Keep the background node mounted so opening an item does not remount nearby content. */}
+      <div
+        aria-hidden="true"
+        className={`from-primary/10 via-primary/5 pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r to-transparent transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
 
       <div
         className={`relative rounded-2xl border transition-all duration-300 ${
@@ -184,6 +178,8 @@ function AccordionItem({
         <button
           type="button"
           onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-controls={`value-${value.id}-content`}
           className="group flex w-full cursor-pointer items-center gap-4 p-6 text-left"
         >
           {/* Icon - all use warm primary color */}
@@ -202,38 +198,28 @@ function AccordionItem({
           </div>
 
           {/* Chevron */}
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="text-muted-foreground flex-shrink-0"
-          >
-            <ChevronDown className="h-5 w-5" />
-          </motion.div>
+          <ChevronDown
+            className={`text-muted-foreground h-5 w-5 flex-shrink-0 transition-transform duration-300 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
         </button>
 
-        {/* Content - Expandable */}
-        <AnimatePresence initial={false}>
-          {isOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{
-                height: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
-                opacity: { duration: 0.3 },
-              }}
-              className="overflow-hidden"
-            >
-              <div className="px-6 pb-6">
-                {/* Divider */}
-                <div className="bg-primary/10 mb-4 h-px" />
-
-                {/* Description */}
-                <p className="text-muted-foreground pl-16 leading-relaxed">{value.description}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Keep the answer mounted. Only the outer grid row changes size, so its text never fades. */}
+        <div
+          id={`value-${value.id}-content`}
+          aria-hidden={!isOpen}
+          className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${
+            isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="px-6 pb-6">
+              <div className="bg-primary/10 mb-4 h-px" />
+              <p className="text-muted-foreground pl-16 leading-relaxed">{value.description}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

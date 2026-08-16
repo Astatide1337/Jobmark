@@ -63,6 +63,7 @@
     "lenis": "^1.3.17",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.562.0",
+    "motion": "^12.43.0",
     "nanoid": "^5.1.6",
     "next": "16.2.12",
     "next-auth": "^5.0.0-beta.30",
