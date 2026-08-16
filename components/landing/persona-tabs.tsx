@@ -6,14 +6,13 @@
  * narrative through interactive tabs.
  *
  * Implementation:
- * - Tabbed Interface: Uses Framer Motion for high-fidelity tab transitions.
+ * - Tabbed Interface: Keeps panels mounted so switching tabs does not replay or flash content.
  * - Visual Mockups: Each tab includes a unique "Visual" sub-component that
  *   simulates a specific feature (e.g., Weekly Highlights, Stats).
  */
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   Trophy,
   TrendingUp,
@@ -98,11 +97,8 @@ function TrackVisual() {
           tags: ['Code review'],
         },
       ].map((entry, i) => (
-        <motion.div
+        <div
           key={i}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.1 }}
           className="bg-background/50 border-border/20 flex items-start gap-3 rounded-lg border p-3"
         >
           <Clock className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
@@ -122,7 +118,7 @@ function TrackVisual() {
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
       ))}
     </div>
   );
@@ -145,16 +141,10 @@ function ProveVisual() {
               'Mentored 2 junior developers through onboarding',
               'Shipped 12 features ahead of schedule',
             ].map((item, i) => (
-              <motion.li
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.15 }}
-                className="flex items-start gap-2"
-              >
+              <li key={i} className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                 <span>{item}</span>
-              </motion.li>
+              </li>
             ))}
           </ul>
         </div>
@@ -190,36 +180,27 @@ function ShareVisual() {
 
         <div className="space-y-2 text-sm">
           <p className="text-foreground font-medium">This week:</p>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground leading-relaxed"
-          >
+          <div className="text-muted-foreground leading-relaxed">
             <p>
               Finished the checkout redesign, worked with design on the new dashboard, and fixed
               three important customer issues.
             </p>
-          </motion.div>
+          </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <motion.button
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+          <button
+            type="button"
             className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs"
           >
             Copy update
-          </motion.button>
-          <motion.button
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+          </button>
+          <button
+            type="button"
             className="border-border/40 text-muted-foreground rounded-md border px-3 py-1.5 text-xs"
           >
             Export PDF
-          </motion.button>
+          </button>
         </div>
       </div>
     </div>
@@ -234,42 +215,27 @@ export function PersonaTabs() {
       <div className="mx-auto max-w-7xl px-6">
         {/* Section header */}
         <div className="mb-16 max-w-2xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-6 flex items-center gap-3"
-          >
+          <div className="mb-6 flex items-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
               Write it down as you go
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-6 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
-          >
+          <h2 className="mb-6 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
             Keep the details while they are fresh.
-          </motion.h2>
+          </h2>
         </div>
 
         {/* Tab navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12 flex flex-wrap gap-2"
-        >
+        <div className="mb-12 flex flex-wrap gap-2" role="tablist" aria-label="Ways to use Jobmark">
           {tabs.map(tab => (
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`persona-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all duration-300 ${
                 activeTab === tab.id
@@ -281,7 +247,7 @@ export function PersonaTabs() {
               {tab.label}
             </button>
           ))}
-        </motion.div>
+        </div>
 
         {/* Tab content stays mounted so switching tabs does not blank or reload the section. */}
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -291,11 +257,10 @@ export function PersonaTabs() {
               const isActive = activeTab === tab.id;
 
               return (
-                <motion.div
+                <div
                   key={tab.id}
-                  initial={false}
-                  animate={{ opacity: isActive ? 1 : 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  id={`persona-panel-${tab.id}`}
+                  role="tabpanel"
                   aria-hidden={!isActive}
                   className={cn(
                     'col-start-1 row-start-1 space-y-6',
@@ -316,7 +281,7 @@ export function PersonaTabs() {
                       </li>
                     ))}
                   </ul>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -327,11 +292,8 @@ export function PersonaTabs() {
               const isActive = activeTab === tab.id;
 
               return (
-                <motion.div
+                <div
                   key={tab.id}
-                  initial={false}
-                  animate={{ opacity: isActive ? 1 : 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
                   aria-hidden={!isActive}
                   className={cn(
                     'col-start-1 row-start-1',
@@ -339,7 +301,7 @@ export function PersonaTabs() {
                   )}
                 >
                   {tab.visual}
-                </motion.div>
+                </div>
               );
             })}
           </div>

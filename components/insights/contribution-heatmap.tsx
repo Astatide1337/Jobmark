@@ -8,8 +8,8 @@
  * - Calculation Offloading: The grid calculation (weeks/days/labels) has
  *   been moved to the **Server Action** (`insights.ts`). This component
  *   is now a "Dumb Component" that purely handles high-contrast rendering.
- * - Fluid Grid: Uses a combination of `flex-1` and `aspect-square` to ensure
- *   the heatmap looks great on everything from mobile to wide desktops.
+ * - Stable Grid: Uses fixed cell dimensions so a short date range cannot
+ *   stretch a handful of notes into oversized blocks.
  */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -43,16 +43,16 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <TooltipProvider delayDuration={50}>
-          {/* Full width container */}
-          <div className="w-full">
+          {/* The grid scrolls horizontally when needed instead of stretching cells. */}
+          <div className="w-full overflow-x-auto">
             {/* Month labels row */}
-            <div className="mb-3 flex pl-10">
+            <div className="mb-3 flex w-full justify-between pl-10">
               {weeks.map((_, weekIndex) => {
                 const label = monthLabels.find(l => l.weekIndex === weekIndex);
                 return (
                   <div
                     key={weekIndex}
-                    className="text-foreground/70 min-w-0 flex-1 text-sm font-medium"
+                    className="text-foreground/70 w-4 shrink-0 text-sm font-medium sm:w-5"
                   >
                     {label?.month || ''}
                   </div>
@@ -72,16 +72,16 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
                 <span></span>
               </div>
 
-              {/* Heatmap cells - each column expands to fill */}
-              <div className="flex flex-1 gap-1.5">
+              {/* Heatmap cells keep a readable size across every date range. */}
+              <div className="flex min-w-0 flex-1 justify-between gap-1.5">
                 {weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex flex-1 flex-col gap-1.5">
+                  <div key={weekIndex} className="flex w-4 shrink-0 flex-col gap-1.5 sm:w-5">
                     {week.map((day, dayIndex) => (
-                      <Tooltip key={`${weekIndex}-${dayIndex}`}>
+                      <Tooltip key={day.date || `empty-${weekIndex}-${dayIndex}`}>
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              'aspect-square rounded transition-all',
+                              'h-4 w-4 rounded transition-colors sm:h-5 sm:w-5',
                               day.count === -1 ? 'bg-transparent' : getColorClass(day.count),
                               day.date === todayStr &&
                                 'ring-primary ring-offset-background ring-2 ring-offset-1',
