@@ -1,6 +1,6 @@
 ---
-title: Asking for what you need
-description: How to ask for resources, scope, and support — not just raises.
+title: Ask for what you need
+description: How to ask for more time, help, work, or pay.
 slug: asking-for-what-you-need
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
@@ -21,27 +21,27 @@ That's not how it works.
 
 You have to ask. But asking is a skill.
 
-## What you're actually asking for
+## What you can ask for
 
 It's not just money.
 
 It's also:
 
 - More interesting work
-- Bigger scope
 - More responsibility
-- Training or development
+- More pay
+- Training
 - Help when you're blocked
 - Clarity on expectations
 - Career direction
 
-These matter as much as compensation. Maybe more.
+These can matter just as much as pay.
 
 ## Why people don't ask
 
-They don't want to seem pushy. They fear rejection. They think it's not appropriate.
+They do not want to seem pushy. They fear rejection. They think it is not the right time.
 
-Here's the thing: most managers would rather you ask than suffer silently. It's easier to help when they know what's needed.
+Most managers would rather you ask than struggle without saying why. It is easier to help when they know what you need.
 
 ## The preparation
 
@@ -51,21 +51,21 @@ Before you ask, do this:
 
 Not "I want more." I want a raise. I want to lead that project. I want to reduce my meeting load.
 
-Specific beats vague.
+Be specific.
 
-**2. Build the case**
+**2. Give the reason**
 
-Why should they say yes? What's the evidence? What will change if they grant this?
+Why should they say yes? What notes or results support it? What will change if they agree?
 
-You're making their decision easy.
+This gives them enough to answer.
 
-**3. Know the tradeoffs**
+**3. Know what it will cost**
 
-What will they have to give up? What's the cost? Be ready to discuss this.
+What will they have to give up? What will it cost? Be ready to discuss this.
 
 ## The conversation
 
-**1. Set context**
+**1. Start the conversation**
 
 "I've been thinking about my growth and wanted to discuss something."
 
@@ -75,13 +75,13 @@ What will they have to give up? What's the cost? Be ready to discuss this.
 
 **3. Give the reason**
 
-"This would help me develop strategic planning skills. I've been doing execution work and want to build the planning muscle."
+"This would help me build planning skills. I have been doing day-to-day work and want to take on more planning."
 
-**4. Show readiness**
+**4. Show what you can do**
 
 "I've already been doing X and Y, which has prepared me."
 
-**5. Invite dialogue**
+**5. Ask what they think**
 
 "What's your thought? Is this the right time?"
 
@@ -93,12 +93,12 @@ Also: be ready for "not yet." That doesn't mean never. Ask what would make it po
 
 ## When to ask
 
-Not when things are on fire. Not right after something went wrong.
+Do not wait until things are going badly. Do not ask right after something went wrong.
 
 Good times:
 
-- After you've delivered something notable
-- In a regular 1:1 where there's space
+- After you've finished something important
+- In a regular 1:1 where you have time to talk
 - When you've been in the role long enough to know what's needed
 
 ## The ask you're probably not making
@@ -109,12 +109,12 @@ Most people only ask for money. They don't ask for:
 - "I need clearer expectations or I'll keep missing the mark."
 - "I need help with X or I'll stay blocked."
 
-These asks matter more than raises. They're about your actual work experience.
+These asks can change your daily work as much as a raise can.
 
 ## What happens
 
-If you never ask, you get what you get. Which is usually what someone decided for you.
+If you never ask, someone else decides for you.
 
-If you ask well, you shape your role. You get more of what you need. You grow faster.
+If you ask clearly, you have more say in your work. You get more of what you need.
 
-The difference isn't talent. It's willingness to ask.
+You do not need special talent. You need to ask clearly.

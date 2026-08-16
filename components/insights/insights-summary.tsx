@@ -19,43 +19,57 @@ import type { InsightsData } from '@/app/actions/insights';
 interface InsightsSummaryProps {
   data: InsightsData;
   compact?: boolean;
+  rangeLabel?: 'this month' | 'selected range';
 }
 
 // Consistent card styling applied globally
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-md';
 
-export function InsightsSummary({ data, compact = false }: InsightsSummaryProps) {
+export function InsightsSummary({
+  data,
+  compact = false,
+  rangeLabel = 'this month',
+}: InsightsSummaryProps) {
+  const activeDaysSubtitle =
+    rangeLabel === 'this month'
+      ? 'Days with notes this month'
+      : 'Days with notes in selected range';
+  const activeDaysTooltip =
+    rangeLabel === 'this month'
+      ? 'Days this month when you saved at least one note'
+      : 'Days in the selected range when you saved at least one note';
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className={cn('grid grid-cols-2 gap-4', !compact && 'lg:grid-cols-4')}>
         <MetricCard
           icon={FileText}
-          label="Entries"
+          label="Notes"
           value={data.totalActivities}
-          subtitle="Captured in record"
-          tooltip="Total entries captured in your work record"
+          subtitle="All notes"
+          tooltip="All the notes you have saved"
         />
         <MetricCard
           icon={Calendar}
-          label="Coverage"
+          label="Days with notes"
           value={data.activeDaysThisMonth}
-          subtitle="Active days this month"
-          tooltip="Days this month where you documented at least one concrete piece of work"
+          subtitle={activeDaysSubtitle}
+          tooltip={activeDaysTooltip}
           highlight={data.activeDaysThisMonth > 5}
         />
         <MetricCard
           icon={FolderOpen}
           label="Projects"
           value={data.projectDistribution.length}
-          subtitle="Represented in record"
-          tooltip="How many projects are represented in your captured work"
+          subtitle="With notes"
+          tooltip="Projects that have notes"
         />
         <MetricCard
           icon={Sparkles}
-          label="Summaries"
+          label="Review drafts"
           value={data.totalReports}
           subtitle="Saved drafts"
-          tooltip="Saved summaries you can reuse for updates, reviews, or promotion prep"
+          tooltip="Review drafts you have saved"
         />
       </div>
     </TooltipProvider>

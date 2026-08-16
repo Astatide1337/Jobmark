@@ -14,7 +14,6 @@ const { authMock, getLockedProjectIdsMock, isVaultUnlockedMock, prismaMock } = v
     contact: { findMany: vi.fn() },
     interactionLog: { findMany: vi.fn() },
     outreachDraft: { findMany: vi.fn() },
-    conversation: { findMany: vi.fn() },
   },
 }));
 
@@ -63,14 +62,15 @@ describe('account export safety', () => {
     prismaMock.contact.findMany.mockResolvedValue([]);
     prismaMock.interactionLog.findMany.mockResolvedValue([]);
     prismaMock.outreachDraft.findMany.mockResolvedValue([]);
-    prismaMock.conversation.findMany.mockResolvedValue([]);
   });
 
   it('does not serialize prohibited security fields', async () => {
     const exported = await exportUserData();
     const serialized = JSON.stringify(exported);
 
-    expect(serialized).not.toMatch(/vaultPasswordHash|access_token|refresh_token|sessionToken|ciphertext/i);
+    expect(serialized).not.toMatch(
+      /vaultPasswordHash|access_token|refresh_token|sessionToken|ciphertext/i
+    );
     expect(prismaMock.userSettings.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: 'user-a' },

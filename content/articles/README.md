@@ -64,5 +64,5 @@ secondaryHref: /reports?tab=new
 - Keep introductions short and practical.
 - Use clear headings and scannable bullets.
 - Include actionable examples.
-- Link to relevant Jobmark pages when useful.
+- Link to relevant Jobmark pages when it helps the reader.
 - Prefer one concrete next step inside Jobmark by the end of the article.

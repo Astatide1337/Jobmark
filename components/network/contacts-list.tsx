@@ -97,7 +97,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.totalContacts}</p>
-              <p className="text-muted-foreground text-xs">Total Contacts</p>
+              <p className="text-muted-foreground text-xs">Contacts</p>
             </div>
           </CardContent>
         </Card>
@@ -108,7 +108,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.interactionsThisMonth}</p>
-              <p className="text-muted-foreground text-xs">Interactions This Month</p>
+              <p className="text-muted-foreground text-xs">Conversations this month</p>
             </div>
           </CardContent>
         </Card>
@@ -119,7 +119,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">{stats.followUpsDue}</p>
-              <p className="text-muted-foreground text-xs">Follow-ups Due</p>
+              <p className="text-muted-foreground text-xs">Follow-ups due</p>
             </div>
           </CardContent>
         </Card>
@@ -130,7 +130,8 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
         <div className="relative w-full flex-1">
           <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
           <Input
-            placeholder="Search contacts..."
+            placeholder="Search contacts"
+            aria-label="Search contacts"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -143,13 +144,13 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="name">Name (A-Z)</SelectItem>
-              <SelectItem value="recent">Recently Added</SelectItem>
-              <SelectItem value="interactions">Most Interactions</SelectItem>
+              <SelectItem value="recent">Recently added</SelectItem>
+              <SelectItem value="interactions">Most conversations</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setShowCreateDialog(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
-            Add Contact
+            Add contact
           </Button>
         </div>
       </div>
@@ -163,20 +164,17 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No contacts yet</h3>
             <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-              Keep a simple record of key people and touchpoints to support long-term career
-              visibility.
+              Add a contact to remember who you talked to and what to do next.
             </p>
             <Button onClick={() => setShowCreateDialog(true)}>
               <UserPlus className="mr-2 h-4 w-4" />
-              Add Your First Contact
+              Add your first contact
             </Button>
           </CardContent>
         </Card>
       )}
       {contacts.length > 0 && filteredContacts.length === 0 && (
-        <div className="text-muted-foreground py-12 text-center italic">
-          No contacts match your search.
-        </div>
+        <div className="text-muted-foreground py-12 text-center italic">No contacts found.</div>
       )}
       {contacts.length > 0 && filteredContacts.length > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -201,7 +199,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
                       </div>
                       <Badge variant="secondary" className="ml-2 shrink-0">
                         {contact._count.interactions}{' '}
-                        {contact._count.interactions === 1 ? 'interaction' : 'interactions'}
+                        {contact._count.interactions === 1 ? 'conversation' : 'conversations'}
                       </Badge>
                     </div>
                   </CardHeader>

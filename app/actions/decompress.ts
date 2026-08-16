@@ -20,7 +20,7 @@ import {
 export async function logDecompressionSession() {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: 'Not authenticated' };
+    return { error: 'Sign in to save this focus session.' };
   }
 
   try {
@@ -34,11 +34,11 @@ export async function logDecompressionSession() {
         : DEFAULT_TIME_ZONE;
     const logDate = calendarDateToUtcMidnight(getCalendarDate(new Date(), timeZone));
 
-    // 1. Find or Create the "Decompress" project
+    // 1. Find or create the project used for saved focus sessions.
     let project = await prisma.project.findFirst({
       where: {
         userId: session.user.id,
-        name: 'Decompress',
+        name: { in: ['Focus', 'Decompress'] },
       },
     });
 
@@ -46,10 +46,15 @@ export async function logDecompressionSession() {
       project = await prisma.project.create({
         data: {
           userId: session.user.id,
-          name: 'Decompress',
+          name: 'Focus',
           color: '#d4a574', // Warm amber
-          description: 'Sessions for psychological detachment and rest.',
+          description: 'Focus and reset sessions.',
         },
+      });
+    } else if (project.name === 'Decompress') {
+      project = await prisma.project.update({
+        where: { id: project.id },
+        data: { name: 'Focus', description: 'Focus and reset sessions.' },
       });
     }
 
@@ -58,7 +63,7 @@ export async function logDecompressionSession() {
       data: {
         userId: session.user.id,
         projectId: project.id,
-        content: 'Completed a decompression ritual.',
+        content: 'Took a few minutes to reset.',
         logDate,
       },
     });
@@ -66,7 +71,7 @@ export async function logDecompressionSession() {
     revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Failed to log decompression session:', error);
-    return { error: 'Failed to log session' };
+    console.error('Failed to save focus session:', error);
+    return { error: 'The focus session was not saved.' };
   }
 }

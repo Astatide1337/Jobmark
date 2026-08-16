@@ -1,73 +1,73 @@
 ---
-title: How to log weekly wins in Jobmark
-description: A weekly capture routine that gives you stronger reviews without adding heavy admin.
+title: How to keep weekly notes in Jobmark
+description: A short weekly routine that makes reviews easier without adding much work.
 slug: how-to-log-weekly-wins-in-jobmark
 publishedAt: 2026-03-05
 updatedAt: 2026-03-07
 category: help
 tags:
-  - accomplishments
+  - notes
   - weekly-routine
   - performance-review
 author: Jobmark
 draft: false
 featured: true
 difficulty: starter
-series: Evidence Operating System
+series: Keeping work notes
 ctaVariant: checklist
 bestFor: weekly updates
 primaryAction: Open dashboard
 primaryHref: /dashboard
-secondaryAction: Build weekly summary
+secondaryAction: Build weekly review draft
 secondaryHref: /reports?tab=new
 ---
 
-Here's the uncomfortable truth: a lot of strong performers look average on paper.
+Here is the hard part: people who do good work can look average on paper.
 
-Not because the work is weak. Because they forgot to capture it.
+Not because the work is weak. They forgot to save the details.
 
 If that sounds familiar, keep reading.
 
-## The goal is not journaling
+## This is not a diary
 
-You're not writing a diary. You're building reusable evidence.
+You are keeping work notes you can use later.
 
-Good weekly entries help with:
+Good weekly notes help with:
 
-- self-reviews
-- promotion packets
+- your own reviews
+- promotion reviews
 - manager updates
-- compensation conversations
+- pay conversations
 
-If a note can't be reused later, it's probably too vague.
+If you cannot use a note later, it is probably too vague.
 
-## What to capture
+## What to save
 
 Five parts:
 
 1. **What you did**
 2. **What changed**
-3. **How it was measured**
-4. **Who or what it affected**
-5. **Where the proof lives**
+3. **How you know**
+4. **Who or what it helped**
+5. **Where the details are**
 
-Enough structure. Not robotic.
+Use a simple format. Write like a person.
 
 ## Friday routine (12 minutes)
 
-**Minute 1-2**: Pull signals. Calendar, task board, docs, Slack. Quick scan.
+**Minute 1-2**: Check your calendar, task board, docs, and Slack.
 
-**Minute 3-9**: Write 3-5 entries. Frame:
+**Minute 3-9**: Write 3-5 notes. Use this frame:
 
 "I [action], which led to [outcome], measured by [metric], affecting [scope]."
 
-**Minute 10-11**: Mark your top two for monthly summaries.
+**Minute 10-11**: Mark your top two notes for your monthly review.
 
-**Minute 12**: Set next week's trigger.
+**Minute 12**: Set a reminder for next week.
 
-"If Friday 4:30 hits, I log wins before leaving."
+"If Friday 4:30 hits, I write down the week's work before leaving."
 
-Triggers beat intention. Intention gets postponed.
+If-then plans are easier to follow than good intentions.
 
 ## Weak vs strong examples
 
@@ -84,27 +84,27 @@ Triggers beat intention. Intention gets postponed.
 
 Before finishing, ask:
 
-- Is ownership clear?
-- Is the outcome observable?
-- Is there a number or concrete signal?
-- Is business relevance obvious?
+- Is it clear what I did?
+- Can someone see the result?
+- Is there a number or clear result?
+- Is it clear why the work mattered?
 
 If "no" to any, fix it now. Not months later.
 
-## Monthly roll-up (20 minutes)
+## Monthly summary (20 minutes)
 
 One page:
 
-- top three outcomes
-- two collaboration/leadership moments
+- top three results
+- two times you helped others or led
 - one improvement area for next month
 
-This page becomes your base layer for reviews and promotions.
+This page gives you a starting point for reviews and promotion talks.
 
 ## Start this week
 
 Block 15 minutes Friday.
 
-Write three entries with clear outcomes.
+Write three notes with clear results.
 
-Do that for eight weeks. You'll have a career record most people wish they had when review season hits.
+Do that for eight weeks. You will have clear notes when review time arrives.

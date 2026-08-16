@@ -27,7 +27,6 @@ export function proxy(request: NextRequest) {
     '/terms',
     '/privacy',
     '/articles',
-    '/chat',
     '/mcp',
     '/api/auth/mcp',
     '/.well-known',

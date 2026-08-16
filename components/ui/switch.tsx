@@ -1,7 +1,7 @@
 /**
  * Toggle Switch Component
  *
- * Why: Used for binary settings (e.g., "Hide Archived") where
+ * Why: Used for binary settings (for example, "Hide archived") where
  * immediate feedback and a physical-style interaction are desired.
  */
 'use client';

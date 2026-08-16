@@ -1,6 +1,6 @@
 ---
-title: The skill signal practice
-description: How to show you're growing without waiting for review season to prove it.
+title: Show how your skills are growing
+description: How to show your progress without waiting for review time.
 slug: the-skill-signal-practice
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
@@ -8,7 +8,7 @@ category: career-development
 tags:
   - skills
   - growth
-  - signals
+  - examples
 author: Jobmark
 draft: false
 featured: true
@@ -17,25 +17,25 @@ ctaVariant: default
 
 Most people wait until review season to show growth. They compile a list of what they did, hope it adds up, and present it like a case.
 
-That's backward.
+That makes the review harder than it needs to be.
 
-Growth should be visible all the time. Not just when someone asks for evidence.
+Your progress should be easy to see during the year, not only when someone asks.
 
-## What is a skill signal?
+## What is a clear example?
 
-A skill signal is any observable behavior that shows you're getting better at something.
+A clear example is a behavior or result that shows you are getting better at something.
 
-It's not what you say about yourself. It's what other people can see.
+It is not only what you say. It is what other people can see in your work.
 
-## Why signals matter
+## Why examples matter
 
-People believe evidence they see more than evidence they hear.
+People trust clear examples more than broad claims.
 
-If you tell your manager "I'm a better leader now," that's a claim. If they see you lead a meeting, resolve a conflict, or mentor someone, that's proof.
+If you tell your manager "I'm a better leader now," that is a claim. If they see you lead a meeting, solve a conflict, or help someone learn, that is a clear example.
 
-Proof is what builds trust. Trust is what builds career.
+Clear examples help people trust your work.
 
-## Where signals come from
+## Where examples come from
 
 You already have work you're doing. The question is: can others see the growth in it?
 
@@ -45,58 +45,58 @@ Ask:
 - If yes, how would someone observe that?
 - Have I made that observation easy to see?
 
-## Types of signals
+## Types of examples
 
-**Execution signals**: You delivered something. Better than last time. Faster. Cleaner. Bigger impact.
+**Delivery**: You finished something better, faster, or with fewer problems.
 
-**Leadership signals**: You helped someone grow. You resolved a conflict. You moved a group forward without being asked.
+**Leadership**: You helped someone grow, solved a conflict, or moved a group forward.
 
-**Strategy signals**: You brought an idea that changed direction. You saw around a corner. You connected dots others missed.
+**Planning**: You brought an idea that changed the plan or helped the team choose a direction.
 
-**Learning signals**: You picked up a new skill. You taught yourself something. You admitted what you didn't know.
+**Learning**: You learned a skill, taught yourself something, or asked about something you did not know.
 
-## How to make signals visible
+## How to show your progress
 
 **1. Name what you're doing**
 
 In updates, be specific: "Led the redesign of X process" vs "Did some work on X."
 
-Specific names invite observation.
+Specific words make the work easier to see.
 
 **2. Show the before and after**
 
 Where were you? Where are you now? What changed?
 
-That contrast is a signal.
+That change is a clear example.
 
 **3. Share what you learned**
 
-"I'm learning how to run effective meetings" is a signal. It shows self-awareness and intent.
+"I'm learning how to run better meetings" is a good note about your progress.
 
 **4. Ask for feedback**
 
-"Can you give me feedback on how I handled that?" invites observation. And feedback helps you improve.
+"Can you give me feedback on how I handled that?" gives you a way to improve.
 
 ## The practice
 
 Every two weeks, ask yourself:
 
 - What's one skill I've been working on?
-- What's one signal that shows progress?
-- Have I made that signal visible?
+- What's one example that shows progress?
+- Have I made it easy to see?
 
-If you can't answer, pick a skill and find a way to signal it.
+If you cannot answer, pick one skill and choose one way to practice it.
 
-## The alternative
+## If you do not keep notes
 
-Without signals, you're hoping someone notices.
+Without examples, you are hoping someone notices.
 
-In review time, you're reconstructing evidence. You scramble to find examples. You hope your manager remembers.
+At review time, you have to search for examples. You may have to rely on memory.
 
-With signals, evidence is always live. You're not proving anything. You're just showing what's true.
+With regular notes, you can show what happened. You do not have to make it up later.
 
 ## Timing
 
-Signals work best when they're consistent. One big signal looks like luck. Recurring signals look like growth.
+Examples work best when they are regular. One big result may look like luck. Repeated results show progress.
 
-Build a habit. Show improvement regularly. Let people update their model of you over time.
+Build a habit. Show your progress regularly.

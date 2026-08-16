@@ -1,6 +1,6 @@
 ---
-title: Building your career operating system
-description: The weekly and monthly routines that compound your career growth over time.
+title: A simple career routine
+description: Weekly and monthly routines to help you keep track of your work.
 slug: building-your-career-operating-system
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
@@ -15,71 +15,65 @@ featured: true
 ctaVariant: checklist
 ---
 
-Your career doesn't advance in leaps. It advances in increments.
+Your career grows through the work you do each week.
 
-The people who grow fastest aren't necessarily the most talented. They're the ones with systems.
+A simple routine helps you remember that work and decide what to do next.
 
-An operating system is just a set of routines that run automatically. Your career needs one too.
-
-## The weekly layer
+## Each week
 
 **Every week:**
 
-- Log your wins (what you delivered, what changed, what you learned)
+- Write down what you delivered, what changed, and what you learned
 - Set 2-3 goals for the week (specific, measurable, one priority)
-- One conversation to strengthen a relationship
-- One visibility action (update, demo, share)
-- 15 minutes of reflection: what worked, what didn't, what changes
+- Talk with one person you work with
+- Share one update or demo
+- Spend 15 minutes asking what worked and what needs to change
 
 This takes about 30 minutes total if you do it consistently.
 
-The point isn't perfection. The point is never having to ask "what did I even do this month?"
+The point is to avoid asking, "What did I do this month?"
 
-## The monthly layer
+## Each month
 
 **Every month:**
 
-- Review your wins. Pull patterns. What's recurring?
-- Update your career narrative. What's the one-paragraph story of what you delivered?
+- Review your notes. What keeps coming up?
+- Write one paragraph about what you delivered.
 - Check your goals. Are they still right? Adjust if needed.
-- One skill to develop. Not a huge project. One specific behavior.
-- One relationship to nurture. Someone outside your immediate team.
+- Pick one skill to practice. Not a huge project. One clear action.
+- Stay in touch with one person outside your team.
 
 A monthly review takes an hour. That's it.
 
-## The quarterly layer
+## Each quarter
 
 **Every quarter:**
 
-- Big picture check. Is your role evolving?
-- What's the one area where you want to be notably stronger in 90 days?
-- What's the promotion case looking like? Any gaps in evidence?
-- Manager conversation. Where does your manager need you most? Where do you want to go?
+- Look at your full role. Is it changing?
+- What is the one area where you want to be stronger in 90 days?
+- What notes are missing from your promotion review?
+- Talk with your manager. Where do they need you most? Where do you want to go?
 
-Quarterly planning is a half-day exercise. Block the time.
+Quarterly planning takes about half a day. Put it on your calendar.
 
-## Why systems beat motivation
+## Why a routine helps
 
-Motivation is unreliable. Systems are automatic.
+Motivation comes and goes. A routine makes the next step easier.
 
-You don't wake up and decide to brush your teeth. You just do it, because it's a system.
+You do not have to decide from scratch every week. You follow the same few steps.
 
-Your career should work the same way.
+## What happens without a routine
 
-## The danger of no system
+Without a routine, you respond to whatever is loudest. You forget what you did three months ago. You may not be able to explain how your work changed.
 
-Without routines, you're reactive. You respond to whatever is loudest. You forget what you did three months ago. You can't explain your growth story.
-
-Then review season comes. You scramble. You reconstruct. You hope something sticks.
-
-That's a terrible position. It's also avoidable.
+When review time comes, you have to start from memory. You can avoid that.
 
 ## Start small
 
-Don't build the whole system at once.
+Do not build the whole routine at once.
 
-Start with one weekly habit. Log your wins every Friday. That's it. Do that for two weeks.
+Start with one weekly habit. Write down your week every Friday. That's it. Do that for two weeks.
 
-Then add one more piece. Keep building slowly.
+Then add one more step. Keep it small.
 
-By the end of a quarter, you'll have a system that runs itself. And you'll have evidence of everything you've done.
+By the end of a quarter, you will have notes about what you did and what changed.

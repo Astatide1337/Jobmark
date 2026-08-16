@@ -17,6 +17,7 @@ import { revalidatePath } from 'next/cache';
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
 import { appearanceSettingsSchema, goalSettingsSchema } from '@/lib/input-schemas';
+import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,10 +94,10 @@ export async function updateGoalSettings(data: {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to update your goals.' };
   }
   const parsed = goalSettingsSchema.safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Invalid goal settings' };
+  if (!parsed.success) return { success: false, message: 'Check your goals and try again.' };
   const safeData = parsed.data;
   const numericFields = [safeData.dailyTarget, safeData.weeklyTarget, safeData.monthlyTarget];
   if (
@@ -104,7 +105,7 @@ export async function updateGoalSettings(data: {
       value => value !== undefined && (!Number.isInteger(value) || value < 0 || value > 10_000)
     )
   ) {
-    return { success: false, message: 'Goal targets must be whole numbers between 0 and 10,000' };
+    return { success: false, message: 'Targets must be whole numbers from 0 to 10,000.' };
   }
 
   try {
@@ -116,10 +117,10 @@ export async function updateGoalSettings(data: {
 
     revalidatePath('/settings');
     revalidatePath('/dashboard');
-    return { success: true, message: 'Goals updated' };
+    return { success: true, message: 'Goal settings saved.' };
   } catch (error) {
     console.error('Failed to update goal settings:', error);
-    return { success: false, message: 'Failed to update settings' };
+    return { success: false, message: 'Your settings were not saved. Try again.' };
   }
 }
 
@@ -130,7 +131,7 @@ export async function updateReportSettings(data: {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to update your review settings.' };
   }
   const reportSettings = z
     .object({
@@ -138,7 +139,8 @@ export async function updateReportSettings(data: {
       customInstructions: z.string().max(4_000).nullable().optional(),
     })
     .safeParse(data);
-  if (!reportSettings.success) return { success: false, message: 'Invalid report settings' };
+  if (!reportSettings.success)
+    return { success: false, message: 'Check your review settings and try again.' };
 
   try {
     await prisma.userSettings.upsert({
@@ -149,10 +151,10 @@ export async function updateReportSettings(data: {
 
     revalidatePath('/settings');
     revalidatePath('/reports');
-    return { success: true, message: 'Report settings updated' };
+    return { success: true, message: 'Review settings saved.' };
   } catch (error) {
     console.error('Failed to update report settings:', error);
-    return { success: false, message: 'Failed to update settings' };
+    return { success: false, message: 'Your settings were not saved. Try again.' };
   }
 }
 
@@ -166,13 +168,14 @@ export async function updateAppearanceSettings(data: {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to update your appearance.' };
   }
   const parsed = appearanceSettingsSchema.safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Invalid appearance settings' };
+  if (!parsed.success)
+    return { success: false, message: 'Check your appearance settings and try again.' };
   const safeData = parsed.data;
   if (safeData.timeZone && !isValidTimeZone(safeData.timeZone)) {
-    return { success: false, message: 'Invalid timezone' };
+    return { success: false, message: 'Choose a valid time zone.' };
   }
 
   try {
@@ -184,10 +187,10 @@ export async function updateAppearanceSettings(data: {
 
     revalidatePath('/settings');
     revalidatePath('/');
-    return { success: true, message: 'Appearance updated' };
+    return { success: true, message: 'Appearance settings saved.' };
   } catch (error) {
     console.error('Failed to update appearance settings:', error);
-    return { success: false, message: 'Failed to update settings' };
+    return { success: false, message: 'Your settings were not saved. Try again.' };
   }
 }
 
@@ -200,7 +203,7 @@ export async function exportUserData() {
 
   const lockedIds = await getLockedProjectIds(session.user.id);
   if (lockedIds.length > 0 && !(await isVaultUnlocked(session.user.id))) {
-    return { error: 'Unlock your vault before exporting all account data.' };
+    return { error: 'Open your private projects before exporting your data.' };
   }
 
   const [
@@ -213,7 +216,6 @@ export async function exportUserData() {
     contacts,
     interactions,
     outreachDrafts,
-    conversations,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -322,22 +324,6 @@ export async function exportUserData() {
         createdAt: true,
       },
     }),
-    prisma.conversation.findMany({
-      where: {
-        userId: session.user.id,
-        ...(lockedIds.length > 0 && {
-          OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
-        }),
-      },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        messages: { orderBy: { createdAt: 'asc' } },
-        project: { select: { id: true, name: true } },
-        goal: { select: { id: true, title: true } },
-        contact: { select: { id: true, fullName: true } },
-        reports: { select: { id: true, title: true } },
-      },
-    }),
   ]);
 
   const filteredReports = filterLockedReports(reports, lockedIds);
@@ -350,7 +336,7 @@ export async function exportUserData() {
     settings,
     projects,
     activities: activities.map(a => ({
-      content: a.content,
+      content: getActivityDisplayContent(a.content),
       logDate: a.logDate,
       createdAt: a.createdAt,
       project: a.project?.name || null,
@@ -360,23 +346,6 @@ export async function exportUserData() {
     contacts,
     interactions,
     outreachDrafts,
-    conversations: conversations.map(conversation => ({
-      id: conversation.id,
-      title: conversation.title,
-      mode: conversation.mode,
-      project: conversation.project,
-      goal: conversation.goal,
-      contact: conversation.contact,
-      reports: conversation.reports,
-      messages: conversation.messages.map(message => ({
-        id: message.id,
-        role: message.role,
-        content: message.content,
-        createdAt: message.createdAt,
-      })),
-      createdAt: conversation.createdAt,
-      updatedAt: conversation.updatedAt,
-    })),
   };
 }
 
@@ -384,10 +353,10 @@ export async function clearAllActivities(confirmation: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to clear your notes.' };
   }
-  if (confirmation !== 'CLEAR ALL ACTIVITIES') {
-    return { success: false, message: 'Explicit confirmation is required' };
+  if (confirmation !== 'CLEAR ALL NOTES') {
+    return { success: false, message: 'Confirm that you want to clear your notes.' };
   }
 
   try {
@@ -398,10 +367,10 @@ export async function clearAllActivities(confirmation: string) {
     revalidatePath('/dashboard');
     revalidatePath('/insights');
     revalidatePath('/projects');
-    return { success: true, message: 'All activities cleared' };
+    return { success: true, message: 'All notes cleared.' };
   } catch (error) {
     console.error('Failed to clear activities:', error);
-    return { success: false, message: 'Failed to clear activities' };
+    return { success: false, message: 'Your notes were not cleared. Try again.' };
   }
 }
 
@@ -409,7 +378,7 @@ export async function deleteUserAccount() {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to delete your account.' };
   }
 
   try {
@@ -440,9 +409,9 @@ export async function deleteUserAccount() {
     // Clear the session cookie so the browser is signed out
     await signOut({ redirect: false });
 
-    return { success: true, message: 'Account deleted' };
+    return { success: true, message: 'Your account was deleted.' };
   } catch (error) {
     console.error('Failed to delete account:', error);
-    return { success: false, message: 'Failed to delete account' };
+    return { success: false, message: 'Your account was not deleted. Try again.' };
   }
 }

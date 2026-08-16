@@ -139,7 +139,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
       setDraftContent(output);
     } catch (err) {
       console.error('Draft generation failed:', err);
-      toast.error('Failed to generate draft. Please try again.');
+      toast.error('Could not create the draft. Try again.');
       setStep(3);
     } finally {
       setIsStreaming(false);
@@ -168,11 +168,11 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
       if (!copied) throw new Error('clipboard_unavailable');
       const description =
         launchPrompt && providerSupportsPromptUrl(provider.key)
-          ? `Open ${provider.name} to draft with your Jobmark record.`
+          ? `Open ${provider.name} to draft with your Jobmark notes.`
           : `Your instructions are copied. Paste them into ${provider.name} to start.`;
       toast.success(`${provider.name} instructions copied`, { description });
     } catch {
-      toast.error('Could not copy the drafting instructions');
+      toast.error('Could not copy the instructions.');
     }
   };
 
@@ -183,10 +183,10 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
       await saveOutreachDraftToHistory(draftContent, config);
       setSaved(true);
       router.refresh();
-      toast.success('Draft saved to history!');
+      toast.success('Draft saved.');
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      toast.error('Failed to save draft.');
+      toast.error('Could not save the draft.');
     } finally {
       setIsSaving(false);
     }
@@ -194,7 +194,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
 
   const handleEmail = () => {
     const body = getCleanEmailBody(draftContent);
-    let subject = `Reaching out – ${contact.fullName}`;
+    let subject = `Message for ${contact.fullName}`;
     const subjectMatch = draftContent.match(/^Subject:\s*(.+)$/m);
     if (subjectMatch) subject = subjectMatch[1].trim();
     const mailto = `mailto:${contact.email ?? ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -203,25 +203,25 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
 
   const handleGmail = () => {
     const body = getCleanEmailBody(draftContent);
-    let subject = `Reaching out – ${contact.fullName}`;
+    let subject = `Message for ${contact.fullName}`;
     const subjectMatch = draftContent.match(/^Subject:\s*(.+)$/m);
     if (subjectMatch) subject = subjectMatch[1].trim();
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email ?? '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(gmailUrl, '_blank');
   };
 
-  let saveButtonContent: ReactNode = 'Save to History';
+  let saveButtonContent: ReactNode = 'Save draft';
   if (isSaving) saveButtonContent = <Loader2 className="mr-2 h-4 w-4 animate-spin" />;
   if (saved) {
     saveButtonContent = (
       <>
         <CheckCircle className="mr-2 h-4 w-4" />
-        Saved!
+        Saved
       </>
     );
   }
 
-  const STEP_LABELS = ['Goal', 'Context', 'Tone'];
+  const STEP_LABELS = ['Goal', 'Context', 'Style'];
 
   return (
     <div className="flex flex-col gap-6">
@@ -273,9 +273,9 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             className="space-y-6"
           >
             <div>
-              <h2 className="text-xl font-semibold">What&apos;s your goal?</h2>
+              <h2 className="text-xl font-semibold">Choose a message goal</h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Choose the purpose of your outreach to {contact.fullName}.
+                Choose what to say to {contact.fullName}.
               </p>
             </div>
 
@@ -328,10 +328,10 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             className="space-y-6"
           >
             <div>
-              <h2 className="text-xl font-semibold">Add context</h2>
+              <h2 className="text-xl font-semibold">Add details</h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Jobmark will prepare a message from {contact.fullName}&apos;s record. Add anything
-                you know should be reflected.
+                Jobmark will use your notes about {contact.fullName} to make a first draft. Add
+                anything else you want to say.
               </p>
             </div>
 
@@ -348,8 +348,8 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                   </p>
                 )}
                 <p className="text-muted-foreground">
-                  {contact.interactions.length} interaction
-                  {contact.interactions.length !== 1 ? 's' : ''} logged
+                  {contact.interactions.length}{' '}
+                  {contact.interactions.length === 1 ? 'conversation' : 'conversations'} saved
                   {contact.interactions.length > 0 &&
                     ` · Last: ${format(new Date(contact.interactions[0].occurredAt), 'MMM d, yyyy')}`}
                 </p>
@@ -357,7 +357,9 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             </Card>
 
             <div className="space-y-2">
-              <Label>Anything else to include? (Optional)</Label>
+              <Label>
+                Add more details? <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Textarea
                 value={config.extraContext}
                 onChange={e => setConfig(c => ({ ...c, extraContext: e.target.value }))}
@@ -365,7 +367,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                 rows={3}
                 className="resize-none rounded-xl"
               />
-              <p className="text-muted-foreground text-xs">Only add details you know are true.</p>
+              <p className="text-muted-foreground text-xs">Only add details you know to be true.</p>
             </div>
 
             <div className="flex justify-between">
@@ -390,8 +392,8 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             className="space-y-6"
           >
             <div>
-              <h2 className="text-xl font-semibold">Pick a tone</h2>
-              <p className="text-muted-foreground mt-1 text-sm">How should this message feel?</p>
+              <h2 className="text-xl font-semibold">Choose how it should sound</h2>
+              <p className="text-muted-foreground mt-1 text-sm">Pick a style for the message.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -408,9 +410,9 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
             <McpDraftActions
               connectedMcpProviders={connectedMcpProviders}
               onDraftWithProvider={provider => handleDraftWithProvider(provider)}
-              eyebrow="Optional next step"
-              title="Want a little help polishing it?"
-              description="Jobmark will make a first draft here. Open a connected AI app when you want another pass."
+              eyebrow="Optional"
+              title="Edit with an assistant"
+              description="Jobmark will make the first draft. An assistant can help edit it."
             />
 
             <div className="flex justify-between">
@@ -419,7 +421,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
               </Button>
               <Button onClick={startGeneration} className="rounded-xl px-8 font-semibold">
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate Draft
+                Make draft
               </Button>
             </div>
           </motion.div>
@@ -440,14 +442,14 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                 value={draftContent}
                 onChange={setDraftContent}
                 isStreaming={isStreaming}
-                placeholder="Your outreach draft will appear here…"
+                placeholder="Your draft will show here..."
               />
             </div>
 
             {/* Sidebar */}
             <div className="flex w-56 shrink-0 flex-col gap-3 pt-4">
               <p className="text-muted-foreground px-1 text-xs font-bold tracking-widest uppercase">
-                Actions
+                Options
               </p>
 
               <McpProviderMenu
@@ -463,13 +465,13 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                     className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
                   >
                     <Mail className="mr-2 h-4 w-4" />
-                    Send via…
+                    Open in
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem onClick={handleEmail}>
                     <Mail className="mr-2 h-4 w-4" />
-                    Default Mail App
+                    Mail app
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleGmail}>
                     <ExternalLink className="mr-2 h-4 w-4" />
@@ -504,7 +506,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                     }
                   >
                     <File className="mr-2 h-4 w-4" />
-                    Download as Word
+                    Download as Word document
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -515,17 +517,17 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
                 className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
                 onClick={async () => {
                   const copied = await copyTextToClipboard(draftContent);
-                  if (copied) toast.success('Copied to clipboard');
-                  else toast.error('Could not copy the draft');
+                  if (copied) toast.success('Draft copied.');
+                  else toast.error('Could not copy the draft.');
                 }}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy Text
+                Copy draft
               </Button>
 
               <div className="h-4" />
 
-              {/* Save to History */}
+              {/* Save draft */}
               <Button
                 onClick={handleSave}
                 disabled={isStreaming || isSaving || !draftContent}

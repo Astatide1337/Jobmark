@@ -20,7 +20,9 @@ function VaultUnlockForm() {
         <CardHeader className="text-center">
           <AlertCircle className="text-destructive mx-auto h-12 w-12" />
           <CardTitle>This link is no longer valid</CardTitle>
-          <CardDescription>Return to your AI app and start the connection again.</CardDescription>
+          <CardDescription>
+            Return to your assistant and start the connection again.
+          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -41,14 +43,14 @@ function VaultUnlockForm() {
 
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Vault unlocked successfully');
+        setMessage(data.message || 'Private projects are open.');
       } else {
         setStatus('error');
-        setMessage(data.error || 'Failed to unlock vault');
+        setMessage(data.error || 'Could not open private projects.');
       }
     } catch {
       setStatus('error');
-      setMessage('Network error. Please try again.');
+      setMessage('Jobmark could not be reached. Check your connection and try again.');
     }
   };
 
@@ -56,8 +58,8 @@ function VaultUnlockForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <Lock className="text-primary mx-auto h-12 w-12" />
-        <CardTitle>Unlock protected project</CardTitle>
-        <CardDescription>Enter your password to use this protected project.</CardDescription>
+        <CardTitle>Open private projects</CardTitle>
+        <CardDescription>Enter your password to view them.</CardDescription>
       </CardHeader>
       <CardContent>
         {status === 'success' ? (
@@ -65,19 +67,19 @@ function VaultUnlockForm() {
             <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
             <p className="text-muted-foreground text-sm">{message}</p>
             <p className="text-muted-foreground text-xs">
-              You can close this tab and return to your AI app.
+              You can close this tab and return to your assistant.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="vault-unlock-password" className="sr-only">
-                Project password
+                Private project password
               </label>
               <Input
                 id="vault-unlock-password"
                 type="password"
-                placeholder="Vault password"
+                placeholder="Project password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -87,7 +89,7 @@ function VaultUnlockForm() {
             </div>
             {status === 'error' && <p className="text-destructive text-sm">{message}</p>}
             <Button type="submit" className="w-full" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Unlocking...' : 'Unlock project'}
+              {status === 'loading' ? 'Opening...' : 'Open projects'}
             </Button>
           </form>
         )}

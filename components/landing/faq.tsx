@@ -18,37 +18,34 @@ const faqs = [
   {
     id: 'what-is',
     question: 'What is Jobmark?',
-    answer:
-      'Jobmark is a place to keep a running record of your work: what you shipped, solved, learned, or moved forward. Find it when you need it.',
+    answer: 'Jobmark helps you save notes about your work and use them for reviews and updates.',
   },
   {
     id: 'different',
     question: 'Is Jobmark just a notes app?',
     answer:
-      'It starts with notes, but keeps them connected to projects, reviews, and the work around them. The goal is not to collect more writing; it is to make the writing useful later.',
+      'It starts with notes. You can also add projects, make review drafts, and connect an assistant.',
   },
   {
     id: 'notion',
     question: 'Why not use Notion or Docs?',
-    answer:
-      'You can. Notion and Docs are flexible places to store almost anything. Jobmark is narrower: it gives your work a simple home and keeps the path from note to review in one place.',
+    answer: 'You can. Jobmark already has a simple setup for work notes and reviews.',
   },
   {
     id: 'ai-work',
-    question: 'Can I connect an AI assistant?',
+    question: 'Can I connect an assistant?',
     answer:
-      'Yes. Connect Claude, ChatGPT, or Gemini when you want help shaping a draft. Jobmark keeps the source record and the facts in your hands.',
+      'Yes. Connect Claude, ChatGPT, or Gemini if you want help editing a draft. Jobmark keeps your notes.',
   },
   {
     id: 'export',
-    question: 'Can I export my record?',
-    answer: 'Yes. Your record is yours to take with you and reuse wherever it is useful.',
+    question: 'Can I download my notes?',
+    answer: 'Yes. You can download your notes and use them somewhere else.',
   },
   {
     id: 'who',
     question: 'Who is Jobmark for?',
-    answer:
-      'Anyone who has to explain what they have been working on, especially when reviews, promotion conversations, or weekly updates keep arriving faster than memory can keep up.',
+    answer: 'Anyone who wants to remember their work for reviews, updates, or their next job.',
   },
 ];
 
@@ -85,7 +82,7 @@ export function FAQ() {
             transition={{ delay: 0.1 }}
             className="mb-4 font-serif text-4xl font-bold md:text-5xl"
           >
-            Questions, answered
+            Common questions
           </motion.h2>
 
           <motion.p
@@ -95,7 +92,7 @@ export function FAQ() {
             transition={{ delay: 0.2 }}
             className="text-muted-foreground text-lg"
           >
-            A few practical things people ask before they start.
+            Answers to common questions.
           </motion.p>
         </div>
 
@@ -126,7 +123,7 @@ export function FAQ() {
           transition={{ delay: 0.5 }}
           className="text-muted-foreground mt-12 text-center"
         >
-          Still curious?{' '}
+          Have a question?{' '}
           <a
             href="mailto:hello@jobmark.app"
             className="text-primary underline-offset-4 hover:underline"

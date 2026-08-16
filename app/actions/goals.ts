@@ -44,9 +44,9 @@ export async function getGoals(): Promise<GoalData[]> {
 
 export async function createGoal(data: { title: string; deadline?: Date | null; why?: string }) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id) return { success: false, message: 'Sign in to add a goal.' };
   const parsed = goalInputSchema.safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Invalid goal' };
+  if (!parsed.success) return { success: false, message: 'Write a goal and try again.' };
 
   try {
     const goal = await prisma.goal.create({
@@ -70,7 +70,7 @@ export async function createGoal(data: { title: string; deadline?: Date | null; 
     return { success: true, goal: goalData };
   } catch (error) {
     console.error('Failed to create goal:', error);
-    return { success: false, message: 'Failed to create goal' };
+    return { success: false, message: 'The goal was not saved. Try again.' };
   }
 }
 
@@ -83,9 +83,9 @@ export async function updateGoal(
   }
 ) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id) return { success: false, message: 'Sign in to edit this goal.' };
   const parsed = goalInputSchema.partial().safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Invalid goal' };
+  if (!parsed.success) return { success: false, message: 'Check the goal and try again.' };
 
   try {
     const existing = await prisma.goal.findUnique({
@@ -93,7 +93,7 @@ export async function updateGoal(
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: 'Goal not found' };
+      return { success: false, message: 'That goal is no longer available.' };
     }
 
     const goal = await prisma.goal.update({
@@ -113,13 +113,13 @@ export async function updateGoal(
     return { success: true, goal: goalData };
   } catch (error) {
     console.error('Failed to update goal:', error);
-    return { success: false, message: 'Failed to update goal' };
+    return { success: false, message: 'The goal was not updated. Try again.' };
   }
 }
 
 export async function deleteGoal(id: string) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id) return { success: false, message: 'Sign in to delete this goal.' };
 
   try {
     // Verify ownership
@@ -128,7 +128,7 @@ export async function deleteGoal(id: string) {
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: 'Goal not found' };
+      return { success: false, message: 'That goal is no longer available.' };
     }
 
     await prisma.goal.delete({
@@ -137,9 +137,9 @@ export async function deleteGoal(id: string) {
 
     revalidatePath('/dashboard');
     revalidatePath('/settings');
-    return { success: true, message: 'Goal deleted' };
+    return { success: true, message: 'Goal deleted.' };
   } catch (error) {
     console.error('Failed to delete goal:', error);
-    return { success: false, message: 'Failed to delete goal' };
+    return { success: false, message: 'The goal was not deleted. Try again.' };
   }
 }

@@ -63,7 +63,7 @@ export default async function ContactDetailPage({
           className="text-muted-foreground hover:text-primary group inline-flex items-center gap-2 text-sm transition-all active:scale-95"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Back to Network
+          Back to network
         </Link>
         <ContactDetailView
           contact={contact}

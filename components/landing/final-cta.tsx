@@ -31,13 +31,12 @@ export function FinalCTA() {
         >
           {/* Headline */}
           <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl md:text-6xl">
-            You will be glad
-            <span className="text-primary block">you wrote it down.</span>
+            Keep your work while it is fresh.
           </h2>
 
           {/* Subtext */}
           <p className="text-muted-foreground mx-auto max-w-xl text-xl">
-            Start with one note today. Future-you can do the sorting.
+            Start with one note. Sort it later.
           </p>
 
           {/* CTA Button */}
@@ -50,7 +49,7 @@ export function FinalCTA() {
           >
             <MagneticButton strength={0.15} onClick={openAuthModal}>
               <span className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 focus-visible:ring-primary inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-medium transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none">
-                Start recording
+                Add a note
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </span>
             </MagneticButton>

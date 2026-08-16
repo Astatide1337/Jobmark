@@ -9,20 +9,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 const SCOPE_LABELS: Record<string, { label: string; description: string }> = {
   'jobmark:read': {
-    label: 'Read',
-    description: 'View your activities, projects, goals, and contacts',
+    label: 'View',
+    description: 'View your notes, projects, goals, and contacts',
   },
   'jobmark:write': {
-    label: 'Write',
-    description: 'Create and update your activities, projects, goals, and contacts',
+    label: 'Make changes',
+    description: 'Create and update your notes, projects, goals, and contacts',
   },
   'jobmark:destructive': {
     label: 'Delete',
-    description: 'Delete activities, projects, goals, and contacts',
+    description: 'Delete notes, projects, goals, and contacts',
   },
   offline_access: {
-    label: 'Offline access',
-    description: 'Stay connected between sessions',
+    label: 'Stay connected',
+    description: 'Keep this connection between sessions.',
   },
 };
 
@@ -86,15 +86,15 @@ function ConsentForm() {
             <Shield className="h-7 w-7" />
           </div>
           <CardTitle className="relative text-2xl tracking-tight">
-            Connect this app to Jobmark
+            Connect this assistant to Jobmark
           </CardTitle>
           <CardDescription className="relative mx-auto mt-3 max-w-sm leading-relaxed">
-            Choose what this app can access. You can disconnect it from Jobmark at any time.
+            Choose what this assistant can access. You can disconnect it from Jobmark at any time.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-6 pt-0">
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Choose permissions</h3>
+            <h3 className="text-sm font-medium">Choose what this assistant can do</h3>
             <ul className="space-y-2">
               {scopes.map(s => {
                 const info = SCOPE_LABELS[s];
@@ -106,7 +106,7 @@ function ConsentForm() {
                         id={`scope-${s.replace(/[^a-z0-9]+/gi, '-')}`}
                         checked={isSelected}
                         onCheckedChange={checked => toggleScope(s, checked === true)}
-                        aria-label={`${isSelected ? 'Remove' : 'Allow'} ${info?.label ?? s} permission`}
+                        aria-label={`${isSelected ? 'Remove' : 'Allow'} access to ${info?.label ?? s}`}
                         className="mt-0.5"
                       />
                       <label
@@ -145,7 +145,7 @@ function ConsentForm() {
               type="button"
             >
               <Check className="mr-2 h-4 w-4" />
-              Connect app
+              Allow access
             </Button>
           </div>
         </CardContent>

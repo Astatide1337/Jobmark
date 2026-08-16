@@ -80,7 +80,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </TabsTrigger>
               <TabsTrigger value="history">
                 <History className="mr-2 h-4 w-4" />
-                Saved drafts
+                Review drafts
               </TabsTrigger>
             </TabsList>
           </div>

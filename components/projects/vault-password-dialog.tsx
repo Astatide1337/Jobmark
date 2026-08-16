@@ -1,10 +1,10 @@
 /**
- * Vault Password Dialog
+ * Private Project Password Dialog
  *
- * Why: Users need a secure way to set up and enter their vault password.
+ * Why: Users need a secure way to protect and open private projects.
  * This dialog handles two modes:
  * - "setup": First-time password creation with confirmation
- * - "unlock": Password entry to unlock the vault
+ * - "unlock": Password entry to open private projects
  *
  * Design: Follows the existing dialog patterns in project-list.tsx.
  * Uses useTransition for loading states and shows inline errors.
@@ -53,7 +53,7 @@ export function VaultPasswordDialog({
     startTransition(async () => {
       if (mode === 'setup') {
         if (password !== confirmPassword) {
-          setError('Passwords do not match');
+          setError('The passwords do not match.');
           return;
         }
         const result = await setVaultPassword(password, confirmPassword);
@@ -105,12 +105,12 @@ export function VaultPasswordDialog({
             )}
             <div>
               <DialogTitle>
-                {mode === 'setup' ? 'Set Up Vault Password' : 'Unlock Vault'}
+                {mode === 'setup' ? 'Set up private projects' : 'Open private projects'}
               </DialogTitle>
               <DialogDescription>
                 {mode === 'setup'
-                  ? 'Create a password to protect your locked projects.'
-                  : 'Enter your vault password to view locked projects.'}
+                  ? 'Create a password to hide selected projects.'
+                  : 'Enter your password to view them.'}
               </DialogDescription>
             </div>
           </div>
@@ -124,7 +124,7 @@ export function VaultPasswordDialog({
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder={mode === 'setup' ? 'Create a vault password' : 'Enter vault password'}
+              placeholder={mode === 'setup' ? 'Create a password' : 'Enter your password'}
               autoFocus
               minLength={6}
               required
@@ -133,7 +133,7 @@ export function VaultPasswordDialog({
 
           {mode === 'setup' && (
             <div className="space-y-2">
-              <Label htmlFor="vault-confirm">Confirm Password</Label>
+              <Label htmlFor="vault-confirm">Confirm password</Label>
               <Input
                 id="vault-confirm"
                 type="password"
@@ -152,8 +152,8 @@ export function VaultPasswordDialog({
             <div className="bg-destructive/5 border-destructive/20 flex items-start gap-2.5 rounded-lg border p-3">
               <AlertTriangle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                <strong className="text-foreground">There is no password recovery.</strong> If you
-                forget this password, the data can only be recovered via support.
+                <strong className="text-foreground">You cannot reset this password.</strong> If you
+                forget it, you cannot open these projects.
               </p>
             </div>
           )}
@@ -164,7 +164,7 @@ export function VaultPasswordDialog({
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === 'setup' ? 'Set Password' : 'Unlock'}
+              {mode === 'setup' ? 'Set password' : 'Open projects'}
             </Button>
           </DialogFooter>
         </form>

@@ -200,10 +200,10 @@ export function ProjectList({
   const tabsNav = (
     <Tabs value={initialFilter} onValueChange={handleTabChange} className="w-full sm:w-auto">
       <TabsList>
-        <TabsTrigger value="active">Active Projects</TabsTrigger>
+        <TabsTrigger value="active">Active projects</TabsTrigger>
         <TabsTrigger value="archived">Archived</TabsTrigger>
         <TabsTrigger value="locked" className="gap-1.5">
-          <Lock className="h-3 w-3" /> Locked
+          <Lock className="h-3 w-3" /> Private
         </TabsTrigger>
       </TabsList>
     </Tabs>
@@ -221,10 +221,9 @@ export function ProjectList({
               <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                 <ShieldCheck className="text-primary h-6 w-6" />
               </div>
-              <h3 className="text-foreground mb-2 font-semibold">Set Up Your Vault</h3>
+              <h3 className="text-foreground mb-2 font-semibold">Set up private projects</h3>
               <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-                Protect sensitive projects behind a password. Locked projects are hidden from all
-                views until you unlock the vault.
+                Add a password to hide selected projects.
               </p>
               <Button
                 onClick={() => {
@@ -233,7 +232,7 @@ export function ProjectList({
                 }}
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
-                Set Up Vault Password
+                Set up password
               </Button>
             </CardContent>
           </Card>
@@ -246,9 +245,9 @@ export function ProjectList({
               <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                 <Lock className="text-primary h-6 w-6" />
               </div>
-              <h3 className="text-foreground mb-2 font-semibold">Vault is Locked</h3>
+              <h3 className="text-foreground mb-2 font-semibold">Private projects are closed</h3>
               <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-                Enter your vault password to view and manage locked projects.
+                Enter your password to open them.
               </p>
               <Button
                 onClick={() => {
@@ -257,7 +256,7 @@ export function ProjectList({
                 }}
               >
                 <Unlock className="mr-2 h-4 w-4" />
-                Enter Password
+                Enter password
               </Button>
             </CardContent>
           </Card>
@@ -270,7 +269,7 @@ export function ProjectList({
             <div className="bg-primary/5 border-primary/20 flex items-center justify-between rounded-xl border px-4 py-3">
               <div className="flex items-center gap-2 text-sm">
                 <LockOpen className="text-primary h-4 w-4" />
-                <span className="text-foreground font-medium">Vault is unlocked</span>
+                <span className="text-foreground font-medium">Private projects are open</span>
               </div>
               <Button variant="outline" size="sm" onClick={handleLockVault} disabled={isLocking}>
                 {isLocking ? (
@@ -278,7 +277,7 @@ export function ProjectList({
                 ) : (
                   <Lock className="mr-2 h-3.5 w-3.5" />
                 )}
-                Re-lock
+                Close private projects
               </Button>
             </div>
 
@@ -288,10 +287,9 @@ export function ProjectList({
                   <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                     <Lock className="text-muted-foreground h-6 w-6" />
                   </div>
-                  <h3 className="text-foreground mb-2 font-semibold">No locked projects</h3>
+                  <h3 className="text-foreground mb-2 font-semibold">No private projects yet</h3>
                   <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                    Move projects here from the Active or Archived tab to hide them behind your
-                    vault password.
+                    Move a project here to hide it with your password.
                   </p>
                 </CardContent>
               </Card>
@@ -332,16 +330,16 @@ export function ProjectList({
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No projects yet</h3>
             <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-              Group your work into streams so your evidence and summaries stay clear.
+              Group related work into projects so your notes and drafts stay together.
             </p>
             <Button onClick={() => setShowCreate(true)}>
               <FolderPlus className="mr-2 h-4 w-4" />
-              Create Your First Project
+              Create your first project
             </Button>
 
             <div className="mt-8">
               <Button variant="link" size="sm" onClick={() => handleTabChange('archived')}>
-                View Archived Projects
+                View archived projects
               </Button>
             </div>
           </CardContent>
@@ -364,7 +362,7 @@ export function ProjectList({
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No archived projects</h3>
             <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-              Projects you archive will appear here safely stored away.
+              Your archived projects will appear here.
             </p>
           </CardContent>
         </Card>
@@ -380,7 +378,7 @@ export function ProjectList({
 
           {initialFilter === 'active' && (
             <Button onClick={() => setShowCreate(true)} size="sm" className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" /> New Project
+              <Plus className="mr-2 h-4 w-4" /> New project
             </Button>
           )}
         </div>
@@ -390,7 +388,8 @@ export function ProjectList({
           <div className="relative flex-1">
             <Search className="text-muted-foreground/60 absolute top-2.5 left-2.5 h-4 w-4" />
             <Input
-              placeholder="Search projects..."
+              placeholder="Search projects"
+              aria-label="Search projects"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="bg-background/50 border-border/40 h-9 pl-9"
@@ -401,20 +400,20 @@ export function ProjectList({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 shrink-0 gap-2">
                 <ArrowUpDown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Sort by:</span>
+                <span className="hidden sm:inline">Sort by</span>
                 <span className="font-medium">
                   {sortOption === 'recent' && 'Recent'}
-                  {sortOption === 'activity' && 'Activity'}
+                  {sortOption === 'activity' && 'Notes'}
                   {sortOption === 'name' && 'Name'}
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setSortOption('recent')}>
-                Most Recent
+                Most recent
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption('activity')}>
-                Most Activity
+                Most notes
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption('name')}>Name (A-Z)</DropdownMenuItem>
             </DropdownMenuContent>
@@ -425,7 +424,7 @@ export function ProjectList({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredProjects.length === 0 ? (
           <div className="text-muted-foreground col-span-full py-12 text-center italic">
-            No projects match your search.
+            No projects found.
           </div>
         ) : (
           filteredProjects.map(project => (
@@ -566,7 +565,7 @@ function ProjectCard({
                   </p>
                 ) : (
                   <div className="h-full w-full opacity-0" aria-hidden="true">
-                    No description provided
+                    No description added.
                   </div>
                 )}
               </div>
@@ -579,13 +578,15 @@ function ProjectCard({
             <div className="text-muted-foreground/70 flex w-full items-center justify-between gap-4 text-[11px] font-medium tracking-wider uppercase">
               <div
                 className="bg-muted/30 border-border/20 flex items-center gap-2 rounded-xl border px-2.5 py-1"
-                title="Total Activities Logged"
+                title="Total notes"
               >
                 <Activity className="h-3 w-3" />
-                <span>{project._count.activities} entries</span>
+                <span>
+                  {project._count.activities} {project._count.activities === 1 ? 'note' : 'notes'}
+                </span>
               </div>
               {lastActive && (
-                <div className="flex items-center gap-1.5" title="Last Activity">
+                <div className="flex items-center gap-1.5" title="Last note">
                   <Clock className="h-3 w-3" />
                   {formatDistanceToNow(new Date(lastActive))} ago
                 </div>
@@ -620,13 +621,13 @@ function ProjectCard({
                   }}
                   className="cursor-pointer"
                 >
-                  <Activity className="mr-2 h-4 w-4" /> View Timeline
+                  <Activity className="mr-2 h-4 w-4" /> View notes
                 </Link>
               </DropdownMenuItem>
 
               {!project.archived && (
                 <DropdownMenuItem onClick={() => setShowEdit(true)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                  <Pencil className="mr-2 h-4 w-4" /> Edit project
                 </DropdownMenuItem>
               )}
 
@@ -636,7 +637,7 @@ function ProjectCard({
                   disabled={isMovingFromVault}
                   className="text-primary focus:text-primary focus:bg-primary/10 font-medium"
                 >
-                  <LockOpen className="mr-2 h-4 w-4" /> Move to Active
+                  <LockOpen className="mr-2 h-4 w-4" /> Move out of private
                 </DropdownMenuItem>
               ) : (
                 <>
@@ -645,18 +646,18 @@ function ProjectCard({
                       onClick={handleUnarchive}
                       className="text-primary focus:text-primary focus:bg-primary/10 font-medium"
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" /> Restore Project
+                      <RotateCcw className="mr-2 h-4 w-4" /> Restore project
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem variant="destructive" onClick={handleArchive}>
-                      <Archive className="mr-2 h-4 w-4" /> Archive Project
+                      <Archive className="mr-2 h-4 w-4" /> Archive project
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
                     onClick={() => onMoveToVault?.(project.id)}
                     disabled={isMovingToVault}
                   >
-                    <Lock className="mr-2 h-4 w-4" /> Move to Locked
+                    <Lock className="mr-2 h-4 w-4" /> Move to private
                   </DropdownMenuItem>
                 </>
               )}
@@ -748,15 +749,15 @@ function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Project' : 'New Project'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit project' : 'New project'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Update your project details.' : 'Create a container for your activities.'}
+            {isEditing ? 'Update your project details.' : 'Create a project for related work.'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Project Name</Label>
+            <Label htmlFor="name">Project name</Label>
             <Input
               id="name"
               value={name}
@@ -768,12 +769,12 @@ function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="desc">Description (Optional)</Label>
+            <Label htmlFor="desc">Description (optional)</Label>
             <Textarea
               id="desc"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Brief details about this project..."
+              placeholder="Add a short description..."
               className="h-20 resize-none"
               maxLength={200}
             />
@@ -804,7 +805,7 @@ function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogP
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Save Changes' : 'Create Project'}
+              {isEditing ? 'Save changes' : 'Create project'}
             </Button>
           </DialogFooter>
         </form>

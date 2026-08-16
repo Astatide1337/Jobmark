@@ -39,42 +39,35 @@ interface Tab {
 const tabs: Tab[] = [
   {
     id: 'track',
-    label: 'Record the work',
+    label: 'Keep work notes',
     icon: <Trophy className="h-4 w-4" />,
-    headline: 'Write it down while you still remember',
-    description:
-      'A quick note is enough. Add a project and a few useful details, then move on with your day.',
-    features: [
-      'Quick daily notes',
-      'One timeline for your work',
-      'Find anything by project',
-      'Tags that stay lightweight',
-    ],
+    headline: 'Write it down while it is fresh',
+    description: 'Save a short note, add a project, and get back to work.',
+    features: ['Daily notes', 'One list of notes', 'Find notes by project', 'Simple tags'],
     visual: <TrackVisual />,
   },
   {
     id: 'prove',
-    label: 'Prepare for reviews',
+    label: 'Get ready for reviews',
     icon: <TrendingUp className="h-4 w-4" />,
-    headline: 'Walk into reviews with something concrete',
+    headline: 'Go into reviews with your notes',
     description:
-      'Pull together the work behind a quarter or a promotion conversation without reconstructing it from memory.',
+      'Use your notes from the quarter or project instead of trying to remember everything.',
     features: [
-      'Review summaries',
-      'Promotion evidence',
-      'Highlights by impact',
-      'Exportable drafts',
+      'Review drafts',
+      'Notes for promotion reviews',
+      'Show what changed',
+      'Drafts you can download',
     ],
     visual: <ProveVisual />,
   },
   {
     id: 'share',
-    label: 'Share an update',
+    label: 'Write an update',
     icon: <Share2 className="h-4 w-4" />,
-    headline: 'Say what happened without starting from scratch',
-    description:
-      'Use the notes you already have to write a clear weekly update, standup note, or status message.',
-    features: ['Weekly updates', 'Standup notes', 'Copy and share', 'A consistent record'],
+    headline: 'Say what happened',
+    description: 'Use your notes to write a weekly update or status message.',
+    features: ['Weekly updates', 'Status notes', 'Copy and share', 'One place for notes'],
     visual: <ShareVisual />,
   },
 ];
@@ -93,8 +86,16 @@ function TrackVisual() {
           text: 'Fixed critical bug in payment flow',
           tags: ['bug-fix', 'payments'],
         },
-        { time: '11:15 AM', text: 'Led sprint planning meeting', tags: ['leadership', 'planning'] },
-        { time: '9:45 AM', text: 'Reviewed 3 PRs from team', tags: ['code-review'] },
+        {
+          time: '11:15 AM',
+          text: 'Led the sprint planning meeting.',
+          tags: ['Leadership', 'Planning'],
+        },
+        {
+          time: '9:45 AM',
+          text: 'Reviewed three code changes for the team.',
+          tags: ['Code review'],
+        },
       ].map((entry, i) => (
         <motion.div
           key={i}
@@ -131,12 +132,12 @@ function ProveVisual() {
     <div className="bg-card/60 border-border/40 space-y-4 rounded-lg border p-6">
       <div className="text-muted-foreground mb-4 flex items-center gap-3 text-sm">
         <Sparkles className="text-primary h-4 w-4" />
-        <span>Draft for Q4</span>
+        <span>Q4 review draft</span>
       </div>
 
       <div className="space-y-4">
         <div className="bg-background/50 border-border/20 rounded-lg border p-4">
-          <h4 className="mb-2 text-sm font-medium">What moved forward in Q4</h4>
+          <h4 className="mb-2 text-sm font-medium">What changed in Q4</h4>
           <ul className="text-muted-foreground space-y-2 text-sm">
             {[
               'Led migration to new payment system, reducing failures by 40%',
@@ -160,11 +161,11 @@ function ProveVisual() {
         <div className="flex gap-2">
           <div className="bg-primary/5 border-primary/20 flex-1 rounded-lg border p-3 text-center">
             <div className="text-primary text-2xl font-bold">47</div>
-            <div className="text-muted-foreground text-xs">Notes recorded</div>
+            <div className="text-muted-foreground text-xs">Notes saved</div>
           </div>
           <div className="bg-primary/5 border-primary/20 flex-1 rounded-lg border p-3 text-center">
             <div className="text-primary text-2xl font-bold">12</div>
-            <div className="text-muted-foreground text-xs">Projects touched</div>
+            <div className="text-muted-foreground text-xs">Projects</div>
           </div>
         </div>
       </div>
@@ -183,7 +184,7 @@ function ShareVisual() {
       <div className="bg-background/50 border-border/20 space-y-3 rounded-lg border p-4">
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
           <Users className="h-3.5 w-3.5" />
-          <span>Ready to share with your team</span>
+          <span>Ready to share</span>
         </div>
 
         <div className="space-y-2 text-sm">
@@ -196,7 +197,7 @@ function ShareVisual() {
           >
             <p>
               Finished the checkout redesign, worked with design on the new dashboard, and fixed
-              three high-priority customer issues.
+              three important customer issues.
             </p>
           </motion.div>
         </div>
@@ -242,7 +243,7 @@ export function PersonaTabs() {
           >
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
-              A better work habit
+              Write it down as you go
             </span>
           </motion.div>
 
@@ -253,7 +254,7 @@ export function PersonaTabs() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-6 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
           >
-            Keep the details. <span className="text-primary">Skip the scramble.</span>
+            Keep the details while they are fresh.
           </motion.h2>
         </div>
 

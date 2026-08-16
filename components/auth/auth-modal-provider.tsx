@@ -72,7 +72,7 @@ function AuthModal({ open }: AuthModalProps) {
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="font-serif text-2xl font-bold">Welcome to Jobmark</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Sign in to start building your career record
+            Sign in to keep your work notes
           </DialogDescription>
         </DialogHeader>
 

@@ -18,10 +18,11 @@ import { getLockedProjectIds } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { projectUpdateSchema } from '@/lib/input-schemas';
+import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
 
 const projectSchema = z.object({
-  name: z.string().min(1, 'Project name is required').max(50),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
+  name: z.string().min(1, 'Enter a project name.').max(50),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color.'),
   description: z.string().max(200).optional(),
 });
 
@@ -42,7 +43,7 @@ export async function createProject(
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'You must be signed in' };
+    return { success: false, message: 'Sign in to create a project.' };
   }
 
   const rawData = {
@@ -56,7 +57,7 @@ export async function createProject(
   if (!result.success) {
     return {
       success: false,
-      message: 'Validation failed',
+      message: 'Check the project and try again.',
       errors: result.error.flatten().fieldErrors,
     };
   }
@@ -74,10 +75,10 @@ export async function createProject(
     revalidatePath('/dashboard');
     revalidatePath('/projects');
 
-    return { success: true, message: 'Project created' };
+    return { success: true, message: 'Project created.' };
   } catch (error) {
     console.error('Failed to create project:', error);
-    return { success: false, message: 'Failed to create project' };
+    return { success: false, message: 'The project was not created. Try again.' };
   }
 }
 
@@ -116,11 +117,11 @@ export async function updateProject(
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to edit this project.' };
   }
 
   const parsed = projectUpdateSchema.safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Invalid project data' };
+  if (!parsed.success) return { success: false, message: 'Check the project and try again.' };
 
   try {
     await prisma.project.update({
@@ -133,10 +134,10 @@ export async function updateProject(
 
     revalidatePath('/dashboard');
     revalidatePath('/projects');
-    return { success: true, message: 'Project updated' };
+    return { success: true, message: 'Project updated.' };
   } catch (error) {
     console.error('Failed to update project:', error);
-    return { success: false, message: 'Failed to update project' };
+    return { success: false, message: 'The project was not updated. Try again.' };
   }
 }
 
@@ -144,7 +145,7 @@ export async function archiveProject(projectId: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to archive this project.' };
   }
 
   try {
@@ -158,10 +159,10 @@ export async function archiveProject(projectId: string) {
 
     revalidatePath('/dashboard');
     revalidatePath('/projects');
-    return { success: true, message: 'Project archived' };
+    return { success: true, message: 'Project archived.' };
   } catch (error) {
     console.error('Failed to archive project:', error);
-    return { success: false, message: 'Failed to archive project' };
+    return { success: false, message: 'The project was not archived. Try again.' };
   }
 }
 
@@ -169,7 +170,7 @@ export async function unarchiveProject(projectId: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to restore this project.' };
   }
 
   try {
@@ -183,10 +184,10 @@ export async function unarchiveProject(projectId: string) {
 
     revalidatePath('/dashboard');
     revalidatePath('/projects');
-    return { success: true, message: 'Project restored' };
+    return { success: true, message: 'Project restored.' };
   } catch (error) {
     console.error('Failed to restore project:', error);
-    return { success: false, message: 'Failed to restore project' };
+    return { success: false, message: 'The project was not restored. Try again.' };
   }
 }
 
@@ -212,6 +213,7 @@ export async function getProjectDetails(projectId: string, activityLimit = 20) {
     ...project,
     activities: project.activities.map(activity => ({
       ...activity,
+      content: getActivityDisplayContent(activity.content),
       logDate: activity.logDate.toISOString().split('T')[0],
     })),
   };
@@ -245,6 +247,7 @@ export async function getProjectActivities(
   // Convert logDate to ISO date string (YYYY-MM-DD) to prevent timezone issues
   return activities.map(activity => ({
     ...activity,
+    content: getActivityDisplayContent(activity.content),
     logDate: activity.logDate.toISOString().split('T')[0],
   }));
 }

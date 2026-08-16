@@ -106,10 +106,10 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
   const remaining = Math.max(goal - count, 0);
 
   const getMessage = () => {
-    if (count === 0) return 'Capture one concrete piece of work to start your record.';
-    if (count >= goal) return 'Your record is in good shape this month.';
-    if (remaining <= 3) return `${remaining} more entries would round out the month well.`;
-    return `${remaining} more entries would make this month easier to summarize later.`;
+    if (count === 0) return 'Add one note to get started.';
+    if (count >= goal) return 'You reached your note goal this month.';
+    if (remaining <= 3) return `${remaining} more notes will reach your goal.`;
+    return `${remaining} more notes will help with your monthly review.`;
   };
 
   return (
@@ -120,7 +120,7 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
             <div className="mb-3 flex items-center justify-between">
               <FileText className="text-muted-foreground h-4 w-4" />
               <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-                Activities
+                Notes
               </span>
             </div>
             <p className="text-foreground text-3xl font-bold tracking-tight tabular-nums">
@@ -131,7 +131,7 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
             {/* Goal-Gradient Progress */}
             <Progress
               value={progress}
-              aria-label={`Monthly activity goal: ${count} of ${goal}`}
+              aria-label={`Monthly note target: ${count} of ${goal}`}
               className="bg-muted/30 h-1.5 rounded-full"
             />
           </CardContent>
@@ -140,7 +140,7 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
       <TooltipContent side="top">
         <p className="font-medium">{getMessage()}</p>
         <p className="text-muted-foreground">
-          {count}/{goal} monthly target
+          Monthly goal: {count} of {goal}
         </p>
       </TooltipContent>
     </Tooltip>
@@ -149,11 +149,9 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
 
 function CoverageStatCard({ streak }: { streak: number }) {
   const getMessage = () => {
-    if (streak === 0) return 'No recent documentation streak yet.';
-    if (streak === 1) return 'You captured work today. Keep the record alive tomorrow.';
-    if (streak < 7) return 'You are building documentation consistency.';
-    if (streak < 14) return 'This is becoming a reliable record, not a catch-up exercise.';
-    return 'You have a strong habit of capturing evidence while it is fresh.';
+    if (streak === 0) return 'No notes from the last few days.';
+    if (streak === 1) return 'You added a note today.';
+    return `You have notes for ${streak} days in a row.`;
   };
 
   return (
@@ -166,7 +164,7 @@ function CoverageStatCard({ streak }: { streak: number }) {
                 className={`h-4 w-4 ${streak > 0 ? 'text-primary' : 'text-muted-foreground'}`}
               />
               <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-                Coverage
+                Days with notes
               </span>
             </div>
             <div className="flex items-baseline gap-2">
@@ -176,14 +174,14 @@ function CoverageStatCard({ streak }: { streak: number }) {
               {streak > 3 && <TrendingUp className="text-primary h-4 w-4" />}
             </div>
             <p className="text-muted-foreground text-xs">
-              {streak === 1 ? 'Documented day' : 'Documented days'}
+              {streak === 1 ? 'Day with a note' : 'Days with notes'}
             </p>
           </CardContent>
         </Card>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-[180px]">
         <p className="font-medium">{getMessage()}</p>
-        <p className="text-muted-foreground">Consistency improves recall and review quality.</p>
+        <p className="text-muted-foreground">Your notes make reviews easier to write.</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -191,9 +189,9 @@ function CoverageStatCard({ streak }: { streak: number }) {
 
 function ProjectStatCard({ count, summaries }: { count: number; summaries: number }) {
   const getMessage = () => {
-    if (count === 0) return 'Create a project so entries stay specific and reusable.';
-    if (summaries === 0) return 'Your work is organized. Next step: turn it into a summary.';
-    return 'Projects and summaries are working together as intended.';
+    if (count === 0) return 'Create a project to keep related notes together.';
+    if (summaries === 0) return 'Your notes are grouped. Next step: build a review draft.';
+    return 'Your projects and review drafts are ready.';
   };
 
   return (

@@ -42,14 +42,22 @@ const PRIVATE_RESULT_KEYS =
   /^(id|userId|projectId|contactId|connectionId|clientId|oauthClientId|nextCursor|cursor|token|.*Token|.*Secret|.*Hash)$/i;
 
 function labelForKey(key: string): string {
-  return key
+  const label = key
     .replace(/^_/, '')
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/\b\w/g, character => character.toUpperCase());
+
+  return label
+    .replace(/\bActivities\b/g, 'Notes')
+    .replace(/\bActivity\b/g, 'Note')
+    .replace(/\bInteractions\b/g, 'Conversations')
+    .replace(/\bInteraction\b/g, 'Conversation')
+    .replace(/\bReports\b/g, 'Review drafts')
+    .replace(/\bReport\b/g, 'Review draft');
 }
 
 function toHumanValue(value: unknown, depth = 0): string {
-  if (value === null || value === undefined) return 'Not recorded';
+  if (value === null || value === undefined) return 'Not saved';
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (depth > 2) return '…';

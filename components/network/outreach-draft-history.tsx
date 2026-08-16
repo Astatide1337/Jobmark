@@ -81,7 +81,7 @@ export function OutreachDraftHistory({
       setDrafts(prev => prev.filter(d => d.id !== id));
       if (expandedId === id) setExpandedId(null);
     } catch {
-      toast.error('Failed to delete draft.');
+      toast.error('Could not delete the draft.');
     } finally {
       setIsDeleting(null);
     }
@@ -104,9 +104,9 @@ export function OutreachDraftHistory({
       setDrafts(prev => prev.map(d => (d.id === draftId ? { ...d, content: editContent } : d)));
       setEditingId(null);
       setEditContent('');
-      toast.success('Draft saved!');
+      toast.success('Draft saved.');
     } catch {
-      toast.error('Failed to save draft.');
+      toast.error('Could not save the draft.');
     } finally {
       setIsSaving(false);
     }
@@ -132,7 +132,7 @@ export function OutreachDraftHistory({
             : `Open ${provider.name} and paste the instructions to continue.`,
       });
     } catch {
-      toast.error('Could not copy the drafting instructions');
+      toast.error('Could not copy the instructions.');
     }
   };
 
@@ -140,10 +140,8 @@ export function OutreachDraftHistory({
     return (
       <div className="py-10 text-center">
         <FileText className="mx-auto mb-4 h-12 w-12 opacity-20" />
-        <p className="text-foreground text-sm font-medium">No saved outreach drafts yet.</p>
-        <p className="text-muted-foreground mt-1 text-xs">
-          Save a strong draft here when you want a reusable starting point for future outreach.
-        </p>
+        <p className="text-foreground text-sm font-medium">No saved drafts yet.</p>
+        <p className="text-muted-foreground mt-1 text-xs">Save a draft here to use it later.</p>
       </div>
     );
   }
@@ -280,7 +278,7 @@ export function OutreachDraftHistory({
                             exportToWord(contentFor(draft), { filename: `${draft.title}.doc` })
                           }
                         >
-                          Download as Word
+                          Download as Word document
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -290,12 +288,12 @@ export function OutreachDraftHistory({
                       size="sm"
                       onClick={async () => {
                         const copied = await copyTextToClipboard(contentFor(draft));
-                        if (copied) toast.success('Copied to clipboard');
-                        else toast.error('Could not copy the draft');
+                        if (copied) toast.success('Draft copied.');
+                        else toast.error('Could not copy the draft.');
                       }}
                     >
                       <Copy className="mr-1 h-4 w-4" />
-                      Copy
+                      Copy draft
                     </Button>
                     {editingId === draft.id && (
                       <Button
@@ -304,7 +302,7 @@ export function OutreachDraftHistory({
                         disabled={isSaving}
                         className="rounded-lg"
                       >
-                        Save Changes
+                        Save changes
                       </Button>
                     )}
                   </div>

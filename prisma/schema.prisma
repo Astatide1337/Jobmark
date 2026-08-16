@@ -3,10 +3,8 @@
  * Why: This schema defines the professional relationship between Users,
  * their Accomplishments (Activities), and their Career Assets (Projects, Reports).
  * Key Design Decisions:
- * - Soft Links in Conversations: The `Conversation` model uses optional IDs
- * (`projectId`, `goalId`, etc.) instead of hard relations to allow AI
- * context to be highly fluid without database integrity constraints
- * blocking the user experience.
+ * - Network touchpoints use InteractionLog records so relationship history is
+ * kept separate from assistant connection state.
  * - Normalized Dates: `logDate` in `Activity` uses `@db.Date` (YYYY-MM-DD)
  * to ensure statistics are calculated based on calendar days, while
  * `createdAt` remains a full timestamp for ordering and audit logs.
@@ -92,8 +90,6 @@ model User {
   reports           Report[]
   goals             Goal[]
   settings          UserSettings?
-  conversations     Conversation[]
-  chatRequests      ChatRequest[]
   contacts          Contact[]
   interactionLogs   InteractionLog[]
   outreachDrafts    OutreachDraft[]
@@ -111,8 +107,6 @@ model Goal {
   updatedAt DateTime  @updatedAt
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations Conversation[]
-
   @@index([userId])
 }
 
@@ -179,8 +173,6 @@ model Report {
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  conversations Conversation[]
-
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
   @@index([projectId])
@@ -199,7 +191,6 @@ model Project {
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities    Activity[]
-  conversations Conversation[]
   reports       Report[]
 
   @@index([userId])
@@ -239,7 +230,6 @@ model Contact {
 
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   interactions   InteractionLog[]
-  conversations  Conversation[]
   outreachDrafts OutreachDraft[]
 
   @@index([userId, fullName])
@@ -280,73 +270,6 @@ model OutreachDraft {
   contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@index([userId, contactId, createdAt(sort: Desc)])
-}
-
-// Chat models for AI Career Coach
-model Conversation {
-  id     String @id @default(cuid())
-  userId String
-  title  String @default("New Chat")
-  mode   String @default("general") // "general" | "goal-coach" | "interview"
-
-  // Context references
-  projectId String? // If conversation is about a specific project
-  goalId    String? // If conversation is about a specific goal
-  contactId String? // If conversation references a specific contact
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  goal         Goal?         @relation(fields: [goalId], references: [id], onDelete: SetNull)
-  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  messages     Message[]
-  reports      Report[]
-  chatRequests ChatRequest[]
-
-  @@index([userId, updatedAt(sort: Desc)])
-  @@index([userId, contactId])
-}
-
-model ChatRequest {
-  id                 String   @id @default(cuid())
-  conversationId     String
-  userId             String
-  requestId          String
-  targetMessageId    String?
-  userMessageId      String?
-  createdUserMessage Boolean  @default(false)
-  assistantMessageId String?
-  status             String   @default("in_progress")
-  error              String?  @db.Text
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, requestId])
-  @@unique([targetMessageId])
-  @@index([conversationId, status])
-  @@index([userId, createdAt])
-}
-
-model Message {
-  id                String    @id @default(cuid())
-  conversationId    String
-  role              String // "user" | "assistant" | "system"
-  content           String    @db.Text
-  clientRequestId   String?
-  responseRequestId String?
-  cancelledAt       DateTime?
-  createdAt         DateTime  @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, clientRequestId])
-  @@unique([conversationId, responseRequestId])
-  @@index([conversationId, createdAt])
 }
 
 // MCP OAuth Provider Models

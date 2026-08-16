@@ -49,7 +49,7 @@ export const themePresets: ThemePreset[] = [
   {
     id: 'ocean',
     name: 'Ocean Calm',
-    description: 'Serene and professional',
+    description: 'Calm and clear',
     colors: {
       primary: '#60a5fa',
       primaryForeground: '#1a1412',
@@ -65,7 +65,7 @@ export const themePresets: ThemePreset[] = [
   {
     id: 'forest',
     name: 'Forest Focus',
-    description: 'Fresh and growth-oriented',
+    description: 'Fresh and focused.',
     colors: {
       primary: '#4ade80',
       primaryForeground: '#1a1412',
@@ -159,11 +159,11 @@ export type DashboardLayout = (typeof dashboardLayouts)[number]['id'];
 export const reportTones = [
   {
     id: 'professional',
-    name: 'Professional',
-    description: 'Formal, structured, executive summary',
+    name: 'Formal',
+    description: 'Clear and structured',
   },
-  { id: 'casual', name: 'Casual Update', description: 'Friendly, team-focused, quick read' },
-  { id: 'bullet-points', name: 'Bullet Points', description: 'Just the facts. Short and punchy' },
+  { id: 'casual', name: 'Casual', description: 'Friendly and quick to read' },
+  { id: 'bullet-points', name: 'Bullet points', description: 'Just the facts in a short list' },
 ] as const;
 
 export type ReportTone = (typeof reportTones)[number]['id'];

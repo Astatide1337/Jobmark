@@ -29,17 +29,15 @@ export function CompletionPhase({ onMount }: CompletionPhaseProps) {
       transition={{ duration: 1.5, ease: 'easeInOut' }}
     >
       <div className="flex flex-col gap-3">
-        <p className="text-foreground font-serif text-3xl md:text-4xl">
-          You&apos;ve cultivated peace today.
-        </p>
-        <p className="text-primary font-serif text-xl italic">Well done.</p>
+        <p className="text-foreground font-serif text-3xl md:text-4xl">Focus time is done.</p>
+        <p className="text-primary font-serif text-xl italic">You took a few minutes to reset.</p>
       </div>
 
       <Link
         href="/dashboard"
         className="text-foreground/60 hover:text-foreground mt-4 text-sm tracking-widest uppercase transition-colors duration-300"
       >
-        Return to Dashboard
+        Back to dashboard
       </Link>
     </motion.div>
   );

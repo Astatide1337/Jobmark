@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { InsightsData } from '@/app/actions/insights';
+import type { HeatmapDay, InsightsData, MonthLabel } from '@/app/actions/insights';
 
 type DateRange = '7d' | '30d' | '90d' | '365d' | 'all';
 
@@ -44,23 +44,30 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
     }
 
     // Filter heatmap data
-    const filteredHeatmap = initialData.heatmapData.filter(d => {
-      const date = new Date(d.date);
-      return date >= rangeStart;
-    });
+    const rangeStartKey = formatLocalDateKey(rangeStart);
+    const latestDateKey = getLatestHeatmapDate(initialData.heatmapGrid);
+    const filteredHeatmap = initialData.heatmapData.filter(
+      d => d.date >= rangeStartKey && d.date <= latestDateKey
+    );
 
     // Calculate filtered stats
     const filteredActivities = filteredHeatmap.reduce((sum, d) => sum + d.count, 0);
     const filteredActiveDays = filteredHeatmap.filter(d => d.count > 0).length;
 
     // Recalculate best day for filtered period
-    let bestDay = initialData.bestDay;
+    let bestDay: InsightsData['bestDay'] = null;
     if (filteredHeatmap.length > 0) {
       const best = filteredHeatmap.reduce((a, b) => (a.count > b.count ? a : b));
       if (best.count > 0) {
         bestDay = { date: best.date, count: best.count };
       }
     }
+
+    const { heatmapGrid, monthLabels } = buildHeatmapGrid(
+      filteredHeatmap,
+      rangeStartKey,
+      latestDateKey
+    );
 
     // Filter weekly trend based on range
     let weeklyTrend = initialData.weeklyTrend;
@@ -78,6 +85,8 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       activeDaysThisMonth:
         dateRange === 'all' ? initialData.activeDaysThisMonth : filteredActiveDays,
       heatmapData: filteredHeatmap,
+      heatmapGrid,
+      monthLabels,
       weeklyTrend,
       bestDay,
     };
@@ -88,22 +97,28 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       {/* Header with filter */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-foreground text-lg font-semibold">Record Health</h2>
+          <h2 className="text-foreground text-lg font-semibold">Your notes</h2>
           <p className="text-muted-foreground text-sm">
-            See how complete, reusable, and balanced your work record is.
+            See how often you add notes and which projects they cover.
           </p>
         </div>
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Summary Cards */}
-      <InsightsSummary data={filteredData} />
+      <InsightsSummary
+        data={filteredData}
+        rangeLabel={dateRange === 'all' ? 'this month' : 'selected range'}
+      />
 
       {/* AI Insights */}
       <AiInsights data={filteredData} />
 
       {/* Contribution Heatmap */}
-      <ContributionHeatmap weeks={initialData.heatmapGrid} monthLabels={initialData.monthLabels} />
+      <ContributionHeatmap
+        weeks={filteredData.heatmapGrid}
+        monthLabels={filteredData.monthLabels}
+      />
 
       {/* Charts Section */}
       <ActivityCharts
@@ -136,14 +151,87 @@ function getDateRangeStart(range: DateRange): Date | null {
 
   const now = new Date();
   const daysMap: Record<Exclude<DateRange, 'all'>, number> = {
-    '7d': 7,
-    '30d': 30,
-    '90d': 90,
-    '365d': 365,
+    '7d': 6,
+    '30d': 29,
+    '90d': 89,
+    '365d': 364,
   };
 
   const start = new Date();
   start.setDate(now.getDate() - daysMap[range]);
   start.setHours(0, 0, 0, 0);
   return start;
+}
+
+function formatLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getLatestHeatmapDate(grid: HeatmapDay[][]): string {
+  for (let weekIndex = grid.length - 1; weekIndex >= 0; weekIndex--) {
+    for (let dayIndex = grid[weekIndex].length - 1; dayIndex >= 0; dayIndex--) {
+      const date = grid[weekIndex][dayIndex].date;
+      if (date) return date;
+    }
+  }
+  return formatLocalDateKey(new Date());
+}
+
+function buildHeatmapGrid(
+  data: InsightsData['heatmapData'],
+  startDate: string,
+  endDate: string
+): { heatmapGrid: HeatmapDay[][]; monthLabels: MonthLabel[] } {
+  const counts = new Map(data.map(day => [day.date, day.count]));
+  const days: HeatmapDay[] = [];
+  const cursor = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+
+  while (cursor <= end) {
+    const date = cursor.toISOString().slice(0, 10);
+    days.push({
+      date,
+      count: counts.get(date) ?? 0,
+      dayOfWeek: cursor.getUTCDay(),
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  const heatmapGrid: HeatmapDay[][] = [];
+  let currentWeek: HeatmapDay[] = [];
+  const firstDayOfWeek = days[0]?.dayOfWeek ?? 0;
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    currentWeek.push({ date: '', count: -1, dayOfWeek: i });
+  }
+
+  for (const day of days) {
+    currentWeek.push(day);
+    if (currentWeek.length === 7) {
+      heatmapGrid.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length > 0) heatmapGrid.push(currentWeek);
+
+  const monthLabels: MonthLabel[] = [];
+  let lastMonth = '';
+  heatmapGrid.forEach((week, weekIndex) => {
+    const firstDay = week.find(day => day.date);
+    if (!firstDay) return;
+    const monthKey = firstDay.date.slice(0, 7);
+    if (monthKey === lastMonth) return;
+    monthLabels.push({
+      month: new Date(`${firstDay.date}T00:00:00Z`).toLocaleDateString('en-US', {
+        month: 'short',
+        timeZone: 'UTC',
+      }),
+      weekIndex,
+    });
+    lastMonth = monthKey;
+  });
+
+  return { heatmapGrid, monthLabels };
 }

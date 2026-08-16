@@ -8,7 +8,7 @@ import { JobmarkActor, assertActor, ConfirmationRequiredError } from './index';
 import { z } from 'zod';
 
 const accountClearActivitiesSchema = z.object({
-  confirmation: z.literal('DELETE ALL MY ACTIVITIES'),
+  confirmation: z.literal('DELETE ALL MY NOTES'),
 });
 
 export type AccountClearActivitiesInput = z.infer<typeof accountClearActivitiesSchema>;
@@ -22,8 +22,8 @@ export async function clearActivities(
   const parsed = accountClearActivitiesSchema.safeParse(input);
   if (!parsed.success) {
     throw new ConfirmationRequiredError(
-      'Type "DELETE ALL MY ACTIVITIES" to confirm',
-      'DELETE ALL MY ACTIVITIES'
+      'Type "DELETE ALL MY NOTES" to confirm',
+      'DELETE ALL MY NOTES'
     );
   }
 

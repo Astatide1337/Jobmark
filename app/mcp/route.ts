@@ -44,7 +44,7 @@ const SERVER_INFO = {
 // Keep the handoff human-first: implementation names and opaque record IDs
 // are for the connection, never for the person using the assistant.
 const SERVER_INSTRUCTIONS =
-  'Jobmark is a private work record. Speak plainly and refer to people, projects, and activities by their names or meaningful details. Never show internal record IDs, database identifiers, tool names, scopes, or protocol steps in the user-facing response. For reviews and outreach, return an editable draft for the user to review and never send or change anything without clear confirmation.';
+  'Jobmark keeps private work notes. Speak plainly and refer to people, projects, and notes by their names or clear details. Never show internal IDs, database identifiers, tool names, scopes, or protocol steps in the user-facing response. For reviews and messages, return an editable draft for the user to review and never send or change anything without clear confirmation.';
 
 function createErrorResponse(
   id: string | number | null,
@@ -358,7 +358,8 @@ async function executeTool(
     if (!isVaultStatusCall && !isVaultBeginCall && !isUnlocked) {
       throw {
         code: -32603,
-        message: 'Vault is locked. Use vault_begin_unlock to start the unlock flow.',
+        message:
+          'Private projects are closed. Open them from the connection link before continuing.',
         data: { code: 'VAULT_LOCKED' },
       };
     }

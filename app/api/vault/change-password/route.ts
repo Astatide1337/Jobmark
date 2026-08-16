@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Sign in first.' }, { status: 401 });
   }
 
   const body = await request.json();
@@ -18,16 +18,19 @@ export async function POST(request: NextRequest) {
   };
 
   if (!nonce || !currentPassword || !newPassword) {
-    return NextResponse.json({ error: 'Missing nonce, current password, or new password' }, { status: 400 });
+    return NextResponse.json({ error: 'Enter the link code and both passwords.' }, { status: 400 });
   }
 
   if (newPassword.length < 12 || newPassword.length > 128) {
-    return NextResponse.json({ error: 'New password must be 12-128 characters' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Use 12 to 128 characters for the new password.' },
+      { status: 400 }
+    );
   }
 
   const consumed = await consumeSecureActionNonce(nonce, 'vault_change_password', session.user.id);
   if (!consumed) {
-    return NextResponse.json({ error: 'Invalid or expired nonce' }, { status: 400 });
+    return NextResponse.json({ error: 'This link is invalid or has expired.' }, { status: 400 });
   }
 
   const settings = await prisma.userSettings.findUnique({
@@ -36,12 +39,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (!settings?.vaultPasswordHash) {
-    return NextResponse.json({ error: 'Vault not configured' }, { status: 400 });
+    return NextResponse.json({ error: 'Private projects are not set up yet.' }, { status: 400 });
   }
 
   const valid = await bcrypt.compare(currentPassword, settings.vaultPasswordHash);
   if (!valid) {
-    return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
+    return NextResponse.json({ error: 'The current password is not correct.' }, { status: 400 });
   }
 
   const newPasswordHash = await bcrypt.hash(newPassword, 12);
@@ -51,5 +54,5 @@ export async function POST(request: NextRequest) {
     data: { vaultPasswordHash: newPasswordHash },
   });
 
-  return NextResponse.json({ success: true, message: 'Vault password changed successfully' });
+  return NextResponse.json({ success: true, message: 'Private project password changed.' });
 }

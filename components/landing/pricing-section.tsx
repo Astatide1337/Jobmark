@@ -12,18 +12,18 @@ import { useAuthModal } from '@/components/auth';
 
 const accessPoints = [
   {
-    title: 'Free to begin',
-    description: 'No setup ritual. Capture the first thing you want to remember.',
+    title: 'Start free',
+    description: 'No setup. Write your first note.',
     icon: Shield,
   },
   {
-    title: 'Yours to keep',
-    description: 'Export your record whenever you need it. Your work is not trapped here.',
+    title: 'Keep your data',
+    description: 'Download your notes any time.',
     icon: Database,
   },
   {
-    title: 'Bring your assistant',
-    description: 'Connect Claude, ChatGPT, or Gemini when you want help shaping a draft.',
+    title: 'Use your assistant',
+    description: 'Connect Claude, ChatGPT, or Gemini if you want help editing a draft.',
     icon: Link2,
   },
 ];
@@ -57,7 +57,7 @@ export function AccessSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-4 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
           >
-            Make the next review easier.
+            Make reviews easier.
           </motion.h2>
 
           <motion.p
@@ -67,7 +67,7 @@ export function AccessSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-muted-foreground text-lg"
           >
-            Start with one note. Keep the record as it grows.
+            Start with one note. Add more when you need to.
           </motion.p>
         </div>
 
@@ -105,7 +105,7 @@ export function AccessSection() {
             onClick={openAuthModal}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-medium transition-colors"
           >
-            Start recording
+            Add a note
             <ArrowRight className="h-4 w-4" />
           </button>
         </motion.div>

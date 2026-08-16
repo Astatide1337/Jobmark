@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import {
   getFocusConfig,
@@ -8,9 +7,7 @@ import {
   polishDictation,
 } from '@/lib/jobmark/focus';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-} from '../errors';
+import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 
 const focusSaveSchema = z.object({
@@ -41,8 +38,8 @@ const dictationPolishSchema = z.object({
 export const focusGetTool = {
   definition: {
     name: 'focus_get',
-    title: 'Get Focus Config',
-    description: 'Get the current focus/Pomodoro configuration. Requires jobmark:read scope.',
+    title: 'Get focus settings',
+    description: 'Get the current focus settings. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -69,15 +66,15 @@ export const focusGetTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const config = await getFocusConfig(actor);
-    return createStructuredResult(config, 'Focus config retrieved');
+    return createStructuredResult(config, 'Focus settings ready');
   },
 };
 
 export const focusSaveTool = {
   definition: {
     name: 'focus_save',
-    title: 'Save Focus Config',
-    description: 'Save or update focus/Pomodoro configuration. Requires jobmark:write scope.',
+    title: 'Save focus settings',
+    description: 'Save or update focus settings. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -92,7 +89,18 @@ export const focusSaveTool = {
         soundVolume: { type: 'number', minimum: 0, maximum: 1 },
         dailyTarget: { type: 'number', minimum: 1, maximum: 20 },
       },
-      required: ['enabled', 'workDuration', 'breakDuration', 'longBreakDuration', 'sessionsUntilLongBreak', 'autoStartBreaks', 'autoStartWork', 'soundEnabled', 'soundVolume', 'dailyTarget'],
+      required: [
+        'enabled',
+        'workDuration',
+        'breakDuration',
+        'longBreakDuration',
+        'sessionsUntilLongBreak',
+        'autoStartBreaks',
+        'autoStartWork',
+        'soundEnabled',
+        'soundVolume',
+        'dailyTarget',
+      ],
       additionalProperties: false,
     },
     outputSchema: {
@@ -103,7 +111,11 @@ export const focusSaveTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -113,15 +125,15 @@ export const focusSaveTool = {
     }
 
     const config = await saveFocusConfig(actor, result.data);
-    return createStructuredResult(config, 'Focus config saved');
+    return createStructuredResult(config, 'Focus settings saved');
   },
 };
 
 export const focusResetTool = {
   definition: {
     name: 'focus_reset',
-    title: 'Reset Focus Config',
-    description: 'Reset focus config to defaults. Requires jobmark:write scope.',
+    title: 'Reset focus settings',
+    description: 'Reset focus settings to the defaults. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -139,15 +151,15 @@ export const focusResetTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const config = await resetFocusConfig(actor);
-    return createStructuredResult(config, 'Focus config reset to defaults');
+    return createStructuredResult(config, 'Focus settings reset');
   },
 };
 
 export const focusLogDecompressionTool = {
   definition: {
     name: 'focus_log_decompression',
-    title: 'Log Decompression Session',
-    description: 'Log a decompression session after focus work. Requires jobmark:write scope.',
+    title: 'Save a focus session',
+    description: 'Save a focus session after you reset. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -169,7 +181,12 @@ export const focusLogDecompressionTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -179,15 +196,15 @@ export const focusLogDecompressionTool = {
     }
 
     const log = await logDecompression(actor, result.data);
-    return createStructuredResult(log, `Logged decompression session`);
+    return createStructuredResult(log, 'Focus session saved');
   },
 };
 
 export const dictationPolishTool = {
   definition: {
     name: 'dictation_polish',
-    title: 'Polish Dictation Text',
-    description: 'Clean up raw dictation text without an external provider. Requires jobmark:write scope.',
+    title: 'Clean up dictated text',
+    description: 'Clean up dictated text in Jobmark. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -214,6 +231,9 @@ export const dictationPolishTool = {
     }
 
     const polished = await polishDictation(actor, result.data);
-    return createStructuredResult({ ...polished, originalText: result.data.text }, 'Dictation polished');
+    return createStructuredResult(
+      { ...polished, originalText: result.data.text },
+      'Dictated text cleaned up'
+    );
   },
 };

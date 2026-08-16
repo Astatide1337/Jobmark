@@ -73,7 +73,7 @@ export function RotatingHeadline({
 // Pre-configured headlines for Jobmark
 export const jobmarkHeadlines: HeadlinePart[] = [
   { text: 'Remember what you', highlight: 'did.' },
-  { text: 'Be ready when', highlight: 'it matters.' },
-  { text: 'Keep a record of', highlight: 'the work.' },
-  { text: 'Make your progress', highlight: 'visible.' },
+  { text: 'Be ready for', highlight: 'reviews.' },
+  { text: 'Keep your', highlight: 'notes together.' },
+  { text: 'See your', highlight: 'progress.' },
 ];

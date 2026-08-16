@@ -222,7 +222,7 @@ export function LiveEditor({
               }
             }}
             className="text-foreground absolute inset-0 z-10 h-full w-full resize-none overflow-hidden bg-transparent p-6 font-sans text-base leading-relaxed break-words focus:outline-none"
-            placeholder={placeholder ?? 'Content will appear here...'}
+            placeholder={placeholder ?? 'Your draft will show here...'}
             spellCheck="false"
           />
         </div>
@@ -231,14 +231,14 @@ export function LiveEditor({
       {isStreaming && (
         <div className="pointer-events-none absolute right-4 bottom-4 z-20">
           <span className="text-muted-foreground flex animate-pulse items-center gap-2 text-xs">
-            <Loader2 className="h-3 w-3 animate-spin" /> Preparing…
+            <Loader2 className="h-3 w-3 animate-spin" /> Writing your draft...
           </span>
         </div>
       )}
 
       {editHistory.length > 0 && !isStreaming && (
         <div className="bg-background/90 border-border/50 text-muted-foreground absolute right-4 bottom-4 z-20 flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs shadow-sm backdrop-blur-sm">
-          <span>Quick edit applied</span>
+          <span>Changes made.</span>
           <Button
             type="button"
             size="sm"
@@ -271,9 +271,11 @@ export function LiveEditor({
                 ref={menuRef}
                 className="bg-popover border-border flex max-w-[calc(100vw-2rem)] items-center gap-1 rounded-xl border p-1.5 shadow-xl backdrop-blur-md"
                 role="toolbar"
-                aria-label="Quick edits"
+                aria-label="Edit selected text"
               >
-                <span className="text-muted-foreground px-2 text-xs font-medium">Format</span>
+                <span className="text-muted-foreground px-2 text-xs font-medium">
+                  Format selected text
+                </span>
                 {quickEditActions.map(({ action, label, icon: Icon }) => (
                   <Button
                     key={action}

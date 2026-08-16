@@ -15,7 +15,7 @@ import { auth } from '@/lib/auth';
 export async function polishDictation(text: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error('Unauthorized');
+    throw new Error('Sign in to use voice typing.');
   }
   if (!text || text.trim().length === 0) return '';
   const normalized = text.slice(0, 20_000).replace(/\s+/g, ' ').trim();

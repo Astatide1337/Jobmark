@@ -31,10 +31,10 @@ export function WorkflowStarter({
 }) {
   const steps = [
     {
-      title: 'Log your first activity',
+      title: 'Write your first note',
       done: activityCount > 0,
       href: '/dashboard',
-      cta: 'Start capturing',
+      cta: 'Add a note',
     },
     {
       title: 'Create your first project',
@@ -43,19 +43,19 @@ export function WorkflowStarter({
       cta: 'Create project',
     },
     {
-      title: 'Generate your first review draft',
+      title: 'Make your first review draft',
       done: summaryCount > 0,
       href: '/reports?tab=new',
-      cta: 'Build review draft',
+      cta: 'Make review draft',
     },
   ];
 
   return (
     <Card className="border-border/50 bg-card/60 mb-8 rounded-2xl">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg">How Jobmark works</CardTitle>
+        <CardTitle className="text-lg">How it works</CardTitle>
         <CardDescription>
-          Capture the work, organize it into evidence, and reuse it when reviews or updates matter.
+          Write it down, group it by project, and use it for a review or update.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-3">
@@ -93,41 +93,41 @@ function getNextBestActionSuggestion(
 ) {
   if (activityCount === 0) {
     return {
-      title: 'Start by capturing one concrete piece of work.',
-      body: 'A short, specific entry is enough to begin building a useful record.',
+      title: 'Start with one note.',
+      body: 'Write a short note about something you did.',
       href: '/dashboard',
-      cta: 'Capture Work',
+      cta: 'Add a note',
     };
   }
   if (projectCount === 0) {
     return {
-      title: 'Create a project so your evidence stays organized.',
-      body: 'Projects help turn scattered entries into review-ready material.',
+      title: 'Create a project for your notes.',
+      body: 'Projects keep related notes together.',
       href: '/projects?new=true',
-      cta: 'Create Project',
+      cta: 'Create project',
     };
   }
   if (summaryCount === 0) {
     return {
-      title: 'Turn recent work into your first review draft.',
-      body: 'A saved draft makes weekly updates and reviews much easier later.',
+      title: 'Make your first review draft.',
+      body: 'Use your recent notes to make a draft.',
       href: '/reports?tab=new',
-      cta: 'Build Review Draft',
+      cta: 'Make review draft',
     };
   }
   if (hasMcpConnection) {
     return {
-      title: 'Draft your next review brief.',
-      body: 'Use a connected AI app to turn your record into a manager-ready update.',
+      title: 'Make your next review draft.',
+      body: 'Use a connected assistant to turn your notes into an update.',
       href: '/reports?tab=new',
-      cta: 'Build Review Draft',
+      cta: 'Make review draft',
     };
   }
   return {
-    title: 'Use your record to prepare the next move.',
-    body: 'Review your drafts, then connect an AI app to sharpen the story.',
-    href: '/chat',
-    cta: 'Open MCP Connector',
+    title: 'Use your notes for your next review.',
+    body: 'Check your drafts, then connect an assistant if you want help editing them.',
+    href: '/settings/connections',
+    cta: 'Connect an assistant',
   };
 }
 
@@ -153,9 +153,7 @@ export function NextBestAction({
     <Card className="border-border/50 bg-card/60 rounded-2xl">
       <CardContent className="flex flex-col items-start justify-between gap-4 p-5 md:flex-row md:items-center">
         <div>
-          <p className="text-primary text-xs font-semibold tracking-widest uppercase">
-            Next Best Action
-          </p>
+          <p className="text-primary text-xs font-semibold tracking-widest uppercase">Next step</p>
           <h3 className="text-foreground mt-1 text-lg font-semibold">{suggestion.title}</h3>
           <p className="text-muted-foreground mt-1 text-sm">{suggestion.body}</p>
         </div>
@@ -220,14 +218,12 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
           </div>
           <div>
             <h2 className="text-lg font-semibold">No goals set yet</h2>
-            <p className="text-muted-foreground text-sm">
-              Goals help connect daily evidence to the direction you want to move in.
-            </p>
+            <p className="text-muted-foreground text-sm">Goals help you decide what to work on.</p>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/settings">
               <PlusCircle className="mr-2 h-4 w-4" />
-              Set a Goal
+              Set a goal
             </Link>
           </Button>
         </CardContent>
@@ -246,7 +242,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
             <div>
               <div className="text-primary mb-1 flex items-center gap-2 text-sm font-medium">
                 <Target className="h-4 w-4" />
-                <span>Primary Goal</span>
+                <span>Main goal</span>
               </div>
               <h2 className="text-foreground/90 text-xl font-bold tracking-tight md:text-2xl">
                 {settings.primaryGoal}
@@ -264,7 +260,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
               <div className="absolute top-6 right-6 hidden text-right md:block">
                 <div className="text-primary text-2xl font-bold">{daysLeft}</div>
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  Days Left
+                  Days left
                 </div>
               </div>
             )}
@@ -309,9 +305,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
               <div>
                 <div className="text-primary mb-1 flex items-center gap-2 text-sm font-medium">
                   <Target className="h-4 w-4" />
-                  <span>
-                    Current Goal {goals.length > 1 && `(${currentIndex + 1}/${goals.length})`}
-                  </span>
+                  <span>Goal {goals.length > 1 && `(${currentIndex + 1}/${goals.length})`}</span>
                 </div>
                 <h2 className="text-foreground/90 line-clamp-2 text-xl font-bold tracking-tight md:text-2xl">
                   {currentGoal.title}
@@ -330,7 +324,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
               <div className="border-primary/10 hidden min-w-[100px] flex-col items-end border-l py-2 pl-6 md:flex">
                 <div className="text-primary text-3xl font-bold">{daysLeft}</div>
                 <div className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-                  Days Left
+                  Days left
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
                   {format(deadline, 'MMM d, yyyy')}

@@ -34,8 +34,8 @@ function titleForPath(path: string): string | undefined {
     '/insights': 'Insights',
     '/focus': 'Focus',
     '/network': 'Network',
-    '/chat': 'MCP Connector',
-    '/articles': 'Articles',
+    '/settings/connections': 'Assistant connections',
+    '/articles': 'Guides',
     '/settings': 'Settings',
   };
   return titles[path] ?? 'Jobmark';

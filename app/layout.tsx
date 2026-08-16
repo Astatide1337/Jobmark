@@ -24,7 +24,7 @@ import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
 const productDescription =
-  'Jobmark gives you a simple place to record your work while it is fresh, then find it when reviews, updates, and next steps matter.';
+  'Jobmark gives you a simple place to write down your work while it is fresh, then find it when reviews, updates, and next steps matter.';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -45,21 +45,14 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'Jobmark - Keep your work on record',
+  title: 'Jobmark - Keep your work notes',
   description: productDescription,
   icons: {
     icon: '/brand/jobmark-logo.svg',
   },
-  keywords: [
-    'career record',
-    'work evidence',
-    'performance review',
-    'promotion prep',
-    'work log',
-    'impact tracking',
-  ],
+  keywords: ['work notes', 'reviews', 'updates', 'projects', 'goals', 'review notes'],
   openGraph: {
-    title: 'Jobmark - Keep your work on record',
+    title: 'Jobmark - Keep your work notes',
     description: productDescription,
     url: siteUrl,
     siteName: 'Jobmark',
@@ -69,13 +62,13 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'Jobmark – Your Career, On Record',
+        alt: 'Jobmark: Keep your work notes',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jobmark - Keep your work on record',
+    title: 'Jobmark - Keep your work notes',
     description: productDescription,
     images: ['/opengraph-image.png'],
   },

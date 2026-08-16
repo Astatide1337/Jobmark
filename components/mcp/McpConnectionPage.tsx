@@ -30,8 +30,6 @@ import {
 
 interface McpConnectionProps {
   baseUrl: string;
-  user: { id: string; name?: string | null; email?: string | null } | null;
-  initialProviderId?: string;
   connections: Array<{
     id: string;
     clientName: string;
@@ -71,7 +69,7 @@ const providers: Provider[] = [
     Icon: Claude.Color,
     connectUrl: 'https://claude.ai/settings/connectors',
     instructions:
-      'Open Claude’s connector settings, choose Add custom connector, paste your connection link, and finish signing in.',
+      'Open Claude’s connector settings, choose Add custom connector, paste the link, and sign in.',
   },
   {
     id: 'chatgpt',
@@ -79,7 +77,7 @@ const providers: Provider[] = [
     Icon: ChatGptIcon,
     connectUrl: 'https://chatgpt.com/',
     instructions:
-      'Open ChatGPT’s app or connector settings, add a custom connection, and paste your connection link. Availability depends on your plan or workspace.',
+      'Open ChatGPT’s app or connector settings, add a custom connection, and paste the link. This may depend on your plan or workspace.',
   },
   {
     id: 'gemini',
@@ -87,19 +85,12 @@ const providers: Provider[] = [
     Icon: Gemini.Color,
     connectUrl: 'https://gemini.google.com/',
     instructions:
-      'Open Gemini’s connected apps settings, add a custom connection, and paste your connection link. Availability depends on your account or region.',
+      'Open Gemini’s connected apps settings, add a custom connection, and paste the link. This may depend on your account or region.',
   },
 ];
 
-export function McpConnectionPage({
-  baseUrl,
-  user,
-  connections,
-  initialProviderId,
-}: McpConnectionProps) {
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
-    () => providers.find(provider => provider.id === initialProviderId) ?? null
-  );
+export function McpConnectionPage({ baseUrl, connections }: McpConnectionProps) {
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [connectionToRevoke, setConnectionToRevoke] = useState<string | null>(null);
   const jobmarkLink = `${baseUrl}/mcp`;
@@ -113,12 +104,12 @@ export function McpConnectionPage({
         clientName:
           connectionBeingRevoked.oauthClient.clientName || connectionBeingRevoked.clientName,
       })
-    : 'this app';
+    : 'this assistant';
 
   const copyJobmarkLink = async () => {
     const copied = await copyTextToClipboard(jobmarkLink);
-    if (copied) toast.success('Connection link copied');
-    else toast.error('Could not copy the connection link');
+    if (copied) toast.success('Connection link copied.');
+    else toast.error('Could not copy the connection link.');
   };
 
   const handleRevoke = async (connectionId: string) => {
@@ -128,10 +119,10 @@ export function McpConnectionPage({
         method: 'POST',
       });
       if (!response.ok) throw new Error('Could not revoke Jobmark access');
-      toast.success('App disconnected');
+      toast.success('Assistant disconnected.');
       window.location.reload();
     } catch {
-      toast.error('Could not disconnect the app');
+      toast.error('Could not disconnect the assistant.');
     } finally {
       setRevoking(null);
       setConnectionToRevoke(null);
@@ -139,68 +130,44 @@ export function McpConnectionPage({
   };
 
   return (
-    <div className={user ? 'w-full py-2' : 'bg-background min-h-screen px-4 py-10'}>
+    <div className="w-full py-2">
       <div className="mx-auto max-w-5xl space-y-8">
-        <section
-          className={`border-border/60 bg-card/45 rounded-3xl border px-6 py-8 sm:px-10 sm:py-10 ${
-            user ? '' : 'text-center'
-          }`}
-        >
-          <div
-            className={`flex flex-col gap-5 ${
-              user ? 'items-start justify-between sm:flex-row sm:items-center' : 'items-center'
-            }`}
-          >
-            <div
-              className={`flex items-center gap-3 ${
-                user ? 'max-w-2xl' : 'max-w-xl justify-center'
-              }`}
-            >
+        <section className="border-border/60 bg-card/45 rounded-3xl border px-6 py-8 sm:px-10 sm:py-10">
+          <div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center">
+            <div className="flex max-w-2xl items-center gap-3">
               <div className="bg-primary/10 text-primary flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl">
                 <PlugZap className="h-5 w-5" />
               </div>
               <h1 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
-                MCP Connector
+                Assistant connections
               </h1>
             </div>
             <Button variant="ghost" className="shrink-0" asChild>
               <Link href="/articles/connect-jobmark-to-ai">
                 <CircleHelp className="mr-2 h-4 w-4" />
-                Help article
+                Read the guide
               </Link>
             </Button>
           </div>
         </section>
 
-        {!user ? (
-          <section className="mx-auto max-w-5xl text-center">
-            <h2 className="text-foreground text-xl font-semibold">Choose an AI app</h2>
-            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              Pick an app and connect your Jobmark record in a couple of clicks.
+        <section>
+          <div className="mb-4">
+            <h2 className="text-foreground text-xl font-semibold">Choose an assistant</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Choose an assistant to see how to connect it.
             </p>
-            <div className="mt-6">
-              <ProviderCarousel onSelect={setSelectedProvider} />
-            </div>
-          </section>
-        ) : (
-          <section>
-            <div className="mb-4">
-              <h2 className="text-foreground text-xl font-semibold">Choose an AI app</h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Choose one and we’ll walk you through the setup.
-              </p>
-            </div>
-            <ProviderCarousel onSelect={setSelectedProvider} />
-          </section>
-        )}
+          </div>
+          <ProviderCarousel onSelect={setSelectedProvider} />
+        </section>
 
-        {user && visibleConnections.length > 0 && (
+        {visibleConnections.length > 0 && (
           <Card className="border-border/60 bg-card/45 rounded-3xl">
             <CardHeader>
-              <CardTitle>Connected AI apps</CardTitle>
+              <CardTitle>Connected assistants</CardTitle>
               <CardDescription>
-                Disconnect an app here to stop it from accessing your Jobmark record. You may also
-                need to remove the saved connection in that app.
+                Disconnect an assistant here to stop it from using your Jobmark notes. You may also
+                need to remove the saved connection in the assistant’s settings.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -221,7 +188,7 @@ export function McpConnectionPage({
                         })}
                       </p>
                       <p className="text-muted-foreground mt-1 text-sm">
-                        Connected {new Date(connection.createdAt).toLocaleDateString()}
+                        Connected on {new Date(connection.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -263,7 +230,7 @@ export function McpConnectionPage({
             </DialogHeader>
             <div className="border-border/60 bg-muted/20 rounded-2xl border p-4">
               <label htmlFor="jobmark-mcp-link" className="text-foreground text-sm font-medium">
-                Connection link
+                Jobmark connection link
               </label>
               <div className="mt-2">
                 <Input
@@ -285,7 +252,7 @@ export function McpConnectionPage({
                   rel="noopener noreferrer"
                   onClick={() => void copyJobmarkLink()}
                 >
-                  Copy link &amp; open {selectedProvider.name}
+                  Copy link and open {selectedProvider.name}
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </a>
               </Button>
@@ -302,8 +269,8 @@ export function McpConnectionPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Disconnect {connectionBeingRevokedName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Jobmark will stop sharing your record with {connectionBeingRevokedName}. To remove the
-              saved connection completely, also remove Jobmark in {connectionBeingRevokedName}
+              Jobmark will stop sharing your notes with {connectionBeingRevokedName}. To remove the
+              connection completely, also remove Jobmark from {connectionBeingRevokedName}
               &apos;s settings. You can reconnect later.
             </AlertDialogDescription>
           </AlertDialogHeader>

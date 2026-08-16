@@ -15,6 +15,7 @@ import {
 } from './index';
 import { z } from 'zod';
 import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
+import { getActivityDisplayContent } from './activity-copy';
 
 const reportCreateSchema = z.object({
   projectId: z.string().optional().nullable(),
@@ -122,7 +123,7 @@ export async function getReport(actor: JobmarkActor, reportId: string): Promise<
     },
   });
 
-  if (!report) throw new NotFoundError('Report');
+  if (!report) throw new NotFoundError('Review draft');
 
   return toReportDTO(report);
 }
@@ -174,7 +175,7 @@ export async function generateReport(
     data: {
       userId: actor.userId,
       projectId: projectId || null,
-      title: project ? `Review brief: ${project.name}` : 'Review brief',
+      title: project ? `Review draft: ${project.name}` : 'Review draft',
       content,
       metadata: { generated: true, deterministic: true },
     },
@@ -193,7 +194,7 @@ export async function regenerateReport(actor: JobmarkActor, reportId: string): P
     include: { project: { select: { id: true, name: true, color: true, locked: true } } },
   });
 
-  if (!report) throw new NotFoundError('Report');
+  if (!report) throw new NotFoundError('Review draft');
   if (report.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   const lockedIds = await getLockedProjectIds(actor.userId);
@@ -254,7 +255,7 @@ export async function updateReport(
     include: { project: { select: { locked: true } } },
   });
 
-  if (!report) throw new NotFoundError('Report');
+  if (!report) throw new NotFoundError('Review draft');
   if (report.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   const updated = await prisma.report.update({
@@ -282,13 +283,13 @@ export async function improveReportText(
     include: { project: { select: { locked: true } } },
   });
 
-  if (!report) throw new NotFoundError('Report');
+  if (!report) throw new NotFoundError('Review draft');
   if (report.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   return {
     improvedContent: deterministicRewrite(
       report.content,
-      result.data.instructions ?? 'Make this easier to scan.'
+      result.data.instructions ?? 'Make this easier to read.'
     ),
   };
 }
@@ -301,7 +302,7 @@ export async function deleteReport(actor: JobmarkActor, reportId: string): Promi
     include: { project: { select: { locked: true } } },
   });
 
-  if (!report) throw new NotFoundError('Report');
+  if (!report) throw new NotFoundError('Review draft');
   if (report.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   await prisma.report.delete({ where: { id: reportId } });
@@ -330,9 +331,11 @@ async function buildGeneratedReportContent(
     include: { project: { select: { name: true } } },
   });
 
-  if (activities.length === 0) throw new ValidationError('No activities found for this report');
+  if (activities.length === 0) throw new ValidationError('No notes found for this review.');
   if (activities.length > 500) {
-    throw new ValidationError('Too many activities; narrow the project scope before generating');
+    throw new ValidationError(
+      'There are too many notes. Choose one project or a shorter date range.'
+    );
   }
 
   return buildReviewBrief({
@@ -342,7 +345,7 @@ async function buildGeneratedReportContent(
     notes: customInstructions,
     activities: activities.map(activity => ({
       logDate: activity.logDate,
-      content: activity.content,
+      content: getActivityDisplayContent(activity.content),
       projectName: activity.project?.name ?? null,
     })),
   });

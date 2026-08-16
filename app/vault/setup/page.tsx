@@ -21,7 +21,9 @@ function VaultSetupForm() {
         <CardHeader className="text-center">
           <AlertCircle className="text-destructive mx-auto h-12 w-12" />
           <CardTitle>This link is no longer valid</CardTitle>
-          <CardDescription>Return to your AI app and start the connection again.</CardDescription>
+          <CardDescription>
+            Return to your assistant and start the connection again.
+          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -32,13 +34,13 @@ function VaultSetupForm() {
 
     if (password !== confirmPassword) {
       setStatus('error');
-      setMessage('Passwords do not match');
+      setMessage('Passwords do not match.');
       return;
     }
 
     if (password.length < 12) {
       setStatus('error');
-      setMessage('Password must be at least 12 characters');
+      setMessage('Password must be at least 12 characters.');
       return;
     }
 
@@ -55,14 +57,14 @@ function VaultSetupForm() {
 
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Vault password set successfully');
+        setMessage(data.message || 'Private projects are ready.');
       } else {
         setStatus('error');
-        setMessage(data.error || 'Failed to set vault password');
+        setMessage(data.error || 'Could not set up private projects.');
       }
     } catch {
       setStatus('error');
-      setMessage('Network error. Please try again.');
+      setMessage('Jobmark could not be reached. Check your connection and try again.');
     }
   };
 
@@ -70,10 +72,9 @@ function VaultSetupForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <Shield className="text-primary mx-auto h-12 w-12" />
-        <CardTitle>Protect a project</CardTitle>
+        <CardTitle>Set up private projects</CardTitle>
         <CardDescription>
-          Create a password to protect sensitive projects. This password is separate from your
-          account login.
+          Create a password to hide selected projects. It is separate from your account password.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -82,19 +83,19 @@ function VaultSetupForm() {
             <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
             <p className="text-muted-foreground text-sm">{message}</p>
             <p className="text-muted-foreground text-xs">
-              You can close this tab and return to your AI app.
+              You can close this tab and return to your assistant.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="vault-password" className="sr-only">
-                New vault password
+                New private project password
               </label>
               <Input
                 id="vault-password"
                 type="password"
-                placeholder="New vault password (min 12 characters)"
+                placeholder="New project password (min 12 characters)"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -104,12 +105,12 @@ function VaultSetupForm() {
             </div>
             <div>
               <label htmlFor="vault-password-confirm" className="sr-only">
-                Confirm vault password
+                Confirm private project password
               </label>
               <Input
                 id="vault-password-confirm"
                 type="password"
-                placeholder="Confirm vault password"
+                placeholder="Confirm project password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
@@ -118,7 +119,7 @@ function VaultSetupForm() {
             </div>
             {status === 'error' && <p className="text-destructive text-sm">{message}</p>}
             <Button type="submit" className="w-full" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Protecting project...' : 'Protect project'}
+              {status === 'loading' ? 'Saving...' : 'Set password'}
             </Button>
           </form>
         )}

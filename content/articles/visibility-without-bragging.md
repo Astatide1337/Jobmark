@@ -1,6 +1,6 @@
 ---
-title: Visibility without bragging
-description: How to make your impact known naturally, without feeling like you're showing off.
+title: Share your work without bragging
+description: How to share your work clearly without feeling like you are showing off.
 slug: visibility-without-bragging
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
@@ -15,63 +15,62 @@ featured: true
 ctaVariant: default
 ---
 
-The best performers are often the least visible. They're heads-down, doing good work, assuming someone will notice.
+Good work can be easy to miss. You may be busy doing it and assume someone will notice.
 
-Someone doesn't.
+Often they do not.
 
-This isn't about ego. It's about giving people the information they need to make decisions about you.
+This is not about ego. It is about giving people the details they need to understand your work.
 
 ## The reality
 
-Your manager has limited data. They see what crosses their desk. They hear what comes up in meetings. They remember what stands out.
+Your manager has limited information. They see what comes across their desk and hear what comes up in meetings.
 
-If your work is good but quiet, you're making their job harder. They're trying to advocate for you with incomplete information.
+If your work is good but quiet, you make their job harder. They cannot speak for you if they do not know what you did.
 
-That's not their fault. It's yours.
+You can fix that by sharing the details.
 
-## Visibility isn't bragging
+## Showing your work is not bragging
 
 Bragging is: "I'm amazing at this. Look at me."
 
-Visibility is: "Here's what happened. Here's what changed."
+Sharing your work is: "Here is what happened. Here is what changed."
 
 One is self-promotion. The other is information.
 
-## Natural visibility channels
+## Simple ways to share your work
 
 **1. Updates**
 
-A concise weekly or biweekly update. What you did. What you're working on. What's blocked.
+A short weekly or every-two-weeks update. What you are doing, what you are working on, and what is blocked.
 
-This isn't about showcasing. It's about awareness. People who know what you're doing can help, connect, and advocate.
+This is not about showing off. It gives people the information they need to help.
 
-**2. Decisions documentation**
+**2. Write down decisions**
 
-When you make a call, document why. What context you had. What tradeoffs you weighed. What you'd do differently.
+When you make a decision, write down why. What did you know? What choices did you consider? What would you do differently?
 
-That becomes evidence. And it makes you look thoughtful.
+That helps people understand the decision later.
+**3. Share results**
 
-**3. Sharing outcomes**
-
-When something lands, share the result. Not in a "look what I did" way. In a "here's what happened" way.
+When something is done, share the result. Not as "look what I did," but as "here is what happened."
 
 "Launched the new onboarding flow. Drop-off is down 18%."
 
-That's it. That's visibility.
+That is enough. People can see what happened.
 
-**4. Asking good questions**
+**4. Ask good questions**
 
-Asking smart questions in meetings makes you visible. It shows you're thinking. It shows you understand the context.
+Asking good questions in meetings helps people see how you think.
 
 Don't speak to be heard. Speak because you have something to add.
 
-## The feeling
+## If it feels awkward
 
 It feels awkward at first. You're not used to sharing what you're doing. It feels like showing off.
 
-Reframe it: you're not showing off. You're giving information.
+You are not showing off. You are giving information.
 
-Your manager needs information. Your team needs information. Providing it is helpful, not self-promotional.
+Your manager and team need information. Sharing it is helpful, not showing off.
 
 ## The trap
 
@@ -79,18 +78,18 @@ Don't overcorrect. Some people share everything. Every small thing. Every minor 
 
 That's noise. And people tune out noise.
 
-Share what's meaningful. Skip what's trivial.
+Share what matters. Skip small details.
 
 ## Natural rhythm
 
-Weekly update is enough for most people. Biweekly if you're in a stable rhythm.
+One update each week is enough for most people. Every two weeks is fine when work is steady.
 
-Don't make it a production. Three paragraphs. Bullet points. Done.
+Do not make it a big project. Three paragraphs or a few bullets is enough.
 
-The key is consistency. If you share every week, it's normal. If you share once a quarter, it feels like a pitch.
+The key is consistency. If you share every week, it feels normal. If you share once a quarter, it can feel like a sales message.
 
 ## What happens
 
 People start to see you as someone who delivers. Someone who thinks things through. Someone who makes things happen.
 
-You don't have to tell them. The evidence does it for you.
+You do not have to make a big claim. The details show what happened.

@@ -39,9 +39,8 @@ export default function TermsPage() {
               What Jobmark is
             </h2>
             <p>
-              Jobmark is a career record-keeping tool. It helps you log work accomplishments,
-              generate performance summaries, and manage professional contacts. It is a personal
-              productivity aid, not a professional HR, legal, or career counseling service.
+              Jobmark helps you save work notes, make review drafts, and manage contacts. It is a
+              personal tool, not HR, legal, or career advice.
             </p>
           </section>
 
@@ -64,10 +63,10 @@ export default function TermsPage() {
               Drafts and AI-app suggestions
             </h2>
             <p>
-              Jobmark builds evidence-based briefs from the information you record and can hand them
-              to a connected AI app to help draft reports or messages. AI-app outputs are
-              suggestions only. They are not professional career advice, legal advice, or HR
-              guidance. Always review and verify any draft before using it professionally.
+              Jobmark makes drafts from the information you save and can give them to a connected
+              assistant to help edit review drafts or messages. Assistant answers are suggestions.
+              They are not career, legal, or HR advice. Always check a draft before using it at
+              work.
             </p>
           </section>
 

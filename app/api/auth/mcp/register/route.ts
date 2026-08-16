@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'server_error',
-        error_description: 'Could not register OAuth client',
+        error_description: 'Jobmark could not connect this assistant. Try again.',
         request_id: requestId,
       },
       { status: 500, headers: { 'Cache-Control': 'no-store' } }

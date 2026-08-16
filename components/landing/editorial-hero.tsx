@@ -61,7 +61,7 @@ export function EditorialHero() {
             >
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Your work, remembered
+                Save your work
               </span>
             </motion.div>
 
@@ -75,8 +75,8 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="text-muted-foreground max-w-lg text-xl leading-relaxed"
             >
-              Jobmark gives you one place to note what you shipped, solved, and learned. Reviews,
-              updates, and next steps can start from something real.
+              Jobmark gives you one place to write down what you did, fixed, and learned. Use those
+              notes later for reviews and updates.
             </motion.p>
 
             {/* CTAs */}
@@ -90,7 +90,7 @@ export function EditorialHero() {
                 onClick={openAuthModal}
                 className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
-                Start recording
+                Add a note
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
@@ -109,7 +109,7 @@ export function EditorialHero() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="text-muted-foreground/60 text-sm"
             >
-              Free to start. Your record stays yours.
+              Free to start. Your notes are yours.
             </motion.p>
           </motion.div>
 

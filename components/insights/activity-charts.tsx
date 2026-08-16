@@ -80,7 +80,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
       <div className="bg-popover border-border rounded-xl border px-3 py-2 shadow-xl backdrop-blur-md">
         <p className="text-muted-foreground mb-1 text-xs font-medium">{label}</p>
         <p className="text-foreground text-sm font-bold">
-          {payload[0].value} {payload[0].value === 1 ? 'activity' : 'activities'}
+          {payload[0].value} {payload[0].value === 1 ? 'note' : 'notes'}
         </p>
       </div>
     );
@@ -110,18 +110,15 @@ function WeeklyTrendChart({ data }: { data: number[] }) {
     <Card className={CARD_STYLES}>
       <CardHeader className="px-6 pt-6 pb-2">
         <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
-          Weekly Record Trend
+          Weekly notes
         </CardTitle>
-        <p className="text-muted-foreground text-sm">
-          How consistently you are capturing usable work
-        </p>
+        <p className="text-muted-foreground text-sm">How often you add notes</p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="h-52">
           {!hasData && (
             <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-              No record trend yet. Capture a few entries to see whether coverage is holding up week
-              to week.
+              Add a few notes to see your weekly pattern.
             </div>
           )}
           {hasData && mounted && (
@@ -197,7 +194,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
       <div className="bg-popover border-border rounded-xl border px-3 py-2 shadow-xl backdrop-blur-md">
         <p className="text-foreground text-sm font-bold">{data.name}</p>
         <p className="text-muted-foreground text-xs">
-          {data.value} activities ({data.payload.percentage}%)
+          {data.value} {data.value === 1 ? 'note' : 'notes'} ({data.payload.percentage}%)
         </p>
       </div>
     );
@@ -222,12 +219,12 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
       <Card className={CARD_STYLES}>
         <CardHeader className="px-6 pt-6 pb-2">
           <CardTitle className="flex items-center gap-2.5 text-base font-semibold">
-            Record by Project
+            Notes in each project
           </CardTitle>
         </CardHeader>
         <CardContent className="flex h-52 items-center justify-center px-6 pb-6">
           <p className="text-muted-foreground text-sm">
-            No project coverage yet. Create or assign a project so your record stays specific.
+            No project notes yet. Create a project or add a note to one.
           </p>
         </CardContent>
       </Card>
@@ -237,8 +234,8 @@ function ProjectDistributionChart({ data }: { data: ProjectDistribution[] }) {
   return (
     <Card className={CARD_STYLES}>
       <CardHeader className="px-6 pt-6 pb-2">
-        <CardTitle className="text-base font-semibold">Record by Project</CardTitle>
-        <p className="text-muted-foreground text-sm">How your captured evidence is distributed</p>
+        <CardTitle className="text-base font-semibold">Notes in each project</CardTitle>
+        <p className="text-muted-foreground text-sm">See where your notes are grouped</p>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <div className="flex items-center gap-8">

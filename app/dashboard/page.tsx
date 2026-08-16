@@ -88,9 +88,7 @@ export default async function DashboardPage() {
           <h1 className="text-foreground mb-1 text-2xl font-bold">
             {greeting}, {session.user.name?.split(' ')[0]}.
           </h1>
-          <p className="text-muted-foreground">
-            Document today&apos;s work while it is still fresh.
-          </p>
+          <p className="text-muted-foreground">Write down what you did today while it is fresh.</p>
         </div>
 
         {stats.totalCount < 5 && (
@@ -144,9 +142,9 @@ export default async function DashboardPage() {
         {/* Activity Timeline */}
         <div className="mb-8">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-foreground text-lg font-semibold">Recent Activity</h2>
+            <h2 className="text-foreground text-lg font-semibold">Recent notes</h2>
             <span className="text-muted-foreground text-sm">
-              Evidence captured this week:{' '}
+              Notes this week:{' '}
               <span className="text-foreground font-medium">
                 {stats.thisWeek}/{stats.weeklyGoal}
               </span>

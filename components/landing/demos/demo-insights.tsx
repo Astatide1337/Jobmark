@@ -35,9 +35,9 @@ export function DemoInsights() {
     weeklyTrend: [12, 15, 8, 20, 18, 24, 16, 22, 28, 25, 30, 24],
     projectDistribution: [
       { name: 'Website Redesign', count: 145, color: '#6366f1' },
-      { name: 'Mobile App MVP', count: 98, color: '#10b981' },
-      { name: 'Q1 Hiring Strategy', count: 45, color: '#f59e0b' },
-      { name: 'Sales Outreach', count: 32, color: '#ec4899' },
+      { name: 'Mobile app', count: 98, color: '#10b981' },
+      { name: 'Q1 hiring', count: 45, color: '#f59e0b' },
+      { name: 'Sales messages', count: 32, color: '#ec4899' },
       { name: 'Learning', count: 22, color: '#8b5cf6' },
     ],
   };
@@ -47,7 +47,7 @@ export function DemoInsights() {
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Insights</h2>
-          <p className="text-muted-foreground">See where your work is going.</p>
+          <p className="text-muted-foreground">See how your notes are grouped.</p>
         </div>
 
         {/* Summary Cards */}
