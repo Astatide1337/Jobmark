@@ -70,7 +70,7 @@ export function DemoProjects() {
       activities: [],
     };
 
-    setItems([newProject, ...items]);
+    setItems(currentItems => [newProject, ...currentItems]);
     toast.success('Project created.');
     return { success: true, message: 'Project created.' };
   };
@@ -80,20 +80,22 @@ export function DemoProjects() {
     const color = data.get('color') as string;
     const description = data.get('description') as string;
 
-    setItems(
-      items.map(p => (p.id === id ? { ...p, name, color, description: description || null } : p))
+    setItems(currentItems =>
+      currentItems.map(p =>
+        p.id === id ? { ...p, name, color, description: description || null } : p
+      )
     );
     toast.success('Project updated.');
     return { success: true, message: 'Project updated.' };
   };
 
   const handleArchive = async (id: string) => {
-    setItems(items.map(p => (p.id === id ? { ...p, archived: true } : p)));
+    setItems(currentItems => currentItems.map(p => (p.id === id ? { ...p, archived: true } : p)));
     toast.success('Project archived.');
   };
 
   const handleUnarchive = async (id: string) => {
-    setItems(items.map(p => (p.id === id ? { ...p, archived: false } : p)));
+    setItems(currentItems => currentItems.map(p => (p.id === id ? { ...p, archived: false } : p)));
     toast.success('Project restored.');
   };
 
@@ -105,7 +107,10 @@ export function DemoProjects() {
   const selectedProject = items.find(p => p.id === viewingId);
 
   return (
-    <DashboardFrame activePath={viewingId ? `/projects/${viewingId}` : '/projects'}>
+    <DashboardFrame
+      key={viewingId ?? 'projects'}
+      activePath={viewingId ? `/projects/${viewingId}` : '/projects'}
+    >
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Projects</h2>

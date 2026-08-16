@@ -17,8 +17,15 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { DemoDashboard } from './demos/demo-dashboard';
-import { RotatingHeadline, jobmarkHeadlines } from '@/components/ui/rotating-headline';
+import { RotatingHeadline } from '@/components/ui/rotating-headline';
 import { useAuthModal } from '@/components/auth';
+
+const jobmarkHeadlines = [
+  { text: 'Remember what you', highlight: 'did.' },
+  { text: 'Be ready for', highlight: 'reviews.' },
+  { text: 'Keep your', highlight: 'notes together.' },
+  { text: 'See your', highlight: 'progress.' },
+];
 
 export function EditorialHero() {
   const containerRef = useRef<HTMLDivElement>(null);

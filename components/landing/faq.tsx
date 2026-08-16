@@ -53,7 +53,7 @@ export function FAQ() {
   const [openId, setOpenId] = useState<string | null>('what-is');
 
   const toggleItem = (id: string) => {
-    setOpenId(openId === id ? null : id);
+    setOpenId(currentId => (currentId === id ? null : id));
   };
 
   return (
@@ -64,65 +64,31 @@ export function FAQ() {
       <div className="relative mx-auto max-w-3xl px-6">
         {/* Section Header */}
         <div className="mb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-6 flex items-center justify-center gap-3"
-          >
+          <div className="mb-6 flex items-center justify-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">FAQ</span>
             <div className="bg-primary/50 h-px w-12" />
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 font-serif text-4xl font-bold md:text-5xl"
-          >
-            Common questions
-          </motion.h2>
+          <h2 className="mb-4 font-serif text-4xl font-bold md:text-5xl">Common questions</h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground text-lg"
-          >
-            Answers to common questions.
-          </motion.p>
+          <p className="text-muted-foreground text-lg">Answers to common questions.</p>
         </div>
 
         {/* FAQ Accordion */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="space-y-2"
-        >
-          {faqs.map((faq, index) => (
+        <div className="space-y-2">
+          {faqs.map(faq => (
             <FAQItem
               key={faq.id}
               faq={faq}
               isOpen={openId === faq.id}
               onToggle={() => toggleItem(faq.id)}
-              index={index}
             />
           ))}
-        </motion.div>
+        </div>
 
         {/* Contact prompt */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="text-muted-foreground mt-12 text-center"
-        >
+        <p className="text-muted-foreground mt-12 text-center">
           Have a question?{' '}
           <a
             href="mailto:hello@jobmark.app"
@@ -130,7 +96,7 @@ export function FAQ() {
           >
             Get in touch
           </a>
-        </motion.p>
+        </p>
       </div>
     </section>
   );
@@ -140,19 +106,13 @@ function FAQItem({
   faq,
   isOpen,
   onToggle,
-  index,
 }: {
   faq: (typeof faqs)[0];
   isOpen: boolean;
   onToggle: () => void;
-  index: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
+    <div
       className={`relative rounded-xl border transition-all duration-300 ${
         isOpen
           ? 'border-border/40 bg-card/50'
@@ -161,6 +121,7 @@ function FAQItem({
     >
       {/* Question - Always visible */}
       <button
+        type="button"
         onClick={onToggle}
         className="group flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left"
       >
@@ -201,6 +162,6 @@ function FAQItem({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
