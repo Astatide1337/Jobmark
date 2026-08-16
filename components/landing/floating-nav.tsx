@@ -12,7 +12,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MagneticButton } from '@/components/ui/magnetic-button';
 import { useAuthModal } from '@/components/auth';
@@ -42,14 +42,12 @@ export function FloatingNav() {
 
           // Only change visibility if scroll delta is significant (prevents flicker)
           if (Math.abs(scrollDelta) > 5) {
-            if (scrollDelta < 0 || currentScrollY < 100) {
-              setIsVisible(true);
-            } else if (scrollDelta > 0 && currentScrollY > 100) {
-              setIsVisible(false);
-            }
+            const shouldShow = scrollDelta < 0 || currentScrollY < 100;
+            setIsVisible(shouldShow);
           }
 
-          setIsAtTop(currentScrollY < 50);
+          const atTop = currentScrollY < 50;
+          setIsAtTop(atTop);
           lastScrollY.current = currentScrollY;
           ticking.current = false;
         });
@@ -62,74 +60,75 @@ export function FloatingNav() {
   }, []);
 
   return (
-    <AnimatePresence mode="wait">
-      {isVisible && (
-        <motion.nav
-          key="floating-nav"
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
-          transition={{
-            duration: 0.2,
-            ease: [0.4, 0, 0.2, 1],
-          }}
-          className={cn(
-            'fixed top-6 left-1/2 z-50 -translate-x-1/2',
-            'rounded-full px-2 py-2',
-            'border-border/20 border',
-            'backdrop-blur-xl',
-            'shadow-lg shadow-black/10',
-            isAtTop ? 'bg-background/60' : 'bg-background/90'
-          )}
-        >
-          <div className="flex items-center gap-1">
-            {/* Logo */}
-            <MagneticButton as="div" strength={0.2}>
+    <motion.nav
+      initial={false}
+      animate={{
+        y: isVisible ? 0 : -100,
+        opacity: isVisible ? 1 : 0,
+      }}
+      transition={{
+        duration: 0.2,
+        ease: [0.4, 0, 0.2, 1],
+      }}
+      aria-hidden={!isVisible}
+      inert={!isVisible}
+      className={cn(
+        'fixed top-6 left-1/2 z-50 -translate-x-1/2',
+        'rounded-full px-2 py-2',
+        'border-border/20 border',
+        'backdrop-blur-xl',
+        'shadow-lg shadow-black/10',
+        isAtTop ? 'bg-background/60' : 'bg-background/90',
+        !isVisible && 'pointer-events-none'
+      )}
+    >
+      <div className="flex items-center gap-1">
+        {/* Logo */}
+        <MagneticButton as="div" strength={0.2}>
+          <Link
+            href="/"
+            className="hover:bg-primary/10 flex items-center gap-2 rounded-full px-3 py-2 transition-colors"
+          >
+            <div className="bg-primary flex h-6 w-6 items-center justify-center rounded-md">
+              <JobmarkMark className="h-4 w-4" sizes="16px" />
+            </div>
+            <span className="text-foreground hidden font-serif text-sm font-semibold sm:inline">
+              Jobmark
+            </span>
+          </Link>
+        </MagneticButton>
+
+        {/* Divider */}
+        <div className="bg-border/30 mx-1 hidden h-6 w-px sm:block" />
+
+        {/* Nav Items */}
+        <div className="hidden items-center gap-1 sm:flex">
+          {navItems.map(item => (
+            <MagneticButton key={item.label} as="div" strength={0.15}>
               <Link
-                href="/"
-                className="hover:bg-primary/10 flex items-center gap-2 rounded-full px-3 py-2 transition-colors"
+                href={item.href}
+                className="text-muted-foreground hover:text-foreground hover:bg-primary/5 focus-visible:ring-ring/50 focus-visible:text-foreground rounded-full px-3 py-2 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
               >
-                <div className="bg-primary flex h-6 w-6 items-center justify-center rounded-md">
-                  <JobmarkMark className="h-4 w-4" sizes="16px" />
-                </div>
-                <span className="text-foreground hidden font-serif text-sm font-semibold sm:inline">
-                  Jobmark
-                </span>
+                {item.label}
               </Link>
             </MagneticButton>
+          ))}
+        </div>
 
-            {/* Divider */}
-            <div className="bg-border/30 mx-1 hidden h-6 w-px sm:block" />
+        {/* Divider */}
+        <div className="bg-border/30 mx-1 h-6 w-px" />
 
-            {/* Nav Items */}
-            <div className="hidden items-center gap-1 sm:flex">
-              {navItems.map(item => (
-                <MagneticButton key={item.label} as="div" strength={0.15}>
-                  <Link
-                    href={item.href}
-                    className="text-muted-foreground hover:text-foreground hover:bg-primary/5 focus-visible:ring-ring/50 focus-visible:text-foreground rounded-full px-3 py-2 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
-                  >
-                    {item.label}
-                  </Link>
-                </MagneticButton>
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="bg-border/30 mx-1 h-6 w-px" />
-
-            {/* CTA */}
-            <MagneticButton as="div" strength={0.2}>
-              <button
-                onClick={openAuthModal}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
-              >
-                Add a note
-              </button>
-            </MagneticButton>
-          </div>
-        </motion.nav>
-      )}
-    </AnimatePresence>
+        {/* CTA */}
+        <MagneticButton as="div" strength={0.2}>
+          <button
+            type="button"
+            onClick={openAuthModal}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+          >
+            Add a note
+          </button>
+        </MagneticButton>
+      </div>
+    </motion.nav>
   );
 }

@@ -108,7 +108,7 @@ export function ProductValues() {
   const [openId, setOpenId] = useState<string | null>('private');
 
   const toggleItem = (id: string) => {
-    setOpenId(openId === id ? null : id);
+    setOpenId(currentId => (currentId === id ? null : id));
   };
 
   return (
@@ -116,58 +116,34 @@ export function ProductValues() {
       <div className="mx-auto max-w-4xl px-6">
         {/* Section Header */}
         <div className="mb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-6 flex items-center justify-center gap-3"
-          >
+          <div className="mb-6 flex items-center justify-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
               How it works
             </span>
             <div className="bg-primary/50 h-px w-12" />
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 font-serif text-4xl font-bold md:text-5xl"
-          >
+          <h2 className="mb-4 font-serif text-4xl font-bold md:text-5xl">
             A simple way to keep notes.
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground mx-auto max-w-2xl text-lg"
-          >
+          <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
             Easy to use now. Easy to find later.
-          </motion.p>
+          </p>
         </div>
 
         {/* Accordion */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="space-y-3"
-        >
-          {values.map((value, index) => (
+        <div className="space-y-3">
+          {values.map(value => (
             <AccordionItem
               key={value.id}
               value={value}
               isOpen={openId === value.id}
               onToggle={() => toggleItem(value.id)}
-              index={index}
             />
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -177,21 +153,13 @@ function AccordionItem({
   value,
   isOpen,
   onToggle,
-  index,
 }: {
   value: (typeof values)[0];
   isOpen: boolean;
   onToggle: () => void;
-  index: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.1 }}
-      className="relative"
-    >
+    <div className="relative">
       {/* Background gradient when open - warm amber tones */}
       <AnimatePresence>
         {isOpen && (
@@ -214,6 +182,7 @@ function AccordionItem({
       >
         {/* Header - Always visible */}
         <button
+          type="button"
           onClick={onToggle}
           className="group flex w-full cursor-pointer items-center gap-4 p-6 text-left"
         >
@@ -266,6 +235,6 @@ function AccordionItem({
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 }
