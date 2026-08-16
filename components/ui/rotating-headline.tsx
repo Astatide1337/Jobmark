@@ -68,7 +68,7 @@ export function RotatingHeadline({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-7xl"
+          className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-6xl lg:whitespace-nowrap"
         >
           <span className="text-foreground">{currentHeadline.text}</span>
           {currentHeadline.highlight && (
