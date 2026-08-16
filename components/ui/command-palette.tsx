@@ -49,7 +49,7 @@ const quickActions = [
   { id: 'log', label: 'Add a work note', icon: Plus, action: 'focus-capture' },
   {
     id: 'open-mcp-connector',
-    label: 'Assistant connections',
+    label: 'Connect AI',
     icon: LinkIcon,
     href: '/settings/connections',
   },

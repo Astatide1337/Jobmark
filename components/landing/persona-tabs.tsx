@@ -13,7 +13,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Trophy,
   TrendingUp,
@@ -25,6 +25,7 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Tab {
   id: string;
@@ -227,7 +228,6 @@ function ShareVisual() {
 
 export function PersonaTabs() {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
-  const activeTabData = tabs.find(t => t.id === activeTab)!;
 
   return (
     <section className="relative py-24 lg:py-32">
@@ -269,6 +269,7 @@ export function PersonaTabs() {
           {tabs.map(tab => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all duration-300 ${
                 activeTab === tab.id
@@ -282,46 +283,67 @@ export function PersonaTabs() {
           ))}
         </motion.div>
 
-        {/* Tab content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16"
-          >
-            {/* Left - Text content */}
-            <div className="space-y-6">
-              <h3 className="text-foreground font-serif text-2xl font-semibold sm:text-3xl">
-                {activeTabData.headline}
-              </h3>
+        {/* Tab content stays mounted so switching tabs does not blank or reload the section. */}
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Left - Text content */}
+          <div className="grid items-start">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
 
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                {activeTabData.description}
-              </p>
+              return (
+                <motion.div
+                  key={tab.id}
+                  initial={false}
+                  animate={{ opacity: isActive ? 1 : 0 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  aria-hidden={!isActive}
+                  className={cn(
+                    'col-start-1 row-start-1 space-y-6',
+                    isActive ? 'relative z-10' : 'pointer-events-none invisible'
+                  )}
+                >
+                  <h3 className="text-foreground font-serif text-2xl font-semibold sm:text-3xl">
+                    {tab.headline}
+                  </h3>
 
-              <ul className="space-y-3 pt-2">
-                {activeTabData.features.map((feature, i) => (
-                  <motion.li
-                    key={feature}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="text-muted-foreground flex items-center gap-3"
-                  >
-                    <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                    {feature}
-                  </motion.li>
-                ))}
-              </ul>
-            </div>
+                  <p className="text-muted-foreground text-lg leading-relaxed">{tab.description}</p>
 
-            {/* Right - Visual */}
-            <div className="lg:pl-8">{activeTabData.visual}</div>
-          </motion.div>
-        </AnimatePresence>
+                  <ul className="space-y-3 pt-2">
+                    {tab.features.map(feature => (
+                      <li key={feature} className="text-muted-foreground flex items-center gap-3">
+                        <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Right - Visuals stay mounted to avoid replaying their entrance animations. */}
+          <div className="grid items-center lg:pl-8">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
+
+              return (
+                <motion.div
+                  key={tab.id}
+                  initial={false}
+                  animate={{ opacity: isActive ? 1 : 0 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  aria-hidden={!isActive}
+                  className={cn(
+                    'col-start-1 row-start-1',
+                    isActive ? 'relative z-10' : 'pointer-events-none invisible'
+                  )}
+                >
+                  {tab.visual}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -139,7 +139,7 @@ export function McpConnectionPage({ baseUrl, connections }: McpConnectionProps) 
                 <PlugZap className="h-5 w-5" />
               </div>
               <h1 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
-                Assistant connections
+                Connect AI
               </h1>
             </div>
             <Button variant="ghost" className="shrink-0" asChild>

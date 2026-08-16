@@ -29,7 +29,7 @@ const navItems = [
   {
     href: '/settings/connections',
     icon: LinkIcon,
-    label: 'Assistant connections',
+    label: 'Connect AI',
     demoId: 'feature-mentor',
   },
   { href: '/articles', icon: Newspaper, label: 'Guides', demoId: 'feature-articles' },

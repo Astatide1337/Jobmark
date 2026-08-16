@@ -102,7 +102,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </Link>
         {article.category === 'help' && article.slug === 'connect-jobmark-to-ai' ? (
           <Link href="/settings/connections" className="text-primary hover:underline">
-            Open assistant connections
+            Open Connect AI
           </Link>
         ) : null}
       </div>

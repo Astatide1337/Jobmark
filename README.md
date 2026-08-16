@@ -148,4 +148,4 @@ Jobmark creates review drafts, outreach messages, and small text cleanups from t
 
 Vault unlock cookies are user-bound, expire, and are invalidated when the vault password version changes. Exports use an explicit allowlist and omit hashes, encrypted keys, tokens, and cryptographic state.
 
-Jobmark has no internal chat route; assistant connections live at `/settings/connections`.
+Jobmark has no internal chat route; Connect AI lives at `/settings/connections`.

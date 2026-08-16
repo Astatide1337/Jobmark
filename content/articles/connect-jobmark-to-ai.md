@@ -12,7 +12,7 @@ tags:
 author: Jobmark
 featured: false
 difficulty: starter
-primaryAction: Open assistant connections
+primaryAction: Open Connect AI
 primaryHref: /settings/connections
 ---
 
@@ -26,14 +26,14 @@ Make sure you can sign in to Jobmark and to the assistant you want to use. Conne
 
 ## Set it up
 
-1. Open **Assistant connections** in Jobmark.
+1. Open **Connect AI** in Jobmark.
 2. Choose **Claude**, **ChatGPT**, or **Gemini**.
 3. Select **Copy link & open**. Jobmark copies the connection link and opens the assistant.
 4. Paste the link wherever the app asks for a custom connection, then approve access.
 
 After that, the assistant can use the notes you choose when you ask about your work.
 
-To disconnect an assistant, choose **Disconnect** in Assistant connections. This stops access from Jobmark; you may also need to remove the saved connection in the assistant’s settings.
+To disconnect an assistant, choose **Disconnect** in Connect AI. This stops access from Jobmark; you may also need to remove the saved connection in the assistant’s settings.
 
 ## What can I ask?
 
