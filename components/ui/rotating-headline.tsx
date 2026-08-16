@@ -44,7 +44,7 @@ export function RotatingHeadline({
 
   return (
     <div
-      className={`relative h-[8rem] w-full overflow-hidden sm:h-[9rem] lg:h-[11rem] ${className}`}
+      className={`relative h-[13rem] w-full overflow-visible sm:h-[12rem] lg:h-[13rem] ${className}`}
     >
       <AnimatePresence initial={false} mode="wait">
         <motion.h1
