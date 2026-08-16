@@ -26,6 +26,11 @@ import { getGoals } from './goals';
 import { getContacts } from './network';
 import { getReports } from './reports';
 import { getUserSettings } from './settings';
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+} from '@/lib/date-semantics';
 
 const integrationEnabled = process.env.INTEGRATION_TESTS === '1';
 
@@ -37,7 +42,10 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
   let projectB: { id: string };
 
   beforeAll(async () => {
-    const currentLogDate = new Date();
+    // Activity.logDate is a calendar date stored at UTC midnight, not an instant.
+    const currentLogDate = calendarDateToUtcMidnight(
+      getCalendarDate(new Date(), DEFAULT_TIME_ZONE)
+    );
     const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     userA = await prisma.user.create({ data: { email: `tenant-a-${suffix}@example.test` } });
     userB = await prisma.user.create({ data: { email: `tenant-b-${suffix}@example.test` } });

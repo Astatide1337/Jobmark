@@ -47,6 +47,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'Jobmark - Keep your work on record',
   description: productDescription,
+  icons: {
+    icon: '/brand/jobmark-logo.svg',
+  },
   keywords: [
     'career record',
     'work evidence',
