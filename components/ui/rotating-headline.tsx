@@ -46,12 +46,12 @@ export function RotatingHeadline({
     <div
       className={`relative h-[8rem] w-full overflow-hidden sm:h-[9rem] lg:h-[11rem] ${className}`}
     >
-      <AnimatePresence initial={false} mode="sync">
+      <AnimatePresence initial={false} mode="wait">
         <motion.h1
           key={currentIndex}
-          // Keep the first headline visible in the server-rendered shell. A
-          // delayed fade from opacity zero reads as a page-load flash.
-          initial={false}
+          // Animate later word flips, but let the first headline render
+          // immediately so the page does not flash on initial load.
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
