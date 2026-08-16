@@ -31,8 +31,8 @@ const projects = [
   },
   {
     id: '2',
-    name: 'Mobile App MVP',
-    description: 'Core features for iOS beta',
+    name: 'Mobile app',
+    description: 'Main features for the iOS beta',
     color: '#10b981', // Emerald
     archived: false,
     _count: { activities: 12 },
@@ -40,7 +40,7 @@ const projects = [
   },
   {
     id: '3',
-    name: 'Q1 Hiring Strategy',
+    name: 'Q1 hiring',
     description: null,
     color: '#f59e0b', // Amber
     archived: false,
@@ -71,8 +71,8 @@ export function DemoProjects() {
     };
 
     setItems([newProject, ...items]);
-    toast.success('Project created (Demo)');
-    return { success: true, message: 'Created' };
+    toast.success('Project created.');
+    return { success: true, message: 'Project created.' };
   };
 
   const handleUpdate = async (id: string, data: FormData) => {
@@ -83,18 +83,18 @@ export function DemoProjects() {
     setItems(
       items.map(p => (p.id === id ? { ...p, name, color, description: description || null } : p))
     );
-    toast.success('Project updated (Demo)');
-    return { success: true, message: 'Updated' };
+    toast.success('Project updated.');
+    return { success: true, message: 'Project updated.' };
   };
 
   const handleArchive = async (id: string) => {
     setItems(items.map(p => (p.id === id ? { ...p, archived: true } : p)));
-    toast.success('Project archived');
+    toast.success('Project archived.');
   };
 
   const handleUnarchive = async (id: string) => {
     setItems(items.map(p => (p.id === id ? { ...p, archived: false } : p)));
-    toast.success('Project restored');
+    toast.success('Project restored.');
   };
 
   // We need to filter items based on the active tab
@@ -119,7 +119,7 @@ export function DemoProjects() {
                 onClick={() => setViewingId(null)}
                 className="text-muted-foreground hover:text-primary flex items-center gap-2 text-sm font-medium transition-colors"
               >
-                ← Back to Projects
+                ← Back to projects
               </button>
             </div>
 
@@ -134,7 +134,7 @@ export function DemoProjects() {
                 <div>
                   <h3 className="text-xl font-bold">{selectedProject.name}</h3>
                   <p className="text-muted-foreground text-sm">
-                    {selectedProject.description || 'No description provided.'}
+                    {selectedProject.description || 'No description added.'}
                   </p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export function DemoProjects() {
                         style={{ backgroundColor: selectedProject.color }}
                       />
                       <div className="bg-muted/30 rounded-lg p-4">
-                        <p className="text-sm font-medium">Updated project milestones</p>
+                        <p className="text-sm font-medium">Updated the project plan</p>
                         <p className="text-muted-foreground mt-1 text-xs">{i * 2} days ago</p>
                       </div>
                     </div>

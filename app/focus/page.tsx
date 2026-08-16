@@ -1,5 +1,5 @@
 /**
- * Decompression & Focus Ritual Page
+ * Focus Page
  *
  * Why: jobmark isn't just for logging work; it's for mental well-being.
  * This page hosts the interactive "End-of-Day" wizard.
@@ -22,7 +22,7 @@ import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date
 
 export const metadata = {
   title: 'Focus | Jobmark',
-  description: 'Reset and reflect at the end of the day.',
+  description: 'Take a short break and decide what to do next.',
 };
 
 export default async function FocusPage() {
@@ -68,7 +68,7 @@ export default async function FocusPage() {
   ]);
 
   // Primary goal resolution chain
-  const primaryGoalText = userSettings?.primaryGoal || goals[0]?.title || 'peace of mind';
+  const primaryGoalText = userSettings?.primaryGoal || goals[0]?.title || 'a clear next step';
   const primaryWhyText = userSettings?.whyStatement || goals[0]?.why || undefined;
 
   // Goal id -> title map
@@ -93,9 +93,7 @@ export default async function FocusPage() {
           config: {
             ...block.config,
             resolvedTexts:
-              block.config.texts.length > 0
-                ? block.config.texts
-                : ['I am capable of great things.'],
+              block.config.texts.length > 0 ? block.config.texts : ['I can take the next step.'],
           },
         };
       }

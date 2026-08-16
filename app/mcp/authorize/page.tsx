@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export const metadata: Metadata = {
   title: 'Connection could not start | Jobmark',
-  description: 'Return to your AI app and start the Jobmark connection again.',
+  description: 'Return to your assistant and start the Jobmark connection again.',
 };
 
 type AuthorizationErrorPageProps = {
@@ -14,13 +14,13 @@ type AuthorizationErrorPageProps = {
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
-  invalid_request: 'The AI app sent an incomplete or outdated connection request.',
-  unauthorized_client: 'Jobmark could not recognize this AI app.',
-  invalid_scope: 'The AI app requested permissions that are not available.',
+  invalid_request: 'The assistant sent an incomplete or old connection request.',
+  unauthorized_client: 'Jobmark could not recognize this assistant.',
+  invalid_scope: 'The assistant requested permissions that Jobmark cannot give it.',
 };
 
 function getErrorMessage(error: string | undefined): string {
-  return ERROR_MESSAGES[error ?? ''] ?? 'The connection request could not be completed.';
+  return ERROR_MESSAGES[error ?? ''] ?? 'Jobmark could not complete the connection request.';
 }
 
 export default async function AuthorizationErrorPage({
@@ -45,7 +45,7 @@ export default async function AuthorizationErrorPage({
             <ShieldAlert className="h-7 w-7" aria-hidden="true" />
           </div>
           <p className="text-primary mb-3 text-xs font-semibold tracking-[0.24em] uppercase">
-            MCP Connector
+            Assistant connection
           </p>
           <CardTitle className="text-2xl tracking-tight sm:text-3xl">
             This connection could not start
@@ -57,11 +57,11 @@ export default async function AuthorizationErrorPage({
 
         <CardContent className="space-y-6 px-8 pb-8 sm:px-10 sm:pb-10">
           <div className="border-border/60 bg-muted/20 rounded-2xl border p-4 text-sm leading-6">
-            <p className="text-foreground font-medium">Start a fresh connection</p>
+            <p className="text-foreground font-medium">Start a new connection</p>
             <p className="text-muted-foreground mt-1">
-              Return to your AI app, open its Jobmark connection, and choose{' '}
-              <strong>Reconnect</strong> or <strong>Add connection</strong>. This creates a new,
-              secure request.
+              Return to your assistant, open its Jobmark connection, and choose{' '}
+              <strong>Reconnect</strong> or <strong>Add connection</strong>. This creates a new
+              request.
             </p>
           </div>
 
@@ -74,7 +74,7 @@ export default async function AuthorizationErrorPage({
             </Button>
             <Button asChild>
               <Link href="/articles/connect-jobmark-to-ai">
-                Open connection guide
+                Read connection guide
                 <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>

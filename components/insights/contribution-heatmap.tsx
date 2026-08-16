@@ -39,7 +39,7 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
   return (
     <Card className={CARD_STYLES}>
       <CardHeader className="px-6 pt-6 pb-4">
-        <CardTitle className="text-base font-semibold">Contribution Activity</CardTitle>
+        <CardTitle className="text-base font-semibold">Note pattern</CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         <TooltipProvider delayDuration={50}>
@@ -94,8 +94,8 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
                           <TooltipContent side="top">
                             <p className="font-semibold">
                               {day.count === 0
-                                ? 'No activities'
-                                : `${day.count} ${day.count === 1 ? 'activity' : 'activities'}`}
+                                ? 'No notes'
+                                : `${day.count} ${day.count === 1 ? 'note' : 'notes'}`}
                             </p>
                             <p className="text-muted-foreground text-xs">{formatDate(day.date)}</p>
                           </TooltipContent>

@@ -14,9 +14,9 @@ const searchGlobalSchema = z.object({
 export const searchGlobalTool = {
   definition: {
     name: 'search_global',
-    title: 'Global Search',
+    title: 'Search',
     description:
-      'Search across activities, projects, reports, contacts, and interactions. Requires jobmark:read scope.',
+      'Search notes, projects, review drafts, contacts, and conversations. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -71,8 +71,8 @@ export const searchGlobalTool = {
 export const dashboardStatsTool = {
   definition: {
     name: 'dashboard_stats',
-    title: 'Dashboard Statistics',
-    description: 'Get aggregated dashboard statistics. Requires jobmark:read scope.',
+    title: 'Dashboard summary',
+    description: 'Get a summary of the dashboard. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -129,15 +129,15 @@ export const dashboardStatsTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const data = await getDashboardStats(actor);
-    return createStructuredResult(data, `Dashboard stats retrieved`);
+    return createStructuredResult(data, 'Dashboard summary ready');
   },
 };
 
 export const insightsGetTool = {
   definition: {
     name: 'insights_get',
-    title: 'Get Insights',
-    description: 'Get heatmap and trend insights. Requires jobmark:read scope.',
+    title: 'Get insights',
+    description: 'Get note patterns and insights. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -209,6 +209,6 @@ export const insightsGetTool = {
     }
 
     const data = await getInsights(actor);
-    return createStructuredResult(data, 'Insights retrieved');
+    return createStructuredResult(data, 'Insights ready');
   },
 };

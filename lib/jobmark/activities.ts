@@ -22,9 +22,10 @@ import {
   shiftCalendarDate,
 } from '@/lib/date-semantics';
 import { z } from 'zod';
+import { getActivityDisplayContent } from './activity-copy';
 
 const activityCreateSchema = z.object({
-  content: z.string().min(10, 'Activity must be at least 10 characters').max(1000),
+  content: z.string().min(10, 'Note must be at least 10 characters').max(1000),
   projectId: z.string().optional().nullable(),
   logDate: z
     .string()
@@ -243,7 +244,7 @@ export async function getActivity(actor: JobmarkActor, activityId: string): Prom
     include: { project: { select: { id: true, name: true, color: true, archived: true } } },
   });
 
-  if (!activity) throw new NotFoundError('Activity');
+  if (!activity) throw new NotFoundError('Note');
 
   return toActivityDTO(activity);
 }
@@ -314,7 +315,7 @@ export async function updateActivity(
     include: { project: { select: { locked: true } } },
   });
 
-  if (!activity) throw new NotFoundError('Activity');
+  if (!activity) throw new NotFoundError('Note');
   if (activity.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   const data: Prisma.ActivityUncheckedUpdateInput = {
@@ -340,7 +341,7 @@ export async function deleteActivity(actor: JobmarkActor, activityId: string): P
     include: { project: { select: { locked: true } } },
   });
 
-  if (!activity) throw new NotFoundError('Activity');
+  if (!activity) throw new NotFoundError('Note');
   if (activity.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   await prisma.activity.delete({ where: { id: activityId } });
@@ -353,7 +354,7 @@ type ActivityWithProject = Prisma.ActivityGetPayload<{
 function toActivityDTO(activity: ActivityWithProject): ActivityDTO {
   return {
     id: activity.id,
-    content: activity.content,
+    content: getActivityDisplayContent(activity.content),
     logDate: activity.logDate.toISOString().split('T')[0],
     projectId: activity.projectId,
     project: activity.project,

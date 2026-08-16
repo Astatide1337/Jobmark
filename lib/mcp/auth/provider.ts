@@ -147,7 +147,7 @@ export async function createClient(
     data: {
       clientId,
       clientSecretHash: clientSecret ? hashToken(clientSecret) : null,
-      clientName: data.client_name ?? 'Unknown Client',
+      clientName: data.client_name ?? 'Unnamed assistant',
       redirectUris: data.redirect_uris,
       grantTypes: data.grant_types ?? ['authorization_code', 'refresh_token'],
       responseTypes: data.response_types ?? ['code'],
@@ -516,7 +516,7 @@ async function resolveMetadataClient(
       data: {
         clientId: metadataClientId,
         clientSecretHash: null,
-        clientName: metadata.client_name ?? 'CIDDD Client',
+        clientName: metadata.client_name ?? 'Unnamed assistant',
         redirectUris: metadata.redirect_uris,
         grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
         responseTypes: metadata.response_types ?? ['code'],

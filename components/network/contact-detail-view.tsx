@@ -123,14 +123,14 @@ export function ContactDetailView({
     try {
       const result = await deleteContact(contact.id);
       if (result.success) {
-        toast.success('Contact deleted');
+        toast.success('Contact deleted.');
         router.push('/network');
       } else {
         toast.error(result.message);
       }
     } catch (error) {
       console.error('Delete contact error:', error);
-      toast.error('Failed to delete contact');
+      toast.error('Could not delete the contact.');
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -156,10 +156,10 @@ export function ContactDetailView({
           </Button>
           {showDeleteConfirm ? (
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Are you sure?</span>
+              <span className="text-muted-foreground text-sm">Delete this contact?</span>
               <Button variant="destructive" size="sm" onClick={handleDelete} disabled={isDeleting}>
                 {isDeleting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                Confirm
+                Delete contact
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
                 Cancel
@@ -192,11 +192,11 @@ export function ContactDetailView({
             <TabsList className="mb-4 w-full">
               <TabsTrigger value="interactions" className="flex-1">
                 <MessageSquare className="mr-2 h-4 w-4" />
-                Interactions
+                Conversations
               </TabsTrigger>
               <TabsTrigger value="outreach" className="flex-1">
                 <Sparkles className="mr-2 h-4 w-4" />
-                Outreach Drafts
+                Message drafts
               </TabsTrigger>
             </TabsList>
 
@@ -213,7 +213,7 @@ export function ContactDetailView({
               <OutreachWizard contact={contact} connectedMcpProviders={connectedMcpProviders} />
               <div className="space-y-3">
                 <h3 className="text-muted-foreground px-1 text-sm font-semibold tracking-widest uppercase">
-                  Saved Drafts
+                  Saved drafts
                 </h3>
                 <OutreachDraftHistory
                   initialDrafts={initialDrafts}
@@ -259,7 +259,7 @@ function ContactProfileCard({ contact }: { contact: Contact }) {
               {age !== undefined && <span className="text-muted-foreground"> (age {age})</span>}
             </span>
           ) : (
-            <span className="text-muted-foreground italic">Add birthday</span>
+            <span className="text-muted-foreground italic">Add a birthday</span>
           )}
         </div>
 
@@ -270,7 +270,7 @@ function ContactProfileCard({ contact }: { contact: Contact }) {
               {contact.email}
             </a>
           ) : (
-            <span className="text-muted-foreground italic">No email</span>
+            <span className="text-muted-foreground italic">Add an email</span>
           )}
         </div>
 
@@ -281,7 +281,7 @@ function ContactProfileCard({ contact }: { contact: Contact }) {
               {contact.phone}
             </a>
           ) : (
-            <span className="text-muted-foreground italic">No phone</span>
+            <span className="text-muted-foreground italic">Add a phone number</span>
           )}
         </div>
 
@@ -291,7 +291,7 @@ function ContactProfileCard({ contact }: { contact: Contact }) {
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <Users className="text-muted-foreground h-4 w-4" />
-                <span className="text-sm font-medium">Personality</span>
+                <span className="text-sm font-medium">How they talk</span>
               </div>
               <p className="text-muted-foreground text-sm whitespace-pre-wrap">
                 {contact.personalityTraits}
@@ -346,14 +346,14 @@ function InteractionTimeline({
     try {
       const result = await deleteInteraction(interactionId);
       if (result.success) {
-        toast.success('Interaction deleted');
+        toast.success('Conversation deleted.');
         router.refresh();
       } else {
         toast.error(result.message);
       }
     } catch (error) {
       console.error('Delete interaction error:', error);
-      toast.error('Failed to delete interaction');
+      toast.error('Could not delete the conversation.');
     } finally {
       setDeletingId(null);
       setConfirmDeleteId(null);
@@ -378,14 +378,14 @@ function InteractionTimeline({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Interactions</CardTitle>
+          <CardTitle className="text-lg">Conversations</CardTitle>
           <Button
             size="sm"
             onClick={() => setShowForm(!showForm)}
             variant={showForm ? 'outline' : 'default'}
           >
             <Plus className="mr-1 h-4 w-4" />
-            Log Interaction
+            Add conversation
           </Button>
         </div>
       </CardHeader>
@@ -402,14 +402,13 @@ function InteractionTimeline({
         {interactions.length === 0 ? (
           <div className="py-8 text-center">
             <MessageSquare className="text-muted-foreground/50 mx-auto mb-3 h-8 w-8" />
-            <p className="text-foreground text-sm font-medium">No interactions logged yet.</p>
+            <p className="text-foreground text-sm font-medium">No conversations yet.</p>
             <p className="text-muted-foreground mt-1 text-xs">
-              Keep a light record of meaningful touchpoints so this relationship stays useful and
-              current.
+              Save short notes about conversations and follow-ups.
             </p>
             {!showForm && (
               <Button variant="link" size="sm" className="mt-2" onClick={() => setShowForm(true)}>
-                Log your first interaction
+                Add your first conversation
               </Button>
             )}
           </div>
@@ -495,7 +494,9 @@ function InteractionTimeline({
                             expandedRawNotes.has(interaction.id) && 'rotate-180'
                           )}
                         />
-                        {expandedRawNotes.has(interaction.id) ? 'Hide raw notes' : 'View raw notes'}
+                        {expandedRawNotes.has(interaction.id)
+                          ? 'Hide additional notes'
+                          : 'View additional notes'}
                       </Button>
 
                       {expandedRawNotes.has(interaction.id) && (
@@ -519,7 +520,7 @@ function InteractionTimeline({
                     >
                       <Clock className="h-3.5 w-3.5" />
                       <span>
-                        Follow up: {formatDate(interaction.followUpDate)} (
+                        Follow up on {formatDate(interaction.followUpDate)} (
                         {getRelativeDay(interaction.followUpDate, timeZone)})
                       </span>
                       {isDateOnlyOverdue(interaction.followUpDate, timeZone) && (
@@ -617,7 +618,7 @@ function InteractionLogForm({
       window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }
     ).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error("Voice dictation isn't supported in this browser (try Chrome/Edge).");
+      toast.error('Voice typing is not available in this browser. Try Chrome or Edge.');
       return;
     }
     const recognition = new SpeechRecognition();
@@ -638,7 +639,7 @@ function InteractionLogForm({
     recognition.onerror = event => {
       if (event.error !== 'no-speech') {
         console.error('Dictation error:', event.error);
-        toast.error('Dictation error. Please try again.');
+        toast.error('Voice typing failed. Try again.');
       }
       setIsListening(false);
       setActiveField(null);
@@ -671,7 +672,7 @@ function InteractionLogForm({
         setFieldValue(field, polished);
       }
     } catch (error) {
-      console.error('Dictation polish error:', error);
+      console.error('Voice typing cleanup error:', error);
     } finally {
       setIsPolishing(false);
     }
@@ -726,7 +727,7 @@ function InteractionLogForm({
 
       const result = await createInteraction({ success: false, message: '' }, formData);
       if (result.success) {
-        toast.success('Interaction logged');
+        toast.success('Conversation saved.');
         resetForm();
         onSuccess?.();
       } else if (result.errors) {
@@ -739,8 +740,8 @@ function InteractionLogForm({
         toast.error(result.message);
       }
     } catch (error) {
-      console.error('Interaction log error:', error);
-      toast.error('Failed to log interaction');
+      console.error('Conversation save error:', error);
+      toast.error('Could not save the conversation.');
     } finally {
       setIsLoading(false);
     }
@@ -805,7 +806,7 @@ function InteractionLogForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="interaction-summary">
-              Summary <span className="text-destructive">*</span>
+              What happened <span className="text-destructive">*</span>
             </Label>
             <DictateButton
               isListening={isListening && activeField === 'summary'}
@@ -818,7 +819,7 @@ function InteractionLogForm({
             id="interaction-summary"
             value={summary}
             onChange={e => setSummary(e.target.value)}
-            placeholder="What did you discuss? Key takeaways..."
+            placeholder="What did you talk about?"
             className="h-20 resize-none"
           />
           {errors.summary && <p className="text-destructive text-xs">{errors.summary}</p>}
@@ -826,7 +827,7 @@ function InteractionLogForm({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="interaction-nextStep">Next Step</Label>
+            <Label htmlFor="interaction-nextStep">Next step</Label>
             <DictateButton
               isListening={isListening && activeField === 'nextStep'}
               isPolishing={isPolishing && activeField === 'nextStep'}
@@ -838,14 +839,14 @@ function InteractionLogForm({
             id="interaction-nextStep"
             value={nextStep}
             onChange={e => setNextStep(e.target.value)}
-            placeholder="Any follow-up actions..."
+            placeholder="What needs to happen next?"
             className="h-16 resize-none"
           />
           {errors.nextStep && <p className="text-destructive text-xs">{errors.nextStep}</p>}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="interaction-followUpDate">Follow-up Date</Label>
+          <Label htmlFor="interaction-followUpDate">Follow-up date</Label>
           <div className="flex items-center gap-2">
             <Popover open={followUpPickerOpen} onOpenChange={setFollowUpPickerOpen}>
               <PopoverTrigger asChild>
@@ -857,7 +858,7 @@ function InteractionLogForm({
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {followUpDate
                     ? format(ymdToLocalDate(followUpDate), 'LLL dd, yyyy')
-                    : 'Pick a follow-up date'}
+                    : 'Choose a follow-up date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -898,7 +899,7 @@ function InteractionLogForm({
             <ChevronDown
               className={`h-4 w-4 transition-transform ${showRawNotes ? 'rotate-180' : ''}`}
             />
-            Raw Notes
+            Additional notes
           </button>
           {showRawNotes && (
             <div className="mt-2 space-y-2">
@@ -906,7 +907,7 @@ function InteractionLogForm({
                 id="interaction-rawNotes"
                 value={rawNotes}
                 onChange={e => setRawNotes(e.target.value)}
-                placeholder="Paste meeting notes, email threads, etc."
+                placeholder="Add notes from the meeting or email."
                 className="h-24 resize-none"
               />
               {errors.rawNotes && <p className="text-destructive text-xs">{errors.rawNotes}</p>}
@@ -930,7 +931,7 @@ function InteractionLogForm({
           )}
           <Button type="submit" size="sm" disabled={isLoading} className="rounded-xl px-6">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Log Interaction
+            Save conversation
           </Button>
         </div>
       </form>

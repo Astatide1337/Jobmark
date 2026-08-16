@@ -1,13 +1,7 @@
-
 import { z } from 'zod';
-import {
-  getSettings,
-  updateSettings,
-} from '@/lib/jobmark/settings';
+import { getSettings, updateSettings } from '@/lib/jobmark/settings';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-} from '../errors';
+import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 
 const settingsUpdateSchema = z.object({
@@ -29,8 +23,8 @@ const settingsUpdateSchema = z.object({
 export const settingsGetTool = {
   definition: {
     name: 'settings_get',
-    title: 'Get Settings',
-    description: 'Get user settings. Requires jobmark:read scope.',
+    title: 'Get settings',
+    description: 'Get your settings. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -59,15 +53,15 @@ export const settingsGetTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const settings = await getSettings(actor);
-    return createStructuredResult(settings, 'Settings retrieved');
+    return createStructuredResult(settings, 'Settings ready');
   },
 };
 
 export const settingsUpdateTool = {
   definition: {
     name: 'settings_update',
-    title: 'Update Settings',
-    description: 'Update user settings. Requires jobmark:write scope.',
+    title: 'Update settings',
+    description: 'Update your settings. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -95,7 +89,11 @@ export const settingsUpdateTool = {
         timeZone: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

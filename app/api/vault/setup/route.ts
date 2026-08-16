@@ -7,23 +7,26 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Sign in first.' }, { status: 401 });
   }
 
   const body = await request.json();
   const { nonce, password } = body as { nonce?: string; password?: string };
 
   if (!nonce || !password) {
-    return NextResponse.json({ error: 'Missing nonce or password' }, { status: 400 });
+    return NextResponse.json({ error: 'Enter the link code and password.' }, { status: 400 });
   }
 
   if (password.length < 12 || password.length > 128) {
-    return NextResponse.json({ error: 'Password must be 12-128 characters' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Use 12 to 128 characters for the password.' },
+      { status: 400 }
+    );
   }
 
   const consumed = await consumeSecureActionNonce(nonce, 'vault_setup', session.user.id);
   if (!consumed) {
-    return NextResponse.json({ error: 'Invalid or expired nonce' }, { status: 400 });
+    return NextResponse.json({ error: 'This link is invalid or has expired.' }, { status: 400 });
   }
 
   const existing = await prisma.userSettings.findUnique({
@@ -32,7 +35,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (existing?.vaultPasswordHash) {
-    return NextResponse.json({ error: 'Vault already configured. Use change password instead.' }, { status: 409 });
+    return NextResponse.json(
+      { error: 'Private projects are already set up. Choose Change password.' },
+      { status: 409 }
+    );
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -43,5 +49,5 @@ export async function POST(request: NextRequest) {
     update: { vaultPasswordHash: passwordHash },
   });
 
-  return NextResponse.json({ success: true, message: 'Vault password set successfully' });
+  return NextResponse.json({ success: true, message: 'Private projects are ready.' });
 }

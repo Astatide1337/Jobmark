@@ -98,7 +98,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
         });
 
         if (result.success) {
-          toast.success('Contact updated');
+          toast.success('Contact updated.');
           onSuccess?.();
           onOpenChange(false);
         } else {
@@ -117,7 +117,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
         const result = await createContact({ success: false, message: '' }, formData);
 
         if (result.success) {
-          toast.success('Contact added');
+          toast.success('Contact added.');
           onSuccess?.();
           onOpenChange(false);
         } else if (result.errors) {
@@ -134,7 +134,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
       }
     } catch (error) {
       console.error('Contact dialog error:', error);
-      toast.error('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Try again.');
     } finally {
       setIsLoading(false);
     }
@@ -144,11 +144,9 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Contact' : 'Add Contact'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit contact' : 'Add contact'}</DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Update your contact's information."
-              : 'Add someone to your professional network.'}
+            {isEditing ? "Change this person's details." : 'Add a person you want to remember.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,7 +154,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
           {/* Full Name (required) */}
           <div className="space-y-2">
             <Label htmlFor="contact-fullName">
-              Full Name <span className="text-destructive">*</span>
+              Full name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="contact-fullName"
@@ -251,21 +249,21 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
               id="contact-relationship"
               value={relationship}
               onChange={e => setRelationship(e.target.value)}
-              placeholder="e.g. Former Manager, Mentor, Colleague"
+              placeholder="e.g. manager, mentor, or colleague"
             />
             {errors.relationship && (
               <p className="text-destructive text-xs">{errors.relationship}</p>
             )}
           </div>
 
-          {/* Personality Traits */}
+          {/* How they communicate */}
           <div className="space-y-2">
-            <Label htmlFor="contact-personalityTraits">Personality Traits</Label>
+            <Label htmlFor="contact-personalityTraits">How they talk</Label>
             <Textarea
               id="contact-personalityTraits"
               value={personalityTraits}
               onChange={e => setPersonalityTraits(e.target.value)}
-              placeholder="Key personality traits or communication style..."
+              placeholder="How do they like to communicate?"
               className="h-16 resize-none"
             />
             {errors.personalityTraits && (
@@ -280,7 +278,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
               id="contact-notes"
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Anything else to remember about this person..."
+              placeholder="What else do you want to remember?"
               className="h-20 resize-none"
             />
             {errors.notes && <p className="text-destructive text-xs">{errors.notes}</p>}
@@ -292,7 +290,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Save Changes' : 'Add Contact'}
+              {isEditing ? 'Save changes' : 'Add contact'}
             </Button>
           </DialogFooter>
         </form>

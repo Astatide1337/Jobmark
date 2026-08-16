@@ -118,7 +118,7 @@ export function FocusSection({
         newBlock = {
           id,
           type,
-          config: { texts: ['I am capable of achieving my goals.'], totalDuration: 60 },
+          config: { texts: ['I can take the next step.'], totalDuration: 60 },
         };
         break;
       case 'goal':
@@ -144,9 +144,9 @@ export function FocusSection({
     const result = await saveFocusConfig(blocks);
     if (result.success) {
       setLastSavedBlocks(blocks);
-      toast.success('Focus session saved');
+      toast.success('Focus settings saved.');
     } else {
-      toast.error(result.error ?? 'Failed to save');
+      toast.error(result.error ?? 'Could not save your focus settings.');
     }
     setIsSaving(false);
   }
@@ -158,7 +158,7 @@ export function FocusSection({
     setBlocks(defaults);
     setLastSavedBlocks(defaults);
     setExpandedId(null);
-    toast.success('Reset to defaults');
+    toast.success('Focus settings reset.');
     setIsResetting(false);
   }
 
@@ -168,9 +168,9 @@ export function FocusSection({
 
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h3 className="text-lg font-medium">Focus Sequence</h3>
+          <h3 className="text-lg font-medium">Focus session</h3>
           <p className="text-muted-foreground text-sm">
-            End your day with intention. Drag to reorder your session blocks.
+            Choose the blocks in your focus session and put them in order.
           </p>
         </div>
         <AddBlockSelector onSelect={addBlock} />
@@ -204,14 +204,14 @@ export function FocusSection({
 
         {blocks.length === 0 && (
           <div className="text-muted-foreground rounded-2xl border border-dashed py-12 text-center text-sm">
-            No blocks in your sequence. Add one to get started.
+            No blocks yet. Add one to get started.
           </div>
         )}
       </div>
 
       <div className="flex justify-between pt-4">
         <p className="text-muted-foreground text-xs italic">
-          Tip: Design a sequence that helps you transition from work to a state of calm focus.
+          Tip: A short session can help you end work and focus.
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -221,14 +221,14 @@ export function FocusSection({
               className="text-muted-foreground hover:text-foreground"
             >
               <RotateCcw className="mr-2 h-3.5 w-3.5" />
-              Reset Defaults
+              Reset defaults
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Reset focus sequence?</AlertDialogTitle>
+              <AlertDialogTitle>Reset your focus session?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will restore the original sequence. Your current customizations will be lost.
+                This will restore the original blocks. Your changes will be lost.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -250,9 +250,9 @@ function AddBlockSelector({ onSelect }: { onSelect: (type: FocusBlockType) => vo
   const [isOpen, setIsOpen] = useState(false);
 
   const OPTIONS: { type: FocusBlockType; label: string; icon: React.ReactNode }[] = [
-    { type: 'breathing', label: 'Breathing Exercise', icon: <Wind className="h-4 w-4" /> },
-    { type: 'affirmation', label: 'Affirmations', icon: <Sparkles className="h-4 w-4" /> },
-    { type: 'goal', label: 'Goal Visualization', icon: <Target className="h-4 w-4" /> },
+    { type: 'breathing', label: 'Breathing', icon: <Wind className="h-4 w-4" /> },
+    { type: 'affirmation', label: 'Short reminders', icon: <Sparkles className="h-4 w-4" /> },
+    { type: 'goal', label: 'Think about your goal', icon: <Target className="h-4 w-4" /> },
   ];
 
   return (
@@ -268,7 +268,7 @@ function AddBlockSelector({ onSelect }: { onSelect: (type: FocusBlockType) => vo
             : 'border-border/50 hover:border-border'
         )}
       >
-        <span className="text-sm font-medium">Add Block</span>
+        <span className="text-sm font-medium">Add block</span>
         <ChevronDown
           className={cn(
             'text-muted-foreground h-4 w-4 transition-transform duration-200',
@@ -377,9 +377,8 @@ function SortableBlockCard({
             {!isExpanded && (
               <p className="text-muted-foreground line-clamp-1 text-xs font-medium">
                 {block.type === 'breathing' && BREATHING_PATTERNS[block.config.pattern].label}
-                {block.type === 'affirmation' &&
-                  `${block.config.texts.length} affirmations · ${block.config.totalDuration}s`}
-                {block.type === 'goal' && `${block.config.duration}s visualization`}
+                {block.type === 'affirmation' && `${block.config.texts.length} reminders`}
+                {block.type === 'goal' && 'Think about your goal'}
               </p>
             )}
           </div>
@@ -538,11 +537,14 @@ function BreathingCarousel({
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-          Select Pattern
+          Breathing pattern
         </Label>
         <div className="flex items-center gap-3">
-          <Label className="text-xs font-medium">Cycles</Label>
+          <Label htmlFor={`focus-breathing-rounds-${block.id}`} className="text-xs font-medium">
+            Rounds
+          </Label>
           <Input
+            id={`focus-breathing-rounds-${block.id}`}
             type="number"
             min={1}
             max={10}
@@ -645,8 +647,8 @@ function GoalCarousel({
   const options = [
     {
       id: undefined,
-      title: 'Auto (Primary Goal)',
-      why: 'Automatically picks your most important goal.',
+      title: 'Use my main goal',
+      why: 'Uses your main goal.',
     },
     ...goals,
   ];
@@ -685,11 +687,14 @@ function GoalCarousel({
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-          Select Visualization Target
+          Choose a goal
         </Label>
         <div className="flex items-center gap-3">
-          <Label className="text-xs font-medium">Duration (s)</Label>
+          <Label htmlFor={`focus-goal-duration-${block.id}`} className="text-xs font-medium">
+            Duration <span className="sr-only">in seconds</span>
+          </Label>
           <Input
+            id={`focus-goal-duration-${block.id}`}
             type="number"
             min={5}
             max={60}
@@ -724,7 +729,7 @@ function GoalCarousel({
               <div className="flex flex-col items-center">
                 <span className="text-lg font-bold">{currentOption.title}</span>
                 <p className="text-muted-foreground mt-2 max-w-[280px] text-xs leading-relaxed italic">
-                  &quot;{currentOption.why || 'Visualize your success.'}&quot;
+                  &quot;{currentOption.why || 'Think about your next step.'}&quot;
                 </p>
               </div>
             </motion.div>
@@ -785,11 +790,14 @@ function AffirmationEditor({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-          Affirmations
+          Short reminders
         </Label>
         <div className="flex items-center gap-3">
-          <Label className="text-xs font-medium">Total Time (s)</Label>
+          <Label htmlFor={`focus-reminder-duration-${block.id}`} className="text-xs font-medium">
+            Duration <span className="sr-only">in seconds</span>
+          </Label>
           <Input
+            id={`focus-reminder-duration-${block.id}`}
             type="number"
             min={10}
             max={300}
@@ -812,13 +820,14 @@ function AffirmationEditor({
               {i + 1}
             </div>
             <Input
+              aria-label={`Reminder ${i + 1}`}
               value={text}
               onChange={e => {
                 const newTexts = [...block.config.texts];
                 newTexts[i] = e.target.value;
                 onUpdate({ ...block, config: { ...block.config, texts: newTexts } });
               }}
-              placeholder="Type an affirmation..."
+              placeholder="Write a short reminder..."
               className="border-border/40 bg-muted/20 focus:bg-background h-10"
             />
             <button
@@ -827,7 +836,7 @@ function AffirmationEditor({
                 const newTexts = block.config.texts.filter((_, idx) => idx !== i);
                 onUpdate({ ...block, config: { ...block.config, texts: newTexts } });
               }}
-              aria-label={`Delete affirmation ${i + 1}`}
+              aria-label={`Delete reminder ${i + 1}`}
               className="text-muted-foreground/30 hover:text-destructive opacity-0 transition-all group-hover:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
@@ -844,7 +853,7 @@ function AffirmationEditor({
           className="text-muted-foreground hover:text-primary w-full rounded-2xl border border-dashed py-6"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Affirmation
+          Add reminder
         </Button>
       </div>
     </div>

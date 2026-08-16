@@ -5,8 +5,8 @@
  * their hands off the keyboard. This is the "Omnisearch" for jobmark.
  *
  * Features:
- * - Multi-source Search: Queries Activities, Projects, Contacts, and Reviews.
- * - Quick Actions: Immediate triggers for logging wins or creating reports.
+ * - Multi-source Search: Queries notes, projects, contacts, and reviews.
+ * - Quick Actions: Immediate triggers for adding notes or creating drafts.
  * - Recent Items: Automatically suggests your most recently active projects.
  * - Debouncing: Uses `lodash.debounce` to ensure server search only triggers
  *   after the user pauses typing.
@@ -46,11 +46,16 @@ import { format } from 'date-fns';
 
 // Quick action definitions
 const quickActions = [
-  { id: 'log', label: 'Log New Activity', icon: Plus, action: 'focus-capture' },
-  { id: 'open-mcp-connector', label: 'MCP Connector', icon: LinkIcon, href: '/chat' },
-  { id: 'view-reports', label: 'View Reviews', icon: FileBarChart, href: '/reports?tab=history' },
-  { id: 'create-report', label: 'Create Summary', icon: Sparkles, href: '/reports?tab=new' },
-  { id: 'project', label: 'Create Project', icon: FolderOpen, href: '/projects?new=true' },
+  { id: 'log', label: 'Add a work note', icon: Plus, action: 'focus-capture' },
+  {
+    id: 'open-mcp-connector',
+    label: 'Assistant connections',
+    icon: LinkIcon,
+    href: '/settings/connections',
+  },
+  { id: 'view-reports', label: 'View reviews', icon: FileBarChart, href: '/reports?tab=history' },
+  { id: 'create-report', label: 'Make review draft', icon: Sparkles, href: '/reports?tab=new' },
+  { id: 'project', label: 'Create project', icon: FolderOpen, href: '/projects?new=true' },
 ];
 
 // Navigation items
@@ -58,7 +63,7 @@ const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
   { id: 'projects', label: 'Projects', icon: FolderOpen, href: '/projects' },
   { id: 'network', label: 'Network', icon: Users, href: '/network' },
-  { id: 'articles', label: 'Articles', icon: Newspaper, href: '/articles' },
+  { id: 'articles', label: 'Guides', icon: Newspaper, href: '/articles' },
 ];
 
 export function CommandPalette() {
@@ -173,17 +178,17 @@ export function CommandPalette() {
       <CommandDialog
         open={open}
         onOpenChange={setOpen}
-        title="Search Everything"
-        description="Search for activities, projects, reports, contacts, interactions, or navigate anywhere"
+        title="Search your notes"
+        description="Search notes, projects, review drafts, contacts, and conversations."
         showCloseButton={false}
         shouldFilter={false} // Disable internal filtering to allow server results (e.g. "today") to show
       >
-        <CommandInput placeholder="Search everything..." value={query} onValueChange={setQuery} />
+        <CommandInput placeholder="Search your notes..." value={query} onValueChange={setQuery} />
         <CommandList>
           <CommandEmpty>{isPending ? 'Searching...' : 'No results found.'}</CommandEmpty>
 
           {filteredQuickActions.length > 0 && (
-            <CommandGroup heading="Quick Actions">
+            <CommandGroup heading="Quick actions">
               {filteredQuickActions.map(action => (
                 <CommandItem
                   key={action.id}
@@ -215,7 +220,7 @@ export function CommandPalette() {
           {!query && recentProjects.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Recent Projects">
+              <CommandGroup heading="Recent projects">
                 {recentProjects.map(project => (
                   <CommandItem
                     key={project.id}
@@ -236,9 +241,9 @@ export function CommandPalette() {
           {results.length > 0 && (
             <>
               <CommandSeparator />
-              {/* Activity Results */}
+              {/* Note results */}
               {results.filter(r => r.type === 'activity').length > 0 && (
-                <CommandGroup heading="Activities">
+                <CommandGroup heading="Notes">
                   {results
                     .filter(r => r.type === 'activity')
                     .map(result => (
@@ -313,9 +318,9 @@ export function CommandPalette() {
                 </CommandGroup>
               )}
 
-              {/* Interaction Results */}
+              {/* Touchpoint results */}
               {displayedResults.filter(r => r.type === 'interaction').length > 0 && (
-                <CommandGroup heading="Interactions">
+                <CommandGroup heading="Conversations">
                   {displayedResults
                     .filter(r => r.type === 'interaction')
                     .map(result => (
@@ -376,7 +381,7 @@ interface ActivityDetailModalProps {
 function ActivityDetailModal({ open, onOpenChange, activity }: ActivityDetailModalProps) {
   if (!activity) return null;
 
-  let dateDisplay = 'Unknown Date';
+  let dateDisplay = 'Unknown date';
   if (activity.createdAt) {
     dateDisplay = format(new Date(activity.createdAt), 'EEEE, MMMM d, yyyy • h:mm a');
   }
@@ -401,13 +406,13 @@ function ActivityDetailModal({ open, onOpenChange, activity }: ActivityDetailMod
                   style={{ backgroundColor: activity.color }}
                 />
                 <span className="max-w-[150px] truncate">
-                  {activity.subtitle.split(' • ')[0] || 'No Project'}
+                  {activity.subtitle.split(' • ')[0] || 'No project'}
                 </span>
               </Badge>
             )}
           </div>
 
-          <DialogTitle className="sr-only">Activity Detail</DialogTitle>
+          <DialogTitle className="sr-only">Note details</DialogTitle>
         </DialogHeader>
 
         <div className="custom-scrollbar mt-4 max-h-[60vh] overflow-y-auto pr-2">

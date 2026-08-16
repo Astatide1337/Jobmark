@@ -68,8 +68,8 @@ export function BreathingDisplay({
   const sizeClasses = {
     full: {
       root: 'h-[220px]',
-      stage: 'h-40 max-w-[36rem] overflow-visible',
-      label: 'text-[clamp(3.5rem,7vw,5rem)]',
+      stage: 'h-40 max-w-[36rem] overflow-visible px-2 sm:px-4',
+      label: 'max-w-full text-[clamp(2rem,10vw,5rem)]',
     },
     settings: {
       root: 'h-[144px]',

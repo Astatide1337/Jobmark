@@ -19,7 +19,7 @@ const { hash, compare } = bcrypt;
 function getPublicAppUrl(): string {
   const value =
     process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL;
-  if (!value) throw new Error('Public app URL is not configured');
+  if (!value) throw new Error('The public app URL is not set.');
   return value.replace(/\/$/, '');
 }
 
@@ -96,7 +96,7 @@ export async function beginVaultSetup(
   });
 
   if (settings?.vaultPasswordHash) {
-    throw new ValidationError('Vault already configured. Use change password instead.');
+    throw new ValidationError('Private projects are already set up. Choose Change password.');
   }
 
   const nonce = await createSecureActionNonce(actor.userId, actor.connectionId, 'vault_setup');
@@ -104,7 +104,7 @@ export async function beginVaultSetup(
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
   throw new UserActionRequiredError(
-    'Open Jobmark to set up your vault password',
+    'Open Jobmark to set up your private project password',
     actionUrl,
     expiresAt
   );
@@ -121,7 +121,7 @@ export async function beginVaultChangePassword(
   });
 
   if (!settings?.vaultPasswordHash) {
-    throw new ValidationError('Vault not configured. Use setup instead.');
+    throw new ValidationError('Private projects are not set up yet. Choose Set up first.');
   }
 
   const nonce = await createSecureActionNonce(
@@ -133,7 +133,7 @@ export async function beginVaultChangePassword(
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
   throw new UserActionRequiredError(
-    'Open Jobmark to change your vault password',
+    'Open Jobmark to change your private project password',
     actionUrl,
     expiresAt
   );
@@ -150,18 +150,22 @@ export async function beginVaultUnlock(
   });
 
   if (!settings?.vaultPasswordHash) {
-    throw new ValidationError('Vault not configured');
+    throw new ValidationError('Private projects are not set up yet.');
   }
 
   if (actor.vaultUnlocked) {
-    throw new ValidationError('Vault is already unlocked');
+    throw new ValidationError('Private projects are already open.');
   }
 
   const nonce = await createSecureActionNonce(actor.userId, actor.connectionId, 'vault_unlock');
   const actionUrl = `${getPublicAppUrl()}/vault/unlock?nonce=${nonce}`;
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  throw new UserActionRequiredError('Open Jobmark to unlock your vault', actionUrl, expiresAt);
+  throw new UserActionRequiredError(
+    'Open Jobmark to open your private projects',
+    actionUrl,
+    expiresAt
+  );
 }
 
 export async function lockVault(actor: JobmarkActor): Promise<void> {

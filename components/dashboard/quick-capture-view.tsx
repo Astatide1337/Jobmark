@@ -76,7 +76,7 @@ export function QuickCaptureView({
     <Card className="bg-card border-border/50 warm-glow">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Capture to Record</CardTitle>
+          <CardTitle className="text-lg">Add a note</CardTitle>
           <span
             className={`rounded-xl px-2.5 py-1 text-xs font-medium ${
               todayCount >= dailyGoal
@@ -97,7 +97,7 @@ export function QuickCaptureView({
             )}
           </span>
         </div>
-        <CardDescription>What did you do {dateLabel}?</CardDescription>
+        <CardDescription>What happened {dateLabel}?</CardDescription>
       </CardHeader>
       <CardContent>
         <form ref={formRef} action={currentAction}>
@@ -108,7 +108,7 @@ export function QuickCaptureView({
                 name="content"
                 value={content}
                 onChange={e => onContentChange(e.target.value)}
-                placeholder="Shipped the dashboard polish, reviewed two PRs, and clarified scope for the API work."
+                placeholder="Finished the dashboard update, reviewed two PRs, and clarified the API work."
                 className="border-border/50 focus:bg-background/50 relative z-10 min-h-[100px] resize-none bg-transparent pr-16 transition-colors"
                 disabled={isPending}
                 data-quick-capture="true"
@@ -118,7 +118,7 @@ export function QuickCaptureView({
                 <div className="absolute right-2 bottom-2 z-30">
                   <div className="bg-background/80 border-border/50 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs shadow-sm backdrop-blur-sm">
                     <Sparkles className="h-3 w-3 animate-pulse" />
-                    Polishing...
+                    Fixing the text...
                   </div>
                 </div>
               )}
@@ -129,8 +129,8 @@ export function QuickCaptureView({
             </div>
 
             <div className="text-muted-foreground space-y-1 text-xs leading-relaxed">
-              <p>Good entries are short and specific.</p>
-              <p>Try: shipped, resolved, reviewed, coordinated, decided.</p>
+              <p>Keep the note short and clear.</p>
+              <p>Try: fixed the bug, sent the update, finished the task.</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -184,7 +184,7 @@ export function QuickCaptureView({
 
             {state.errors?.content && (
               <p className="text-destructive text-sm">
-                {state.errors.content[0]} Add one concrete action or outcome so this entry is useful
+                {state.errors.content[0]} Add what you did or what changed so you can use this note
                 later.
               </p>
             )}
@@ -202,7 +202,7 @@ export function QuickCaptureView({
                 <kbd className="bg-muted border-border/50 rounded-md border px-1.5 py-0.5 text-[10px]">
                   Enter
                 </kbd>
-                {' to save to your record'}
+                {' to save'}
               </p>
 
               <input type="hidden" name="logDate" value={format(selectedDate, 'yyyy-MM-dd')} />
@@ -220,7 +220,7 @@ export function QuickCaptureView({
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Save entry
+                    Save note
                   </>
                 )}
               </Button>
@@ -229,9 +229,9 @@ export function QuickCaptureView({
             {state.success && (
               <div className="border-border/50 bg-background/40 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3">
                 <div>
-                  <p className="text-foreground text-sm font-medium">Added to your record.</p>
+                  <p className="text-foreground text-sm font-medium">Note saved.</p>
                   <p className="text-muted-foreground text-xs">
-                    Keep capturing, assign this work to a project, or turn the week into a summary.
+                    Add another note, put this one in a project, or make a review draft.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -241,13 +241,13 @@ export function QuickCaptureView({
                     variant="outline"
                     onClick={() => textareaRef.current?.focus()}
                   >
-                    Add Another
+                    Add another
                   </Button>
                   <Button size="sm" variant="outline" asChild>
-                    <Link href="/projects?new=true">Create Project</Link>
+                    <Link href="/projects?new=true">Create project</Link>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link href="/reports?tab=new">Generate Summary</Link>
+                    <Link href="/reports?tab=new">Make review draft</Link>
                   </Button>
                 </div>
               </div>

@@ -1,18 +1,18 @@
 # Jobmark
 
-Jobmark stores and organizes your professional history and connects it to the AI assistant you choose through MCP (Model Context Protocol). It uses Next.js 16 (App Router), Auth.js, Prisma, and PostgreSQL.
+Jobmark stores and organizes your work notes and connects them to the AI assistant you choose through MCP (Model Context Protocol). It uses Next.js 16 (App Router), Auth.js, Prisma, and PostgreSQL.
 
 ## Overview
 
 Jobmark is a personal career management platform that lets you:
 
-- **Log accomplishments** — Quick capture of daily activities, wins, and metrics
+- **Save work notes** — Quick capture of daily work, wins, and metrics
 - **Organize projects** — Group related work with colors, archives, and progress tracking
 - **Set goals** — Track progress against measurable career objectives
-- **Generate review briefs** — Evidence-based weekly/monthly/quarterly reviews
+- **Build review drafts** — Weekly, monthly, and quarterly drafts from your notes
 - **Manage your network** — CRM-lite for professional contacts and interactions
-- **Draft outreach** — Editable, evidence-based messages built from your relationship history
-- **Focus & decompress** — Guided breathing, intention-setting, and affirmations
+- **Draft outreach** — Editable messages built from your saved conversations
+- **Focus sessions** — Guided breathing, goals, and short reminders
 - **Connect your assistant** — Use Jobmark through Claude, ChatGPT, Gemini, or another MCP-compatible assistant
 
 ## Architecture
@@ -27,7 +27,7 @@ Jobmark no longer operates an internal chat product. Instead, it exposes every c
 - **JWKS**: `/api/auth/mcp/jwks` (RS256, 24h rotation)
 - **Discovery**: `/.well-known/oauth-authorization-server` + `/.well-known/oauth-protected-resource`
 
-**Connection Page**: `/chat` — Add Jobmark to Claude, ChatGPT, or Gemini
+**Connection Page**: `/settings/connections` — Add Jobmark to Claude, ChatGPT, or Gemini
 
 **Scopes**: `jobmark:read`, `jobmark:write`, `jobmark:destructive`, `offline_access`
 
@@ -97,7 +97,7 @@ Neon endpoint values, and preview must never point at the production branch.
 
 ### Quick Start (Claude Desktop)
 
-1. Open Jobmark at `/chat` and click "Connect" for Claude
+1. Open Jobmark at `/settings/connections` and click "Connect" for Claude
 2. Complete OAuth authorization
 3. Add to `claude_desktop_config.json`:
 
@@ -148,6 +148,4 @@ Jobmark creates review drafts, outreach messages, and small text cleanups from t
 
 Vault unlock cookies are user-bound, expire, and are invalidated when the vault password version changes. Exports use an explicit allowlist and omit hashes, encrypted keys, tokens, and cryptographic state.
 
-## Legacy Chat
-
-Previous internal chat conversations are preserved read-only at `/chat/export/[conversationId].md`. The `/chat` route now serves as the MCP connection page.
+Jobmark has no internal chat route; assistant connections live at `/settings/connections`.

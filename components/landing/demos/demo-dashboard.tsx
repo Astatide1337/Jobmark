@@ -42,14 +42,14 @@ const DEMO_REPORTS = [
     id: 'demo-weekly-update',
     title: 'Weekly Engineering Update',
     content:
-      '## Summary\nShipped the dashboard polish and clarified the API scope.\n\n### Key Wins\n- Reviewed two pull requests\n- Resolved the payment-flow edge case\n- Aligned the next sprint with the team\n\n### Next Steps\n- Share the update with the manager\n- Use the next milestone as the starting point for a review draft',
+      '## Summary\nFinished the dashboard work and cleared up the API plan.\n\n### What changed\n- Reviewed two code changes\n- Fixed a payment issue\n- Set the next sprint plan\n\n### Next steps\n- Share the update with your manager\n- Use the next project milestone to make a review draft',
     createdAt: new Date('2026-08-12T16:00:00.000Z'),
   },
   {
     id: 'demo-goals-review',
     title: 'Q1 Goals Review',
     content:
-      '## Overview\nThe record shows steady progress toward the product launch.\n\n### Progress\n- Backend auth: complete\n- Database schema: finalized\n- Frontend polish: in progress',
+      '## Overview\nThe notes show progress toward the product launch.\n\n### Progress\n- Sign-in: done\n- Database setup: done\n- App screens: in progress',
     createdAt: new Date('2026-08-10T13:30:00.000Z'),
   },
 ];
@@ -67,15 +67,15 @@ const DEMO_INSIGHTS: InsightsData = {
   weeklyTrend: [8, 12, 10, 16, 14, 18, 20, 17],
   projectDistribution: [
     { name: 'Website Redesign', count: 24, color: '#d4a574' },
-    { name: 'Mobile App MVP', count: 12, color: '#7fb069' },
-    { name: 'Q1 Hiring Strategy', count: 6, color: '#e0a458' },
+    { name: 'Mobile app', count: 12, color: '#7fb069' },
+    { name: 'Q1 hiring', count: 6, color: '#e0a458' },
   ],
 };
 
 const DEMO_PROJECTS = [
-  { name: 'Website Redesign', detail: '24 activities', color: '#d4a574' },
-  { name: 'Mobile App MVP', detail: '12 activities', color: '#7fb069' },
-  { name: 'Q1 Hiring Strategy', detail: '6 activities', color: '#e0a458' },
+  { name: 'Website Redesign', detail: '24 notes', color: '#d4a574' },
+  { name: 'Mobile app', detail: '12 notes', color: '#7fb069' },
+  { name: 'Q1 hiring', detail: '6 notes', color: '#e0a458' },
 ];
 
 export function DemoDashboard() {
@@ -97,7 +97,7 @@ function DemoWorkspace({ activePath }: { activePath: string }) {
   if (activePath === '/reports') return <DemoReportsView />;
   if (activePath === '/insights') return <DemoInsightsView />;
   if (activePath === '/focus') return <DemoFocusView />;
-  if (activePath === '/chat') return <DemoMcpConnectorContent />;
+  if (activePath === '/settings/connections') return <DemoMcpConnectorContent />;
 
   return <DemoModuleView path={activePath} />;
 }
@@ -128,12 +128,12 @@ function DemoOverview({ goalAdded, onAddGoal }: { goalAdded: boolean; onAddGoal:
           </div>
           <div>
             <h2 className="text-lg font-semibold">
-              {goalAdded ? 'Your next goal' : 'Nothing on the horizon yet'}
+              {goalAdded ? 'Your next goal' : 'No goal yet'}
             </h2>
             <p className="text-muted-foreground text-sm">
               {goalAdded
                 ? 'Finish the review draft before Friday.'
-                : 'Add one when you want a clear next step.'}
+                : 'Add one when you know what you want to do next.'}
             </p>
           </div>
           {!goalAdded && (
@@ -162,7 +162,7 @@ function DemoOverview({ goalAdded, onAddGoal }: { goalAdded: boolean; onAddGoal:
           <span className="text-muted-foreground text-xs">3 notes this week</span>
         </div>
         <div className="space-y-2">
-          {['Reviewed two pull requests', 'Presented the quarterly findings'].map(activity => (
+          {['Reviewed two code changes', 'Presented the quarterly update'].map(activity => (
             <div key={activity} className="flex items-center gap-3">
               <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
               <span className="text-foreground/80 text-xs">{activity}</span>
@@ -204,7 +204,7 @@ function DemoProjectsView() {
                 filter === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               }`}
             >
-              {value === 'active' ? 'Active Projects' : 'Archived'}
+              {value === 'active' ? 'Active projects' : 'Archived'}
             </button>
           ))}
         </div>
@@ -213,7 +213,7 @@ function DemoProjectsView() {
           <div className="border-primary/30 bg-primary/[0.06] rounded-xl border p-3">
             <p className="text-foreground text-sm font-medium">New project created</p>
             <p className="text-muted-foreground mt-1 text-xs">
-              The next activity can now stay attached to its workstream.
+              You can now add notes to this project.
             </p>
           </div>
         )}
@@ -248,9 +248,7 @@ function DemoProjectsView() {
           <div className="border-border/50 bg-card/40 rounded-2xl border border-dashed p-8 text-center">
             <FolderOpen className="text-muted-foreground mx-auto mb-3 h-6 w-6" />
             <p className="text-foreground text-sm font-medium">No archived projects</p>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Archived workstreams will appear here.
-            </p>
+            <p className="text-muted-foreground mt-1 text-xs">Archived projects will show here.</p>
           </div>
         )}
       </div>
@@ -289,7 +287,7 @@ function DemoReportsView() {
               }`}
             >
               <History className="h-3.5 w-3.5" />
-              Saved drafts
+              Review drafts
             </button>
           </div>
         </div>
@@ -312,19 +310,19 @@ function DemoReportsView() {
                   New review
                 </p>
                 <h2 className="text-foreground mt-1 text-lg font-semibold">
-                  Build a clear update from recent work.
+                  Make an update from recent work.
                 </h2>
                 <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Choose the evidence window and writing style. Jobmark does the organizing first.
+                  Choose the dates and writing style. Jobmark puts your notes together.
                 </p>
               </div>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
               {[
-                ['1', 'Time window', 'Last 7 days'],
-                ['2', 'Projects', 'All active work'],
-                ['3', 'Tone', 'Professional'],
+                ['1', 'Dates', 'Last 7 days'],
+                ['2', 'Projects', 'All active projects'],
+                ['3', 'Style', 'Formal'],
               ].map(([step, label, value]) => (
                 <div key={step} className="border-border/40 bg-background/40 rounded-xl border p-3">
                   <p className="text-primary text-[10px] font-semibold">
@@ -336,7 +334,7 @@ function DemoReportsView() {
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-3">
-              <p className="text-muted-foreground text-[11px]">42 activities are ready to shape.</p>
+              <p className="text-muted-foreground text-[11px]">42 notes are ready to use.</p>
               <Button size="sm" onClick={() => setGenerated(true)}>
                 {generated ? 'Draft ready' : 'Create review draft'}
                 {generated ? (
@@ -350,10 +348,10 @@ function DemoReportsView() {
             {generated && (
               <div className="border-primary/20 bg-primary/[0.06] mt-4 rounded-xl border p-3">
                 <p className="text-foreground text-xs font-medium">
-                  Your evidence is ready for review.
+                  Your notes are ready for review.
                 </p>
                 <p className="text-muted-foreground mt-1 text-[11px]">
-                  Open Saved drafts to edit, export, or send to an AI app.
+                  Open review drafts to edit, export, or send to an assistant.
                 </p>
               </div>
             )}
@@ -370,7 +368,7 @@ function DemoInsightsView() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Insights</h1>
-          <p className="text-muted-foreground mt-1 text-sm">See where your work is going.</p>
+          <p className="text-muted-foreground mt-1 text-sm">See your note patterns.</p>
         </div>
         <InsightsSummary data={DEMO_INSIGHTS} compact />
         <ActivityCharts
@@ -422,7 +420,7 @@ function DemoFocusView() {
             Reset before the next thing.
           </h1>
           <p className="text-muted-foreground mt-1 min-h-10 max-w-[19rem] text-sm">
-            A short breathing block to slow down and choose what matters next.
+            A short breathing session before you choose what to do next.
           </p>
         </div>
         <div className="border-border/50 bg-card/50 flex h-[252px] min-h-[252px] w-full shrink-0 flex-col items-center justify-center overflow-hidden rounded-2xl border px-4 py-6">
@@ -453,44 +451,43 @@ function DemoModuleView({ path }: { path: string }) {
   > = {
     '/network': {
       eyebrow: 'Network',
-      title: 'Keep relationships warm.',
-      description: 'Carry useful context into thoughtful follow-ups without starting from zero.',
+      title: 'Keep up with people.',
+      description: 'Save notes about conversations so you can follow up later.',
       icon: Users,
       rows: [
         ['Maya Chen', 'Follow up', 'Last spoke 8 days ago'],
-        ['Alex Rivera', '2 notes', 'Shared work history'],
-        ['Jordan Lee', 'Draft ready', 'Based on recent wins'],
+        ['Alex Rivera', '2 notes', 'Notes from past work'],
+        ['Jordan Lee', 'Draft ready', 'Based on recent notes'],
       ],
     },
     '/articles': {
-      eyebrow: 'Articles',
-      title: 'Small habits compound into proof.',
-      description: 'Short field notes for capturing work, reflecting well, and staying ready.',
+      eyebrow: 'Guides',
+      title: 'Guides for your work.',
+      description: 'Short guides for saving notes and preparing for reviews.',
       icon: Newspaper,
       rows: [
-        ['Build a work record', '5 min', 'Start here'],
+        ['Keep work notes', '5 min', 'Start here'],
         ['Write better weekly updates', '7 min', 'Practical guide'],
-        ['Make reviews easier', '6 min', 'Evidence first'],
+        ['Make reviews easier', '6 min', 'Notes first'],
       ],
     },
     '/settings': {
       eyebrow: 'Settings',
-      title: 'Keep the system aligned with your work.',
-      description:
-        'Choose your defaults, connected apps, and the way Jobmark supports your rhythm.',
+      title: 'Set your preferences.',
+      description: 'Choose your defaults and connected assistants.',
       icon: Settings,
       rows: [
-        ['Goals', 'Configured', 'Keep the next move visible'],
-        ['Focus', 'Box breathing', 'A short reset before review work'],
-        ['Reviews', 'Professional', 'Default writing tone'],
+        ['Goals', 'Set', 'Your current goals'],
+        ['Focus', 'Box breathing', 'Your focus pattern'],
+        ['Reviews', 'Formal', 'Default review style'],
       ],
     },
   };
 
   const definition = definitions[path] ?? {
     eyebrow: 'Jobmark',
-    title: 'Keep your record moving.',
-    description: 'Write it down while it is still fresh.',
+    title: 'Keep your notes in one place.',
+    description: 'Write things down while they are fresh.',
     icon: BarChart3,
     rows: [],
   };

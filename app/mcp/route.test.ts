@@ -111,7 +111,7 @@ describe('MCP modern discovery and tool listing', () => {
       capabilities: { tools: {} },
       ttlMs: 300_000,
       cacheScope: 'public',
-      instructions: expect.stringContaining('Never show internal record IDs'),
+      instructions: expect.stringContaining('Never show internal IDs'),
       _meta: { 'io.modelcontextprotocol/serverInfo': { name: 'jobmark-mcp' } },
     });
 

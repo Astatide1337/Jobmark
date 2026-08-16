@@ -60,7 +60,7 @@ export function DictateButton({
       {!isListening && isPolishing && (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          {showLabel && 'Polishing...'}
+          {showLabel && 'Cleaning up...'}
         </>
       )}
       {!isListening && !isPolishing && (

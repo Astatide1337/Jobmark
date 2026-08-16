@@ -1,134 +1,134 @@
 ---
-title: Build a promotion case with evidence, not memory
-description: A practical way to show next-level impact with clear outcomes instead of last-minute storytelling.
+title: Build a promotion case from your notes
+description: Use clear notes and results when you ask for a promotion.
 slug: build-a-promotion-case-with-evidence
 publishedAt: 2026-03-05
 updatedAt: 2026-03-07
 category: career-development
 tags:
   - promotion
-  - career-growth
-  - impact
+  - reviews
+  - notes
 author: Jobmark
 draft: false
 featured: true
 difficulty: intermediate
-series: Promotion Readiness
+series: Promotion reviews
 ctaVariant: default
-bestFor: promotion evidence
+bestFor: promotion review
 primaryAction: Build review draft
 primaryHref: /reports?tab=new
 secondaryAction: Open dashboard
 secondaryHref: /dashboard
 ---
 
-Ever sat down to write a self-review and thought, "I know I did good work, but I can't prove it"?
+Have you sat down to write a self-review and thought, "I did good work, but I cannot remember the details"?
 
-You're not alone. Most promotion cases fail because the work happened but nobody captured it properly.
+You are not alone. A promotion case is hard to write when you did not save the details.
 
-This isn't a pep talk. It's a system.
+Here is a simple way to prepare one.
 
-## What your manager is actually deciding
+## What your manager needs to know
 
 They're asking three things:
 
-1. Are you already doing next-level work, consistently?
-2. Can they trust you with bigger scope?
-3. Is your impact visible enough to defend in calibration?
+1. Are you already doing work that matches the next role?
+2. Can they trust you with more responsibility?
+3. Do you have clear results they can point to?
 
-Your case needs patterns, not a list of tasks.
+Your case needs clear notes, not a list of tasks.
 
-## Start with a scorecard
+## Start with a short list
 
-Define what "next level" means in your role.
+Define what the next role means in your job.
 
-Use four lanes:
+Use four parts:
 
-- **Scope**: harder problems, wider ownership, cross-team work.
-- **Execution**: quality, reliability, speed, judgment.
-- **Leadership**: influence, clarity, mentoring, decisions.
-- **Impact**: business results, not just shipped features.
+- **Responsibility**: harder problems, more areas to look after, and work across teams.
+- **How you work**: quality, reliability, speed, and good judgment.
+- **Leadership**: helping people, making decisions, and explaining things clearly.
+- **Results**: what got better, not only what shipped.
 
-If your company has a leveling guide, use it. If not, ask your manager straight up:
+If your company has a role guide, use it. If not, ask your manager directly:
 
-"If I were already operating at the next level, what would I be doing in each of these areas over the next quarter?"
+"If I were ready for more responsibility, what would I be doing in each of these areas over the next quarter?"
 
-One question. Saves months of guessing.
+One question can save months of guessing.
 
-## One evidence format, every time
+## Use the same note format each time
 
 Use this for every win:
 
-- **Situation**: what mattered and why.
-- **Action**: what you personally owned.
+- **What was happening**: what mattered and why.
+- **What I did**: the part you owned.
 - **Result**: what changed.
-- **Business link**: why it matters to leadership.
+- **Why it mattered**: who it helped and why.
 
 Example:
 
 - Weak: "Improved onboarding."
 - Strong: "Simplified step-two onboarding, cut drop-off from 41% to 33% in three weeks. Trial activation went up. Support tickets went down."
 
-See the difference? Specific. Measurable. Business value.
+See the difference? It is clear, and it shows what improved.
 
 ## Build monthly, not annually
 
-Once a month, spend 20 minutes grouping your entries:
+Once a month, spend 20 minutes grouping your notes:
 
 - **Month 1**: strong individual work.
-- **Month 2**: cross-functional influence.
-- **Month 3**: systems that make the whole team faster.
+- **Month 2**: work with other teams.
+- **Month 3**: routines that make the whole team faster.
 
-Promotions go to trajectory plus consistency. Not one hero sprint.
+Promotions usually come from steady work, not one big push.
 
-## Trigger plans so you actually log
+## Make it easy to save notes
 
-People "intend" to document wins. Then life happens.
+People plan to write down their work. Then life happens.
 
 If-then plans work better than intention alone:
 
-- "If Friday 4:30 hits, I log three wins before leaving."
-- "If I finish something high-impact, I capture it same day."
+- "If Friday 4:30 hits, I write down three clear notes before leaving."
+- "If I finish something important, I save a note that day."
 
-Reliable triggers beat perfect discipline.
+A clear reminder works better than willpower.
 
 ## Better manager conversations
 
 Every 4-6 weeks, ask:
 
-"Where's my evidence strongest right now?"
+"Where is my work strongest right now?"
 
 "Where's it thin?"
 
-"What outcomes in the next six weeks would change your mind?"
+"What results in the next six weeks would change your mind?"
 
-Then say: "I'll document those and share an update before our next sync."
+Then say: "I will write those down and share an update before our next meeting."
 
-That's how vague feedback becomes promotable evidence.
+That turns vague feedback into clear notes for a promotion review.
 
-## Two-page brief that makes calibration easy
+## A short review note
 
-When review season hits, your packet should scan fast.
+When review time comes, your review draft should be easy to read.
 
-### Page 1: Executive view
+### Page 1: Summary
 
-- target level
-- top three outcomes
-- leadership highlights
-- one paragraph on trajectory
+- role you want
+- top three results
+- leadership examples
+- one paragraph on progress
 
-### Page 2: Evidence appendix
+### Page 2: Notes
 
-- 6-10 short entries grouped by lane
+- 6-10 short notes grouped by type
 - links to docs, PRs, dashboards
 
-At this point, you're not writing from scratch. You're editing a record you already built.
+At this point, you are not starting from scratch. You are editing notes you already saved.
 
 ## Friday 15-minute routine
 
-1. Log 3-5 wins in evidence format.
-2. Tag each to a lane.
-3. Pick one gap to close next week.
+1. Write 3-5 notes with clear results.
+2. Group each note by type.
+3. Pick one thing to improve next week.
 4. Draft one sentence for review writing.
 
-Do this consistently for several weeks. Your promotion case becomes easier to discuss because it is grounded in a clear record.
+Do this for a few weeks. Then you will have notes to discuss in your promotion review.

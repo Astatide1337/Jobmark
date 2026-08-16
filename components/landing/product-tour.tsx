@@ -24,34 +24,33 @@ import { DemoInsights } from './demos/demo-insights';
 const steps = [
   {
     id: 'capture',
-    title: 'Keep a running record',
-    subtitle: 'A few seconds at a time.',
-    description: 'Write down what you shipped, solved, or learned before the details disappear.',
+    title: 'Write it down',
+    subtitle: 'Save it while it is fresh.',
+    description: 'Save what you did, fixed, or learned.',
   },
   {
     id: 'timeline',
-    title: 'Make the record useful',
-    subtitle: 'Organized as you go.',
-    description: 'Add projects and tags so a small note becomes easy to find later.',
+    title: 'Keep notes together',
+    subtitle: 'Add a project.',
+    description: 'Group notes by project so you can find them later.',
   },
   {
     id: 'reports',
-    title: 'Prepare the conversation',
-    subtitle: 'Start with the facts.',
-    description: 'Pull together a review or progress update from work you have already recorded.',
+    title: 'Make a review draft',
+    subtitle: 'Start with your notes.',
+    description: 'Use your notes to make a review or weekly update.',
   },
   {
     id: 'mentor',
-    title: 'Bring your own assistant',
-    subtitle: 'When you want another pair of eyes.',
-    description:
-      'Connect Claude, ChatGPT, or Gemini to shape a draft without handing over the source of truth.',
+    title: 'Connect an assistant',
+    subtitle: 'Get help when you want it.',
+    description: 'Connect Claude, ChatGPT, or Gemini to help edit a draft.',
   },
   {
     id: 'insights',
-    title: 'Notice your patterns',
-    subtitle: 'Make room for the next move.',
-    description: 'See where your time and energy are going so the next step is easier to choose.',
+    title: 'See your notes',
+    subtitle: 'Look for patterns.',
+    description: 'See which projects and days have the most notes.',
   },
 ];
 
@@ -257,8 +256,8 @@ function QuickCaptureDemo() {
         {/* Input area */}
         <div className="border-primary/30 bg-background/80 rounded-xl border p-4 backdrop-blur-sm">
           <p className="text-sm leading-relaxed">
-            Finished the quarterly report and walked the team through the findings. The new charts
-            made the decision much easier.
+            Finished the quarterly review and walked the team through it. The new charts made the
+            decision easier.
           </p>
           <span className="bg-primary ml-0.5 inline-block h-4 w-0.5 animate-pulse" />
         </div>
@@ -287,10 +286,10 @@ function QuickCaptureDemo() {
 // Timeline Demo
 function TimelineDemo() {
   const entries = [
-    { text: 'Reviewed the auth pull request', project: 'Mobile App', time: '2h ago' },
-    { text: 'Presented the quarterly findings', project: 'Q4 Planning', time: 'Yesterday' },
+    { text: 'Reviewed a sign-in change.', project: 'Mobile App', time: '2h ago' },
+    { text: 'Presented the quarterly update.', project: 'Q4 Planning', time: 'Yesterday' },
     {
-      text: 'Synced with design team on new layouts',
+      text: 'Worked with the design team on new layouts.',
       project: 'Website Redesign',
       time: 'Yesterday',
     },
@@ -300,8 +299,8 @@ function TimelineDemo() {
     <div className="from-card to-card/50 flex h-full flex-col bg-gradient-to-b p-6">
       {/* Header */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold">Work this week</h3>
-        <p className="text-muted-foreground text-sm">A few things worth keeping</p>
+        <h3 className="text-lg font-semibold">Notes this week</h3>
+        <p className="text-muted-foreground text-sm">Recent notes</p>
       </div>
 
       {/* Timeline */}

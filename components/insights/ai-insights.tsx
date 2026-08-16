@@ -58,7 +58,7 @@ export function AiInsights({ data }: AiInsightsProps) {
       <CardHeader className="px-6 pt-6 pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Sparkles className="text-primary h-4 w-4" />
-          Record Signals
+          What your notes show
         </CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
@@ -77,8 +77,7 @@ export function AiInsights({ data }: AiInsightsProps) {
           ))}
           {insights.length === 0 && (
             <p className="text-muted-foreground col-span-2 py-4 text-center text-sm">
-              Capture more work to see where your record is strong and where it still needs
-              coverage.
+              Add more notes to see patterns.
             </p>
           )}
         </div>
@@ -97,25 +96,22 @@ function generateInsights(data: InsightsData): Insight[] {
     if (consistencyPercent < 25) {
       insights.push({
         icon: <Clock className="h-4 w-4" />,
-        title: 'Your recent record is thin',
-        description:
-          'There are long gaps in the last month, which makes reviews harder later. Next step: log one concrete piece of work today.',
+        title: 'You have only a few recent notes',
+        description: 'There are long gaps in the last month. Add one note about today’s work.',
         type: 'warning',
       });
     } else if (consistencyPercent < 55) {
       insights.push({
         icon: <Target className="h-4 w-4" />,
-        title: `${consistencyPercent}% coverage in the last 30 days`,
-        description:
-          'You have a usable record, but it is still patchy. Next step: capture work on more active days so updates write themselves.',
+        title: `${consistencyPercent}% of days had notes`,
+        description: 'You have some notes, but there are still gaps. Add notes on more days.',
         type: 'info',
       });
     } else {
       insights.push({
         icon: <TrendingUp className="h-4 w-4" />,
-        title: 'Recent coverage is strong',
-        description:
-          'You are documenting work consistently enough to support a good weekly summary. Next step: build a draft from the last 7 days.',
+        title: 'You have notes for most recent days',
+        description: 'You have enough recent notes to make a weekly update.',
         type: 'success',
       });
     }
@@ -129,18 +125,18 @@ function generateInsights(data: InsightsData): Insight[] {
     if (topPercent >= 70) {
       insights.push({
         icon: <Lightbulb className="h-4 w-4" />,
-        title: `Most of your record points to "${topProject.name}"`,
+        title: `Most of your notes are from "${topProject.name}"`,
         description:
-          'That focus may be real, but it can also hide other contributions. Next step: review whether another project needs documentation this week.',
+          'That may be your main project. Check if another project needs a note this week.',
         type: 'info',
       });
     }
   } else if (data.totalActivities > 0) {
     insights.push({
       icon: <Calendar className="h-4 w-4" />,
-      title: 'Your work is not yet well organized by project',
+      title: 'Your notes are not grouped by project yet',
       description:
-        'A clearer project structure makes summaries more specific. Next step: create or assign a project for the work you capture most often.',
+        'Projects make your notes easier to find. Create or choose a project for your main work.',
       type: 'tip',
     });
   }
@@ -148,17 +144,15 @@ function generateInsights(data: InsightsData): Insight[] {
   if (data.totalReports === 0 && data.totalActivities >= 5) {
     insights.push({
       icon: <Sparkles className="h-4 w-4" />,
-      title: 'You have enough evidence for a first summary',
-      description:
-        'The record is already usable. Next step: turn the last week of work into a draft you can refine.',
+      title: 'You have enough notes for a review draft',
+      description: 'Use your notes from the last week to make a draft.',
       type: 'tip',
     });
   } else if (data.totalReports > 0) {
     insights.push({
       icon: <TrendingDown className="h-4 w-4" />,
-      title: 'Keep summaries close to the work',
-      description:
-        'Summaries are most useful when they are built while details are fresh. Next step: create one shortly after a busy week or milestone.',
+      title: 'Make drafts while details are fresh',
+      description: 'Make a draft soon after a busy week or a project milestone.',
       type: 'info',
     });
   }

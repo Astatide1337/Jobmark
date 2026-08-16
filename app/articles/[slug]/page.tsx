@@ -101,8 +101,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           ← Back to articles
         </Link>
         {article.category === 'help' && article.slug === 'connect-jobmark-to-ai' ? (
-          <Link href="/chat" className="text-primary hover:underline">
-            Open MCP Connector
+          <Link href="/settings/connections" className="text-primary hover:underline">
+            Open assistant connections
           </Link>
         ) : null}
       </div>
@@ -112,7 +112,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       <CareerSignalCallout article={article} />
 
-      <RelatedStories articles={related} title="Read next" />
+      <RelatedStories articles={related} title="More guides" />
     </div>
   );
 }

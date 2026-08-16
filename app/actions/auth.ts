@@ -24,18 +24,6 @@ export async function signInWithDevUser(formData?: FormData) {
 }
 
 /** Start Google sign-in and return to the selected MCP app's simple setup. */
-export async function signInToMcp(formData: FormData) {
-  const requestedProvider = formData.get('provider');
-  const provider =
-    typeof requestedProvider === 'string' &&
-    ['claude', 'chatgpt', 'gemini'].includes(requestedProvider)
-      ? requestedProvider
-      : null;
-  const redirectTo = provider ? `/chat?connect=${provider}` : '/chat';
-
-  await signIn('google', { redirectTo });
-}
-
 export async function signOutUser() {
   try {
     await signOut({ redirect: true, redirectTo: '/' });

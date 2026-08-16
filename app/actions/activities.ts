@@ -17,6 +17,7 @@ import { prisma } from '@/lib/db';
 import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
 import {
   calendarDateToUtcMidnight,
   DEFAULT_TIME_ZONE,
@@ -27,7 +28,7 @@ import {
 } from '@/lib/date-semantics';
 
 const activitySchema = z.object({
-  content: z.string().min(10, 'Activity must be at least 10 characters').max(1000),
+  content: z.string().min(10, 'Write at least 10 characters.').max(1000),
   projectId: z.string().optional().nullable(),
   logDate: z.date().optional(),
 });
@@ -48,7 +49,7 @@ export async function createActivity(
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'You must be signed in to log activities' };
+    return { success: false, message: 'Sign in to save a note.' };
   }
 
   const logDateStr = formData.get('logDate') as string | null;
@@ -75,7 +76,7 @@ export async function createActivity(
   if (!result.success) {
     return {
       success: false,
-      message: 'Validation failed',
+      message: 'Check the note and try again.',
       errors: result.error.flatten().fieldErrors,
     };
   }
@@ -103,16 +104,16 @@ export async function createActivity(
 
     revalidatePath('/dashboard');
 
-    return { success: true, message: 'Activity logged successfully' };
+    return { success: true, message: 'Note saved.' };
   } catch (error) {
     if (
       error instanceof Error &&
       (error.message === 'Invalid project' || error.message === 'Locked project')
     ) {
-      return { success: false, message: 'The selected project is not available' };
+      return { success: false, message: 'That project is not available.' };
     }
     console.error('Failed to create activity:', error);
-    return { success: false, message: 'Failed to save activity. Please try again.' };
+    return { success: false, message: 'The note was not saved. Try again.' };
   }
 }
 
@@ -157,6 +158,7 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
   // when serializing from Server Component to Client Component
   return activities.map(activity => ({
     ...activity,
+    content: getActivityDisplayContent(activity.content),
     logDate: activity.logDate.toISOString().split('T')[0],
   }));
 }
@@ -180,7 +182,7 @@ export async function deleteActivity(activityId: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to delete this note.' };
   }
 
   try {
@@ -192,10 +194,10 @@ export async function deleteActivity(activityId: string) {
     });
 
     revalidatePath('/dashboard');
-    return { success: true, message: 'Activity deleted' };
+    return { success: true, message: 'Note deleted.' };
   } catch (error) {
     console.error('Failed to delete activity:', error);
-    return { success: false, message: 'Failed to delete activity' };
+    return { success: false, message: 'The note was not deleted. Try again.' };
   }
 }
 

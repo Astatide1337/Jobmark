@@ -14,28 +14,35 @@ export class JobmarkError extends Error {
 }
 
 export class ValidationError extends JobmarkError {
-  constructor(message: string, public readonly fieldErrors?: Record<string, string[]>) {
-    super(message, 'VALIDATION_ERROR', { fieldErrors });
+  constructor(
+    message: string,
+    public readonly fieldErrors?: Record<string, string[]>
+  ) {
+    super(
+      message === 'Validation failed' ? 'Check the details and try again.' : message,
+      'VALIDATION_ERROR',
+      { fieldErrors }
+    );
     this.name = 'ValidationError';
   }
 }
 
 export class NotFoundError extends JobmarkError {
   constructor(resource: string, id?: string) {
-    super(`${resource} not found${id ? `: ${id}` : ''}`, 'NOT_FOUND', { resource, id });
+    super(`${resource} not found.`, 'NOT_FOUND', { resource, id });
     this.name = 'NotFoundError';
   }
 }
 
 export class ForbiddenError extends JobmarkError {
-  constructor(message = 'Access denied') {
+  constructor(message = 'You do not have access to this.') {
     super(message, 'FORBIDDEN');
     this.name = 'ForbiddenError';
   }
 }
 
 export class VaultLockedError extends JobmarkError {
-  constructor(message = 'Vault is locked') {
+  constructor(message = 'Open private projects first.') {
     super(message, 'VAULT_LOCKED');
     this.name = 'VaultLockedError';
   }
@@ -53,7 +60,10 @@ export class UserActionRequiredError extends JobmarkError {
 }
 
 export class ConfirmationRequiredError extends JobmarkError {
-  constructor(message: string, public readonly requiredPhrase?: string) {
+  constructor(
+    message: string,
+    public readonly requiredPhrase?: string
+  ) {
     super(message, 'CONFIRMATION_REQUIRED', { requiredPhrase });
     this.name = 'ConfirmationRequiredError';
   }
@@ -67,39 +77,49 @@ export class ConflictError extends JobmarkError {
 }
 
 export class RateLimitedError extends JobmarkError {
-  constructor(message: string, public readonly retryAfter: number) {
+  constructor(
+    message: string,
+    public readonly retryAfter: number
+  ) {
     super(message, 'RATE_LIMITED', { retryAfter });
     this.name = 'RateLimitedError';
   }
 }
 
 export class InternalError extends JobmarkError {
-  constructor(message = 'Internal server error') {
+  constructor(message = 'Something went wrong.') {
     super(message, 'INTERNAL_ERROR');
     this.name = 'InternalError';
   }
 }
 
 export class InsufficientScopeError extends JobmarkError {
-  constructor(message = 'Insufficient scope', public readonly requiredScope?: string) {
+  constructor(
+    message = 'This assistant does not have permission to do that.',
+    public readonly requiredScope?: string
+  ) {
     super(message, 'INSUFFICIENT_SCOPE', { requiredScope });
     this.name = 'InsufficientScopeError';
   }
 }
 
 export class UnauthenticatedError extends JobmarkError {
-  constructor(message = 'Unauthenticated') {
+  constructor(message = 'Sign in first.') {
     super(message, 'UNAUTHENTICATED');
     this.name = 'UnauthenticatedError';
   }
 }
 
-export function toMCPError(error: unknown): { code: string; message: string; data?: Record<string, unknown> } {
+export function toMCPError(error: unknown): {
+  code: string;
+  message: string;
+  data?: Record<string, unknown>;
+} {
   if (error instanceof JobmarkError) {
     return { code: error.code, message: error.message, data: error.data };
   }
   if (error instanceof Error) {
     return { code: 'INTERNAL_ERROR', message: error.message };
   }
-  return { code: 'INTERNAL_ERROR', message: 'Unknown error' };
+  return { code: 'INTERNAL_ERROR', message: 'Something went wrong.' };
 }

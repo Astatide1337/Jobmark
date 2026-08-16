@@ -29,7 +29,7 @@ export function VideoSection() {
             <div className="flex items-center gap-3">
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                A record that stays useful
+                Keep your work
               </span>
             </div>
 
@@ -37,13 +37,12 @@ export function VideoSection() {
               id="product-film-title"
               className="font-serif text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl lg:text-6xl"
             >
-              Keep the details that make the work yours.
+              Keep the details of your work.
             </h2>
 
             <p className="text-foreground/75 max-w-lg text-lg leading-[1.6] sm:text-xl">
-              Capture the work while it is fresh. Keep the project, progress, and context close by.
-              When an update, review, or next step comes up, you can start with the record instead
-              of rebuilding the story.
+              Write down what you did while it is fresh. Add the project and a short note. When you
+              need an update or review, start with your notes.
             </p>
           </motion.div>
 
@@ -76,14 +75,11 @@ export function VideoSection() {
                 playsInline
                 controls={Boolean(shouldReduceMotion)}
                 preload="metadata"
-                aria-label="Jobmark product film showing a note becoming a project record, progress view, and review draft"
+                aria-label="Jobmark product video showing notes, projects, and review drafts"
               />
             </div>
 
-            <p className="sr-only">
-              The product film shows a user recording a work note, grouping it into a project,
-              watching progress build, and preparing a performance review draft.
-            </p>
+            <p className="sr-only">The product video shows notes, projects, and review drafts.</p>
           </motion.div>
         </div>
       </div>

@@ -22,7 +22,9 @@ function VaultChangePasswordForm() {
         <CardHeader className="text-center">
           <AlertCircle className="text-destructive mx-auto h-12 w-12" />
           <CardTitle>This link is no longer valid</CardTitle>
-          <CardDescription>Return to your AI app and start the connection again.</CardDescription>
+          <CardDescription>
+            Return to your assistant and start the connection again.
+          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -33,13 +35,13 @@ function VaultChangePasswordForm() {
 
     if (newPassword !== confirmPassword) {
       setStatus('error');
-      setMessage('New passwords do not match');
+      setMessage('New passwords do not match.');
       return;
     }
 
     if (newPassword.length < 12) {
       setStatus('error');
-      setMessage('New password must be at least 12 characters');
+      setMessage('Use at least 12 characters for the new password.');
       return;
     }
 
@@ -56,14 +58,14 @@ function VaultChangePasswordForm() {
 
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Password changed successfully');
+        setMessage(data.message || 'Password changed.');
       } else {
         setStatus('error');
-        setMessage(data.error || 'Failed to change password');
+        setMessage(data.error || 'Could not change the password.');
       }
     } catch {
       setStatus('error');
-      setMessage('Network error. Please try again.');
+      setMessage('Jobmark could not be reached. Check your connection and try again.');
     }
   };
 
@@ -71,7 +73,7 @@ function VaultChangePasswordForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <KeyRound className="text-primary mx-auto h-12 w-12" />
-        <CardTitle>Change project password</CardTitle>
+        <CardTitle>Change private project password</CardTitle>
         <CardDescription>Enter your current password, then choose a new one.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -80,19 +82,19 @@ function VaultChangePasswordForm() {
             <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
             <p className="text-muted-foreground text-sm">{message}</p>
             <p className="text-muted-foreground text-xs">
-              You can close this tab and return to your AI app.
+              You can close this tab and return to your assistant.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="current-vault-password" className="sr-only">
-                Current project password
+                Current private project password
               </label>
               <Input
                 id="current-vault-password"
                 type="password"
-                placeholder="Current vault password"
+                placeholder="Current password"
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
                 required
@@ -102,12 +104,12 @@ function VaultChangePasswordForm() {
             </div>
             <div>
               <label htmlFor="new-vault-password" className="sr-only">
-                New project password
+                New private project password
               </label>
               <Input
                 id="new-vault-password"
                 type="password"
-                placeholder="New vault password (min 12 characters)"
+                placeholder="New password (min 12 characters)"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 required
@@ -116,12 +118,12 @@ function VaultChangePasswordForm() {
             </div>
             <div>
               <label htmlFor="confirm-vault-password" className="sr-only">
-                Confirm new project password
+                Confirm new private project password
               </label>
               <Input
                 id="confirm-vault-password"
                 type="password"
-                placeholder="Confirm new vault password"
+                placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required

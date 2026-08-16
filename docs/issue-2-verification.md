@@ -32,10 +32,10 @@ application already depends on. Compatibility migrations now cover:
 
 - `UserSettings` creation before vault/key migrations;
 - removal of obsolete required report columns;
-- missing goals, contacts, interactions, outreach, conversations, messages,
-  and the conversation/report join table;
+- missing goals, contacts, interactions, and outreach;
 - current vault, timezone, chat-idempotency, report-project, and canonical
-  monthly-target, and persisted chat-cancellation changes.
+  monthly-target changes. Historical chat migrations remain in the chain; the
+  later cleanup migration removes their obsolete tables.
 
 The full chain was applied successfully to an empty PostgreSQL 16 database.
 
@@ -46,7 +46,7 @@ the persisted user timezone rather than the deployment server timezone.
 
 - Run the committed workflow on GitHub and retain the check-run URL.
 - Execute the two-account authenticated QA matrix in issue #2, including
-  account deletion, vault switching, reports, chat regeneration, and locked
-  data visibility.
+  account deletion, vault switching, reports, MCP requests, and locked data
+  visibility.
 - Attach redacted export/database snapshots and screenshots to the eventual
   pull request.

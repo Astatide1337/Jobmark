@@ -10,8 +10,8 @@ import type { FocusBlock, BreathingPatternDef, BreathingPattern } from './types'
 
 export const BREATHING_PATTERNS: Record<BreathingPattern, BreathingPatternDef> = {
   box: {
-    label: 'Box Breathing',
-    description: 'Navy SEAL technique for focus and stress regulation.',
+    label: 'Box breathing',
+    description: 'Breathe in four equal parts.',
     steps: [
       { label: 'INHALE', duration: 4 },
       { label: 'HOLD', duration: 4 },
@@ -20,8 +20,8 @@ export const BREATHING_PATTERNS: Record<BreathingPattern, BreathingPatternDef> =
     ],
   },
   '4-7-8': {
-    label: '4-7-8 Breathing',
-    description: "Dr. Andrew Weil's technique for deep relaxation.",
+    label: '4-7-8 breathing',
+    description: 'Breathe out for longer than you breathe in.',
     steps: [
       { label: 'INHALE', duration: 4 },
       { label: 'HOLD', duration: 7 },
@@ -29,8 +29,8 @@ export const BREATHING_PATTERNS: Record<BreathingPattern, BreathingPatternDef> =
     ],
   },
   'physiological-sigh': {
-    label: 'Physiological Sigh',
-    description: "Dr. Andrew Huberman's method for rapid stress relief.",
+    label: 'Two short breaths',
+    description: 'Take two short breaths, then breathe out slowly.',
     steps: [
       { label: 'INHALE', duration: 4 },
       { label: 'INHALE2', duration: 2 },
@@ -38,8 +38,8 @@ export const BREATHING_PATTERNS: Record<BreathingPattern, BreathingPatternDef> =
     ],
   },
   resonance: {
-    label: 'Resonance Breathing',
-    description: 'Coherent breathing to optimize heart rate variability.',
+    label: 'Slow breathing',
+    description: 'Breathe in and out at an even pace.',
     steps: [
       { label: 'INHALE', duration: 5.5 },
       { label: 'EXHALE', duration: 5.5 },
@@ -48,24 +48,24 @@ export const BREATHING_PATTERNS: Record<BreathingPattern, BreathingPatternDef> =
 };
 
 export const DEFAULT_RELEASE_TEXTS = [
-  "Bring to mind any tension you're carrying from today.",
-  'Acknowledge it. You worked hard.',
-  'Now, let it drop from your shoulders.',
-  'Leave the work here. You can return to it later.',
+  'Notice what is still on your mind.',
+  'You do not have to solve it now.',
+  'Let your shoulders relax.',
+  'You can come back to the work tomorrow.',
 ];
 
 export const DEFAULT_AFFIRMATIONS = [
-  'I am becoming the person I need to be to achieve my goals.',
-  'Every challenge is an opportunity for growth.',
-  'I have the skills and the discipline to succeed.',
-  'My work is meaningful and makes a difference.',
-  'I am focused, calm, and in control.',
+  'I can take the next step.',
+  'Doing a little at a time is enough.',
+  'The work I did today matters.',
+  'I can be clear even when I do not know everything yet.',
+  'I can stop for today and keep going tomorrow.',
 ];
 
 export const BLOCK_LABELS: Record<string, string> = {
-  affirmation: 'Affirmation Block',
-  breathing: 'Breathing Exercise',
-  goal: 'Goal Visualization',
+  affirmation: 'Short reminders',
+  breathing: 'Breathing',
+  goal: 'Think about your goal',
 };
 
 export function getDefaultFocusConfig(): FocusBlock[] {

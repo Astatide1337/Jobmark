@@ -10,7 +10,7 @@ jobmark-mcp-refactor-spec.md
 
 ## 1. Executive decision
 
-Jobmark will stop operating its own general-purpose AI chat product. The existing `/chat` destination will become a minimal connection page that helps a user connect Jobmark to ChatGPT, Claude, or another remote MCP client.
+Jobmark no longer operates its own general-purpose AI chat product. The assistant connections page at `/settings/connections` helps a user connect Jobmark to ChatGPT, Claude, or another remote MCP client.
 
 The external MCP client owns:
 
@@ -29,7 +29,7 @@ Jobmark owns:
 
 The refactor has two inseparable outcomes:
 
-1. Remove the active Jobmark chat runtime and replace the `/chat` UI with an **Add MCP** connection experience.
+1. Remove the active Jobmark chat runtime and provide the **Add MCP** connection experience at `/settings/connections`.
 2. Expose every remaining user-facing Jobmark capability through the MCP server, backed by the same domain functions used by the web application.
 
 This is **capability parity**, not a one-to-one copy of every current Server Action signature. MCP tools may consolidate UI-specific helpers when the resulting tool still provides the complete capability.
@@ -42,7 +42,7 @@ This is **capability parity**, not a one-to-one copy of every current Server Act
 - Every remaining web capability has an MCP equivalent with the same ownership, vault, validation, date, and persistence rules.
 - Web actions and MCP tools do not duplicate business logic.
 - The connection page is simple, attractive, responsive, and honest about what each client currently supports.
-- Existing chat data is preserved and exportable; it is not silently destroyed.
+- Legacy internal chat data is removed through an explicit database migration; current contact history remains in `InteractionLog`.
 - The MCP server runs efficiently on the current Next.js/Vercel deployment without Redis, sticky sessions, or an always-on worker.
 - Authentication follows the remote MCP authorization specification and works with major hosted clients.
 - Destructive and secret-bearing operations remain possible without exposing passwords or other secrets to the language model.
@@ -58,7 +58,7 @@ This is **capability parity**, not a one-to-one copy of every current Server Act
 - Do not create a plugin framework or a reflective “operation platform.”
 - Do not migrate away from Auth.js as part of this refactor.
 - Do not remove report generation, outreach generation, report editing, outreach editing, or dictation polishing. These are discrete existing Jobmark utilities, not the general chat product. Their future removal is a separate product decision.
-- Do not remove legacy conversation/message data in the same release.
+- Do not confuse legacy internal chat records with Network contact conversations, which remain supported.
 - Do not promise literal one-click installation when a client has no supported installation deep link.
 
 ## 3. Current codebase assessment
@@ -85,19 +85,15 @@ Jobmark currently mixes transport/UI concerns and domain behavior inside Server 
 | Vault         | `app/actions/project-lock.ts` | Status, setup/change/unlock/lock, list locked projects, move projects in/out        |
 | Account data  | `app/actions/settings.ts`     | Export, clear activities, and delete account in Settings → Data                       |
 
-### 3.2 Chat subsystem to retire
+### 3.2 Retired chat subsystem
 
 The active runtime and UI under the following areas must be removed or replaced:
 
-- `app/chat/page.tsx` — replace with the MCP connection page.
-- `app/chat/[conversationId]/page.tsx` — replace with a redirect to `/chat`.
-- `components/chat/**` — remove active chat components.
-- `app/actions/chat.ts` — remove active conversation management actions.
-- `app/api/chat/**` — remove stream, cancel, and chat request endpoints.
-- `lib/chat/**` — remove context providers, request lifecycle, stream management, prompts, and turn persistence.
+- The former internal chat route tree is removed; assistant connections live at `/settings/connections`.
+- Former chat UI components, actions, API endpoints, and support libraries are removed.
 - Chat-only tests and chat-only rate-limit call sites.
 
-The repository must also be searched for product language and demos that imply Jobmark provides an internal AI mentor/chat experience, including:
+The repository must also be searched for product language and demos that imply Jobmark provides an internal AI mentor or chat experience, including:
 
 - Landing-page demos and product-tour content.
 - FAQ, pricing, persona, CTA, and marketing text.
@@ -108,29 +104,21 @@ The repository must also be searched for product language and demos that imply J
 
 ### 3.3 Legacy chat data
 
-`Conversation` and `Message` records contain user content and must not be dropped in this release.
-
-Required behavior:
-
-- Make the tables read-only by removing every active write path.
-- Keep legacy chats in the full account export.
-- Add a clearly named **Export previous Jobmark chats** action in Settings when legacy chats exist.
-- Redirect old `/chat/{conversationId}` bookmarks to `/chat`.
-- The connection page must not display old conversations.
-- `ChatRequest` contains request-lifecycle state rather than durable user content and may be dropped after deployment ordering ensures no old chat code is serving traffic.
-- A later, separately approved retention issue may remove `Conversation` and `Message` after users have been notified and given an export path.
+The legacy `Conversation`, `Message`, `ChatRequest`, and
+`_ConversationToReport` tables are removed by the cleanup migration. They are
+separate from the current `InteractionLog` records used for contact history.
 
 ## 4. User experience and visual design
 
 ### 4.1 Navigation
 
-Keep the `/chat` URL, but use **MCP Connector** as the navigation label. The URL remains stable for bookmarks and routing, while the label accurately describes the destination.
+Use `/settings/connections` as the assistant connection route and **Assistant connections** as its navigation label.
 
 Do not use **MCP** as the only navigation label because many users will not know the protocol name. MCP can remain the technical CTA and explanatory term on the page.
 
 ### 4.2 Page layout
 
-The `/chat` page should use the existing Jobmark shell and design language. The main content area contains one centered connection card.
+The `/settings/connections` page should use the existing Jobmark shell and design language. The main content area contains one centered connection card.
 
 Recommended structure:
 
@@ -708,7 +696,7 @@ A shared domain function must never call `revalidatePath`, read browser cookies 
 ### 11.1 Runtime removal
 
 - Remove internal chat streaming and cancellation endpoints.
-- Remove chat request lifecycle code and `ChatRequest` persistence.
+- Remove chat request lifecycle code and the `ChatRequest` persistence model.
 - Remove conversation creation, rename, context-linking, and deletion UI/actions.
 - Remove chat-specific system prompts and context providers.
 - Remove chat-specific client state, suggested prompts, message rendering, and composer code.
@@ -717,13 +705,12 @@ A shared domain function must never call `revalidatePath`, read browser cookies 
 
 ### 11.2 Route behavior
 
-- `/chat` renders the connection page.
-- `/chat/[conversationId]` permanently or temporarily redirects to `/chat` without exposing whether the legacy conversation exists.
-- Removed `/api/chat/**` routes return 404/410 after rollout; no compatibility proxy is required.
+- There is no internal chat route or redirect. Assistant connections are served at `/settings/connections`.
+- Former internal chat API paths return 404/410; no compatibility proxy is required.
 
 ### 11.3 Marketing and documentation
 
-Update all copy that describes Jobmark as providing an internal AI coach/chat. The new product framing is:
+Update all copy that describes Jobmark as providing an internal AI coach or chat. The new product framing is:
 
 > Jobmark is a private career operating system that connects to the AI assistant the user already chooses through MCP.
 
@@ -757,11 +744,9 @@ The implementation PR will include committed Prisma migrations for:
 - `McpConnection`.
 - `McpIdempotency`.
 - Short-lived secure-action nonce storage if not provided by the OAuth implementation.
-- Dropping `ChatRequest` and its relations after rollout safety is established.
+- A cleanup migration drops the obsolete `Conversation`, `Message`, `ChatRequest`, and `_ConversationToReport` tables.
 
 Do not edit or remove historical migration files.
-
-Do not drop `Conversation` or `Message` in this release.
 
 Add indexes for:
 
@@ -796,12 +781,12 @@ Required release behavior:
 
 1. CI passes against a fresh PostgreSQL database using all committed migrations.
 2. Production database backup/recovery point is confirmed.
-3. `prisma migrate deploy` runs against production before the new MCP/chat-removal deployment receives production traffic.
+3. `prisma migrate deploy` runs against production before the deployment that removes the internal chat runtime receives production traffic.
 4. Deploy the exact reviewed commit to Vercel.
 5. Verify OAuth metadata and unauthorized MCP responses.
 6. Complete a real OAuth connection.
 7. Invoke representative read/write/destructive-safe tools.
-8. Verify `/chat` UI and legacy redirects.
+8. Verify `/settings/connections` and confirm the removed internal chat path has no application route.
 9. Verify no recent production runtime errors.
 
 Prefer a controlled GitHub Actions production-release job that applies migrations and deploys/promotes the reviewed Vercel build. Do not rely on a developer laptop as the normal release mechanism.
@@ -885,14 +870,13 @@ Required:
 
 Evidence for:
 
-- `/chat` desktop and mobile.
+- `/settings/connections` desktop and mobile.
 - At least light and dark modes; verify all supported theme presets do not break contrast/layout.
 - Keyboard navigation and visible focus.
 - Copy URL success/failure.
 - ChatGPT, Claude, and Other setup dialogs.
 - Connected-client state and revoke flow.
-- Old conversation route redirect.
-- Settings legacy-chat export.
+- Contact conversation history remains available through the Network area.
 
 ## 16. Evidence required on the pull request
 
@@ -907,7 +891,7 @@ The PR is not merge-ready without:
 - Two-account tenant-isolation test results.
 - Vault locked/unlocked test results.
 - Idempotency/concurrent write test results.
-- Desktop/mobile screenshots of the new `/chat` page.
+- Desktop/mobile screenshots of `/settings/connections`.
 - Production build and HTTP smoke test.
 - Post-deploy Vercel runtime-error check.
 - Confirmation that production migrations were applied before traffic.
@@ -917,9 +901,9 @@ The PR is not merge-ready without:
 The refactor is complete only when all of the following are true:
 
 - The Jobmark internal chat UI and runtime are no longer active.
-- `/chat` is a minimal Add MCP connection page matching this specification.
-- Old conversation URLs redirect safely.
-- Legacy chat content remains exportable.
+- `/settings/connections` is the minimal Add MCP connection page matching this specification.
+- No internal chat route is active.
+- Legacy chat tables are removed by the cleanup migration.
 - The remote MCP server is live at `/mcp` over Streamable HTTP.
 - Major hosted clients can discover and authorize against it.
 - Every remaining user-facing Jobmark capability in the parity matrix is available through MCP.
@@ -940,8 +924,8 @@ The refactor is complete only when all of the following are true:
 3. Add connection, idempotency, and secure-action persistence.
 4. Extract shared domain functions one domain at a time while keeping web tests green.
 5. Register MCP tools against those functions.
-6. Add connection management and the new `/chat` page.
-7. Retire internal chat runtime/UI and redirect old routes.
+6. Add connection management at `/settings/connections`.
+7. Retire internal chat runtime/UI and remove old routes.
 8. Update marketing, privacy, terms, README, and security documentation.
 9. Complete parity, security, client, and UI verification.
 10. Apply production migration, deploy, and smoke test.

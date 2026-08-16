@@ -29,7 +29,7 @@ async function checkUnlockRateLimit(userId: string) {
       userId,
       unlockScope,
       MAX_UNLOCK_ATTEMPTS,
-      'Too many attempts'
+      'Too many tries. Try again later.'
     );
     return true;
   } catch {
@@ -43,18 +43,18 @@ async function checkUnlockRateLimit(userId: string) {
 export async function setVaultPassword(password: string, confirmPassword: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to set up private projects.' };
   }
 
   if (!password || password.length < VAULT_PASSWORD_MIN_LENGTH) {
     return {
       success: false,
-      message: `Password must be at least ${VAULT_PASSWORD_MIN_LENGTH} characters`,
+      message: `Use at least ${VAULT_PASSWORD_MIN_LENGTH} characters.`,
     };
   }
 
   if (password !== confirmPassword) {
-    return { success: false, message: 'Passwords do not match' };
+    return { success: false, message: 'The passwords do not match.' };
   }
 
   // Check if password already exists
@@ -66,7 +66,7 @@ export async function setVaultPassword(password: string, confirmPassword: string
   if (existing?.vaultPasswordHash) {
     return {
       success: false,
-      message: 'Vault password is already set. Use change password instead.',
+      message: 'Private projects are already set up. Choose Change password.',
     };
   }
 
@@ -81,9 +81,9 @@ export async function setVaultPassword(password: string, confirmPassword: string
   // Auto-unlock after setting password
   await setVaultUnlocked(true, session.user.id);
   revalidatePath('/projects');
-  revalidatePath('/chat', 'layout');
+  revalidatePath('/settings/connections', 'layout');
 
-  return { success: true, message: 'Vault password set successfully' };
+  return { success: true, message: 'Private projects are ready.' };
 }
 
 /**
@@ -92,13 +92,13 @@ export async function setVaultPassword(password: string, confirmPassword: string
 export async function changeVaultPassword(currentPassword: string, newPassword: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to change the private project password.' };
   }
 
   if (!newPassword || newPassword.length < VAULT_PASSWORD_MIN_LENGTH) {
     return {
       success: false,
-      message: `New password must be at least ${VAULT_PASSWORD_MIN_LENGTH} characters`,
+      message: `Use at least ${VAULT_PASSWORD_MIN_LENGTH} characters for the new password.`,
     };
   }
 
@@ -108,16 +108,16 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
   });
 
   if (!settings?.vaultPasswordHash) {
-    return { success: false, message: 'No vault password is set' };
+    return { success: false, message: 'Private projects are not set up yet.' };
   }
 
   if (!(await checkUnlockRateLimit(session.user.id))) {
-    return { success: false, message: 'Too many attempts. Try again later.' };
+    return { success: false, message: 'Too many tries. Try again later.' };
   }
 
   const isValid = await bcrypt.compare(currentPassword, settings.vaultPasswordHash);
   if (!isValid) {
-    return { success: false, message: 'Current password is incorrect' };
+    return { success: false, message: 'The current password is not correct.' };
   }
 
   const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
@@ -127,7 +127,7 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
   });
   await setVaultUnlocked(false, session.user.id);
 
-  return { success: true, message: 'Vault password changed successfully' };
+  return { success: true, message: 'Private project password changed.' };
 }
 
 /**
@@ -136,7 +136,7 @@ export async function changeVaultPassword(currentPassword: string, newPassword: 
 export async function unlockVault(password: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to open private projects.' };
   }
 
   const settings = await prisma.userSettings.findUnique({
@@ -145,23 +145,23 @@ export async function unlockVault(password: string) {
   });
 
   if (!settings?.vaultPasswordHash) {
-    return { success: false, message: 'No vault password is set' };
+    return { success: false, message: 'Private projects are not set up yet.' };
   }
 
   if (!(await checkUnlockRateLimit(session.user.id))) {
-    return { success: false, message: 'Too many attempts. Try again later.' };
+    return { success: false, message: 'Too many tries. Try again later.' };
   }
 
   const isValid = await bcrypt.compare(password, settings.vaultPasswordHash);
   if (!isValid) {
-    return { success: false, message: 'Incorrect password' };
+    return { success: false, message: 'That password is not correct.' };
   }
 
   await setVaultUnlocked(true, session.user.id);
   revalidatePath('/projects');
-  revalidatePath('/chat', 'layout');
+  revalidatePath('/settings/connections', 'layout');
 
-  return { success: true, message: 'Vault unlocked' };
+  return { success: true, message: 'Private projects are open.' };
 }
 
 /**
@@ -170,14 +170,14 @@ export async function unlockVault(password: string) {
 export async function lockVault() {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to close private projects.' };
   }
 
   await setVaultUnlocked(false, session.user.id);
   revalidatePath('/projects');
-  revalidatePath('/chat', 'layout');
+  revalidatePath('/settings/connections', 'layout');
 
-  return { success: true, message: 'Vault locked' };
+  return { success: true, message: 'Private projects are closed.' };
 }
 
 /**
@@ -188,7 +188,7 @@ export async function lockVault() {
 export async function moveProjectToVault(projectId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to hide a project.' };
   }
 
   // Ensure vault password is set
@@ -198,7 +198,7 @@ export async function moveProjectToVault(projectId: string) {
   });
 
   if (!settings?.vaultPasswordHash) {
-    return { success: false, message: 'Set up a vault password first' };
+    return { success: false, message: 'Set up private projects first.' };
   }
 
   await prisma.project.update({
@@ -211,11 +211,11 @@ export async function moveProjectToVault(projectId: string) {
 
   revalidatePath('/dashboard');
   revalidatePath('/projects');
-  revalidatePath('/chat');
+  revalidatePath('/settings/connections');
   revalidatePath('/reports');
   revalidatePath('/insights');
 
-  return { success: true, message: 'Project moved to vault' };
+  return { success: true, message: 'Project is now private.' };
 }
 
 /**
@@ -225,12 +225,12 @@ export async function moveProjectToVault(projectId: string) {
 export async function moveProjectFromVault(projectId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, message: 'Unauthorized' };
+    return { success: false, message: 'Sign in to make this project active.' };
   }
 
   const unlocked = await isVaultUnlocked(session.user.id);
   if (!unlocked) {
-    return { success: false, message: 'Vault must be unlocked to move projects out' };
+    return { success: false, message: 'Open private projects before making this project active.' };
   }
 
   await prisma.project.update({
@@ -243,11 +243,11 @@ export async function moveProjectFromVault(projectId: string) {
 
   revalidatePath('/dashboard');
   revalidatePath('/projects');
-  revalidatePath('/chat');
+  revalidatePath('/settings/connections');
   revalidatePath('/reports');
   revalidatePath('/insights');
 
-  return { success: true, message: 'Project moved to active' };
+  return { success: true, message: 'Project is active again.' };
 }
 
 /**

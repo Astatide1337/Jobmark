@@ -160,7 +160,7 @@ export function getCalendarRange(options: {
 
   if (options.kind === 'custom') {
     if (!options.customStartDate || !options.customEndDate) {
-      throw new Error('Custom report dates are required');
+      throw new Error('Custom review dates are required.');
     }
     parseDateString(options.customStartDate);
     parseDateString(options.customEndDate);
@@ -175,7 +175,7 @@ export function getCalendarRange(options: {
     endDate = today;
   }
 
-  if (startDate > endDate) throw new Error('Report start date must not be after end date');
+  if (startDate > endDate) throw new Error('The start date must be on or before the end date.');
   return {
     start: calendarDateToUtcMidnight(startDate),
     endExclusive: calendarDateToUtcMidnight(shiftCalendarDate(endDate, 1)),

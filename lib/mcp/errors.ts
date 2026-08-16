@@ -14,28 +14,37 @@ export class McpError extends Error {
 }
 
 export class McpValidationError extends McpError {
-  constructor(message: string, public readonly fieldErrors?: Record<string, string[]>) {
-    super(message, 'VALIDATION_ERROR', { fieldErrors });
+  constructor(
+    message: string,
+    public readonly fieldErrors?: Record<string, string[]>
+  ) {
+    super(
+      message === 'Invalid input' ? 'Check the details and try again.' : message,
+      'VALIDATION_ERROR',
+      {
+        fieldErrors,
+      }
+    );
     this.name = 'McpValidationError';
   }
 }
 
 export class McpNotFoundError extends McpError {
   constructor(resource: string) {
-    super(`${resource} not found`, 'NOT_FOUND', { resource });
+    super(`${resource} not found.`, 'NOT_FOUND', { resource });
     this.name = 'McpNotFoundError';
   }
 }
 
 export class McpForbiddenError extends McpError {
-  constructor(message = 'Access denied') {
+  constructor(message = 'You do not have access to this.') {
     super(message, 'FORBIDDEN');
     this.name = 'McpForbiddenError';
   }
 }
 
 export class McpVaultLockedError extends McpError {
-  constructor(message = 'Vault is locked') {
+  constructor(message = 'Open private projects first.') {
     super(message, 'VAULT_LOCKED');
     this.name = 'McpVaultLockedError';
   }
@@ -53,7 +62,10 @@ export class McpUserActionRequiredError extends McpError {
 }
 
 export class McpConfirmationRequiredError extends McpError {
-  constructor(message: string, public readonly requiredPhrase?: string) {
+  constructor(
+    message: string,
+    public readonly requiredPhrase?: string
+  ) {
     super(message, 'CONFIRMATION_REQUIRED', { requiredPhrase });
     this.name = 'McpConfirmationRequiredError';
   }
@@ -67,28 +79,34 @@ export class McpConflictError extends McpError {
 }
 
 export class McpRateLimitedError extends McpError {
-  constructor(message: string, public readonly retryAfter: number) {
+  constructor(
+    message: string,
+    public readonly retryAfter: number
+  ) {
     super(message, 'RATE_LIMITED', { retryAfter });
     this.name = 'McpRateLimitedError';
   }
 }
 
 export class McpInternalError extends McpError {
-  constructor(message = 'Internal server error') {
+  constructor(message = 'Something went wrong.') {
     super(message, 'INTERNAL_ERROR');
     this.name = 'McpInternalError';
   }
 }
 
 export class McpInsufficientScopeError extends McpError {
-  constructor(message = 'Insufficient scope', public readonly requiredScope?: string) {
+  constructor(
+    message = 'This assistant does not have permission to do that.',
+    public readonly requiredScope?: string
+  ) {
     super(message, 'INSUFFICIENT_SCOPE', { requiredScope });
     this.name = 'McpInsufficientScopeError';
   }
 }
 
 export class McpUnauthenticatedError extends McpError {
-  constructor(message = 'Unauthenticated') {
+  constructor(message = 'Sign in first.') {
     super(message, 'UNAUTHENTICATED');
     this.name = 'McpUnauthenticatedError';
   }
@@ -122,5 +140,5 @@ export function toMcpErrorResponse(error: unknown): {
   if (error instanceof Error) {
     return { code: 500, message: error.message };
   }
-  return { code: 500, message: 'Unknown error' };
+  return { code: 500, message: 'Something went wrong.' };
 }

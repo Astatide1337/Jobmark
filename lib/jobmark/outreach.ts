@@ -84,7 +84,7 @@ export async function getOutreach(actor: JobmarkActor, outreachId: string): Prom
     include: { contact: { select: { id: true, fullName: true } } },
   });
 
-  if (!outreach) throw new NotFoundError('Outreach draft');
+  if (!outreach) throw new NotFoundError('Message draft');
 
   return toOutreachDTO(outreach);
 }
@@ -178,7 +178,7 @@ export async function updateOutreach(
   const outreach = await prisma.outreachDraft.findFirst({
     where: { id: outreachId, userId: actor.userId },
   });
-  if (!outreach) throw new NotFoundError('Outreach draft');
+  if (!outreach) throw new NotFoundError('Message draft');
 
   const updated = await prisma.outreachDraft.update({
     where: { id: outreachId },
@@ -202,12 +202,12 @@ export async function improveOutreachText(
   const outreach = await prisma.outreachDraft.findFirst({
     where: { id: outreachId, userId: actor.userId },
   });
-  if (!outreach) throw new NotFoundError('Outreach draft');
+  if (!outreach) throw new NotFoundError('Message draft');
 
   return {
     improvedContent: deterministicRewrite(
       outreach.content,
-      instructions ?? 'Keep the meaning and make this easier to scan.'
+      instructions ?? 'Keep the meaning and make this easier to read.'
     ),
   };
 }
@@ -218,7 +218,7 @@ export async function deleteOutreach(actor: JobmarkActor, outreachId: string): P
   const outreach = await prisma.outreachDraft.findFirst({
     where: { id: outreachId, userId: actor.userId },
   });
-  if (!outreach) throw new NotFoundError('Outreach draft');
+  if (!outreach) throw new NotFoundError('Message draft');
 
   await prisma.outreachDraft.delete({ where: { id: outreachId } });
 }

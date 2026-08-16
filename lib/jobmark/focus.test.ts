@@ -59,7 +59,7 @@ describe('focus domain functions', () => {
         moodAfter: 8,
         notes: null,
       })
-    ).rejects.toThrow('Validation failed');
+    ).rejects.toThrow('Check the details and try again.');
 
     expect(createDecompressionLog).not.toHaveBeenCalled();
   });

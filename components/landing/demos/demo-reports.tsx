@@ -23,14 +23,14 @@ const reports = [
     id: '1',
     title: 'Weekly Engineering Update',
     content:
-      '## Summary\nSuccessfully deployed the new landing page infrastructure.\n\n### Key Wins\n- Implemented Bento Grid layout\n- Improved load time by 40%\n- Fixed responsive issues on mobile\n\n### Next Steps\n- Conduct A/B testing on headline copy\n- Optimize images for retina displays',
+      '## Review draft\nShipped the new landing page.\n\n### What changed\n- Built the new layout\n- Cut load time by 40%\n- Fixed the mobile layout\n\n### Next steps\n- Test the headline copy\n- Make the images look sharp on all screens',
     createdAt: DEMO_NOW,
   },
   {
     id: '2',
     title: 'Q1 Goals Review',
     content:
-      '## Overview\nWe are currently 70% toward our Q1 target of launching the MVP.\n\n### Progress\n- Backend Auth: Complete\n- Database Schema: Finalized\n- Frontend UI: In Progress',
+      '## Overview\nWe are 70% of the way to our Q1 goal: launch the app.\n\n### Progress\n- Sign-in: done\n- Database setup: done\n- App screens: in progress',
     createdAt: new Date(DEMO_NOW.getTime() - 86400000 * 2),
   },
 ];
@@ -41,7 +41,7 @@ export function DemoReports() {
       <div className="space-y-6">
         <div>
           <h2 className="mb-2 text-3xl font-bold tracking-tight">Review drafts</h2>
-          <p className="text-muted-foreground">Start with the work you have already recorded.</p>
+          <p className="text-muted-foreground">Start with the notes you already saved.</p>
         </div>
         <ReportHistory
           initialReports={reports}

@@ -21,9 +21,9 @@ import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 const navItems = [
   { label: 'How it works', href: '#product-tour' },
-  { label: 'Start free', href: '#access' },
+  { label: 'Add a note', href: '#access' },
   { label: 'FAQ', href: '#faq' },
-  { label: 'Articles', href: '/articles' },
+  { label: 'Guides', href: '/articles' },
 ];
 
 export function FloatingNav() {
@@ -124,7 +124,7 @@ export function FloatingNav() {
                 onClick={openAuthModal}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
               >
-                Start recording
+                Add a note
               </button>
             </MagneticButton>
           </div>

@@ -59,12 +59,12 @@ export function ProjectActivityTimeline({
       <Card className="bg-muted/30 border-muted-foreground/30 border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <Activity className="text-muted-foreground/30 mb-3 h-10 w-10" />
-          <p className="text-muted-foreground font-medium">No project evidence yet</p>
+          <p className="text-muted-foreground font-medium">No notes in this project yet</p>
           <p className="text-muted-foreground/70 mt-1 max-w-xs text-xs">
-            Assign work to this project so its record becomes specific enough to summarize later.
+            Add a note to help you remember this project later.
           </p>
           <Button variant="link" size="sm" asChild className="mt-3">
-            <Link href="/dashboard">Log work from the dashboard</Link>
+            <Link href="/dashboard">Add a note from the dashboard</Link>
           </Button>
         </CardContent>
       </Card>
@@ -114,7 +114,7 @@ export function ProjectActivityTimeline({
                   </div>
                   {isToday && (
                     <span className="bg-primary/10 text-primary rounded-sm px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase">
-                      New
+                      Today
                     </span>
                   )}
                 </div>
@@ -143,7 +143,7 @@ export function ProjectActivityTimeline({
             <>
               <div className="flex items-center gap-2">
                 <div className="bg-border/50 group-hover:bg-border h-px w-12 transition-colors" />
-                <span className="text-xs font-medium tracking-wider uppercase">Load More</span>
+                <span className="text-xs font-medium tracking-wider uppercase">Load more</span>
                 <div className="bg-border/50 group-hover:bg-border h-px w-12 transition-colors" />
               </div>
               <ChevronDown className="h-4 w-4 animate-bounce opacity-50 transition-opacity group-hover:opacity-100" />
@@ -154,7 +154,7 @@ export function ProjectActivityTimeline({
 
       {/* Count indicator */}
       <p className="text-muted-foreground text-center text-xs">
-        Showing {activities.length} of {totalCount} {totalCount === 1 ? 'activity' : 'activities'}
+        Showing {activities.length} of {totalCount} {totalCount === 1 ? 'note' : 'notes'}
       </p>
     </div>
   );

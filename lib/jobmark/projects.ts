@@ -14,6 +14,7 @@ import {
   VaultLockedError,
 } from './index';
 import { z } from 'zod';
+import { getActivityDisplayContent } from './activity-copy';
 
 const projectCreateSchema = z.object({
   name: z.string().min(1).max(50),
@@ -144,7 +145,7 @@ export async function getProjectWithActivities(
     project: toProjectDTO(project),
     activities: activities.map(a => ({
       id: a.id,
-      content: a.content,
+      content: getActivityDisplayContent(a.content),
       logDate: a.logDate.toISOString().split('T')[0],
       createdAt: a.createdAt.toISOString(),
       project: a.project,

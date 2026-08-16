@@ -175,7 +175,7 @@ export function QuickCapture({
     setContent('');
     setSelectedDate(new Date());
     triggerConfetti();
-    toast.success('Activity captured (Demo Mode)');
+    toast.success('Note added (demo)');
   };
 
   const [selectedProject, setSelectedProject] = useState<string>('');
@@ -261,7 +261,7 @@ export function QuickCapture({
     }
 
     if (!('webkitSpeechRecognition' in window)) {
-      alert('Your browser does not support speech recognition. Please try Chrome or Edge.');
+      alert('Your browser does not support speech recognition. Try Chrome or Edge.');
       return;
     }
 
@@ -441,7 +441,7 @@ export function ActivityTimeline({
               </h3>
               <div className="bg-border/50 h-px flex-1" />
               <span className="text-muted-foreground text-xs">
-                {dateActivities.length} {dateActivities.length === 1 ? 'entry' : 'entries'}
+                {dateActivities.length} {dateActivities.length === 1 ? 'note' : 'notes'}
               </span>
             </div>
 
@@ -475,7 +475,7 @@ export function ActivityTimeline({
             <>
               <div className="flex items-center gap-2">
                 <div className="bg-border/50 group-hover:bg-primary/30 h-px w-12 transition-colors" />
-                <span className="text-xs font-medium tracking-wider uppercase">Load More</span>
+                <span className="text-xs font-medium tracking-wider uppercase">Load more</span>
                 <div className="bg-border/50 group-hover:bg-primary/30 h-px w-12 transition-colors" />
               </div>
 
@@ -487,8 +487,7 @@ export function ActivityTimeline({
 
       {visibleActivities.length > 0 && (
         <p className="text-muted-foreground text-center text-xs">
-          Showing {visibleActivities.length}{' '}
-          {visibleActivities.length === 1 ? 'activity' : 'activities'}
+          Showing {visibleActivities.length} {visibleActivities.length === 1 ? 'note' : 'notes'}
           {totalCount && totalCount > visibleActivities.length && ` of ${totalCount}`}
         </p>
       )}
@@ -568,8 +567,8 @@ function DeleteActivityButton({
   const handleDelete = () => {
     onOptimisticDelete?.();
 
-    toast('Activity deleted', {
-      description: 'This action will be permanent in 5 seconds',
+    toast('Note deleted', {
+      description: 'This note will be deleted in 5 seconds.',
       duration: 5000,
       action: {
         label: 'Undo',
@@ -579,7 +578,7 @@ function DeleteActivityButton({
             deleteTimeoutRef.current = null;
           }
           onUndoDelete?.();
-          toast.success('Activity restored');
+          toast.success('Note restored');
         },
       },
     });
@@ -597,7 +596,7 @@ function DeleteActivityButton({
       size="sm"
       onClick={handleDelete}
       disabled={isPending}
-      aria-label="Delete activity"
+      aria-label="Delete note"
       className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
     >
       <Trash2 className="h-4 w-4" />
@@ -612,9 +611,9 @@ function TimelineEmptyState() {
         <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
           <FileText className="text-primary h-6 w-6" />
         </div>
-        <h3 className="text-foreground mb-2 font-semibold">No activities yet</h3>
+        <h3 className="text-foreground mb-2 font-semibold">No notes yet</h3>
         <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-          Capture one concrete action so your record has something real to build on.
+          Write one clear note about something you did.
         </p>
       </CardContent>
     </Card>

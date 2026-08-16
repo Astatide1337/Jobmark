@@ -28,7 +28,7 @@ export function SettingsSaveBar({
         disabled={isSaving}
         className="rounded-lg border-0 bg-amber-500 px-4 text-white hover:bg-amber-600"
       >
-        {isSaving ? 'Saving...' : 'Save Now'}
+        {isSaving ? 'Saving...' : 'Save changes'}
       </Button>
     </div>
   );

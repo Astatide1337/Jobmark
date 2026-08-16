@@ -22,6 +22,7 @@ import {
 } from '@/lib/project-lock';
 import { Prisma } from '@prisma/client';
 import { formatDate, getChannelLabel } from '@/lib/network';
+import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
 import {
   calendarDateToUtcMidnight,
   DEFAULT_TIME_ZONE,
@@ -161,16 +162,17 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   // Add activity results
   activities.forEach(activity => {
     const dateStr = formatDate(activity.logDate);
-    const projectStr = activity.project?.name || 'No Project';
+    const projectStr = activity.project?.name || 'No project';
+    const displayContent = getActivityDisplayContent(activity.content);
 
     results.push({
       id: activity.id,
       type: 'activity',
-      title: activity.content.substring(0, 80) + (activity.content.length > 80 ? '...' : ''),
+      title: displayContent.substring(0, 80) + (displayContent.length > 80 ? '...' : ''),
       subtitle: `${projectStr} • ${dateStr}`,
       url: '#', // URL handled by modal
       color: activity.project?.color,
-      fullContent: activity.content,
+      fullContent: displayContent,
       createdAt: activity.createdAt.toISOString(),
     });
   });

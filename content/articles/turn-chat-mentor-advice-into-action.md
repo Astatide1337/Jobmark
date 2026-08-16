@@ -1,6 +1,6 @@
 ---
-title: Turn mentor chat advice into real progress
-description: A practical way to turn career advice into weekly execution and visible outcomes.
+title: Turn advice into action
+description: A practical way to turn career advice into weekly actions and clear results.
 slug: turn-chat-mentor-advice-into-action
 publishedAt: 2026-03-05
 updatedAt: 2026-03-07
@@ -8,17 +8,17 @@ category: help
 tags:
   - mentor
   - planning
-  - execution
+  - work
 author: Jobmark
 draft: false
 featured: false
 difficulty: intermediate
-series: Mentor to Execution
+series: From advice to action
 ctaVariant: default
 bestFor: turning advice into action
-primaryAction: Open MCP Connector
-primaryHref: /chat
-secondaryAction: Log recent work
+primaryAction: Open assistant connections
+primaryHref: /settings/connections
+secondaryAction: Add recent note
 secondaryHref: /dashboard
 ---
 
@@ -26,84 +26,84 @@ Most mentor conversations feel great in the moment.
 
 Then Monday hits. Priorities shift. The advice becomes a screenshot you never open again.
 
-Treat mentor advice like execution input, not inspiration.
+Treat mentor advice as something to use, not just something to read.
 
-## Extract one clear objective
+## Choose one clear goal
 
-After each chat, write one objective a teammate could understand without context.
+After each chat, write one goal a teammate could understand without more explanation.
 
 - Vague: "Get better at communication."
-- Clear: "Cut cross-team confusion by publishing a weekly update with decisions, risks, open asks."
+- Clear: "Cut confusion between teams by publishing a weekly update with decisions, risks, and questions."
 
-Fuzzy objective. Fuzzy week.
+A vague goal leads to a vague week.
 
-## Turn it into this week's behavior
+## Turn it into this week's actions
 
-Break the objective into 2-4 actions you can actually finish.
+Break the goal into two to four actions you can finish.
 
 Example:
 
-- schedule one 20-minute dependency sync
+- schedule one 20-minute meeting with people you need to work with
 - send one Friday status note
-- document ownership boundaries in project notes
+- write down who owns each part in the project notes
 
-Small enough to execute. Big enough to move the needle.
+Small enough to finish. Big enough to make progress.
 
-## Track one lead and one lag metric
+## Track one action and one result
 
-This keeps you honest.
+This helps you check whether the plan is working.
 
-- **Lead metric**: behavior you control now (update sent every Friday by 3 PM)
-- **Lag metric**: downstream result (blocker resolution drops from six days to three)
+- **Action**: what you can do now (send an update every Friday by 3 PM)
+- **Result**: what should change (resolve blockers in three days instead of six)
 
-Without both, you either optimize activity with no outcome or chase outcomes with no process.
+You need both. The action is what you do. The result is what you check.
 
 ## Add trigger plans
 
 One if-then per key action:
 
-- "If Monday planning ends, I schedule stakeholder syncs before noon."
+- "If Monday planning ends, I schedule meetings with people I depend on before noon."
 - "If Friday 2 PM hits, I draft and send the weekly update."
 
-Sounds small. Makes a huge difference in follow-through.
+This is small, but it makes the next step clear.
 
-## Log evidence in Jobmark
+## Keep a note in Jobmark
 
-For each action, capture:
+For each action, write down:
 
 - what you did
 - what changed
 - what moved numerically
-- where proof lives (doc, dashboard, ticket, thread)
+- where the details are (doc, dashboard, ticket, or thread)
 
-Now mentor advice isn't abstract. It's tied to visible results.
+Now the advice is tied to real work and results.
 
 ## Review every two weeks
 
 Block 15 minutes. Ask:
 
 1. What changed because of these actions?
-2. Which action had biggest leverage?
-3. What continues, stops, adjusts?
-4. What's the next two-week objective?
+2. Which action helped most?
+3. What should I keep, stop, or change?
+4. What is the next two-week goal?
 
-Tight loop. Practical growth.
+Keep the review simple. Change the plan if needed.
 
 ## Template
 
 **Objective**
 
-Improve [capability] so [business outcome] improves by [target].
+Improve [skill] so [result] improves by [target].
 
 **Actions**
 
 - [action + owner + deadline]
 - [action + owner + deadline]
 
-**Metrics**
+**What to check**
 
-- Lead:
-- Lag:
+- What I will do:
+- What should change:
 
 **Trigger**
 
@@ -113,10 +113,4 @@ Improve [capability] so [business outcome] improves by [target].
 
 ## One thought
 
-Your preferred philosophy fits here:
-
-- Proctor: identity shift from advice consumer to executor.
-- Rohn: repeated weekly actions beat occasional intensity.
-- Tracy: lead with highest-value action first.
-
-No drama. Just execution and evidence.
+Keep it simple. Pick one action, do it, and write down what changed.

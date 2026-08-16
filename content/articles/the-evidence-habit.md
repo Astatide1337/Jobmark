@@ -1,13 +1,13 @@
 ---
-title: The evidence habit
-description: Why documenting your work is a skill, not admin — and how to make it automatic.
+title: The note-taking habit
+description: Why writing down your work matters and how to make it part of your week.
 slug: the-evidence-habit
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
 category: career-development
 tags:
   - documentation
-  - evidence
+  - notes
   - reviews
 author: Jobmark
 draft: false
@@ -15,84 +15,84 @@ featured: true
 ctaVariant: checklist
 ---
 
-People hate documentation. They see it as busywork. Admin. Something to do when there's nothing "real" to do.
+Many people dislike writing notes. They see it as busywork or paperwork. Something to do when there is nothing "real" to do.
 
 That's a mistake.
 
-Documentation isn't the opposite of doing. It's proof of doing.
+Writing notes is part of doing the work. It helps you remember what happened.
 
 ## The memory problem
 
-Your memory is unreliable. It overweights recent events. It forgets quiet wins. It fills gaps with narratives that feel true but aren't.
+Memory is not perfect. It focuses on recent events, forgets small results, and fills gaps.
 
-You think you did good work this quarter. But can you prove it? With specifics? With numbers?
+You think you did good work this quarter. But can you remember the details? The numbers?
 
-If not, you're relying on impression. Impression is weak currency.
+If not, you are relying on a general impression. That is hard to use in a review.
 
-## Evidence solves three problems
+## Notes solve three problems
 
 **Problem 1: You forget.**
 
-Six months from now, you won't remember what you did last month. Evidence preserves it.
+Six months from now, you may not remember what you did last month. Notes help you remember.
 
-**Problem 2: You can't articulate impact.**
+**Problem 2: You cannot explain what changed.**
 
 When someone asks "what did you do?", vague answers sound weak. Specific answers sound strong.
 
-**Problem 3: You lose negotiations.**
+**Problem 3: You have less to use in hard conversations.**
 
-Reviews, promotions, and compensation conversations all benefit from clear evidence. The person with the clearer record can make the conversation more concrete.
+Reviews, promotions, and pay talks are easier when you have clear notes. You can point to what happened.
 
-## The minimal viable habit
+## The smallest useful habit
 
-You don't need to document everything. Just capture the signal.
+You do not need to write down everything. Save the main result.
 
-After any meaningful piece of work, note:
+After an important piece of work, note:
 
 - What you did
 - What changed
-- One metric or observable result
+- One number or result you can see
 
 Three lines. That's it.
 
-## When to capture
+## When to save a note
 
-Best time: within a few hours of finishing. Not days later. Not end of week.
+Best time: within a few hours of finishing. Not days later or at the end of the week.
 
-The closer to the event, the better the detail. The better the evidence.
+The sooner you write, the more detail you will remember.
 
-Set a trigger: "When I finish something I'm proud of, I log it."
+Set a reminder: "When I finish a piece of work, I write a note."
 
-## The documentation loop
+## A simple note routine
 
-Capture, then synthesize.
+Save notes, then bring them together.
 
-Weekly: review your entries. Mark your top 2-3.
+Weekly: review your notes. Mark your top 2-3.
 
 Monthly: write a one-page summary of what you delivered.
 
-Quarterly: update your promotion narrative.
+Quarterly: update your promotion review notes.
 
-This is the cycle. Capture raw, synthesize regularly.
+This is the cycle. Save notes, then review them regularly.
 
-## What strong evidence looks like
+## What a good note looks like
 
-Weak: "Worked on improving the system."
+Weak: "Worked on improving the sign-in system."
 
 Strong: "Refactored authentication module, cut login latency from 400ms to 120ms. Reduced support tickets on login issues by 60%."
 
 Weak: "Helped the team with planning."
 
-Strong: "Led Q2 planning session. Prioritized roadmap items, aligned engineering and product on 3 tradeoffs. Reduced mid-sprint scope changes from 8 to 2."
+Strong: "Led Q2 planning session. Helped engineering and product agree on three choices. Reduced mid-sprint scope changes from 8 to 2."
 
-See the difference? One is a vague claim. One is verifiable.
+The first is vague. The second gives a clear result.
 
-## The skill isn't writing
+## The hard part is noticing
 
-The skill isn't documentation. It's awareness.
+The skill is noticing what changed and saving a note.
 
-You have to notice when something matters. You have to pause and capture.
+You have to notice when something matters. You have to pause and write it down.
 
-That pause is uncomfortable. But it's the skill.
+It may feel like extra work at first. It gets easier with practice.
 
-Do it enough and it becomes reflex. Then you're not documenting. You're just recording reality.
+Keep doing it and it becomes a habit. You are simply keeping notes about your work.

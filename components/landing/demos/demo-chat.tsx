@@ -1,5 +1,5 @@
 /**
- * MCP Connector demo
+ * AI connections demo
  *
  * Why: The landing tour should show the same connection choices users see in
  * the product. The connector is a handoff to an AI app, not an in-product
@@ -11,7 +11,7 @@ import { DashboardFrame } from './dashboard-frame';
 export function DemoMcpConnector() {
   return (
     <div aria-hidden="true" className="h-full">
-      <DashboardFrame activePath="/chat">
+      <DashboardFrame activePath="/settings/connections">
         <DemoMcpConnectorContent />
       </DashboardFrame>
     </div>
@@ -22,11 +22,5 @@ export function DemoMcpConnectorContent() {
   const baseUrl =
     typeof window === 'undefined' ? 'https://jobmark.astatide.com' : window.location.origin;
 
-  return (
-    <McpConnectionPage
-      baseUrl={baseUrl}
-      user={{ id: 'landing-demo', name: 'Demo User', email: 'demo@jobmark.local' }}
-      connections={[]}
-    />
-  );
+  return <McpConnectionPage baseUrl={baseUrl} connections={[]} />;
 }

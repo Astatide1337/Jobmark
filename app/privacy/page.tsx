@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Jobmark',
-  description: 'How Jobmark collects, uses, and protects your data.',
+  description: 'How Jobmark uses and protects your data.',
 };
 
 export default function PrivacyPage() {
@@ -32,9 +32,9 @@ export default function PrivacyPage() {
             </h2>
             <p>
               When you sign in with Google, we receive your name, email address, and profile photo
-              from Google. Inside the app, we store the work entries, projects, goals, and reports
-              you create. We also store your settings preferences and active connection records so
-              you can see which AI apps have access.
+              from Google. Inside the app, we store the work notes, projects, goals, and drafts you
+              create. We also store your settings and connections so you can see which assistants
+              have access.
             </p>
             <p className="mt-3">
               We do not collect payment information, precise location data, or behavioral analytics.
@@ -44,10 +44,9 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">How we use it</h2>
             <p>
-              Your data powers the app: building evidence-based briefs from your work log and
-              contacts, and displaying your activity history. When you choose to open a brief in a
-              connected AI app, that app receives the information needed for the task. We do not
-              sell your data or use it for advertising.
+              We use your data to make drafts from your notes and contacts and to show your note
+              history. When you open a draft in a connected assistant, that assistant gets the
+              information needed for the task. We do not sell your data or use it for advertising.
             </p>
           </section>
 
@@ -57,17 +56,17 @@ export default function PrivacyPage() {
             </h2>
             <ul className="list-disc space-y-2 pl-5">
               <li>
-                <strong className="text-foreground">Google OAuth</strong> — handles authentication.
-                Subject to Google&apos;s privacy policy.
+                <strong className="text-foreground">Google</strong> handles sign-in. Google&apos;s
+                privacy policy applies.
               </li>
               <li>
-                <strong className="text-foreground">Neon PostgreSQL</strong> — stores all
-                application data on servers in the US-East region.
+                <strong className="text-foreground">Neon PostgreSQL</strong> stores all application
+                data on servers in the US-East region.
               </li>
               <li>
-                <strong className="text-foreground">Connected AI apps</strong> — when you choose
-                one, Jobmark hands the selected brief or prompt to that app. Each provider handles
-                the content under its own terms and privacy policy.
+                <strong className="text-foreground">Connected assistants</strong> get the selected
+                draft or prompt when you choose one. Each provider handles the content under its own
+                terms and privacy policy.
               </li>
             </ul>
           </section>
@@ -77,12 +76,12 @@ export default function PrivacyPage() {
               Data retention and deletion
             </h2>
             <p>
-              You can export your complete data history at any time from{' '}
+              You can export all your data at any time from{' '}
               <Link href="/settings" className="text-primary hover:underline">
                 Settings → Data
               </Link>
-              . To delete your account and all associated data, use the &quot;Delete Account&quot;
-              option in the same section. Deletion is immediate and irreversible.
+              . To delete your account and all its data, use the &quot;Delete Account&quot; option
+              in the same section. Deletion is immediate and cannot be undone.
             </p>
           </section>
 

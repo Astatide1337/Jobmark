@@ -1,13 +1,13 @@
 ---
-title: Quarterly career audits
-description: A self-review system that works on your timeline, not your company's.
+title: Quarterly career reviews
+description: A simple self-review you can do on your own schedule.
 slug: quarterly-career-audits
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
 category: career-development
 tags:
   - review
-  - self-audit
+  - self-review
   - quarterly
 author: Jobmark
 draft: false
@@ -15,19 +15,19 @@ featured: true
 ctaVariant: checklist
 ---
 
-Your company has review cycles. That's their timeline. Not yours.
+Your company has a review schedule. You can review your work before that.
 
-You should have your own system. One that runs when you decide, not when HR decides.
+Make time when it helps you, not only when HR asks.
 
-That's a quarterly career audit.
+That is a quarterly career review.
 
 ## What it is
 
-A quarterly audit is a check-in with yourself. Where are you? Where are you going? What's working? What isn't?
+A quarterly review is a check-in with yourself. Where are you? Where are you going? What is working? What is not?
 
 It's not a document for your manager. It's a document for you.
 
-But it becomes useful in every conversation that matters.
+It also gives you notes for later conversations.
 
 ## When to do it
 
@@ -41,11 +41,11 @@ This is important. Treat it that way.
 
 **1. What did I deliver?**
 
-List your top 5-10 outcomes from the quarter. Not tasks. Outcomes. What changed because of your work?
+List your top 5-10 results from the quarter. Not tasks. Results. What changed because of your work?
 
 **2. Where did I grow?**
 
-What skills got stronger? What did you learn? What can you do now that you couldn't three months ago?
+What skills got stronger? What did you learn? What can you do now that you could not do three months ago?
 
 **3. Where did I get stuck?**
 
@@ -57,17 +57,17 @@ Not everything. Just one. If you could replay the quarter, what's the one change
 
 **5. What's the next quarter's focus?**
 
-What's the one area where you want to be notably stronger? What's the biggest outcome you want to deliver?
+What is the one area where you want to be much better? What is the biggest result you want to deliver?
 
-## The output
+## What to write
 
 Write this down. One to two pages.
 
 Not for anyone else. For you.
 
-But here's what happens: when it's time for your actual review, you have this. When you have a promotion conversation, you have this. When you want to ask for something, you have this.
+When your review comes around, you have this. When you have a promotion review or want to ask for something, you have this.
 
-It's raw material for everything.
+Those notes can help with later reviews and updates.
 
 ## Why quarterly beats annually
 
@@ -75,28 +75,28 @@ Annual reviews rely on memory. Three months in, you forget what happened in mont
 
 Quarterly keeps it fresh. You remember. You can be specific.
 
-Annual reviews also force you into someone else's frame. What do they want to hear? What's the rubric?
+Annual reviews often focus on what the company wants to hear. What do they want to hear? What rules will they use?
 
-Quarterly is yours. You decide what's important.
+A quarterly review lets you decide what is important.
 
-## The tracking layer
+## Keep weekly notes
 
-If you're logging wins weekly (and you should be), this is easy. You just pull your entries and synthesize.
+If you write notes each week, this is easy. Bring them together and review them.
 
-If not, you're reconstructing. That's harder. That's why weekly logging matters.
+If not, you are trying to remember everything again. That is harder. That is why weekly notes matter.
 
-## After the audit
+## After the review
 
 Don't just file it. Act on it.
 
-Set your goals for next quarter. Identify gaps. Have conversations.
+Set your goals for next quarter. Find what is missing. Have conversations.
 
-The audit is useless if it's just an exercise. It's a planning tool.
+The review should lead to a plan.
 
 ## The habit
 
 Do this every quarter. Same time. Same process.
 
-Over time, you'll have a record of your growth. Year over year. You'll see patterns. You'll see trajectory.
+Over time, you will have notes about your work and progress. You will see patterns.
 
-That's your career. In writing. On your terms.
+Over time, you will see patterns in your work.

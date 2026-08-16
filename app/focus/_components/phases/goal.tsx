@@ -30,13 +30,13 @@ export function GoalPhase({ goalText, duration, onComplete }: GoalPhaseProps) {
           transition={{ duration: 1.4, ease: 'easeInOut' }}
         >
           <p className="text-foreground/70 font-serif text-xl leading-relaxed md:text-2xl">
-            Picture yourself having already achieved:
+            Your next step:
           </p>
           <p className="text-foreground max-w-xl font-serif text-2xl leading-relaxed font-medium md:text-4xl">
             {goalText}
           </p>
           <p className="text-primary mt-2 font-serif text-lg italic md:text-xl">
-            See yourself living that reality now.
+            Take a moment to think about that step.
           </p>
         </motion.div>
       </AnimatePresence>

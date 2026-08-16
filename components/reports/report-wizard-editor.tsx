@@ -66,20 +66,19 @@ export function ReportWizardEditor({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h2 className="flex items-center gap-2 text-xl font-bold">
-            Review Draft
+            Review draft
             {isStreaming && (
               <span className="text-muted-foreground animate-pulse text-xs font-normal">
-                (Preparing...)
+                (Writing your draft...)
               </span>
             )}
           </h2>
         </div>
 
         <div className="border-border/50 bg-card/35 rounded-2xl border p-4">
-          <p className="text-foreground text-sm font-medium">Where this is useful</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Use this draft for a weekly update, manager sync, self-review, or the first pass of a
-            promotion narrative.
+          <p className="text-muted-foreground text-sm">
+            Use this draft for a weekly update, a meeting with your manager, your own review, or a
+            promotion review.
           </p>
         </div>
 
@@ -97,7 +96,7 @@ export function ReportWizardEditor({
 
           <div className="flex w-64 shrink-0 flex-col gap-4 pt-4">
             <div className="text-muted-foreground px-1 text-xs font-bold tracking-widest uppercase">
-              Actions
+              Options
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -106,7 +105,7 @@ export function ReportWizardEditor({
                   className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
                 >
                   <Send className="mr-2 h-4 w-4" />
-                  Send via...
+                  Open in
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -115,7 +114,7 @@ export function ReportWizardEditor({
               >
                 <DropdownMenuItem onClick={onEmail} className="group cursor-pointer">
                   <Mail className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
-                  <span className="group-focus:text-accent-foreground">Default Mail App</span>
+                  <span className="group-focus:text-accent-foreground">Mail app</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onGmail} className="group cursor-pointer">
                   <span className="text-foreground group-focus:text-accent-foreground mr-2 text-lg font-bold">
@@ -145,14 +144,14 @@ export function ReportWizardEditor({
                   className="group cursor-pointer"
                 >
                   <File className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
-                  <span className="group-focus:text-accent-foreground">Download as PDF</span>
+                  <span className="group-focus:text-accent-foreground">PDF</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => exportToWord(reportContent)}
                   className="group cursor-pointer"
                 >
                   <FileText className="text-foreground group-focus:text-accent-foreground mr-2 h-4 w-4" />
-                  <span className="group-focus:text-accent-foreground">Download as Word</span>
+                  <span className="group-focus:text-accent-foreground">Word document</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -162,8 +161,8 @@ export function ReportWizardEditor({
               className="border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent"
               onClick={async () => {
                 const copied = await copyTextToClipboard(reportContent);
-                if (copied) toast.success('Copied to clipboard');
-                else toast.error('Could not copy the draft');
+                if (copied) toast.success('Draft copied.');
+                else toast.error('Could not copy the draft.');
               }}
             >
               <Copy className="mr-2 h-4 w-4" />
@@ -176,7 +175,7 @@ export function ReportWizardEditor({
               disabled={isStreaming || isSaving || saved}
             >
               {saved ? <CheckCircle className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-              {saved ? 'Saved Draft' : 'Save Draft'}
+              {saved ? 'Draft saved' : 'Save draft'}
             </Button>
             <McpProviderMenu
               connectedMcpProviders={connectedMcpProviders}

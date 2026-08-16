@@ -50,11 +50,11 @@ describe('deterministic drafts', () => {
       }
     );
 
-    expect(draft).toContain('Subject: A quick referral question');
+    expect(draft).toContain('Subject: Question about a referral');
     expect(draft).toContain('Hi Jeevan,');
     expect(draft).toContain('We worked on Linktree together.');
     expect(draft).toContain(
-      'Would you be open to a short conversation about whether a referral might make sense?'
+      'Would you be open to a short call about a referral? No problem if not.'
     );
     expect(draft).not.toContain('role');
     expect(draft).not.toContain('company');
@@ -74,10 +74,10 @@ describe('deterministic drafts', () => {
       ],
     });
 
-    expect(brief).toContain('Period: 2026-08-01 through 2026-08-07');
+    expect(brief).toContain('Dates: 2026-08-01 through 2026-08-07');
     expect(brief).toContain('Shipped the onboarding flow');
-    expect(brief).toContain('What changed because of this work?');
-    expect(brief).toContain('Review the result before sharing it.');
+    expect(brief).toContain('What changed?');
+    expect(brief).toContain('Check before sharing');
   });
 
   it('makes only predictable edits', () => {

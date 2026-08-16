@@ -7,19 +7,19 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Sign in first.' }, { status: 401 });
   }
 
   const body = await request.json();
   const { nonce, password } = body as { nonce?: string; password?: string };
 
   if (!nonce || !password) {
-    return NextResponse.json({ error: 'Missing nonce or password' }, { status: 400 });
+    return NextResponse.json({ error: 'Enter the link code and password.' }, { status: 400 });
   }
 
   const consumed = await consumeSecureActionNonce(nonce, 'vault_unlock', session.user.id);
   if (!consumed) {
-    return NextResponse.json({ error: 'Invalid or expired nonce' }, { status: 400 });
+    return NextResponse.json({ error: 'This link is invalid or has expired.' }, { status: 400 });
   }
 
   const settings = await prisma.userSettings.findUnique({
@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (!settings?.vaultPasswordHash) {
-    return NextResponse.json({ error: 'Vault not configured' }, { status: 400 });
+    return NextResponse.json({ error: 'Private projects are not set up yet.' }, { status: 400 });
   }
 
   const valid = await bcrypt.compare(password, settings.vaultPasswordHash);
   if (!valid) {
-    return NextResponse.json({ error: 'Incorrect password' }, { status: 400 });
+    return NextResponse.json({ error: 'That password is not correct.' }, { status: 400 });
   }
 
   if (consumed.connectionId) {
@@ -43,5 +43,8 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ success: true, message: 'Vault unlocked for 4 hours' });
+  return NextResponse.json({
+    success: true,
+    message: 'Private projects are open for 4 hours.',
+  });
 }

@@ -29,14 +29,20 @@ const projectGetSchema = z.object({
 
 const projectCreateSchema = z.object({
   name: z.string().min(1).max(50),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#6366f1'),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .default('#6366f1'),
   description: z.string().max(200).optional().nullable(),
 });
 
 const projectUpdateSchema = z.object({
   projectId: z.string(),
   name: z.string().min(1).max(50).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional(),
   description: z.string().max(200).optional().nullable(),
 });
 
@@ -52,8 +58,9 @@ const projectDeleteSchema = z.object({
 export const projectsListTool = {
   definition: {
     name: 'projects_list',
-    title: 'List Projects',
-    description: 'List user projects with pagination. Returns project details including activity/report counts.',
+    title: 'List projects',
+    description:
+      'List projects with pagination. Shows project details, note counts, and review-draft counts.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -116,8 +123,8 @@ export const projectsListTool = {
 export const projectsGetTool = {
   definition: {
     name: 'projects_get',
-    title: 'Get Project',
-    description: 'Get detailed project information including activity count.',
+    title: 'Get project',
+    description: 'Get project details, including its note count.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -163,8 +170,8 @@ export const projectsGetTool = {
 export const projectsGetWithActivitiesTool = {
   definition: {
     name: 'projects_get_with_activities',
-    title: 'Get Project with Activities',
-    description: 'Get project details with a paginated list of its activities.',
+    title: 'Get project with notes',
+    description: 'Get project details with a paginated list of its notes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -218,11 +225,13 @@ export const projectsGetWithActivitiesTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({
-      projectId: z.string(),
-      limit: z.number().int().min(1).max(50).optional(),
-      cursor: z.string().optional(),
-    }).safeParse(input);
+    const result = z
+      .object({
+        projectId: z.string(),
+        limit: z.number().int().min(1).max(50).optional(),
+        cursor: z.string().optional(),
+      })
+      .safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
@@ -232,15 +241,18 @@ export const projectsGetWithActivitiesTool = {
       cursor: result.data.cursor,
     });
 
-    return createStructuredResult(data, `Project: ${data.project.name} with ${data.activities.length} activities`);
+    return createStructuredResult(
+      data,
+      `Project: ${data.project.name} with ${data.activities.length} activities`
+    );
   },
 };
 
 export const projectsCreateTool = {
   definition: {
     name: 'projects_create',
-    title: 'Create Project',
-    description: 'Create a new project. Requires jobmark:write scope.',
+    title: 'Create project',
+    description: 'Create a new project. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -271,7 +283,12 @@ export const projectsCreateTool = {
         },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -288,8 +305,8 @@ export const projectsCreateTool = {
 export const projectsUpdateTool = {
   definition: {
     name: 'projects_update',
-    title: 'Update Project',
-    description: 'Update project details. Requires jobmark:write scope.',
+    title: 'Update project',
+    description: 'Update project details. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -321,7 +338,11 @@ export const projectsUpdateTool = {
         },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -339,8 +360,8 @@ export const projectsUpdateTool = {
 export const projectsSetArchivedTool = {
   definition: {
     name: 'projects_set_archived',
-    title: 'Archive/Restore Project',
-    description: 'Archive or restore a project. Requires jobmark:write scope.',
+    title: 'Archive or restore a project',
+    description: 'Archive or restore a project. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -358,7 +379,11 @@ export const projectsSetArchivedTool = {
         archived: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -370,7 +395,9 @@ export const projectsSetArchivedTool = {
     const project = await setProjectArchived(actor, result.data.projectId, result.data.archived);
     return createStructuredResult(
       { id: project.id, name: project.name, archived: project.archived },
-      result.data.archived ? `Archived project: ${project.name}` : `Restored project: ${project.name}`
+      result.data.archived
+        ? `Archived project: ${project.name}`
+        : `Restored project: ${project.name}`
     );
   },
 };
@@ -378,8 +405,9 @@ export const projectsSetArchivedTool = {
 export const projectsDeleteTool = {
   definition: {
     name: 'projects_delete',
-    title: 'Delete Project',
-    description: 'Permanently delete a project and all its activities. Requires jobmark:destructive scope.',
+    title: 'Delete project',
+    description:
+      'Permanently delete a project and all its notes. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -394,7 +422,11 @@ export const projectsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

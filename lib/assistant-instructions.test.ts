@@ -14,8 +14,8 @@ describe('assistant handoff instructions', () => {
       context: 'worked on Linktree together',
     });
 
-    expect(instructions).toContain('Help me prepare an outreach message to Jeevan Shah.');
-    expect(instructions).toContain('Context I provided: worked on Linktree together.');
+    expect(instructions).toContain('Help me prepare a message to Jeevan Shah.');
+    expect(instructions).toContain('Extra details: worked on Linktree together.');
     expect(instructions).not.toMatch(/MCP|contacts_get|contactId|cmr[a-z0-9]+/i);
   });
 
@@ -27,12 +27,12 @@ describe('assistant handoff instructions', () => {
       focus: 'Highlight measurable impact',
     });
 
-    expect(instructions).toContain('Help me prepare a review draft using my Jobmark record.');
+    expect(instructions).toContain('Help me prepare a review draft from my Jobmark notes.');
     expect(instructions).toContain('Highlight measurable impact');
     expect(instructions).not.toMatch(/MCP|tools|contactId/i);
   });
 
-  it('keeps polishing handoffs review-only', () => {
+  it('keeps editing handoffs review-only', () => {
     const instructions = buildOutreachAssistantInstructions({
       recipient: 'Jeevan Shah',
       purpose: 'referral',
@@ -41,8 +41,8 @@ describe('assistant handoff instructions', () => {
       draft: 'Subject: A quick referral question\n\nHi Jeevan,',
     });
 
-    expect(instructions).toContain('Please polish it without adding facts.');
-    expect(instructions).toContain('Return an editable draft for me to review. Do not send anything.');
+    expect(instructions).toContain('Edit it without adding facts.');
+    expect(instructions).toContain('Return a draft I can review. Do not send it.');
     expect(instructions).not.toMatch(/MCP|contacts_get|contactId|cmr[a-z0-9]+/i);
   });
 });

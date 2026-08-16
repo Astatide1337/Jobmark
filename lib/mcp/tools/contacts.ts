@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import {
   listContacts,
@@ -15,10 +14,7 @@ import {
   getNetworkStats,
 } from '@/lib/jobmark/interactions';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-  McpNotFoundError,
-} from '../errors';
+import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
@@ -55,8 +51,8 @@ const contactDeleteSchema = z.object({ contactId: z.string() });
 export const contactsListTool = {
   definition: {
     name: 'contacts_list',
-    title: 'List Contacts',
-    description: 'List professional contacts with pagination. Requires jobmark:read scope.',
+    title: 'List contacts',
+    description: 'List contacts with pagination. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -105,8 +101,8 @@ export const contactsListTool = {
 export const contactsGetTool = {
   definition: {
     name: 'contacts_get',
-    title: 'Get Contact',
-    description: 'Get detailed contact information. Requires jobmark:read scope.',
+    title: 'Get contact',
+    description: "Get a contact's details. Requires the jobmark:read permission.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -141,7 +137,7 @@ export const contactsGetTool = {
 
     const contact = await getContact(actor, result.data.contactId);
     if (!contact) {
-      throw new McpNotFoundError('Contact not found');
+      throw new McpNotFoundError('Contact');
     }
     return createStructuredResult(contact, `Contact: ${contact.fullName}`);
   },
@@ -150,8 +146,8 @@ export const contactsGetTool = {
 export const contactsCreateTool = {
   definition: {
     name: 'contacts_create',
-    title: 'Create Contact',
-    description: 'Create a new professional contact. Requires jobmark:write scope.',
+    title: 'Create contact',
+    description: 'Create a new contact. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -175,7 +171,12 @@ export const contactsCreateTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -192,8 +193,8 @@ export const contactsCreateTool = {
 export const contactsUpdateTool = {
   definition: {
     name: 'contacts_update',
-    title: 'Update Contact',
-    description: 'Update contact details. Requires jobmark:write scope.',
+    title: 'Update contact',
+    description: 'Update contact details. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -217,7 +218,11 @@ export const contactsUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -235,8 +240,9 @@ export const contactsUpdateTool = {
 export const contactsDeleteTool = {
   definition: {
     name: 'contacts_delete',
-    title: 'Delete Contact',
-    description: 'Delete a contact and all associated interactions. Requires jobmark:destructive scope.',
+    title: 'Delete contact',
+    description:
+      'Delete a contact and its conversations. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -251,7 +257,11 @@ export const contactsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

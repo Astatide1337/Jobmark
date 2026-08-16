@@ -18,10 +18,9 @@ import { ChevronDown } from 'lucide-react';
 const values = [
   {
     id: 'private',
-    title: 'Capture the detail',
-    subtitle: 'Memory is not a filing system',
-    description:
-      'A small note today saves you from trying to reconstruct a whole quarter later. Jobmark keeps the useful details close.',
+    title: 'Write down the details',
+    subtitle: 'Memory is easy to lose',
+    description: 'A short note today helps you remember the details at review time.',
     // Custom SVG for lock - warm amber
     icon: (
       <svg
@@ -41,10 +40,9 @@ const values = [
   },
   {
     id: 'no-pressure',
-    title: 'Keep the record yours',
-    subtitle: 'Portable by design',
-    description:
-      'Your work should not be locked inside a product. Export it, reuse it, and keep control of it over time.',
+    title: 'Keep your notes',
+    subtitle: 'Download any time',
+    description: 'Download your notes and use them somewhere else.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -63,10 +61,9 @@ const values = [
   },
   {
     id: 'ai-ready',
-    title: 'Use AI on your terms',
-    subtitle: 'You stay in charge',
-    description:
-      'Jobmark keeps the source record and the facts. Connect an assistant when you want help shaping the words, not inventing the work.',
+    title: 'Use an assistant when you want',
+    subtitle: 'You stay in control',
+    description: 'Jobmark keeps your notes. Connect an assistant if you want help editing a draft.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -85,10 +82,10 @@ const values = [
   },
   {
     id: 'real-people',
-    title: 'Build it over time',
-    subtitle: 'Small notes add up',
+    title: 'Add notes over time',
+    subtitle: 'Small notes help later',
     description:
-      'You do not need a perfect system. A few honest notes each week are enough to make the next review, update, or decision clearer.',
+      'You do not need a perfect routine. A few notes each week can help with reviews and updates.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -127,7 +124,7 @@ export function ProductValues() {
           >
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
-              How Jobmark works
+              How it works
             </span>
             <div className="bg-primary/50 h-px w-12" />
           </motion.div>
@@ -139,7 +136,7 @@ export function ProductValues() {
             transition={{ delay: 0.1 }}
             className="mb-4 font-serif text-4xl font-bold md:text-5xl"
           >
-            A calmer way to keep track.
+            A simple way to keep notes.
           </motion.h2>
 
           <motion.p
@@ -149,7 +146,7 @@ export function ProductValues() {
             transition={{ delay: 0.2 }}
             className="text-muted-foreground mx-auto max-w-2xl text-lg"
           >
-            Useful on a busy Tuesday. Still useful months later.
+            Easy to use now. Easy to find later.
           </motion.p>
         </div>
 

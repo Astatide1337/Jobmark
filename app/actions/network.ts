@@ -62,16 +62,13 @@ export type InteractionFormState = {
 // ---------------------------------------------------------------------------
 
 const contactSchema = z.object({
-  fullName: z
-    .string()
-    .min(1, 'Full name is required')
-    .max(150, 'Full name must be 150 characters or fewer'),
+  fullName: z.string().min(1, 'Enter a name.').max(150, 'Keep the name under 150 characters.'),
   phone: z.string().optional().nullable(),
-  email: z.string().email('Invalid email address').optional().nullable().or(z.literal('')),
+  email: z.string().email('Enter a valid email address.').optional().nullable().or(z.literal('')),
   birthday: z
     .date()
     .refine(d => d <= new Date(), {
-      message: 'Birthday cannot be in the future',
+      message: 'The birthday cannot be later than today.',
     })
     .optional()
     .nullable(),
@@ -81,13 +78,13 @@ const contactSchema = z.object({
 });
 
 const interactionSchema = z.object({
-  contactId: z.string().min(1, 'Contact is required'),
+  contactId: z.string().min(1, 'Choose a contact.'),
   occurredAt: z.date().optional(),
   channel: z.string().optional().default('other'),
   summary: z
     .string()
-    .min(1, 'Summary is required')
-    .max(5000, 'Summary must be 5 000 characters or fewer'),
+    .min(1, 'Add a short summary.')
+    .max(5000, 'Keep the summary under 5,000 characters.'),
   nextStep: z.string().optional().nullable(),
   followUpDate: z.date().optional().nullable(),
   rawNotes: z.string().optional().nullable(),
@@ -104,7 +101,7 @@ export async function createContact(
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'You must be signed in to add contacts' };
+    return { success: false, message: 'Sign in to add a contact.' };
   }
 
   const birthdayVal = formData.get('birthday') as string;
@@ -124,7 +121,7 @@ export async function createContact(
   if (!result.success) {
     return {
       success: false,
-      message: 'Validation failed',
+      message: 'Check the contact and try again.',
       errors: result.error.flatten().fieldErrors,
     };
   }
@@ -144,10 +141,10 @@ export async function createContact(
     });
 
     revalidatePath('/network');
-    return { success: true, message: 'Contact added successfully' };
+    return { success: true, message: 'Contact added.' };
   } catch (error) {
     console.error('Failed to create contact:', error);
-    return { success: false, message: 'Failed to save contact. Please try again.' };
+    return { success: false, message: 'The contact was not saved. Try again.' };
   }
 }
 
@@ -164,7 +161,7 @@ export async function updateContact(
   }
 ) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id) return { success: false, message: 'Sign in to edit this contact.' };
 
   try {
     const existing = await prisma.contact.findUnique({
@@ -172,7 +169,7 @@ export async function updateContact(
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: 'Contact not found' };
+      return { success: false, message: 'That contact is no longer available.' };
     }
 
     await prisma.contact.update({
@@ -184,16 +181,16 @@ export async function updateContact(
     });
 
     revalidatePath('/network');
-    return { success: true, message: 'Contact updated' };
+    return { success: true, message: 'Contact updated.' };
   } catch (error) {
     console.error('Failed to update contact:', error);
-    return { success: false, message: 'Failed to update contact' };
+    return { success: false, message: 'The contact was not updated. Try again.' };
   }
 }
 
 export async function deleteContact(contactId: string) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id) return { success: false, message: 'Sign in to delete this contact.' };
 
   try {
     await prisma.contact.delete({
@@ -204,10 +201,10 @@ export async function deleteContact(contactId: string) {
     });
 
     revalidatePath('/network');
-    return { success: true, message: 'Contact deleted' };
+    return { success: true, message: 'Contact deleted.' };
   } catch (error) {
     console.error('Failed to delete contact:', error);
-    return { success: false, message: 'Failed to delete contact' };
+    return { success: false, message: 'The contact was not deleted. Try again.' };
   }
 }
 
@@ -267,7 +264,7 @@ export async function createInteraction(
   const session = await auth();
 
   if (!session?.user?.id) {
-    return { success: false, message: 'You must be signed in to log interactions' };
+    return { success: false, message: 'Sign in to save a conversation.' };
   }
 
   const occurredAtVal = formData.get('occurredAt') as string;
@@ -288,7 +285,7 @@ export async function createInteraction(
   if (!result.success) {
     return {
       success: false,
-      message: 'Validation failed',
+      message: 'Check the conversation and try again.',
       errors: result.error.flatten().fieldErrors,
     };
   }
@@ -300,7 +297,7 @@ export async function createInteraction(
     });
 
     if (!contact) {
-      return { success: false, message: 'Contact not found' };
+      return { success: false, message: 'That contact is no longer available.' };
     }
 
     await prisma.interactionLog.create({
@@ -317,10 +314,10 @@ export async function createInteraction(
     });
 
     revalidatePath('/network');
-    return { success: true, message: 'Interaction logged successfully' };
+    return { success: true, message: 'Conversation saved.' };
   } catch (error) {
     console.error('Failed to create interaction:', error);
-    return { success: false, message: 'Failed to save interaction. Please try again.' };
+    return { success: false, message: 'The conversation was not saved. Try again.' };
   }
 }
 
@@ -336,7 +333,7 @@ export async function updateInteraction(
   }
 ) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id) return { success: false, message: 'Sign in to edit this conversation.' };
 
   try {
     const existing = await prisma.interactionLog.findUnique({
@@ -344,7 +341,7 @@ export async function updateInteraction(
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: 'Interaction not found' };
+      return { success: false, message: 'That conversation is no longer available.' };
     }
 
     await prisma.interactionLog.update({
@@ -357,16 +354,17 @@ export async function updateInteraction(
     });
 
     revalidatePath('/network');
-    return { success: true, message: 'Interaction updated' };
+    return { success: true, message: 'Conversation updated.' };
   } catch (error) {
     console.error('Failed to update interaction:', error);
-    return { success: false, message: 'Failed to update interaction' };
+    return { success: false, message: 'The conversation was not updated. Try again.' };
   }
 }
 
 export async function deleteInteraction(interactionId: string) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Unauthorized' };
+  if (!session?.user?.id)
+    return { success: false, message: 'Sign in to delete this conversation.' };
 
   try {
     await prisma.interactionLog.delete({
@@ -377,10 +375,10 @@ export async function deleteInteraction(interactionId: string) {
     });
 
     revalidatePath('/network');
-    return { success: true, message: 'Interaction deleted' };
+    return { success: true, message: 'Conversation deleted.' };
   } catch (error) {
     console.error('Failed to delete interaction:', error);
-    return { success: false, message: 'Failed to delete interaction' };
+    return { success: false, message: 'The conversation was not deleted. Try again.' };
   }
 }
 

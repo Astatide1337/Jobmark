@@ -12,7 +12,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Jobmark – Your Career, On Record';
+export const alt = 'Jobmark: Keep your work notes';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -105,7 +105,7 @@ export default function OGImage() {
             textTransform: 'uppercase',
           }}
         >
-          Career record
+          Work notes
         </div>
         <div
           style={{
@@ -117,7 +117,7 @@ export default function OGImage() {
             letterSpacing: '-1px',
           }}
         >
-          {'Your Career,\nOn Record'}
+          {'Keep your work\nnotes'}
         </div>
         <div
           style={{
@@ -127,7 +127,7 @@ export default function OGImage() {
             lineHeight: 1.5,
           }}
         >
-          {'Document work. Build evidence.\nTurn it into reviews that land.'}
+          {'Write it down while it is fresh.\nFind it when you need it.'}
         </div>
       </div>
     </div>,

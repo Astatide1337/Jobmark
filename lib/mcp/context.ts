@@ -99,7 +99,7 @@ export function createMcpActor(connection: McpConnection, requestId: string): Mc
 
 export function requireScope(actor: McpActor, requiredScope: string): void {
   if (!actor.scopes.includes(requiredScope)) {
-    throw new McpForbiddenError(`Required scope: ${requiredScope}`);
+    throw new McpForbiddenError(`This connection needs the ${requiredScope} permission.`);
   }
 }
 
@@ -117,6 +117,6 @@ export function requireReadScope(actor: McpActor): void {
       s => s === 'jobmark:read' || s === 'jobmark:write' || s === 'jobmark:destructive'
     )
   ) {
-    throw new McpForbiddenError('Required scope: jobmark:read');
+    throw new McpForbiddenError('This connection needs the jobmark:read permission.');
   }
 }

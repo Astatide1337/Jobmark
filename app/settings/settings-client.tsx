@@ -82,42 +82,30 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
         </TabsList>
 
         <TabsContent value="goals">
-          <SettingsIntro
-            title="Record"
-            description="Set the targets and defaults that shape how you capture work and turn it into usable summaries."
-          />
+          <SettingsIntro title="Goals" description="Set your note goals." />
           <GoalsSection settings={settings} goals={goals} />
         </TabsContent>
 
         <TabsContent value="focus">
-          <SettingsIntro
-            title="Reflection"
-            description="Configure the end-of-day flow that helps you step back, reset, and stay intentional."
-          />
+          <SettingsIntro title="Focus" description="Set up your focus session." />
           <FocusSection initialBlocks={focusConfig} goals={goals} />
         </TabsContent>
 
         <TabsContent value="reports">
           <SettingsIntro
-            title="Review Defaults"
-            description="Choose the instructions and writing defaults Jobmark should use when shaping your record into drafts."
+            title="Review defaults"
+            description="Choose what to include in review drafts."
           />
           <ReportsSection settings={settings} />
         </TabsContent>
 
         <TabsContent value="appearance">
-          <SettingsIntro
-            title="Appearance"
-            description="Adjust theme and interface preferences without changing how the product works."
-          />
+          <SettingsIntro title="Appearance" description="Choose how Jobmark looks." />
           <AppearanceSection settings={settings} />
         </TabsContent>
 
         <TabsContent value="data">
-          <SettingsIntro
-            title="Data"
-            description="Export your record, manage retention, and handle irreversible account actions separately from everyday settings."
-          />
+          <SettingsIntro title="Data" description="Export your data or delete it." />
           <DataSection />
         </TabsContent>
       </Tabs>
@@ -179,9 +167,9 @@ function GoalsSection({
       setNewGoalTitle('');
       setNewGoalDeadline('');
       setNewGoalWhy('');
-      toast.success('Goal created successfully');
+      toast.success('Goal created.');
     } else {
-      toast.error('Failed to create goal');
+      toast.error('Could not create the goal. Try again.');
     }
     setIsCreating(false);
   };
@@ -190,9 +178,9 @@ function GoalsSection({
     const result = await deleteGoal(id);
     if (result.success) {
       setGoals(goals.filter(g => g.id !== id));
-      toast.success('Goal deleted');
+      toast.success('Goal deleted.');
     } else {
-      toast.error('Failed to delete goal');
+      toast.error('Could not delete the goal. Try again.');
     }
   };
 
@@ -226,13 +214,13 @@ function GoalsSection({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Activity Targets</CardTitle>
-          <CardDescription>Set your activity volume goals.</CardDescription>
+          <CardTitle className="text-lg">Note targets</CardTitle>
+          <CardDescription>Set how often you want to add notes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="daily-target">Daily Target</Label>
+              <Label htmlFor="daily-target">Daily target</Label>
               <Input
                 id="daily-target"
                 type="number"
@@ -241,7 +229,7 @@ function GoalsSection({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weekly-target">Weekly Target</Label>
+              <Label htmlFor="weekly-target">Weekly target</Label>
               <Input
                 id="weekly-target"
                 type="number"
@@ -250,7 +238,7 @@ function GoalsSection({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="monthly-target">Monthly Target</Label>
+              <Label htmlFor="monthly-target">Monthly target</Label>
               <Input
                 id="monthly-target"
                 type="number"
@@ -273,7 +261,7 @@ function GoalsSection({
                   Saved
                 </>
               )}
-              {!isSavingTargets && !targetsSaved && 'Update Targets'}
+              {!isSavingTargets && !targetsSaved && 'Save targets'}
             </Button>
           </div>
         </CardContent>
@@ -281,19 +269,22 @@ function GoalsSection({
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">Your Goals</h2>
-          <span className="text-muted-foreground text-sm">{goals.length} goals set</span>
+          <h2 className="text-lg font-medium">Your goals</h2>
+          <span className="text-muted-foreground text-sm">
+            {goals.length} {goals.length === 1 ? 'goal' : 'goals'}
+          </span>
         </div>
 
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
-            <CardTitle className="text-base">Add New Goal</CardTitle>
+            <CardTitle className="text-base">Add a goal</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Decide exactly what you want</Label>
+              <Label htmlFor="new-goal-title">What do you want to do?</Label>
               <Input
-                placeholder="e.g. Become a Senior Engineer by Q4"
+                id="new-goal-title"
+                placeholder="e.g. Lead a project by October"
                 value={newGoalTitle}
                 onChange={e => setNewGoalTitle(e.target.value)}
               />
@@ -316,7 +307,7 @@ function GoalsSection({
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {newGoalDeadline
                           ? format(calendarDateToLocalDate(newGoalDeadline), 'PPP')
-                          : 'Pick a deadline'}
+                          : 'Choose a deadline'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -349,9 +340,10 @@ function GoalsSection({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Why is it important?</Label>
+              <Label htmlFor="new-goal-why">Why is this important?</Label>
               <Textarea
-                placeholder="Write your 'Why'..."
+                id="new-goal-why"
+                placeholder="Why does this matter?"
                 className="resize-none"
                 value={newGoalWhy}
                 onChange={e => setNewGoalWhy(e.target.value)}
@@ -363,7 +355,7 @@ function GoalsSection({
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              Add Goal
+              Add goal
             </Button>
           </CardContent>
         </Card>
@@ -400,7 +392,7 @@ function GoalsSection({
           ))}
           {goals.length === 0 && (
             <div className="text-muted-foreground py-8 text-center">
-              No goals set yet. Add one above!
+              No goals yet. Add one above.
             </div>
           )}
         </div>
@@ -444,12 +436,16 @@ function ReportsSection({ settings: initialSettings }: { settings: UserSettingsD
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Custom Instructions</CardTitle>
-          <CardDescription>Additional focus for your review draft.</CardDescription>
+          <CardTitle className="text-lg">Review draft notes</CardTitle>
+          <CardDescription>Extra notes to use when making review drafts.</CardDescription>
         </CardHeader>
         <CardContent>
+          <Label htmlFor="review-draft-notes" className="sr-only">
+            Extra notes for review drafts
+          </Label>
           <Textarea
-            placeholder='e.g., "Always mention my focus on accessibility and user experience."'
+            id="review-draft-notes"
+            placeholder='e.g., "Mention accessibility and ease of use."'
             value={customInstructions}
             onChange={e => setCustomInstructions(e.target.value)}
             rows={3}
@@ -471,7 +467,7 @@ function ReportsSection({ settings: initialSettings }: { settings: UserSettingsD
               Saved
             </>
           )}
-          {!isSaving && !saved && 'Save Report Settings'}
+          {!isSaving && !saved && 'Save review settings'}
         </Button>
       </div>
     </div>
@@ -528,9 +524,9 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Palette className="text-primary h-5 w-5" />
-            Color Theme
+            Colors
           </CardTitle>
-          <CardDescription>Choose a color scheme that matches your vibe.</CardDescription>
+          <CardDescription>Choose a color scheme.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -578,15 +574,15 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="hideArchived">Hide archived project activities</Label>
+              <Label htmlFor="hideArchived">Hide notes from archived projects</Label>
               <p className="text-muted-foreground text-xs">
-                Don&apos;t show activities from archived projects in Recent Activity
+                Don&apos;t show notes from archived projects in Recent notes
               </p>
             </div>
             <Switch id="hideArchived" checked={hideArchived} onCheckedChange={setHideArchived} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="timeZone">Calendar timezone</Label>
+            <Label htmlFor="timeZone">Calendar time zone</Label>
             <select
               id="timeZone"
               value={timeZone}
@@ -603,7 +599,9 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="showConfetti">Show confetti</Label>
-              <p className="text-muted-foreground text-xs">Celebrate when logging activities</p>
+              <p className="text-muted-foreground text-xs">
+                Show a celebration when you save a note
+              </p>
             </div>
             <Switch id="showConfetti" checked={showConfetti} onCheckedChange={setShowConfetti} />
           </div>
@@ -624,7 +622,7 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
               Saved
             </>
           )}
-          {!isSaving && !saved && 'Save Appearance'}
+          {!isSaving && !saved && 'Save appearance'}
         </Button>
       </div>
     </div>
@@ -664,9 +662,9 @@ function DataSection() {
   };
 
   const handleClearActivities = async () => {
-    if (clearConfirmation !== 'CLEAR ALL ACTIVITIES') return;
+    if (clearConfirmation !== 'CLEAR ALL NOTES') return;
     setIsClearing(true);
-    await clearAllActivities(clearConfirmation);
+    await clearAllActivities('CLEAR ALL NOTES');
     setIsClearing(false);
     setClearConfirmation('');
   };
@@ -687,7 +685,7 @@ function DataSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Download className="text-primary h-5 w-5" />
-            Export Data
+            Export data
           </CardTitle>
           <CardDescription>Download all your data in JSON format.</CardDescription>
         </CardHeader>
@@ -701,7 +699,7 @@ function DataSection() {
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Export All Data
+                Export your data
               </>
             )}
           </Button>
@@ -710,16 +708,14 @@ function DataSection() {
 
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive text-lg">Danger Zone</CardTitle>
-          <CardDescription>Irreversible actions. Please proceed with caution.</CardDescription>
+          <CardTitle className="text-destructive text-lg">Delete data</CardTitle>
+          <CardDescription>These actions cannot be undone.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="border-destructive/20 flex items-center justify-between rounded-lg border p-4">
             <div>
-              <p className="font-medium">Clear All Activities</p>
-              <p className="text-muted-foreground text-sm">
-                Permanently delete all your logged activities.
-              </p>
+              <p className="font-medium">Clear all notes</p>
+              <p className="text-muted-foreground text-sm">Delete all your notes.</p>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -730,16 +726,17 @@ function DataSection() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Clear All Activities?</AlertDialogTitle>
+                  <AlertDialogTitle>Clear all notes?</AlertDialogTitle>
                   <AlertDialogDescription>
                     <>
                       <p>
-                        This will permanently delete all your logged activities. Your projects and
-                        reports will remain. This action cannot be undone.
+                        This will permanently delete all your notes. Your projects and drafts will
+                        remain. This action cannot be undone.
                       </p>
-                      <p className="mt-3 font-medium">Type CLEAR ALL ACTIVITIES to confirm:</p>
+                      <p className="mt-3 font-medium">Type CLEAR ALL NOTES to confirm:</p>
                       <Input
-                        placeholder="CLEAR ALL ACTIVITIES"
+                        aria-label="Confirmation for clearing all notes"
+                        placeholder="CLEAR ALL NOTES"
                         value={clearConfirmation}
                         onChange={e => setClearConfirmation(e.target.value)}
                       />
@@ -750,10 +747,10 @@ function DataSection() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleClearActivities}
-                    disabled={isClearing || clearConfirmation !== 'CLEAR ALL ACTIVITIES'}
+                    disabled={isClearing || clearConfirmation !== 'CLEAR ALL NOTES'}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    {isClearing ? 'Clearing...' : 'Yes, Clear All'}
+                    {isClearing ? 'Clearing...' : 'Clear all'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -762,7 +759,7 @@ function DataSection() {
 
           <div className="border-destructive/20 flex items-center justify-between rounded-lg border p-4">
             <div>
-              <p className="font-medium">Delete Account</p>
+              <p className="font-medium">Delete account</p>
               <p className="text-muted-foreground text-sm">
                 Permanently delete your account and all data.
               </p>
@@ -776,16 +773,17 @@ function DataSection() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Account?</AlertDialogTitle>
+                  <AlertDialogTitle>Delete account?</AlertDialogTitle>
                   <AlertDialogDescription className="space-y-4">
                     <p>
-                      This will permanently delete your account and all associated data including
-                      projects, activities, reports, and settings.
+                      This will permanently delete your account and all associated data, including
+                      projects, notes, drafts, and settings.
                     </p>
                     <p className="font-medium">
                       Type <span className="text-destructive">DELETE</span> to confirm:
                     </p>
                     <Input
+                      aria-label="Confirmation for deleting your account"
                       placeholder="DELETE"
                       value={deleteConfirmation}
                       onChange={e => setDeleteConfirmation(e.target.value)}
@@ -801,7 +799,7 @@ function DataSection() {
                     disabled={deleteConfirmation !== 'DELETE' || isDeleting}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    {isDeleting ? 'Deleting...' : 'Delete Account'}
+                    {isDeleting ? 'Deleting...' : 'Delete account'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
