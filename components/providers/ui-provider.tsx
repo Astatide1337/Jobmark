@@ -6,8 +6,8 @@
  * smooth scrolling).
  *
  * Performance:
- * - Mounted Guard: Ensures smooth scrolling only initializes on the
- *   client to prevent hydration mismatches.
+ * - Stable Provider: Keeps the Lenis shell mounted so enabling smooth
+ *   scrolling cannot remount the page and replay in-view animations.
  * - Conditional Lenis: Intelligently disables smooth scrolling for
  *   advanced dashboard routes where native scroll performance is preferred.
  */
@@ -34,31 +34,28 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { uiV2 } = useUI();
-  const [mounted, setMounted] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 1000);
-    return () => window.clearTimeout(timer);
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener('change', updatePreference);
+
+    return () => mediaQuery.removeEventListener('change', updatePreference);
   }, []);
 
-  // Determine if smooth scroll should be enabled
-  // 1. Must be mounted (client-side)
-  // 2. Must NOT prefer reduced motion
-  // 3. Either uiV2 is off, or we are on the landing page
+  // Keep the provider mounted while toggling Lenis itself. Conditionally
+  // wrapping children here would remount the landing page and replay every
+  // scroll-triggered animation.
   const isEnabled = useMemo(() => {
-    if (!mounted) return false;
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) return false;
 
     if (uiV2 && pathname !== '/') return false;
 
     return true;
-  }, [mounted, uiV2, pathname]);
-
-  if (!isEnabled) {
-    return <>{children}</>;
-  }
+  }, [pathname, prefersReducedMotion, uiV2]);
 
   return (
     <ReactLenis
@@ -66,7 +63,8 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       options={{
         duration: 1.2,
         easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smoothWheel: true,
+        autoRaf: isEnabled,
+        smoothWheel: isEnabled,
       }}
     >
       {children}
