@@ -34,7 +34,7 @@ function titleForPath(path: string): string | undefined {
     '/insights': 'Insights',
     '/focus': 'Focus',
     '/network': 'Network',
-    '/settings/connections': 'Assistant connections',
+    '/settings/connections': 'Connect AI',
     '/articles': 'Guides',
     '/settings': 'Settings',
   };

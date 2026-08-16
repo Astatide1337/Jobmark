@@ -34,7 +34,8 @@ export function ProblemStatement() {
             A fix in Slack, a decision in a meeting, or a launch that took a month can be hard to
             remember by review time.
           </span>
-          <span className="text-primary"> Write it down once. Find it when you need it.</span>
+          <br />
+          <span className="text-primary">Write it down once. Find it when you need it.</span>
         </p>
 
         <motion.div

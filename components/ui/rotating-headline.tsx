@@ -11,8 +11,14 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Why: useSyncExternalStore gives the server and hydration pass the same
+// visible first frame, then allows later headline changes to animate.
+const subscribeToHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 interface HeadlinePart {
   text: string;
@@ -31,8 +37,15 @@ export function RotatingHeadline({
   className = '',
 }: RotatingHeadlineProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot
+  );
 
   useEffect(() => {
+    if (headlines.length < 2) return;
+
     const timer = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % headlines.length);
     }, interval);
@@ -46,12 +59,12 @@ export function RotatingHeadline({
     <div
       className={`relative h-[13rem] w-full overflow-visible sm:h-[12rem] lg:h-[13rem] ${className}`}
     >
-      <AnimatePresence initial={false} mode="wait">
+      <AnimatePresence initial={false} mode="sync">
         <motion.h1
           key={currentIndex}
-          // Animate later word flips, but let the first headline render
-          // immediately so the page does not flash on initial load.
-          initial={{ opacity: 0, y: 20 }}
+          // The first headline is visible on the server and during hydration.
+          // Later headlines cross-fade without leaving a blank frame.
+          initial={isHydrated ? { opacity: 0, y: 20 } : false}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -60,7 +73,7 @@ export function RotatingHeadline({
           <span className="text-foreground">{currentHeadline.text}</span>
           {currentHeadline.highlight && (
             <>
-              {' '}
+              <br />
               <span className="text-primary">{currentHeadline.highlight}</span>
             </>
           )}

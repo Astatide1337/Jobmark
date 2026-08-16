@@ -8,7 +8,7 @@ import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 export const metadata: Metadata = {
-  title: 'Assistant connections - Jobmark',
+  title: 'Connect AI - Jobmark',
   description: 'Connect Jobmark to Claude, ChatGPT, or Gemini.',
 };
 
@@ -41,7 +41,7 @@ export default async function ConnectionsPage() {
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="Assistant connections"
+          title="Connect AI"
         />
       }
     >

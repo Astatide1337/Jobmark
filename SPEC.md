@@ -10,7 +10,7 @@ jobmark-mcp-refactor-spec.md
 
 ## 1. Executive decision
 
-Jobmark no longer operates its own general-purpose AI chat product. The assistant connections page at `/settings/connections` helps a user connect Jobmark to ChatGPT, Claude, or another remote MCP client.
+Jobmark no longer operates its own general-purpose AI chat product. The Connect AI page at `/settings/connections` helps a user connect Jobmark to ChatGPT, Claude, or another remote MCP client.
 
 The external MCP client owns:
 
@@ -83,13 +83,13 @@ Jobmark currently mixes transport/UI concerns and domain behavior inside Server 
 | Dictation     | `app/actions/dictation.ts`    | Polish dictated text                                                                |
 | Settings      | `app/actions/settings.ts`     | Read and update user-facing settings                                                |
 | Vault         | `app/actions/project-lock.ts` | Status, setup/change/unlock/lock, list locked projects, move projects in/out        |
-| Account data  | `app/actions/settings.ts`     | Export, clear activities, and delete account in Settings → Data                       |
+| Account data  | `app/actions/settings.ts`     | Export, clear activities, and delete account in Settings → Data                     |
 
 ### 3.2 Retired chat subsystem
 
 The active runtime and UI under the following areas must be removed or replaced:
 
-- The former internal chat route tree is removed; assistant connections live at `/settings/connections`.
+- The former internal chat route tree is removed; Connect AI lives at `/settings/connections`.
 - Former chat UI components, actions, API endpoints, and support libraries are removed.
 - Chat-only tests and chat-only rate-limit call sites.
 
@@ -112,7 +112,7 @@ separate from the current `InteractionLog` records used for contact history.
 
 ### 4.1 Navigation
 
-Use `/settings/connections` as the assistant connection route and **Assistant connections** as its navigation label.
+Use `/settings/connections` as the assistant connection route and **Connect AI** as its navigation label.
 
 Do not use **MCP** as the only navigation label because many users will not know the protocol name. MCP can remain the technical CTA and explanatory term on the page.
 
@@ -705,7 +705,7 @@ A shared domain function must never call `revalidatePath`, read browser cookies 
 
 ### 11.2 Route behavior
 
-- There is no internal chat route or redirect. Assistant connections are served at `/settings/connections`.
+- There is no internal chat route or redirect. Connect AI is served at `/settings/connections`.
 - Former internal chat API paths return 404/410; no compatibility proxy is required.
 
 ### 11.3 Marketing and documentation

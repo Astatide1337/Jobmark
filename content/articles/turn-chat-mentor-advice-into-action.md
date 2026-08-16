@@ -16,7 +16,7 @@ difficulty: intermediate
 series: From advice to action
 ctaVariant: default
 bestFor: turning advice into action
-primaryAction: Open assistant connections
+primaryAction: Open Connect AI
 primaryHref: /settings/connections
 secondaryAction: Add recent note
 secondaryHref: /dashboard
