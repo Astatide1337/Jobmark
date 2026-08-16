@@ -60,7 +60,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-foreground mb-3 font-serif text-xl font-semibold">
-              Drafts and assistant suggestions
+              Drafts and AI-app suggestions
             </h2>
             <p>
               Jobmark makes drafts from the information you save and can give them to a connected
