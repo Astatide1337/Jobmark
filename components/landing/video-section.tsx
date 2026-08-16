@@ -56,7 +56,7 @@ export function VideoSection() {
           >
             <div className="from-primary/10 pointer-events-none absolute -inset-8 rounded-[2.5rem] bg-gradient-to-br via-transparent to-transparent blur-3xl" />
 
-            <div className="border-border/40 relative mx-auto aspect-[4/3] w-full max-w-[760px] overflow-hidden rounded-[1.75rem] border bg-[#efede7] shadow-2xl shadow-black/20">
+            <div className="border-border/40 relative mx-auto aspect-[9/14] w-full max-w-[560px] overflow-hidden rounded-[1.75rem] border bg-[#efede7] shadow-2xl shadow-black/20 lg:aspect-[3/4]">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 opacity-30"
