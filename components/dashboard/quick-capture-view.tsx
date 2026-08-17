@@ -79,16 +79,14 @@ export function QuickCaptureView({
           <CardTitle className="text-lg">Add a note</CardTitle>
           <span
             className={`rounded-xl px-2.5 py-1 text-xs font-medium ${
-              todayCount >= dailyGoal
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-primary/20 text-primary'
+              todayCount >= dailyGoal ? 'bg-success/20 text-success' : 'bg-primary/20 text-primary'
             }`}
           >
             {isListening ? (
               <span className="flex items-center gap-1">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                  <span className="bg-destructive absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
+                  <span className="bg-destructive relative inline-flex h-2 w-2 rounded-full"></span>
                 </span>
                 Recording...
               </span>
@@ -150,7 +148,7 @@ export function QuickCaptureView({
                   <button
                     type="button"
                     className={cn(
-                      'text-muted-foreground flex items-center gap-2 rounded-xl border px-3 py-2 transition-all',
+                      'text-muted-foreground flex items-center gap-2 rounded-xl border px-3 py-2 transition-[color,background-color,border-color,box-shadow]',
                       'bg-background/50 hover:bg-muted/40 hover:text-primary',
                       datePickerOpen
                         ? 'border-primary/50 ring-primary/20 text-foreground ring-2'

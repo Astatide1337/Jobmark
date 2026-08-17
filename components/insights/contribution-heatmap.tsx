@@ -1,15 +1,9 @@
 /**
- * Contribution Heatmap (GitHub Style)
+ * Accessible contribution calendar.
  *
- * Why: Provides a "proof of work" visual that encourages daily logging.
- * It transforms 365 days of activity into a familiar density grid.
- *
- * Performance Strategy:
- * - Calculation Offloading: The grid calculation (weeks/days/labels) has
- *   been moved to the **Server Action** (`insights.ts`). This component
- *   is now a "Dumb Component" that purely handles high-contrast rendering.
- * - Stable Grid: Uses fixed cell dimensions so a short date range cannot
- *   stretch a handful of notes into oversized blocks.
+ * Why: Month labels, weekday labels, and cells must share one coordinate
+ * system. A CSS grid keeps them aligned at every date range and makes each
+ * real day keyboard-focusable instead of relying on hover-only divs.
  */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,15 +13,14 @@ import type { HeatmapDay, MonthLabel } from '@/app/actions/insights';
 interface ContributionHeatmapProps {
   weeks: HeatmapDay[][];
   monthLabels: MonthLabel[];
+  today: string;
 }
 
-// Consistent card styling
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
 
-export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapProps) {
-  const todayStr = new Date().toISOString().split('T')[0];
+export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionHeatmapProps) {
+  const columns = `2.75rem repeat(${weeks.length}, minmax(1rem, 1.25rem))`;
 
-  // Color scale - HIGH CONTRAST
   const getColorClass = (count: number): string => {
     if (count === 0) return 'bg-foreground/[0.08]';
     if (count <= 2) return 'bg-primary/40';
@@ -38,59 +31,60 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
 
   return (
     <Card className={CARD_STYLES}>
-      <CardHeader className="px-6 pt-6 pb-4">
+      <CardHeader>
         <CardTitle className="text-base font-semibold">Note pattern</CardTitle>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      <CardContent>
         <TooltipProvider delayDuration={50}>
-          {/* The grid scrolls horizontally when needed instead of stretching cells. */}
-          <div className="w-full overflow-x-auto">
-            {/* Month labels row */}
-            <div className="mb-3 flex w-full justify-between pl-10">
-              {weeks.map((_, weekIndex) => {
-                const label = monthLabels.find(l => l.weekIndex === weekIndex);
-                return (
-                  <div
-                    key={weekIndex}
-                    className="text-foreground/70 w-4 shrink-0 text-sm font-medium sm:w-5"
+          <div className="w-full overflow-x-auto pb-1">
+            <div className="min-w-max">
+              <div className="mb-3 grid items-end gap-1.5" style={{ gridTemplateColumns: columns }}>
+                <span aria-hidden="true" />
+                {weeks.map((_, weekIndex) => (
+                  <span
+                    key={`month-${weekIndex}`}
+                    className="text-foreground/70 h-5 text-center text-xs font-medium"
                   >
-                    {label?.month || ''}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Grid - full width */}
-            <div className="flex gap-1">
-              {/* Day labels */}
-              <div className="text-foreground/60 flex w-10 shrink-0 flex-col justify-between pr-2 text-sm font-medium">
-                <span>Mon</span>
-                <span></span>
-                <span>Wed</span>
-                <span></span>
-                <span className="pb-10">Fri</span>
-                <span></span>
+                    {monthLabels.find(label => label.weekIndex === weekIndex)?.month ?? ''}
+                  </span>
+                ))}
               </div>
 
-              {/* Heatmap cells keep a readable size across every date range. */}
-              <div className="flex min-w-0 flex-1 justify-between gap-1.5">
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: columns }}>
+                <div className="text-foreground/60 grid grid-rows-7 gap-1.5 pr-2 text-xs font-medium">
+                  <span aria-hidden="true" />
+                  <span>Mon</span>
+                  <span aria-hidden="true" />
+                  <span>Wed</span>
+                  <span aria-hidden="true" />
+                  <span>Fri</span>
+                  <span aria-hidden="true" />
+                </div>
+
                 {weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex w-4 shrink-0 flex-col gap-1.5 sm:w-5">
-                    {week.map((day, dayIndex) => (
-                      <Tooltip key={day.date || `empty-${weekIndex}-${dayIndex}`}>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn(
-                              'h-4 w-4 rounded transition-colors sm:h-5 sm:w-5',
-                              day.count === -1 ? 'bg-transparent' : getColorClass(day.count),
-                              day.date === todayStr &&
-                                'ring-primary ring-offset-background ring-2 ring-offset-1',
-                              day.count >= 0 &&
-                                'hover:ring-foreground/30 cursor-pointer hover:scale-110 hover:ring-1'
-                            )}
-                          />
-                        </TooltipTrigger>
-                        {day.count >= 0 && (
+                  <div key={`week-${weekIndex}`} className="grid grid-rows-7 gap-1.5">
+                    {week.map((day, dayIndex) => {
+                      if (day.count < 0 || !day.date) {
+                        return <span key={`empty-${weekIndex}-${dayIndex}`} aria-hidden="true" />;
+                      }
+
+                      const label = `${formatDate(day.date)}: ${day.count} ${day.count === 1 ? 'note' : 'notes'}`;
+                      return (
+                        <Tooltip key={day.date}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={label}
+                              title={label}
+                              className={cn(
+                                'focus-visible:ring-ring/70 h-4 w-4 rounded-sm transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1 sm:h-5 sm:w-5',
+                                getColorClass(day.count),
+                                day.date === today &&
+                                  'ring-primary ring-offset-background ring-2 ring-offset-1',
+                                'hover:ring-foreground/30 hover:ring-1'
+                              )}
+                            />
+                          </TooltipTrigger>
                           <TooltipContent side="top">
                             <p className="font-semibold">
                               {day.count === 0
@@ -99,23 +93,22 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
                             </p>
                             <p className="text-muted-foreground text-xs">{formatDate(day.date)}</p>
                           </TooltipContent>
-                        )}
-                      </Tooltip>
-                    ))}
+                        </Tooltip>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Legend - HIGH CONTRAST */}
-          <div className="text-foreground/70 mt-5 flex items-center justify-end gap-2 text-sm font-medium">
+          <div className="text-foreground/70 mt-5 flex items-center justify-end gap-2 text-xs font-medium">
             <span>Less</span>
-            <div className="bg-foreground/[0.08] h-4 w-4 rounded" />
-            <div className="bg-primary/40 h-4 w-4 rounded" />
-            <div className="bg-primary/60 h-4 w-4 rounded" />
-            <div className="bg-primary/80 h-4 w-4 rounded" />
-            <div className="bg-primary h-4 w-4 rounded" />
+            <span aria-hidden="true" className="bg-foreground/[0.08] h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary/40 h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary/60 h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary/80 h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary h-4 w-4 rounded-sm" />
             <span>More</span>
           </div>
         </TooltipProvider>
@@ -125,11 +118,10 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
 }
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('en-US', {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  });
+  }).format(new Date(`${dateStr}T12:00:00Z`));
 }

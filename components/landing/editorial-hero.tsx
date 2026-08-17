@@ -1,107 +1,86 @@
 /**
- * Editorial Hero Section
+ * Editorial landing hero.
  *
- * Why: This is the high-impact visual "hook" of the landing page. It
- * uses advanced Motion physics to communicate a premium, technical brand.
- *
- * Motion Architecture:
- * - Parallax: Headlines and the dashboard move at different speeds during
- *   scroll to create depth.
- * - Interaction: The dashboard remains a normal 2D hit-test surface so its
- *   embedded controls work reliably with a mouse, keyboard, or touch input.
+ * Why: The first screen should be visible and predictable on first paint.
+ * The only changing element is a complete-word crossfade with reserved
+ * geometry; the rest of the section is ordinary document layout.
  */
 'use client';
 
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { DemoDashboard } from './demos/demo-dashboard';
-import { FlipWords } from '@/components/ui/flip-words';
 import { useAuthModal } from '@/components/auth';
+import { DashboardPreview } from './dashboard-preview';
 
-// Flip only one word at a time. The Aceternity component is designed for
-// single-word entries; passing whole phrases makes each letter arrive on a
-// separate delay and leaves the headline looking broken during the flip.
 const headlineWords = ['did.', 'fixed.', 'learned.', 'built.'];
 
-export function EditorialHero() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { openAuthModal } = useAuthModal();
+function RotatingWord() {
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
-  // Scroll-based animations
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end start'],
-  });
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mediaQuery.matches) return;
 
-  // Text parallax
-  const textY = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const textOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+    let pendingTimeout: number | null = null;
+    const interval = window.setInterval(() => {
+      setIsVisible(false);
+      pendingTimeout = window.setTimeout(() => {
+        setWordIndex(current => (current + 1) % headlineWords.length);
+        setIsVisible(true);
+      }, 180);
+    }, 3500);
 
-  // Keep the preview responsive to scroll without putting its controls inside
-  // a 3D hit-testing layer. The dashboard itself is an interactive demo.
-  const scrollScale = useTransform(scrollYProgress, [0, 0.3], [1.05, 1]);
-  const dashboardY = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const dashboardOpacity = useTransform(scrollYProgress, [0.4, 0.7], [1, 0]);
+    return () => {
+      window.clearInterval(interval);
+      if (pendingTimeout !== null) window.clearTimeout(pendingTimeout);
+    };
+  }, []);
 
   return (
-    <section ref={containerRef} className="relative flex min-h-screen items-center py-20 lg:py-0">
-      {/* Ambient background gradient */}
+    <span
+      aria-live="polite"
+      className="inline-block min-w-[7ch] transition-opacity duration-200"
+      style={{ opacity: isVisible ? 1 : 0 }}
+    >
+      {headlineWords[wordIndex]}
+    </span>
+  );
+}
+
+export function EditorialHero() {
+  const { openAuthModal } = useAuthModal();
+
+  return (
+    <section className="relative flex min-h-screen items-center py-24 lg:py-20">
       <div className="from-primary/5 pointer-events-none absolute inset-0 bg-linear-to-b via-transparent to-transparent" />
 
-      <div className="mx-auto w-full max-w-[1400px] px-6 lg:px-10">
+      <div className="relative mx-auto w-full max-w-[1400px] px-6 lg:px-10">
         <div className="flex flex-col gap-16 xl:flex-row xl:items-center xl:justify-between xl:gap-24 2xl:gap-32">
-          {/* Left Side - Editorial Typography */}
-          <motion.div
-            style={{ y: textY, opacity: textOpacity }}
-            className="relative z-10 w-full space-y-8 xl:max-w-xl"
-          >
-            {/* Eyebrow */}
-            <motion.div
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="flex items-center gap-3"
-            >
+          <div className="relative z-10 w-full space-y-8 xl:max-w-xl">
+            <div className="flex items-center gap-3">
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
                 Save your work
               </span>
-            </motion.div>
-
-            {/* Main Headline - official Aceternity Flip Words */}
-            <div className="relative h-[13rem] w-full overflow-visible sm:h-[12rem] lg:h-[13rem]">
-              <h1 className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-6xl lg:whitespace-nowrap">
-                <span className="text-foreground">Remember what you</span>
-                <br />
-                <FlipWords
-                  words={headlineWords}
-                  duration={3000}
-                  className="text-primary [&_span]:!text-primary !min-w-[8ch] !px-0"
-                />
-              </h1>
             </div>
 
-            {/* Subheadline */}
-            <motion.p
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-muted-foreground max-w-lg text-xl leading-relaxed"
-            >
+            <h1 className="font-serif text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl lg:text-7xl">
+              <span className="text-foreground block whitespace-nowrap">Remember what you</span>
+              <span className="text-primary block min-h-[1.1em]">
+                <RotatingWord />
+              </span>
+            </h1>
+
+            <p className="text-muted-foreground max-w-lg text-xl leading-relaxed">
               Jobmark gives you one place to write down what you did, fixed, and learned. Use those
               notes later for reviews and updates.
-            </motion.p>
+            </p>
 
-            {/* CTAs */}
-            <motion.div
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex flex-col items-start gap-4 pt-2 sm:flex-row sm:items-center"
-            >
+            <div className="flex flex-col items-start gap-4 pt-2 sm:flex-row sm:items-center">
               <button
+                type="button"
                 onClick={openAuthModal}
                 className="group bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-medium transition-colors"
               >
@@ -115,100 +94,14 @@ export function EditorialHero() {
               >
                 See how it works
               </Link>
-            </motion.div>
+            </div>
 
-            {/* Subtle trust indicator */}
-            <motion.p
-              initial={false}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-muted-foreground/60 text-sm"
-            >
-              Free to start. Your notes are yours.
-            </motion.p>
-          </motion.div>
+            <p className="text-muted-foreground/60 text-sm">Free to start. Your notes are yours.</p>
+          </div>
 
-          {/* Right Side - Linear-style 3D Dashboard */}
-          <motion.div
-            style={{ y: dashboardY, opacity: dashboardOpacity }}
-            className="w-full min-w-0 xl:max-w-[1000px] xl:flex-1"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 80 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.4, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              style={{ scale: scrollScale }}
-              className="relative w-full min-w-0"
-            >
-              <div className="relative">
-                {/* Aurora glow effect - animated gradient behind dashboard */}
-                <div className="pointer-events-none absolute -inset-12 opacity-60 lg:-inset-16">
-                  {/* Primary aurora layer */}
-                  <motion.div
-                    animate={{
-                      background: [
-                        'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(212, 165, 116, 0.4) 0%, transparent 70%)',
-                        'radial-gradient(ellipse 60% 60% at 40% 50%, rgba(212, 165, 116, 0.3) 0%, transparent 70%)',
-                        'radial-gradient(ellipse 70% 50% at 60% 50%, rgba(212, 165, 116, 0.35) 0%, transparent 70%)',
-                        'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(212, 165, 116, 0.4) 0%, transparent 70%)',
-                      ],
-                    }}
-                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute inset-0 blur-3xl"
-                  />
-                  {/* Secondary warm layer */}
-                  <motion.div
-                    animate={{
-                      background: [
-                        'radial-gradient(ellipse 50% 80% at 60% 40%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)',
-                        'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(227, 178, 131, 0.2) 0%, transparent 60%)',
-                        'radial-gradient(ellipse 50% 80% at 40% 60%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)',
-                        'radial-gradient(ellipse 50% 80% at 60% 40%, rgba(227, 178, 131, 0.25) 0%, transparent 60%)',
-                      ],
-                    }}
-                    transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                    className="absolute inset-0 blur-2xl"
-                  />
-                </div>
-
-                {/* Dashboard container with border glow */}
-                <div className="group relative">
-                  {/* Animated border glow */}
-                  <div className="from-primary/50 via-primary/20 to-primary/50 pointer-events-none absolute -inset-px rounded-xl bg-linear-to-br opacity-50 blur-sm transition-opacity duration-500 group-hover:opacity-70" />
-
-                  {/* Subtle animated shine on border */}
-                  <motion.div
-                    animate={{
-                      background: [
-                        'linear-gradient(90deg, transparent 0%, rgba(212, 165, 116, 0.3) 50%, transparent 100%)',
-                        'linear-gradient(90deg, transparent 100%, rgba(212, 165, 116, 0.3) 150%, transparent 200%)',
-                      ],
-                      backgroundPosition: ['-100% 0%', '200% 0%'],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                      repeatDelay: 2,
-                    }}
-                    className="pointer-events-none absolute -inset-px rounded-xl opacity-40"
-                    style={{ backgroundSize: '200% 100%' }}
-                  />
-
-                  {/* Main dashboard */}
-                  <div className="border-border/40 bg-card/80 relative overflow-hidden rounded-xl border shadow-2xl shadow-black/30 backdrop-blur-sm">
-                    <DemoDashboard />
-                  </div>
-
-                  {/* Reflection effect at bottom */}
-                  <div
-                    className="from-card/10 pointer-events-none absolute right-4 -bottom-8 left-4 h-16 rounded-xl bg-linear-to-b to-transparent opacity-30 blur-xl"
-                    style={{ transform: 'rotateX(180deg) translateZ(-10px)' }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <div className="w-full min-w-0 xl:max-w-[1000px] xl:flex-1">
+            <DashboardPreview />
+          </div>
         </div>
       </div>
     </section>

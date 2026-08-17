@@ -47,6 +47,7 @@ export default async function ConnectionsPage() {
     >
       <div className="mx-auto w-full max-w-(--container-content)">
         <McpConnectionPage
+          key={connections.map(connection => connection.id).join('|')}
           baseUrl={mcpBaseUrl}
           connections={connections.map(c => ({
             id: c.id,

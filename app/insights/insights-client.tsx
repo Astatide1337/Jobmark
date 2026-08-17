@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { HeatmapDay, InsightsData, MonthLabel } from '@/app/actions/insights';
+import { shiftCalendarDate } from '@/lib/date-semantics';
 
 type DateRange = '7d' | '30d' | '90d' | '365d' | 'all';
 
@@ -37,15 +38,15 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
   const [dateRange, setDateRange] = useState<DateRange>('all');
 
   const filteredData = useMemo(() => {
-    const rangeStart = getDateRangeStart(dateRange);
+    const rangeStart = getDateRangeStart(dateRange, initialData.today);
 
     if (!rangeStart) {
       return initialData;
     }
 
     // Filter heatmap data
-    const rangeStartKey = formatLocalDateKey(rangeStart);
-    const latestDateKey = getLatestHeatmapDate(initialData.heatmapGrid);
+    const rangeStartKey = rangeStart;
+    const latestDateKey = initialData.today;
     const filteredHeatmap = initialData.heatmapData.filter(
       d => d.date >= rangeStartKey && d.date <= latestDateKey
     );
@@ -118,6 +119,7 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       <ContributionHeatmap
         weeks={filteredData.heatmapGrid}
         monthLabels={filteredData.monthLabels}
+        today={filteredData.today}
       />
 
       {/* Charts Section */}
@@ -146,10 +148,9 @@ function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   );
 }
 
-function getDateRangeStart(range: DateRange): Date | null {
+function getDateRangeStart(range: DateRange, today: string): string | null {
   if (range === 'all') return null;
 
-  const now = new Date();
   const daysMap: Record<Exclude<DateRange, 'all'>, number> = {
     '7d': 6,
     '30d': 29,
@@ -157,27 +158,7 @@ function getDateRangeStart(range: DateRange): Date | null {
     '365d': 364,
   };
 
-  const start = new Date();
-  start.setDate(now.getDate() - daysMap[range]);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
-function formatLocalDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function getLatestHeatmapDate(grid: HeatmapDay[][]): string {
-  for (let weekIndex = grid.length - 1; weekIndex >= 0; weekIndex--) {
-    for (let dayIndex = grid[weekIndex].length - 1; dayIndex >= 0; dayIndex--) {
-      const date = grid[weekIndex][dayIndex].date;
-      if (date) return date;
-    }
-  }
-  return formatLocalDateKey(new Date());
+  return shiftCalendarDate(today, -daysMap[range]);
 }
 
 function buildHeatmapGrid(

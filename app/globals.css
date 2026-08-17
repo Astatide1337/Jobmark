@@ -47,6 +47,9 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -66,41 +69,41 @@
   --radius: 0.75rem;
 
   /* Deep warm brown background - like a cozy café at night */
-  --background: #1a1412;
-  --foreground: #f5f0e8;
+  --background: var(--theme-dark-background, #1a1412);
+  --foreground: var(--theme-dark-foreground, #f5f0e8);
 
   /* Slightly lighter warm cards */
-  --card: #241e1a;
-  --card-foreground: #f5f0e8;
+  --card: var(--theme-dark-card, #241e1a);
+  --card-foreground: var(--theme-dark-card-foreground, #f5f0e8);
 
-  --popover: #2a2320;
-  --popover-foreground: #f5f0e8;
+  --popover: var(--theme-dark-popover, #2a2320);
+  --popover-foreground: var(--theme-dark-popover-foreground, #f5f0e8);
 
   /* Warm Amber Primary - like soft lamp light */
   --primary: #d4a574;
   --primary-foreground: #1a1412;
 
   /* Muted warm tones */
-  --secondary: #2a2320;
-  --secondary-foreground: #e8dfd4;
+  --secondary: var(--theme-dark-secondary, #2a2320);
+  --secondary-foreground: var(--theme-dark-secondary-foreground, #e8dfd4);
 
-  --muted: #2a2320;
-  --muted-foreground: #a89888;
+  --muted: var(--theme-dark-muted, #2a2320);
+  --muted-foreground: var(--theme-dark-muted-foreground, #a89888);
 
   /* Warm accent - golden amber */
   --accent: #c49a6c;
-  --accent-foreground: #1a1412;
+  --accent-foreground: var(--theme-dark-accent-foreground, #1a1412);
 
   /* Soft coral for destructive - adjusted for better contrast on fills */
-  --destructive: #d66b6b;
-  --destructive-foreground: #1a1412;
+  --destructive: var(--theme-dark-destructive, #d66b6b);
+  --destructive-foreground: var(--theme-dark-destructive-foreground, #1a1412);
 
   /* Destructive text token for ghost/outline states on dark background */
-  --destructive-text: #ff8a8a;
+  --destructive-text: var(--theme-dark-destructive-text, #ff8a8a);
 
   /* Warm borders */
-  --border: #3d332c;
-  --input: #3d332c;
+  --border: var(--theme-dark-border, #3d332c);
+  --input: var(--theme-dark-input, #3d332c);
   --ring: #d4a574;
 
   /* Chart colors - warm palette */
@@ -110,15 +113,52 @@
   --chart-4: #c49a6c;
   --chart-5: #a89888;
 
+  /* Semantic status colors. Components use these instead of hard-coded
+   * Tailwind hues so theme presets remain coherent. */
+  --success: #7fb069;
+  --warning: #e0a458;
+  --info: #8aa6bf;
+
   /* Sidebar - darker café corner */
-  --sidebar: #1e1814;
-  --sidebar-foreground: #f5f0e8;
+  --sidebar: var(--theme-dark-sidebar, #1e1814);
+  --sidebar-foreground: var(--theme-dark-sidebar-foreground, #f5f0e8);
   --sidebar-primary: #d4a574;
   --sidebar-primary-foreground: #1a1412;
-  --sidebar-accent: #2a2320;
-  --sidebar-accent-foreground: #e8dfd4;
-  --sidebar-border: #3d332c;
+  --sidebar-accent: var(--theme-dark-sidebar-accent, #2a2320);
+  --sidebar-accent-foreground: var(--theme-dark-sidebar-accent-foreground, #e8dfd4);
+  --sidebar-border: var(--theme-dark-sidebar-border, #3d332c);
   --sidebar-ring: #d4a574;
+}
+
+/* Persisted light mode must have its own palette before hydration. */
+.light {
+  --background: var(--theme-light-background, #f7f3ee);
+  --foreground: var(--theme-light-foreground, #2b241f);
+  --card: var(--theme-light-card, #fffaf5);
+  --card-foreground: var(--theme-light-card-foreground, #2b241f);
+  --popover: var(--theme-light-popover, #fffaf5);
+  --popover-foreground: var(--theme-light-popover-foreground, #2b241f);
+  --primary-foreground: #fffaf5;
+  --secondary: var(--theme-light-secondary, #eee7df);
+  --secondary-foreground: var(--theme-light-secondary-foreground, #3f352d);
+  --muted: var(--theme-light-muted, #eee7df);
+  --muted-foreground: var(--theme-light-muted-foreground, #76685d);
+  --accent-foreground: var(--theme-light-accent-foreground, #2b241f);
+  --destructive: var(--theme-light-destructive, #c24c4c);
+  --destructive-foreground: var(--theme-light-destructive-foreground, #fffaf5);
+  --destructive-text: var(--theme-light-destructive-text, #b64242);
+  --border: var(--theme-light-border, #d8cec3);
+  --input: var(--theme-light-input, #d8cec3);
+  --sidebar: var(--theme-light-sidebar, #f0e9e1);
+  --sidebar-foreground: var(--theme-light-sidebar-foreground, #3f352d);
+  --sidebar-primary-foreground: #fffaf5;
+  --sidebar-accent: var(--theme-light-sidebar-accent, #e5dbd1);
+  --sidebar-accent-foreground: var(--theme-light-sidebar-accent-foreground, #2b241f);
+  --sidebar-border: var(--theme-light-sidebar-border, #d8cec3);
+
+  --success: #4f7f3e;
+  --warning: #a96d22;
+  --info: #3d6f91;
 }
 
 /* Base styles */
@@ -177,7 +217,7 @@
 
   /* Subtle card hover - no harsh effects */
   .card-hover {
-    @apply hover:bg-card/80 transition-all duration-300;
+    @apply hover:bg-card/80 transition-colors duration-200;
   }
 
   /* Warm glow effect for ambient lighting feel */
@@ -216,15 +256,15 @@
 
   /* Architect's Abstractions */
   .glass-card {
-    @apply bg-card/40 border-border/40 rounded-2xl border backdrop-blur-sm transition-all duration-300;
+    @apply bg-card/40 border-border/40 rounded-2xl border backdrop-blur-sm;
   }
 
   .interactive-surface {
-    @apply hover:border-border hover:shadow-primary/5 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99];
+    @apply hover:border-border hover:shadow-primary/5 cursor-pointer transition-[border-color,box-shadow] hover:shadow-xl;
   }
 
   .glass-input {
-    @apply bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/30 backdrop-blur-md transition-all focus:ring-1;
+    @apply bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/30 backdrop-blur-md transition-[border-color,box-shadow] focus:ring-1;
   }
 
   .warm-glow-text {
@@ -233,11 +273,6 @@
 
   .section-container {
     @apply mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8;
-  }
-
-  /* Magnetic hover effect base */
-  .magnetic {
-    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .scrollbar-none {

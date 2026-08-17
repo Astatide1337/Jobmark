@@ -103,7 +103,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-4 pb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+            <div className="bg-info/10 text-info flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
               <MessageSquare className="h-5 w-5" />
             </div>
             <div>
@@ -114,7 +114,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 pt-4 pb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+            <div className="bg-warning/10 text-warning flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
               <Calendar className="h-5 w-5" />
             </div>
             <div>

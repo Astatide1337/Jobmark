@@ -1,9 +1,8 @@
 /**
  * jobmark Public Landing Page
  *
- * Why: This is the high-conversion entrance for the product. It uses
- * a "Scrollytelling" approach with editorial-style layouts to
- * communicate the value proposition.
+ * Why: This is the public entrance for the product. It uses an editorial
+ * layout with a small number of direct, purposeful interactions.
  *
  * Pattern: Purely aesthetic Server Component that wraps everything in
  * the `AuthModalProvider` to allow "Sign In" triggers from any CTA
@@ -19,7 +18,7 @@ import { ProblemStatement } from '@/components/landing/problem-statement';
 import { PersonaTabs } from '@/components/landing/persona-tabs';
 import { ProductTour } from '@/components/landing/product-tour';
 import { VideoSection } from '@/components/landing/video-section';
-import { AccessSection } from '@/components/landing/pricing-section';
+import { AccessSection } from '@/components/landing/access-section';
 import { ProductValues } from '@/components/landing/product-values';
 import { FAQ } from '@/components/landing/faq';
 import { FinalCTA } from '@/components/landing/final-cta';
@@ -57,7 +56,7 @@ export default async function Home() {
         {/* Divider */}
         <SectionDivider delay={0.1} />
 
-        {/* Product Tour - Scrollytelling Feature Showcase */}
+        {/* Product tour - one active preview at a time */}
         <ProductTour />
 
         {/* Divider */}

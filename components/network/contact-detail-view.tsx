@@ -216,6 +216,7 @@ export function ContactDetailView({
                   Saved drafts
                 </h3>
                 <OutreachDraftHistory
+                  key={initialDrafts.map(draft => `${draft.id}:${draft.content}`).join('|')}
                   initialDrafts={initialDrafts}
                   connectedMcpProviders={connectedMcpProviders}
                 />
@@ -315,13 +316,13 @@ function ContactProfileCard({ contact }: { contact: Contact }) {
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
-  email: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
-  call: 'bg-green-500/15 text-green-700 dark:text-green-400',
-  text: 'bg-purple-500/15 text-purple-700 dark:text-purple-400',
-  'in-person': 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-  linkedin: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
-  video: 'bg-rose-500/15 text-rose-700 dark:text-rose-400',
-  other: 'bg-gray-500/15 text-gray-700 dark:text-gray-400',
+  email: 'bg-info/15 text-info',
+  call: 'bg-success/15 text-success',
+  text: 'bg-primary/15 text-primary',
+  'in-person': 'bg-warning/15 text-warning',
+  linkedin: 'bg-info/15 text-info',
+  video: 'bg-accent/15 text-accent-foreground',
+  other: 'bg-muted text-muted-foreground',
 };
 
 function InteractionTimeline({
@@ -432,7 +433,7 @@ function InteractionTimeline({
                     <span className="text-muted-foreground text-xs">
                       {formatDate(interaction.occurredAt)}
                     </span>
-                    <div className="ml-auto opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="ml-auto opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                       {confirmDeleteId === interaction.id ? (
                         <div className="flex items-center gap-1">
                           <Button
@@ -461,7 +462,8 @@ function InteractionTimeline({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-6 w-6 p-0 transition-all active:scale-95"
+                          aria-label={`Delete conversation from ${formatDate(interaction.occurredAt)}`}
+                          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-6 w-6 p-0 transition-[color,background-color]"
                           onClick={() => setConfirmDeleteId(interaction.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -485,7 +487,7 @@ function InteractionTimeline({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground hover:text-primary h-7 px-2 text-xs transition-all active:scale-95"
+                        className="text-muted-foreground hover:text-primary h-7 px-2 text-xs transition-colors"
                         onClick={() => toggleRawNotes(interaction.id)}
                       >
                         <ChevronDown

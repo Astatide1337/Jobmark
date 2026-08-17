@@ -375,7 +375,7 @@ export function ProjectChipSelector({ projects, selectedId, onSelect }: ProjectC
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          'flex items-center gap-2 rounded-xl border px-3 py-2 transition-all',
+          'flex items-center gap-2 rounded-xl border px-3 py-2 transition-[color,background-color,border-color,box-shadow]',
           'bg-background/50 hover:bg-background/80',
           isExpanded
             ? 'border-primary/50 ring-primary/20 ring-2'
@@ -457,7 +457,7 @@ function ProjectChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all',
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-[color,background-color,border-color]',
         isSelected
           ? 'bg-primary/10 text-foreground'
           : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'

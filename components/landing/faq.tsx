@@ -112,7 +112,7 @@ function FAQItem({
 }) {
   return (
     <div
-      className={`relative rounded-xl border transition-all duration-300 ${
+      className={`relative rounded-xl border transition-[border-color,background-color,box-shadow] duration-300 ${
         isOpen
           ? 'border-border/40 bg-card/50'
           : 'border-border/20 bg-card/20 hover:border-border/30 hover:bg-card/30'

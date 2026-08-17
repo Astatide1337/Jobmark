@@ -5,15 +5,7 @@ import {
   SpeechRecognitionEvent,
   SpeechRecognitionErrorEvent,
 } from '@/lib/types/speech';
-import {
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-  useTransition,
-  useSyncExternalStore,
-} from 'react';
+import { useActionState, useEffect, useRef, useState, useMemo, useTransition } from 'react';
 import {
   createActivity,
   deleteActivity,
@@ -43,20 +35,6 @@ const initialState: ActivityFormState = {
 };
 
 const confettiColors = ['#d4a574', '#c49a6c', '#e0a458', '#f5f0e8', '#a89888'];
-
-const subscribeToMount = () => () => {};
-const getServerMountState = () => false;
-const getClientMountState = () => true;
-
-function useMounted() {
-  return useSyncExternalStore(subscribeToMount, getClientMountState, getServerMountState);
-}
-
-function getSelectedDateLabel(date: Date): string {
-  if (isToday(date)) return 'today';
-  if (isYesterday(date)) return 'yesterday';
-  return `on ${format(date, 'MMM d')}`;
-}
 
 function createSpeechRecognition(callbacks: {
   onStart: () => void;
@@ -369,25 +347,17 @@ export function ActivityTimeline({
   } else if (initialTimeZone && isValidTimeZone(initialTimeZone)) {
     timeZone = initialTimeZone;
   }
-  const mounted = useMounted();
-  const [activities, setActivities] = useState<Activity[]>(initialActivities);
+  const [additionalActivities, setAdditionalActivities] = useState<Activity[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [isLoadingMore, startLoadingMore] = useTransition();
   const [hasMore, setHasMore] = useState(
     totalCount ? initialActivities.length < totalCount : initialActivities.length === PAGE_SIZE
   );
 
-  // Sync state with props when they change (during render phase to avoid cascading effects)
-  const [prevInitialActivities, setPrevInitialActivities] = useState(initialActivities);
-  if (initialActivities !== prevInitialActivities) {
-    setActivities(initialActivities);
-    setPrevInitialActivities(initialActivities);
-    setDeletedIds(new Set());
-    setHasMore(
-      totalCount ? initialActivities.length < totalCount : initialActivities.length === PAGE_SIZE
-    );
-  }
-
+  const activities = useMemo(
+    () => [...initialActivities, ...additionalActivities],
+    [initialActivities, additionalActivities]
+  );
   const visibleActivities = activities.filter(a => !deletedIds.has(a.id));
 
   const handleOptimisticDelete = (id: string) => {
@@ -408,7 +378,7 @@ export function ActivityTimeline({
       if (moreActivities.length < PAGE_SIZE) {
         setHasMore(false);
       }
-      setActivities(prev => [...prev, ...moreActivities]);
+      setAdditionalActivities(prev => [...prev, ...moreActivities]);
     });
   };
 
@@ -416,23 +386,11 @@ export function ActivityTimeline({
     return <TimelineEmptyState />;
   }
 
-  if (!mounted) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map(i => (
-          <Card key={i} className="bg-card/50 border-border/50 animate-pulse opacity-50">
-            <CardContent className="h-24 p-4" />
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
   const groupedActivities = groupByDate(visibleActivities, timeZone);
 
   return (
     <div className="space-y-8">
-      <div className="animate-in fade-in space-y-8 duration-500">
+      <div className="space-y-8">
         {groupedActivities.map(({ dateKey, activities: dateActivities }) => (
           <div key={dateKey}>
             <div className="mb-4 flex items-center gap-3">
@@ -464,7 +422,7 @@ export function ActivityTimeline({
         <button
           onClick={handleLoadMore}
           disabled={isLoadingMore}
-          className="text-muted-foreground hover:text-primary group flex w-full flex-col items-center gap-2 py-6 transition-all active:scale-95"
+          className="text-muted-foreground hover:text-primary group flex w-full flex-col items-center gap-2 py-6 transition-colors"
         >
           {isLoadingMore ? (
             <>
@@ -507,7 +465,7 @@ function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: 
   const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt, timeZone);
 
   return (
-    <Card className="bg-card/40 border-border/40 group hover:bg-card/60 hover:shadow-primary/5 rounded-xl transition-all duration-300 hover:shadow-md">
+    <Card className="bg-card/40 border-border/40 group hover:bg-card/60 hover:shadow-primary/5 rounded-xl transition-[background-color,box-shadow] duration-300 hover:shadow-md">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -517,7 +475,7 @@ function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: 
 
             <div className="text-muted-foreground mt-3 flex items-center gap-3 text-xs">
               {logDateYMD !== createdAtYMD && (
-                <span className="font-medium text-amber-500">
+                <span className="text-warning font-medium">
                   For {format(parseLocalYMD(logDateYMD), 'MMM d')}
                 </span>
               )}
@@ -597,7 +555,7 @@ function DeleteActivityButton({
       onClick={handleDelete}
       disabled={isPending}
       aria-label="Delete note"
-      className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+      className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
     >
       <Trash2 className="h-4 w-4" />
     </Button>

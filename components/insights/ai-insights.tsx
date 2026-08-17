@@ -47,9 +47,9 @@ export function AiInsights({ data }: AiInsightsProps) {
   const insights = useMemo(() => generateInsights(data), [data]);
 
   const iconColors = {
-    info: 'text-blue-400',
-    success: 'text-green-400',
-    warning: 'text-amber-400',
+    info: 'text-info',
+    success: 'text-success',
+    warning: 'text-warning',
     tip: 'text-primary',
   };
 

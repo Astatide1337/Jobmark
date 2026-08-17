@@ -38,13 +38,18 @@ describe('MCP token introspection', () => {
       iat: 1_999_999_000,
     });
 
-    const response = await POST(new NextRequest('https://jobmark.example.com/api/auth/mcp/introspect', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: 'access-token', client_id: 'public-client-id' }),
-    }));
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/api/auth/mcp/introspect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'access-token', client_id: 'public-client-id' }),
+      })
+    );
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ active: true, client_id: 'public-client-id' });
+    await expect(response.json()).resolves.toMatchObject({
+      active: true,
+      client_id: 'public-client-id',
+    });
   });
 });

@@ -90,11 +90,13 @@ const providers: Provider[] = [
 ];
 
 export function McpConnectionPage({ baseUrl, connections }: McpConnectionProps) {
+  const [activeConnections, setActiveConnections] = useState(connections);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [connectionToRevoke, setConnectionToRevoke] = useState<string | null>(null);
+
   const jobmarkLink = `${baseUrl}/mcp`;
-  const visibleConnections = deduplicateConnections(connections);
+  const visibleConnections = deduplicateConnections(activeConnections);
   const connectionBeingRevoked = visibleConnections.find(
     connection => connection.id === connectionToRevoke
   );
@@ -119,8 +121,10 @@ export function McpConnectionPage({ baseUrl, connections }: McpConnectionProps) 
         method: 'POST',
       });
       if (!response.ok) throw new Error('Could not revoke Jobmark access');
+      setActiveConnections(previous =>
+        previous.filter(connection => connection.id !== connectionId)
+      );
       toast.success('Assistant disconnected.');
-      window.location.reload();
     } catch {
       toast.error('Could not disconnect the assistant.');
     } finally {

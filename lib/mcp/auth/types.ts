@@ -20,7 +20,9 @@ export const ClientSchema = z.object({
   grant_types: z.array(z.enum(['authorization_code', 'refresh_token'])),
   response_types: z.array(z.enum(['code'])),
   scope: z.string(),
-  token_endpoint_auth_method: z.enum(['client_secret_post', 'client_secret_basic', 'none']).default('client_secret_post'),
+  token_endpoint_auth_method: z
+    .enum(['client_secret_post', 'client_secret_basic', 'none'])
+    .default('client_secret_post'),
   jwks_uri: z.string().url().optional(),
   client_name: z.string().optional(),
   client_uri: z.string().url().optional(),

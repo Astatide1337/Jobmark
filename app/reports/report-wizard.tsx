@@ -55,22 +55,9 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
   const [config, setConfig] = useState<ReportConfig>({
     dateRange: '7d',
     projectId: undefined, // All projects
-    tone: 'professional',
-    notes: '', // Placeholder for custom instructions
+    tone: (settings?.defaultTone as ReportConfig['tone']) || 'professional',
+    notes: settings?.customInstructions || '',
   });
-
-  // Apply user's default settings when they load (during render phase to avoid cascading effects)
-  const [prevSettings, setPrevSettings] = useState(settings);
-  if (settings !== prevSettings) {
-    if (settings) {
-      setConfig(prev => ({
-        ...prev,
-        tone: (settings.defaultTone as ReportConfig['tone']) || prev.tone,
-        notes: settings.customInstructions || prev.notes,
-      }));
-    }
-    setPrevSettings(settings);
-  }
 
   // Custom date selection state
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -273,7 +260,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             <div key={i} className="flex flex-col items-center gap-2">
               <div
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all duration-300',
+                  'flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-[color,background-color,box-shadow] duration-300',
                   step >= i
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
@@ -560,7 +547,7 @@ function getValidationStatus(
     );
   }
   return (
-    <p className="animate-in fade-in slide-in-from-bottom-1 flex items-center justify-center gap-1 text-xs text-green-600 opacity-0">
+    <p className="text-success flex items-center justify-center gap-1 text-xs font-medium">
       <CheckCircle className="h-3 w-3" /> Ready to make the draft
     </p>
   );
@@ -594,7 +581,7 @@ function OptionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full cursor-pointer rounded-xl border-2 p-6 text-left transition-all duration-200 hover:scale-[1.02]',
+        'w-full cursor-pointer rounded-xl border-2 p-6 text-left transition-[border-color,background-color,box-shadow] duration-200',
         selected
           ? 'border-primary bg-primary/5 shadow-primary/10 shadow-lg'
           : 'border-border/50 bg-card hover:border-primary/50'

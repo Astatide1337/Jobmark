@@ -88,7 +88,7 @@ export function ProjectActivityTimeline({
               {/* Dot */}
               <div className="bg-border group-hover:bg-primary ring-background absolute top-1.5 -left-[5px] h-2.5 w-2.5 rounded-full ring-4 transition-colors" />
 
-              <div className="bg-card border-border/50 hover:border-border rounded-lg border p-4 transition-all hover:shadow-sm">
+              <div className="bg-card border-border/50 hover:border-border rounded-lg border p-4 transition-[border-color,box-shadow] hover:shadow-sm">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                     <Calendar className="h-3.5 w-3.5" />
@@ -106,7 +106,7 @@ export function ProjectActivityTimeline({
                     {datesDiffer && (
                       <>
                         <span className="text-muted-foreground/50 mx-1">•</span>
-                        <span className="font-medium text-amber-500">
+                        <span className="text-warning font-medium">
                           For {format(parseLocalYMD(logDateYMD), 'MMM d')}
                         </span>
                       </>

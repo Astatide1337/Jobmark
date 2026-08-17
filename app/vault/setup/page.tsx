@@ -80,7 +80,7 @@ function VaultSetupForm() {
       <CardContent>
         {status === 'success' ? (
           <div className="space-y-4 text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
+            <CheckCircle className="text-success mx-auto h-12 w-12" />
             <p className="text-muted-foreground text-sm">{message}</p>
             <p className="text-muted-foreground text-xs">
               You can close this tab and return to your assistant.

@@ -168,7 +168,7 @@ function AccordionItem({
       />
 
       <div
-        className={`relative rounded-2xl border transition-all duration-300 ${
+        className={`relative rounded-2xl border transition-[border-color,background-color,box-shadow] duration-300 ${
           isOpen
             ? 'border-primary/30 bg-card/60 backdrop-blur-sm'
             : 'border-border/20 bg-card/30 hover:border-border/30 hover:bg-card/40'
@@ -184,8 +184,8 @@ function AccordionItem({
         >
           {/* Icon - all use warm primary color */}
           <div
-            className={`bg-primary/10 border-primary/20 text-primary flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border transition-all duration-300 ${
-              isOpen ? 'scale-110' : 'group-hover:scale-105'
+            className={`bg-primary/10 border-primary/20 text-primary flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border transition-[background-color,box-shadow] duration-300 ${
+              isOpen ? 'shadow-sm' : 'group-hover:shadow-sm'
             }`}
           >
             {value.icon}

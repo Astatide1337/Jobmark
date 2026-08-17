@@ -85,7 +85,7 @@ function OptionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-xl border-2 p-5 text-left transition-all hover:scale-[1.02]',
+        'rounded-xl border-2 p-5 text-left transition-[border-color,background-color,box-shadow]',
         selected
           ? 'border-primary bg-primary/5 shadow-primary/10 shadow-lg'
           : 'border-border/50 bg-card hover:border-primary/50'
@@ -236,7 +236,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
               <div key={label} className="flex items-center gap-2">
                 <div
                   className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all',
+                    'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-[color,background-color,box-shadow]',
                     isActive || isComplete
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground'

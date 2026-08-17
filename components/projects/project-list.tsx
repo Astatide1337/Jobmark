@@ -514,7 +514,7 @@ function ProjectCard({
     <>
       <Card
         className={cn(
-          'bg-card/40 border-border/40 group/project hover:border-border hover:shadow-primary/5 relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-xl',
+          'bg-card/40 border-border/40 group/project hover:border-border hover:shadow-primary/5 relative flex h-full flex-col overflow-hidden rounded-2xl transition-[border-color,box-shadow,opacity] duration-300 hover:shadow-xl',
           project.archived && 'bg-muted/10 border-border/30 opacity-75'
         )}
       >
@@ -529,15 +529,15 @@ function ProjectCard({
           <CardContent className="relative flex-1 p-6">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div
-                className="group-hover/project:bg-primary/10 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/5 shadow-sm transition-all duration-300 group-hover/project:scale-105 group-hover/project:shadow-md"
+                className="group-hover/project:bg-primary/10 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/5 shadow-sm transition-[background-color,box-shadow] duration-300 group-hover/project:shadow-md"
                 style={{
-                  backgroundColor: project.archived ? 'hsl(var(--muted))' : `${project.color}15`,
+                  backgroundColor: project.archived ? 'var(--muted)' : `${project.color}15`,
                 }}
               >
                 <FolderOpen
                   className="h-7 w-7"
                   style={{
-                    color: project.archived ? 'hsl(var(--muted-foreground))' : project.color,
+                    color: project.archived ? 'var(--muted-foreground)' : project.color,
                   }}
                 />
                 {project.archived && (
@@ -601,7 +601,8 @@ function ProjectCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:bg-muted/40 hover:text-primary h-8 w-8 p-0 opacity-50 transition-all group-hover/project:opacity-100"
+                aria-label={`More actions for ${project.name}`}
+                className="text-muted-foreground hover:bg-muted/40 hover:text-primary h-8 w-8 p-0 opacity-50 transition-[color,background-color,opacity] group-focus-within/project:opacity-100 group-hover/project:opacity-100 focus-visible:opacity-100"
                 disabled={isPending}
               >
                 <MoreVertical className="h-4 w-4" />
@@ -788,10 +789,10 @@ function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogP
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-6 w-6 rounded-full transition-all ${
+                  className={`h-6 w-6 rounded-full transition-[border-color,box-shadow] ${
                     color === c
-                      ? 'ring-ring ring-offset-background scale-110 ring-2 ring-offset-2'
-                      : 'opacity-80 hover:scale-110 hover:opacity-100'
+                      ? 'ring-ring ring-offset-background ring-2 ring-offset-2'
+                      : 'opacity-80 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: c }}
                 />

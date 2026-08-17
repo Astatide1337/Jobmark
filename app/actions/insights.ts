@@ -12,7 +12,7 @@
  */
 'use server';
 
-import { auth, requireUserId } from '@/lib/auth';
+import { requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
   getLockedProjectIds,
@@ -51,6 +51,8 @@ export interface MonthLabel {
 }
 
 export interface InsightsData {
+  timeZone: string;
+  today: string;
   totalActivities: number;
   currentStreak: number;
   longestStreak: number;
@@ -139,7 +141,7 @@ export async function getInsightsData(): Promise<InsightsData> {
     return {
       name: project?.name || 'Unassigned',
       count: item._count,
-      color: project?.color || '#6b7280',
+      color: project?.color || '#a89888',
     };
   });
 
@@ -189,15 +191,18 @@ export async function getInsightsData(): Promise<InsightsData> {
 
   // Calculate month labels
   const monthLabels: MonthLabel[] = [];
-  let lastMonth = -1;
+  let lastMonth = '';
   heatmapGrid.forEach((week, weekIndex) => {
     const validDays = week.filter(d => d.date);
     if (validDays.length > 0) {
-      const firstDay = new Date(`${validDays[0].date}T00:00:00Z`);
-      const month = firstDay.getUTCMonth();
+      const firstDate = validDays[0].date;
+      const month = firstDate.slice(0, 7);
       if (month !== lastMonth) {
         monthLabels.push({
-          month: firstDay.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
+          month: new Date(`${firstDate}T00:00:00Z`).toLocaleDateString('en-US', {
+            month: 'short',
+            timeZone: 'UTC',
+          }),
           weekIndex,
         });
         lastMonth = month;
@@ -278,6 +283,8 @@ export async function getInsightsData(): Promise<InsightsData> {
   }
 
   return {
+    timeZone,
+    today: todayDate,
     totalActivities,
     currentStreak,
     longestStreak,

@@ -195,7 +195,7 @@ function NavItem({
       <button
         type="button"
         className={cn(
-          'group relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+          'group relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow]',
           isActive
             ? 'text-sidebar-accent-foreground'
             : 'text-muted-foreground hover:text-foreground'
@@ -213,7 +213,7 @@ function NavItem({
       href={href}
       onClick={onClick}
       className={cn(
-        'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+        'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow]',
         isActive
           ? 'text-sidebar-accent-foreground'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
