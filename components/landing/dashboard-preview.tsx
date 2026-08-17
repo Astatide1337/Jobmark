@@ -1,22 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  CheckCircle2,
   Coffee,
   FileText,
   Folder,
   Link2,
+  Network,
   Pencil,
   Settings,
   Sparkles,
   Users,
-  CheckCircle2,
-  Target,
-  Network,
 } from 'lucide-react';
 import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
@@ -33,11 +32,6 @@ const navigation = [
 
 type PreviewView = (typeof navigation)[number]['id'];
 
-/**
- * Lightweight interactive marketing demo. It intentionally does not import the
- * authenticated application tree, but it should still feel like a real product:
- * navigation changes the workspace and the active panel transitions in place.
- */
 export function DashboardPreview() {
   const [activeView, setActiveView] = useState<PreviewView>('capture');
   const prefersReducedMotion = useReducedMotion();
@@ -50,9 +44,7 @@ export function DashboardPreview() {
             <div className="bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-xl">
               <JobmarkMark className="h-5 w-5" sizes="20px" />
             </div>
-            <span className="text-foreground hidden font-serif text-lg font-semibold sm:inline">
-              Jobmark
-            </span>
+            <span className="text-foreground hidden font-serif text-lg font-semibold sm:inline">Jobmark</span>
           </div>
 
           <nav aria-label="Interactive product preview" className="space-y-1">
@@ -89,13 +81,10 @@ export function DashboardPreview() {
         <div className="min-w-0">
           <header className="border-border/50 flex items-center justify-between border-b px-4 py-4 sm:px-7">
             <div className="text-muted-foreground flex items-center gap-2 text-xs sm:text-sm">
-              <CalendarDays className="h-4 w-4" />
-              Monday, August 17
+              <CalendarDays className="h-4 w-4" /> Monday, August 17
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
-                DU
-              </span>
+              <span className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">DU</span>
               <span className="hidden sm:inline">Demo User</span>
             </div>
           </header>
@@ -120,6 +109,15 @@ export function DashboardPreview() {
   );
 }
 
+function Heading({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mb-6">
+      <h2 className="text-foreground text-xl font-semibold sm:text-3xl">{title}</h2>
+      <p className="text-muted-foreground mt-1 text-sm sm:text-base">{children}</p>
+    </div>
+  );
+}
+
 function PreviewPanel({ view }: { view: PreviewView }) {
   if (view === 'capture') return <CapturePanel />;
   if (view === 'projects') return <ProjectsPanel />;
@@ -131,42 +129,23 @@ function PreviewPanel({ view }: { view: PreviewView }) {
   return <GuidesPanel />;
 }
 
-function PanelHeading({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="mb-6">
-      <h2 className="text-foreground text-xl font-semibold sm:text-3xl">{title}</h2>
-      <p className="text-muted-foreground mt-1 text-sm sm:text-base">{description}</p>
-    </div>
-  );
-}
-
 function CapturePanel() {
   return (
     <div>
-      <PanelHeading title="Good morning." description="Write down what you did while it is fresh." />
+      <Heading title="Good morning.">Write down what you did while it is fresh.</Heading>
       <section className="border-border/60 bg-background/40 rounded-2xl border p-5">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">New note</p>
           <span className="text-primary text-xs">Today</span>
         </div>
-        <p className="text-foreground text-sm leading-relaxed sm:text-base">
-          Finished the quarterly review and walked the team through the key decisions.
-        </p>
+        <p className="text-foreground text-sm leading-relaxed sm:text-base">Finished the quarterly review and walked the team through the key decisions.</p>
         <div className="mt-5 flex items-center justify-between gap-3">
-          <span className="bg-primary/15 text-primary rounded-full px-3 py-1 text-xs font-medium">
-            Q4 Planning
-          </span>
-          <span className="bg-primary text-primary-foreground rounded-xl px-4 py-2 text-sm font-medium">
-            Save note
-          </span>
+          <span className="bg-primary/15 text-primary rounded-full px-3 py-1 text-xs font-medium">Q4 Planning</span>
+          <span className="bg-primary text-primary-foreground rounded-xl px-4 py-2 text-sm font-medium">Save note</span>
         </div>
       </section>
       <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-        {[
-          ['Notes', '42'],
-          ['Active days', '18'],
-          ['Projects', '5'],
-        ].map(([label, value]) => (
+        {[['Notes', '42'], ['Active days', '18'], ['Projects', '5']].map(([label, value]) => (
           <div key={label} className="border-border/50 bg-card/60 rounded-xl border p-3 sm:p-4">
             <p className="text-muted-foreground text-[10px] uppercase sm:text-xs">{label}</p>
             <p className="text-foreground mt-2 text-xl font-semibold sm:text-2xl">{value}</p>
@@ -180,27 +159,15 @@ function CapturePanel() {
 function ProjectsPanel() {
   return (
     <div>
-      <PanelHeading title="Projects" description="Keep related work together." />
+      <Heading title="Projects">Keep related work together.</Heading>
       <div className="grid gap-3 sm:grid-cols-2">
-        {[
-          ['Website redesign', '24 notes', '68%'],
-          ['Mobile app MVP', '12 notes', '42%'],
-          ['Q4 planning', '6 notes', '81%'],
-          ['Hiring plan', '8 notes', '55%'],
-        ].map(([name, notes, progress]) => (
+        {[['Website redesign', '24 notes', '68%'], ['Mobile app MVP', '12 notes', '42%'], ['Q4 planning', '6 notes', '81%'], ['Hiring plan', '8 notes', '55%']].map(([name, notes, progress]) => (
           <div key={name} className="border-border/50 bg-background/40 rounded-2xl border p-4">
             <div className="flex items-center gap-3">
-              <span className="bg-primary/15 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Folder className="text-primary h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold">{name}</p>
-                <p className="text-muted-foreground text-xs">{notes}</p>
-              </div>
+              <span className="bg-primary/15 flex h-9 w-9 items-center justify-center rounded-xl"><Folder className="text-primary h-4 w-4" /></span>
+              <div><p className="text-sm font-semibold">{name}</p><p className="text-muted-foreground text-xs">{notes}</p></div>
             </div>
-            <div className="bg-muted mt-4 h-1.5 overflow-hidden rounded-full">
-              <div className="bg-primary h-full rounded-full" style={{ width: progress }} />
-            </div>
+            <div className="bg-muted mt-4 h-1.5 overflow-hidden rounded-full"><div className="bg-primary h-full rounded-full" style={{ width: progress }} /></div>
           </div>
         ))}
       </div>
@@ -211,55 +178,33 @@ function ProjectsPanel() {
 function ReviewsPanel() {
   return (
     <div>
-      <PanelHeading title="Review drafts" description="Turn saved evidence into something useful." />
+      <Heading title="Review drafts">Turn saved evidence into something useful.</Heading>
       <div className="border-border/50 bg-background/40 rounded-2xl border p-5">
         <p className="text-primary text-xs font-semibold tracking-wide uppercase">Quarterly review</p>
         <h3 className="mt-2 text-lg font-semibold">Q4 impact summary</h3>
         <ul className="text-muted-foreground mt-4 space-y-3 text-sm">
-          {[
-            'Shipped the checkout redesign ahead of schedule.',
-            'Reduced payment failures by 40%.',
-            'Mentored two engineers through onboarding.',
-          ].map(item => (
-            <li key={item} className="flex items-start gap-2">
-              <CheckCircle2 className="text-success mt-0.5 h-4 w-4 shrink-0" />
-              {item}
-            </li>
+          {['Shipped the checkout redesign ahead of schedule.', 'Reduced payment failures by 40%.', 'Mentored two engineers through onboarding.'].map(item => (
+            <li key={item} className="flex items-start gap-2"><CheckCircle2 className="text-success mt-0.5 h-4 w-4 shrink-0" />{item}</li>
           ))}
         </ul>
-        <div className="mt-5 flex gap-2">
-          <span className="bg-primary text-primary-foreground rounded-lg px-3 py-2 text-xs font-medium">
-            Open draft
-          </span>
-          <span className="border-border rounded-lg border px-3 py-2 text-xs">Export</span>
-        </div>
+        <div className="mt-5 flex gap-2"><span className="bg-primary text-primary-foreground rounded-lg px-3 py-2 text-xs font-medium">Open draft</span><span className="border-border rounded-lg border px-3 py-2 text-xs">Export</span></div>
       </div>
     </div>
   );
 }
 
 function InsightsPanel() {
-  const bars = [36, 56, 42, 74, 58, 82, 64];
   return (
     <div>
-      <PanelHeading title="Insights" description="See the rhythm behind your work." />
+      <Heading title="Insights">See the rhythm behind your work.</Heading>
       <div className="grid gap-3 sm:grid-cols-[1.2fr_0.8fr]">
         <div className="border-border/50 bg-background/40 rounded-2xl border p-4">
           <p className="text-muted-foreground text-xs uppercase">Notes this week</p>
           <div className="mt-5 flex h-28 items-end gap-2">
-            {bars.map((height, index) => (
-              <div key={index} className="bg-primary/15 flex-1 overflow-hidden rounded-t-md">
-                <div className="bg-primary w-full rounded-t-md" style={{ height: `${height}%` }} />
-              </div>
-            ))}
+            {[36, 56, 42, 74, 58, 82, 64].map((height, index) => <div key={index} className="bg-primary/15 flex h-full flex-1 items-end overflow-hidden rounded-t-md"><div className="bg-primary w-full rounded-t-md" style={{ height: `${height}%` }} /></div>)}
           </div>
         </div>
-        <div className="border-border/50 bg-primary/5 rounded-2xl border p-4">
-          <Sparkles className="text-primary h-5 w-5" />
-          <p className="mt-4 text-3xl font-semibold">18</p>
-          <p className="text-muted-foreground text-sm">active days this month</p>
-          <p className="text-primary mt-5 text-xs font-medium">6 day streak</p>
-        </div>
+        <div className="border-border/50 bg-primary/5 rounded-2xl border p-4"><Sparkles className="text-primary h-5 w-5" /><p className="mt-4 text-3xl font-semibold">18</p><p className="text-muted-foreground text-sm">active days this month</p><p className="text-primary mt-5 text-xs font-medium">6 day streak</p></div>
       </div>
     </div>
   );
@@ -268,11 +213,9 @@ function InsightsPanel() {
 function FocusPanel() {
   return (
     <div className="flex h-full flex-col">
-      <PanelHeading title="Focus" description="Reset before the next thing." />
+      <Heading title="Focus">Reset before the next thing.</Heading>
       <div className="border-border/50 bg-primary/5 flex flex-1 flex-col items-center justify-center rounded-2xl border text-center">
-        <div className="border-primary/30 bg-primary/10 flex h-32 w-32 items-center justify-center rounded-full border sm:h-40 sm:w-40">
-          <span className="text-primary font-serif text-2xl tracking-[0.12em] sm:text-3xl">INHALE</span>
-        </div>
+        <div className="border-primary/30 bg-primary/10 flex h-32 w-32 items-center justify-center rounded-full border sm:h-40 sm:w-40"><span className="text-primary font-serif text-2xl tracking-[0.12em] sm:text-3xl">INHALE</span></div>
         <p className="text-muted-foreground mt-5 text-sm">Box breathing · cycle 2 of 4</p>
       </div>
     </div>
@@ -282,21 +225,12 @@ function FocusPanel() {
 function NetworkPanel() {
   return (
     <div>
-      <PanelHeading title="Network" description="Remember the context, not just the contact." />
+      <Heading title="Network">Remember the context, not just the contact.</Heading>
       <div className="space-y-3">
-        {[
-          ['Maya Chen', 'Product design', 'Follow up Thursday'],
-          ['Daniel Ross', 'Engineering lead', 'Last spoke 8 days ago'],
-          ['Ari Singh', 'Former teammate', 'Share launch update'],
-        ].map(([name, role, note]) => (
+        {[['Maya Chen', 'Product design', 'Follow up Thursday'], ['Daniel Ross', 'Engineering lead', 'Last spoke 8 days ago'], ['Ari Singh', 'Former teammate', 'Share launch update']].map(([name, role, note]) => (
           <div key={name} className="border-border/50 bg-background/40 flex items-center gap-3 rounded-xl border p-4">
-            <span className="bg-primary/15 text-primary flex h-10 w-10 items-center justify-center rounded-full font-semibold">
-              {name.split(' ').map(part => part[0]).join('')}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{name}</p>
-              <p className="text-muted-foreground text-xs">{role}</p>
-            </div>
+            <span className="bg-primary/15 text-primary flex h-10 w-10 items-center justify-center rounded-full font-semibold">{name.split(' ').map(part => part[0]).join('')}</span>
+            <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{name}</p><p className="text-muted-foreground text-xs">{role}</p></div>
             <span className="text-muted-foreground hidden text-xs sm:block">{note}</span>
           </div>
         ))}
@@ -308,27 +242,11 @@ function NetworkPanel() {
 function ConnectPanel() {
   return (
     <div>
-      <PanelHeading title="Connect AI" description="Bring your record to the assistant you choose." />
+      <Heading title="Connect AI">Bring your record to the assistant you choose.</Heading>
       <div className="border-border/50 bg-background/40 rounded-2xl border p-5">
-        <div className="flex items-center gap-3">
-          <span className="bg-primary/15 flex h-11 w-11 items-center justify-center rounded-xl">
-            <Network className="text-primary h-5 w-5" />
-          </span>
-          <div>
-            <p className="font-semibold">MCP connection</p>
-            <p className="text-muted-foreground text-sm">Your evidence stays structured in Jobmark.</p>
-          </div>
-        </div>
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          {['ChatGPT', 'Claude', 'Gemini'].map(name => (
-            <div key={name} className="border-border/50 bg-card rounded-xl border px-3 py-4 text-center text-xs font-medium">
-              {name}
-            </div>
-          ))}
-        </div>
-        <div className="bg-success/10 text-success mt-5 inline-flex rounded-full px-3 py-1 text-xs font-medium">
-          Ready to connect
-        </div>
+        <div className="flex items-center gap-3"><span className="bg-primary/15 flex h-11 w-11 items-center justify-center rounded-xl"><Network className="text-primary h-5 w-5" /></span><div><p className="font-semibold">MCP connection</p><p className="text-muted-foreground text-sm">Your evidence stays structured in Jobmark.</p></div></div>
+        <div className="mt-5 grid grid-cols-3 gap-2">{['ChatGPT', 'Claude', 'Gemini'].map(name => <div key={name} className="border-border/50 bg-card rounded-xl border px-3 py-4 text-center text-xs font-medium">{name}</div>)}</div>
+        <div className="bg-success/10 text-success mt-5 inline-flex rounded-full px-3 py-1 text-xs font-medium">Ready to connect</div>
       </div>
     </div>
   );
@@ -337,19 +255,10 @@ function ConnectPanel() {
 function GuidesPanel() {
   return (
     <div>
-      <PanelHeading title="Guides" description="Small prompts for the moments that matter." />
+      <Heading title="Guides">Small prompts for the moments that matter.</Heading>
       <div className="grid gap-3 sm:grid-cols-2">
-        {[
-          ['Prepare for a performance review', '7 min'],
-          ['Write a useful weekly update', '5 min'],
-          ['Capture impact without overselling', '6 min'],
-          ['Turn project notes into a story', '8 min'],
-        ].map(([title, time]) => (
-          <div key={title} className="border-border/50 bg-background/40 rounded-2xl border p-4">
-            <BookOpen className="text-primary h-5 w-5" />
-            <p className="mt-3 text-sm font-semibold">{title}</p>
-            <p className="text-muted-foreground mt-1 text-xs">{time} read</p>
-          </div>
+        {[['Prepare for a performance review', '7 min'], ['Write a useful weekly update', '5 min'], ['Capture impact without overselling', '6 min'], ['Turn project notes into a story', '8 min']].map(([title, time]) => (
+          <div key={title} className="border-border/50 bg-background/40 rounded-2xl border p-4"><BookOpen className="text-primary h-5 w-5" /><p className="mt-3 text-sm font-semibold">{title}</p><p className="text-muted-foreground mt-1 text-xs">{time} read</p></div>
         ))}
       </div>
     </div>
