@@ -8,8 +8,8 @@ was previously in `CLAUDE.md`.
 
 - Render server-fetched content on the first paint. Do not add artificial hydration
   gates, delayed chart mounts, or loading placeholders after data is already available.
-- Keep public landing content server-rendered where possible. Mount only the interactive
-  control that needs client state.
+- Keep public landing content server-rendered where possible. Client components are
+  appropriate when they own a real interaction, animation, or browser API.
 - Do not update React state during render. Do not mirror props into state unless the
   component owns a real editable draft. Prefer derived values, keyed remounts, or a
   reducer with an explicit event. Effects are for external subscriptions, timers,
@@ -23,19 +23,37 @@ was previously in `CLAUDE.md`.
 
 ## Motion and scrolling
 
-- Use one motion owner per interaction. The landing page uses simple CSS transitions
-  and a small number of purposeful client interactions; it does not use smooth-scroll
-  hijacking, magnetic pointer tracking, per-letter blur, or scroll observers for
-  decorative dividers.
-- Above-the-fold content is visible immediately. Motion may communicate a state change,
-  but it must not hide content before hydration.
-- Animate only the properties needed, usually `opacity`, `transform`, color, or shadow.
-  Never use `transition-all` as a default and never add active scale to every control.
-- Respect `prefers-reduced-motion`; reduced motion should not wait for an animation to
-  reveal content.
-- Landing demos are lightweight marketing representations. Render only the active demo;
-  do not mount production dashboards, charts, or full application state inside every
-  marketing scene.
+Motion is part of Jobmark's product and brand language. Do not remove animation merely
+to make a component simpler. Fix the source of jank or flicker while preserving the
+intended interaction whenever possible.
+
+- Above-the-fold content must be visible immediately. Motion can add depth, continuity,
+  hierarchy, and feedback after first paint, but it must never require hydration before
+  important copy or controls become visible.
+- Framer Motion is an approved dependency for purposeful transforms, opacity changes,
+  scroll-linked depth, tab/panel transitions, shared-layout effects, and premium
+  micro-interactions. CSS transitions remain appropriate for simple hover/focus states.
+- Preserve intentional landing-page choreography: hero depth, ambient movement,
+  interactive product previews, section reveals, navigation motion, and focused CTA
+  feedback are design features, not disposable decoration.
+- Magnetic interactions are allowed on a small number of high-value controls. Use
+  Motion values/springs rather than React state on every pointer move, and disable the
+  effect for reduced-motion users.
+- Respect `prefers-reduced-motion`. Reduced-motion users get the same information and
+  controls without waiting for animation.
+- Animate targeted properties, usually opacity, transform, color, or shadow. Never use
+  `transition-all` as a default and never add active scale to every control.
+- Do not use a smooth-scroll runtime to replace native page scrolling. Scroll-linked
+  Motion values are fine; scroll hijacking is not.
+- Avoid giant artificial scroll tracks that keep many hidden scenes mounted. Product
+  storytelling may be scroll-aware or animated, but expensive scenes should be active
+  only when they are needed.
+- Landing demos should be purpose-built, interactive representations rather than a
+  second copy of the authenticated application. Do not import production dashboards,
+  charts, queries, or full application state merely to make a marketing mock feel real.
+- Per-letter blur or filter-heavy text animation is discouraged above the fold because
+  it can create blank/intermediate frames. Prefer complete-word or line transitions
+  with reserved geometry.
 
 ## Components and tokens
 
@@ -59,6 +77,9 @@ was previously in `CLAUDE.md`.
   keyboard-accessible details where cells or points represent user data.
 - Preserve readable contrast through semantic tokens, including destructive text on
   dark surfaces.
+- Animation must not make keyboard focus disappear or move an actively focused control
+  off-screen. Navigation visibility logic must keep the navigation visible while focus
+  is inside it.
 
 ## Quality gates
 
@@ -72,7 +93,8 @@ npm run build
 
 `npm run verify` includes ESLint, TypeScript, formatting, and the frontend invariant
 check. A route-level change also needs a desktop/mobile browser pass with no page
-errors, no horizontal overflow, and no visible first-paint flash.
+errors, no horizontal overflow, no visible first-paint flash, and no accidental loss
+of intentional motion at ordinary settings.
 
 Historical audit and security documents may remain under `docs/` as evidence, but they
 are not current implementation guidance unless explicitly marked otherwise.

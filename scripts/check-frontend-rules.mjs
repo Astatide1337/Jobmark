@@ -26,14 +26,16 @@ const forbiddenPatterns = [
   { pattern: /max-w-\[4xl/, message: 'The malformed max-w-[4xl class must not be reintroduced.' },
 ];
 
+// Motion is part of Jobmark's product language. Guard the expensive patterns,
+// not the animation library itself.
 const landingOnlyPatterns = [
   {
-    pattern: /(?:framer-motion|motion\/react|from ['"]lenis)/,
-    message: 'The landing page must use CSS motion instead of a second animation/scroll runtime.',
+    pattern: /from ['"]lenis|from ['"]@studio-freight\/lenis/,
+    message: 'Do not hijack native landing-page scrolling with a smooth-scroll runtime.',
   },
   {
-    pattern: /IntersectionObserver|500vh|position:\s*sticky/,
-    message: 'The landing page must not reintroduce scroll-driven hidden work.',
+    pattern: /h-\[500vh\]|height:\s*['"]?500vh/,
+    message: 'Avoid oversized scroll tracks that keep multiple marketing scenes alive.',
   },
 ];
 
