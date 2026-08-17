@@ -20,8 +20,10 @@ import { DemoDashboard } from './demos/demo-dashboard';
 import { FlipWords } from '@/components/ui/flip-words';
 import { useAuthModal } from '@/components/auth';
 
-const headlinePrefixes = ['Remember what you', 'Be ready for', 'Keep your', 'See your'];
-const headlineHighlights = ['did.', 'reviews.', 'notes together.', 'progress.'];
+// Flip only one word at a time. The Aceternity component is designed for
+// single-word entries; passing whole phrases makes each letter arrive on a
+// separate delay and leaves the headline looking broken during the flip.
+const headlineWords = ['did.', 'fixed.', 'learned.', 'built.'];
 
 export function EditorialHero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,17 +72,13 @@ export function EditorialHero() {
 
             {/* Main Headline - official Aceternity Flip Words */}
             <div className="relative h-[13rem] w-full overflow-visible sm:h-[12rem] lg:h-[13rem]">
-              <h1 className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-7xl">
-                <FlipWords
-                  words={headlinePrefixes}
-                  duration={3000}
-                  className="text-foreground !px-0"
-                />
+              <h1 className="absolute inset-x-0 top-0 font-serif text-5xl leading-tight font-bold tracking-tight sm:text-6xl lg:text-6xl lg:whitespace-nowrap">
+                <span className="text-foreground">Remember what you</span>
                 <br />
                 <FlipWords
-                  words={headlineHighlights}
+                  words={headlineWords}
                   duration={3000}
-                  className="text-primary !px-0"
+                  className="text-primary [&_span]:!text-primary !min-w-[8ch] !px-0"
                 />
               </h1>
             </div>
