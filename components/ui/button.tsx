@@ -1,10 +1,9 @@
 /**
  * Universal Button Component
  *
- * Why: The primary interaction element. Includes consistent "Café"
- * styling and support for multiple visual variants (ghost, outline, primary).
- * Default motion is limited to color, border, shadow, and opacity changes so
- * buttons do not move the layout or jitter under repeated interaction.
+ * The primary interaction primitive. Variants share the same sizing, focus,
+ * disabled, and motion behavior so buttons do not drift between product and
+ * marketing surfaces.
  */
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
@@ -13,12 +12,12 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'ring-offset-background inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-md shadow-primary/10 hover:bg-primary/90',
+          'bg-primary text-primary-foreground shadow-md shadow-primary/10 hover:bg-primary/90 focus-visible:ring-ring/50',
         destructive:
           'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 focus-visible:ring-destructive/50',
         outline:
