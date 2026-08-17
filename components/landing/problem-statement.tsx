@@ -8,7 +8,11 @@ export function ProblemStatement() {
   const ref = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 0.35, 0.7, 1], prefersReducedMotion ? [0, 0, 0, 0] : [26, 0, 0, -22]);
+  const y = useTransform(
+    scrollYProgress,
+    [0, 0.35, 0.7, 1],
+    prefersReducedMotion ? [0, 0, 0, 0] : [26, 0, 0, -22]
+  );
 
   return (
     <section ref={ref} className="relative overflow-hidden py-20 md:py-28">
@@ -20,7 +24,8 @@ export function ProblemStatement() {
           <span className="text-foreground">The details disappear first.</span>
           <span className="text-muted-foreground">
             {' '}
-            A fix in Slack, a decision in a meeting, or a launch that took a month can be hard to remember by review time.
+            A fix in Slack, a decision in a meeting, or a launch that took a month can be hard to
+            remember by review time.
           </span>
           <br />
           <span className="text-primary">Write it down once. Find it when you need it.</span>
