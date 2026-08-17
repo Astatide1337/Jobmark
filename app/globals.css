@@ -222,7 +222,7 @@
 
   /* Warm glow effect for ambient lighting feel */
   .warm-glow {
-    box-shadow: 0 0 40px rgba(212, 165, 116, 0.08);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--primary) 8%, transparent);
   }
 
   /* Soft ambient shadow */
@@ -249,7 +249,7 @@
 
   /* Glass morphism */
   .glass {
-    background: rgba(36, 30, 26, 0.8);
+    background: color-mix(in srgb, var(--card) 80%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
@@ -268,7 +268,8 @@
   }
 
   .warm-glow-text {
-    @apply text-primary drop-shadow-[0_0_8px_rgba(212,165,116,0.3)];
+    color: var(--primary);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 30%, transparent);
   }
 
   .section-container {

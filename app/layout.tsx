@@ -10,13 +10,13 @@
  *   Playfair Display (serif) to achieve the "Premium Editorial" look.
  * - Grain Overlay: Adds a subtle SVG noise texture to the background
  *   to give the dark UI a physical, high-quality "paper" feel.
- * - Global chrome: Keeps theme setup and notifications available to every
- *   route. Authenticated-only tools are mounted inside the app shell.
+ * - Theme setup is resolved on the server for every route, while the
+ *   settings context is mounted only for authenticated application pages.
+ *   Authenticated-only tools are mounted inside the app shell.
  */
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import { Inter, Geist_Mono, Playfair_Display } from 'next/font/google';
-import { Toaster } from '@/components/ui/sonner';
 import { SettingsProvider } from '@/components/providers/settings-provider';
 import { getUserSettings, type UserSettingsData } from '@/app/actions/settings';
 import { auth } from '@/lib/auth';
@@ -163,19 +163,24 @@ function AppDocument({
       style={theme.style}
       suppressHydrationWarning
     >
-      <body
-        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} overflow-x-clip font-sans antialiased`}
-      >
+      <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var root=document.documentElement;var mode=${JSON.stringify(theme.mode)};var dark=mode==='dark'||(mode==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.classList.toggle('dark',dark);root.classList.toggle('light',!dark);})();`,
           }}
         />
-        <SettingsProvider initialSettings={initialSettings} isAuthenticated={isAuthenticated}>
-          {children}
-          <Toaster position="bottom-right" richColors />
-          <GrainOverlay />
-        </SettingsProvider>
+      </head>
+      <body
+        className={`${inter.variable} ${geistMono.variable} ${playfair.variable} overflow-x-clip font-sans antialiased`}
+      >
+        {isAuthenticated ? (
+          <SettingsProvider initialSettings={initialSettings} isAuthenticated>
+            {children}
+          </SettingsProvider>
+        ) : (
+          children
+        )}
+        <GrainOverlay />
       </body>
     </html>
   );

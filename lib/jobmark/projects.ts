@@ -15,13 +15,14 @@ import {
 } from './index';
 import { z } from 'zod';
 import { getActivityDisplayContent } from './activity-copy';
+import { projectColors } from '@/lib/constants';
 
 const projectCreateSchema = z.object({
   name: z.string().min(1).max(50),
   color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
-    .default('#6366f1'),
+    .default(projectColors[0]),
   description: z.string().max(200).optional().nullable(),
 });
 

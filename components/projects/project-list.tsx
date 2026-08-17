@@ -15,25 +15,10 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  archiveProject,
-  createProject,
-  unarchiveProject,
-  updateProject,
-} from '@/app/actions/projects';
+import { archiveProject, unarchiveProject } from '@/app/actions/projects';
 import { moveProjectToVault, moveProjectFromVault, lockVault } from '@/app/actions/project-lock';
-import { projectColors } from '@/lib/constants';
 import { VaultPasswordDialog } from './vault-password-dialog';
+import { ProjectDialog } from './project-dialog';
 import {
   FolderPlus,
   Plus,
@@ -344,7 +329,12 @@ export function ProjectList({
             </div>
           </CardContent>
         </Card>
-        <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
+        <ProjectDialog
+          key={`create-${showCreate}`}
+          open={showCreate}
+          onOpenChange={setShowCreate}
+          onSubmit={onCreate}
+        />
       </>
     );
   }
@@ -443,7 +433,12 @@ export function ProjectList({
         )}
       </div>
 
-      <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
+      <ProjectDialog
+        key={`create-${showCreate}`}
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onSubmit={onCreate}
+      />
 
       <VaultPasswordDialog
         open={showVaultDialog}
@@ -668,149 +663,12 @@ function ProjectCard({
       </Card>
 
       <ProjectDialog
+        key={`edit-${project.id}-${showEdit}`}
         open={showEdit}
         onOpenChange={setShowEdit}
         project={project}
         onSubmit={onUpdate ? data => onUpdate(project.id, data) : undefined}
       />
     </>
-  );
-}
-
-interface ProjectDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  project?: {
-    id: string;
-    name: string;
-    description: string | null;
-    color: string;
-  };
-  onSubmit?: (
-    data: FormData
-  ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
-}
-
-function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogProps) {
-  const isEditing = !!project;
-  const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState(projectColors[0]);
-  const [errors, setErrors] = useState<{ name?: string }>({});
-
-  useEffect(() => {
-    if (open) {
-      setName(project?.name || '');
-      setDescription(project?.description || '');
-      setColor(project?.color || projectColors[0]);
-      setErrors({});
-    }
-  }, [open, project]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrors({});
-
-    try {
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('color', color);
-      formData.append('description', description);
-
-      let result: { success: boolean; message: string; errors?: Record<string, string[]> };
-      if (onSubmit) {
-        result = await onSubmit(formData);
-      } else if (isEditing && project) {
-        result = await updateProject(project.id, { name, color, description });
-      } else {
-        result = (await createProject({ success: false, message: '' }, formData)) as {
-          success: boolean;
-          message: string;
-          errors?: Record<string, string[]>;
-        };
-      }
-
-      if (result.success) {
-        onOpenChange(false);
-      } else if (result.errors?.name) {
-        setErrors({ name: result.errors.name[0] });
-      } else {
-        console.error(result.message);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit project' : 'New project'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? 'Update your project details.' : 'Create a project for related work.'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Project name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Website Redesign"
-              maxLength={50}
-            />
-            {errors.name && <p className="text-destructive text-xs">{errors.name}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="desc">Description (optional)</Label>
-            <Textarea
-              id="desc"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Add a short description..."
-              className="h-20 resize-none"
-              maxLength={200}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {projectColors.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-6 w-6 rounded-full transition-[border-color,box-shadow] ${
-                    color === c
-                      ? 'ring-ring ring-offset-background ring-2 ring-offset-2'
-                      : 'opacity-80 hover:opacity-100'
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Save changes' : 'Create project'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

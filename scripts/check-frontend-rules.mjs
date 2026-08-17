@@ -26,6 +26,17 @@ const forbiddenPatterns = [
   { pattern: /max-w-\[4xl/, message: 'The malformed max-w-[4xl class must not be reintroduced.' },
 ];
 
+const landingOnlyPatterns = [
+  {
+    pattern: /(?:framer-motion|motion\/react|from ['"]lenis)/,
+    message: 'The landing page must use CSS motion instead of a second animation/scroll runtime.',
+  },
+  {
+    pattern: /IntersectionObserver|500vh|position:\s*sticky/,
+    message: 'The landing page must not reintroduce scroll-driven hidden work.',
+  },
+];
+
 function collectFiles(directory) {
   const files = [];
 
@@ -51,6 +62,14 @@ for (const sourceRoot of sourceRoots) {
     for (const { pattern, message } of forbiddenPatterns) {
       if (!pattern.test(contents)) continue;
       violations.push(`${path.relative(repositoryRoot, filePath)}: ${message}`);
+    }
+
+    if (path.relative(repositoryRoot, filePath).startsWith('components/landing/')) {
+      for (const { pattern, message } of landingOnlyPatterns) {
+        if (pattern.test(contents)) {
+          violations.push(`${path.relative(repositoryRoot, filePath)}: ${message}`);
+        }
+      }
     }
   }
 }

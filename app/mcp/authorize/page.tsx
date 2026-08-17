@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { McpAuthCard, McpAuthShell } from '@/components/mcp/mcp-auth-shell';
 
 export const metadata: Metadata = {
   title: 'Connection could not start | Jobmark',
@@ -29,17 +30,8 @@ export default async function AuthorizationErrorPage({
   const { error } = await searchParams;
 
   return (
-    <main className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-12 sm:px-8">
-      <div
-        aria-hidden="true"
-        className="bg-primary/10 pointer-events-none absolute -top-48 left-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="bg-accent/10 pointer-events-none absolute -right-40 bottom-[-12rem] h-[28rem] w-[28rem] rounded-full blur-3xl"
-      />
-
-      <Card className="border-border/60 bg-card/60 relative z-10 w-full max-w-lg overflow-hidden rounded-3xl shadow-sm">
+    <McpAuthShell>
+      <McpAuthCard>
         <CardHeader className="p-8 text-center sm:p-10">
           <div className="bg-primary/10 text-primary mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl">
             <ShieldAlert className="h-7 w-7" aria-hidden="true" />
@@ -80,8 +72,8 @@ export default async function AuthorizationErrorPage({
             </Button>
           </div>
         </CardContent>
-      </Card>
-    </main>
+      </McpAuthCard>
+    </McpAuthShell>
   );
 }
 

@@ -6,8 +6,8 @@
  * and "Project Distribution" charts.
  *
  * Performance Strategy (Server-Side Crunching):
- * We perform the complex grid calculations (mapping 365 days of activities
- * to week-based arrays) on the server. This ensures the client receives
+ * We perform the complex grid calculations (mapping calendar dates to
+ * week-based arrays) on the server. This ensures the client receives
  * a lightweight "ready-to-render" object, preventing lag on low-power devices.
  */
 'use server';
@@ -20,34 +20,25 @@ import {
   filterLockedReports,
 } from '@/lib/project-lock';
 import {
-  calendarDateToUtcMidnight,
   DEFAULT_TIME_ZONE,
   getCalendarDate,
   getCalendarRange,
   isValidTimeZone,
   shiftCalendarDate,
 } from '@/lib/date-semantics';
+import {
+  buildHeatmapGrid,
+  type HeatmapDataPoint,
+  type HeatmapDay,
+  type MonthLabel,
+} from '@/lib/insights-grid';
+
+export type { HeatmapDataPoint, HeatmapDay, MonthLabel } from '@/lib/insights-grid';
 
 export interface ProjectDistribution {
   name: string;
   count: number;
   color: string;
-}
-
-export interface HeatmapDataPoint {
-  date: string; // YYYY-MM-DD
-  count: number;
-}
-
-export interface HeatmapDay {
-  date: string; // YYYY-MM-DD
-  count: number;
-  dayOfWeek: number;
-}
-
-export interface MonthLabel {
-  month: string;
-  weekIndex: number;
 }
 
 export interface InsightsData {
@@ -80,8 +71,6 @@ export async function getInsightsData(): Promise<InsightsData> {
       : DEFAULT_TIME_ZONE;
   const todayDate = getCalendarDate(now, timeZone);
   const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
-  const oneYearAgo = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, -364));
-
   const lockedIds = await getLockedProjectIds(targetUserId);
   const lockedFilter = buildLockedActivityFilter(lockedIds);
 
@@ -105,14 +94,15 @@ export async function getInsightsData(): Promise<InsightsData> {
         },
         select: { logDate: true },
       }),
-      // All activities in the last year (for heatmap and streaks)
+      // All activities are needed for the All time view and for honest streaks.
+      // Activity.logDate is date-only, so this remains a small date/count query
+      // even when the user has many notes.
       prisma.activity.findMany({
         where: {
           userId: targetUserId,
-          logDate: { gte: oneYearAgo },
           ...lockedFilter,
         },
-        select: { logDate: true, createdAt: true },
+        select: { logDate: true },
         orderBy: { logDate: 'desc' },
       }),
       // Project distribution
@@ -141,7 +131,7 @@ export async function getInsightsData(): Promise<InsightsData> {
     return {
       name: project?.name || 'Unassigned',
       count: item._count,
-      color: project?.color || '#a89888',
+      color: project?.color || 'var(--chart-5)',
     };
   });
 
@@ -152,63 +142,11 @@ export async function getInsightsData(): Promise<InsightsData> {
     heatmapMap.set(dateStr, (heatmapMap.get(dateStr) || 0) + 1);
   });
 
-  // Calculate grid (weeks of days)
-  const days: HeatmapDay[] = [];
-  const today = todayDate;
-  for (let i = 364; i >= 0; i--) {
-    const dateStr = shiftCalendarDate(today, -i);
-    const date = calendarDateToUtcMidnight(dateStr);
-    days.push({
-      date: dateStr,
-      count: heatmapMap.get(dateStr) || 0,
-      dayOfWeek: date.getUTCDay(),
-    });
-  }
-
-  const heatmapData: HeatmapDataPoint[] = Array.from(heatmapMap.entries()).map(([date, count]) => ({
-    date,
-    count,
-  }));
-
-  const heatmapGrid: HeatmapDay[][] = [];
-  let currentWeek: HeatmapDay[] = [];
-  const firstDayOfWeek = days[0]?.dayOfWeek ?? 0;
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    currentWeek.push({ date: '', count: -1, dayOfWeek: i });
-  }
-
-  days.forEach(day => {
-    currentWeek.push(day);
-    if (currentWeek.length === 7) {
-      heatmapGrid.push(currentWeek);
-      currentWeek = [];
-    }
-  });
-
-  if (currentWeek.length > 0) {
-    heatmapGrid.push(currentWeek);
-  }
-
-  // Calculate month labels
-  const monthLabels: MonthLabel[] = [];
-  let lastMonth = '';
-  heatmapGrid.forEach((week, weekIndex) => {
-    const validDays = week.filter(d => d.date);
-    if (validDays.length > 0) {
-      const firstDate = validDays[0].date;
-      const month = firstDate.slice(0, 7);
-      if (month !== lastMonth) {
-        monthLabels.push({
-          month: new Date(`${firstDate}T00:00:00Z`).toLocaleDateString('en-US', {
-            month: 'short',
-            timeZone: 'UTC',
-          }),
-          weekIndex,
-        });
-        lastMonth = month;
-      }
-    }
-  });
+  const heatmapData: HeatmapDataPoint[] = Array.from(heatmapMap.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const heatmapStart = heatmapData[0]?.date ?? shiftCalendarDate(todayDate, -364);
+  const { heatmapGrid, monthLabels } = buildHeatmapGrid(heatmapData, heatmapStart, todayDate);
 
   // Find best day
   let bestDay: { date: string; count: number } | null = null;

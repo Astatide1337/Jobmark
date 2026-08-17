@@ -15,6 +15,7 @@ import { McpActor, assertMcpActor } from '../actor';
 import { createTextResult, createStructuredResult } from '../results';
 import { McpValidationError, McpForbiddenError, McpNotFoundError } from '../errors';
 import { getLimit } from '../pagination';
+import { projectColors } from '@/lib/constants';
 
 const projectsListSchema = z.object({
   limit: z.number().int().min(1).max(100).optional(),
@@ -32,7 +33,7 @@ const projectCreateSchema = z.object({
   color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
-    .default('#6366f1'),
+    .default(projectColors[0]),
   description: z.string().max(200).optional().nullable(),
 });
 
@@ -257,7 +258,7 @@ export const projectsCreateTool = {
       type: 'object',
       properties: {
         name: { type: 'string', minLength: 1, maxLength: 50 },
-        color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', default: '#6366f1' },
+        color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', default: projectColors[0] },
         description: { type: ['string', 'null'], maxLength: 200 },
       },
       required: ['name'],

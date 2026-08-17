@@ -97,7 +97,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-4 text-sm">
-        <Link href="/articles" className="text-muted-foreground hover:text-primary transition">
+        <Link
+          href="/articles"
+          className="text-muted-foreground hover:text-primary transition-colors"
+        >
           ← Back to articles
         </Link>
         {article.category === 'help' && article.slug === 'connect-jobmark-to-ai' ? (
