@@ -232,6 +232,7 @@ export function ContactsList({ contacts, stats }: ContactsListProps) {
 
       {/* Create Dialog */}
       <ContactDialog
+        key={`new-${showCreateDialog}`}
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSuccess={handleCreateSuccess}

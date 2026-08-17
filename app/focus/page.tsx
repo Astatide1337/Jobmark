@@ -17,6 +17,7 @@ import { redirect } from 'next/navigation';
 import DecompressionWizard from './_components/decompression-wizard';
 import { getFocusConfig } from '@/app/actions/focus-config';
 import type { ResolvedFocusBlock } from '@/lib/focus/types';
+import { Toaster } from '@/components/ui/sonner';
 
 export const metadata = {
   title: 'Focus | Jobmark',
@@ -79,6 +80,7 @@ export default async function FocusPage() {
   return (
     <main className="bg-background text-foreground relative flex min-h-dvh flex-col items-center justify-center overflow-y-auto py-12">
       <DecompressionWizard blocks={resolvedBlocks} />
+      <Toaster position="bottom-right" richColors />
     </main>
   );
 }

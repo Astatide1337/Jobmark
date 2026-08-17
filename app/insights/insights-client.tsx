@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { HeatmapDay, InsightsData, MonthLabel } from '@/app/actions/insights';
+import type { InsightsData } from '@/app/actions/insights';
 import { shiftCalendarDate } from '@/lib/date-semantics';
+import { buildHeatmapGrid } from '@/lib/insights-grid';
 
 type DateRange = '7d' | '30d' | '90d' | '365d' | 'all';
 
@@ -159,60 +160,4 @@ function getDateRangeStart(range: DateRange, today: string): string | null {
   };
 
   return shiftCalendarDate(today, -daysMap[range]);
-}
-
-function buildHeatmapGrid(
-  data: InsightsData['heatmapData'],
-  startDate: string,
-  endDate: string
-): { heatmapGrid: HeatmapDay[][]; monthLabels: MonthLabel[] } {
-  const counts = new Map(data.map(day => [day.date, day.count]));
-  const days: HeatmapDay[] = [];
-  const cursor = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
-
-  while (cursor <= end) {
-    const date = cursor.toISOString().slice(0, 10);
-    days.push({
-      date,
-      count: counts.get(date) ?? 0,
-      dayOfWeek: cursor.getUTCDay(),
-    });
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-
-  const heatmapGrid: HeatmapDay[][] = [];
-  let currentWeek: HeatmapDay[] = [];
-  const firstDayOfWeek = days[0]?.dayOfWeek ?? 0;
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    currentWeek.push({ date: '', count: -1, dayOfWeek: i });
-  }
-
-  for (const day of days) {
-    currentWeek.push(day);
-    if (currentWeek.length === 7) {
-      heatmapGrid.push(currentWeek);
-      currentWeek = [];
-    }
-  }
-  if (currentWeek.length > 0) heatmapGrid.push(currentWeek);
-
-  const monthLabels: MonthLabel[] = [];
-  let lastMonth = '';
-  heatmapGrid.forEach((week, weekIndex) => {
-    const firstDay = week.find(day => day.date);
-    if (!firstDay) return;
-    const monthKey = firstDay.date.slice(0, 7);
-    if (monthKey === lastMonth) return;
-    monthLabels.push({
-      month: new Date(`${firstDay.date}T00:00:00Z`).toLocaleDateString('en-US', {
-        month: 'short',
-        timeZone: 'UTC',
-      }),
-      weekIndex,
-    });
-    lastMonth = monthKey;
-  });
-
-  return { heatmapGrid, monthLabels };
 }

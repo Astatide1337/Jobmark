@@ -42,9 +42,10 @@ const eslintConfig = defineConfig([
       // Keep the domain and UI layers explicitly typed.
       '@typescript-eslint/no-explicit-any': 'error',
 
-      // This remains a warning until the remaining post-commit draft syncs are
-      // migrated to explicit events or keyed editable drafts.
-      'react-hooks/set-state-in-effect': 'warn',
+      // State synchronization belongs to explicit events or keyed editable
+      // drafts. Keeping this as an error prevents hydration flicker from
+      // returning when a new client component is added.
+      'react-hooks/set-state-in-effect': 'error',
 
       'react/no-unescaped-entities': 'error',
 
@@ -56,6 +57,20 @@ const eslintConfig = defineConfig([
       '@typescript-eslint/prefer-as-const': 'error',
 
       '@typescript-eslint/no-empty-object-type': 'error',
+
+      // Keep keyboard and screen-reader paths covered by CI. Next's preset
+      // registers these rules as warnings; product interactions must be errors.
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/aria-props': 'error',
+      'jsx-a11y/aria-proptypes': 'error',
+      'jsx-a11y/aria-unsupported-elements': 'error',
+      'jsx-a11y/interactive-supports-focus': 'error',
+      'jsx-a11y/label-has-associated-control': 'error',
+      'jsx-a11y/mouse-events-have-key-events': 'error',
+      'jsx-a11y/no-noninteractive-element-interactions': 'error',
+      'jsx-a11y/no-static-element-interactions': 'error',
+      'jsx-a11y/role-has-required-aria-props': 'error',
+      'jsx-a11y/role-supports-aria-props': 'error',
     },
   },
   globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', '.worktrees/**', '*.config.*']),

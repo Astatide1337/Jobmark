@@ -436,7 +436,14 @@ export function ProjectChipSelector({ projects, selectedId, onSelect }: ProjectC
           </motion.div>
         )}
       </AnimatePresence>
-      {isExpanded && <div className="fixed inset-0 z-40" onClick={() => setIsExpanded(false)} />}
+      {isExpanded && (
+        <button
+          type="button"
+          aria-label="Close project picker"
+          className="fixed inset-0 z-40 cursor-default"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
     </div>
   );
 }

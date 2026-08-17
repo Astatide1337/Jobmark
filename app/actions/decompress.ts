@@ -16,6 +16,7 @@ import {
   getCalendarDate,
   isValidTimeZone,
 } from '@/lib/date-semantics';
+import { projectColors } from '@/lib/constants';
 
 export async function logDecompressionSession() {
   const session = await auth();
@@ -47,7 +48,7 @@ export async function logDecompressionSession() {
         data: {
           userId: session.user.id,
           name: 'Focus',
-          color: '#d4a574', // Warm amber
+          color: projectColors[0],
           description: 'Focus and reset sessions.',
         },
       });

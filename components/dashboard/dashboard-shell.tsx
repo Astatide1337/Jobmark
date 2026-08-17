@@ -14,6 +14,7 @@ import React, { useState } from 'react';
 import { Sidebar } from './sidebar';
 import { cn } from '@/lib/utils';
 import { CommandPalette } from '@/components/ui/command-palette';
+import { Toaster } from '@/components/ui/sonner';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -45,6 +46,7 @@ export function DashboardShell({
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <CommandPalette />
+        <Toaster position="bottom-right" richColors />
         {headerWithToggle}
 
         <div

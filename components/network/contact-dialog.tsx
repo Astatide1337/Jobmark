@@ -9,7 +9,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -57,28 +57,18 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form fields
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [birthday, setBirthday] = useState('');
+  const [fullName, setFullName] = useState(() => contact?.fullName ?? '');
+  const [email, setEmail] = useState(() => contact?.email ?? '');
+  const [phone, setPhone] = useState(() => contact?.phone ?? '');
+  const [birthday, setBirthday] = useState(() =>
+    contact?.birthday ? format(new Date(contact.birthday), 'yyyy-MM-dd') : ''
+  );
   const [birthdayPickerOpen, setBirthdayPickerOpen] = useState(false);
-  const [relationship, setRelationship] = useState('');
-  const [personalityTraits, setPersonalityTraits] = useState('');
-  const [notes, setNotes] = useState('');
-
-  // Reset form when dialog opens/closes
-  useEffect(() => {
-    if (open) {
-      setFullName(contact?.fullName ?? '');
-      setEmail(contact?.email ?? '');
-      setPhone(contact?.phone ?? '');
-      setBirthday(contact?.birthday ? new Date(contact.birthday).toISOString().split('T')[0] : '');
-      setRelationship(contact?.relationship ?? '');
-      setPersonalityTraits(contact?.personalityTraits ?? '');
-      setNotes(contact?.notes ?? '');
-      setErrors({});
-    }
-  }, [open, contact]);
+  const [relationship, setRelationship] = useState(() => contact?.relationship ?? '');
+  const [personalityTraits, setPersonalityTraits] = useState(
+    () => contact?.personalityTraits ?? ''
+  );
+  const [notes, setNotes] = useState(() => contact?.notes ?? '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

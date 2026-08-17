@@ -4,8 +4,9 @@ import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Check, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { McpAuthCard, McpAuthShell } from '@/components/mcp/mcp-auth-shell';
 
 const SCOPE_LABELS: Record<string, { label: string; description: string }> = {
   'jobmark:read': {
@@ -78,10 +79,9 @@ function ConsentForm() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center p-4">
-      <Card className="border-border/50 bg-card/60 w-full max-w-lg overflow-hidden rounded-3xl shadow-sm">
+    <McpAuthShell>
+      <McpAuthCard>
         <CardHeader className="relative p-8 text-center">
-          <div className="border-primary/20 bg-primary/10 absolute -top-16 -right-16 h-40 w-40 rounded-full border blur-3xl" />
           <div className="bg-primary/10 text-primary relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
             <Shield className="h-7 w-7" />
           </div>
@@ -149,8 +149,8 @@ function ConsentForm() {
             </Button>
           </div>
         </CardContent>
-      </Card>
-    </div>
+      </McpAuthCard>
+    </McpAuthShell>
   );
 }
 
@@ -158,9 +158,13 @@ export default function ConsentPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-background flex min-h-screen items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+        <McpAuthShell>
+          <McpAuthCard>
+            <CardContent className="text-muted-foreground p-8 text-center text-sm">
+              Loading...
+            </CardContent>
+          </McpAuthCard>
+        </McpAuthShell>
       }
     >
       <ConsentForm />

@@ -112,7 +112,7 @@ function CareerSignalCallout({ article }: CareerSignalCalloutProps) {
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <Link
           href={primaryHref}
-          className="border-primary/40 bg-primary/20 text-primary hover:bg-primary/25 inline-flex rounded-xl border px-4 py-2 text-sm font-medium transition"
+          className="border-primary/40 bg-primary/20 text-primary hover:bg-primary/25 inline-flex rounded-xl border px-4 py-2 text-sm font-medium transition-[background-color,border-color,color]"
         >
           {primaryAction}
         </Link>
@@ -147,7 +147,7 @@ function RelatedStories({ articles, title = 'More guides' }: RelatedStoriesProps
           <Link
             key={article.slug}
             href={`/articles/${article.slug}`}
-            className="group border-border/60 bg-card/70 hover:border-primary/40 overflow-hidden rounded-2xl border transition"
+            className="group border-border/60 bg-card/70 hover:border-primary/40 overflow-hidden rounded-2xl border transition-[border-color]"
           >
             <div
               className={`${cardTones[index % cardTones.length]} border-border/60 h-40 border-b`}

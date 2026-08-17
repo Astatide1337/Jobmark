@@ -41,7 +41,7 @@ function RotatingWord() {
   return (
     <span
       aria-live="polite"
-      className="inline-block min-w-[7ch] transition-opacity duration-200"
+      className="inline-block w-[8ch] transition-opacity duration-200"
       style={{ opacity: isVisible ? 1 : 0 }}
     >
       {headlineWords[wordIndex]}
@@ -67,7 +67,7 @@ export function EditorialHero() {
             </div>
 
             <h1 className="font-serif text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl lg:text-7xl">
-              <span className="text-foreground block whitespace-nowrap">Remember what you</span>
+              <span className="text-foreground block">Remember what you</span>
               <span className="text-primary block min-h-[1.1em]">
                 <RotatingWord />
               </span>
