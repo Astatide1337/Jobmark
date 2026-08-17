@@ -27,7 +27,7 @@ import {
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
+import { DEFAULT_TIME_ZONE, getCalendarDate, isValidTimeZone } from '@/lib/date-semantics';
 
 import { getGoals } from '@/app/actions/goals';
 import { getLockedProjectIds } from '@/lib/project-lock';
@@ -69,9 +69,17 @@ export default async function DashboardPage() {
     settings?.timeZone && isValidTimeZone(settings.timeZone)
       ? settings.timeZone
       : DEFAULT_TIME_ZONE;
+  const now = new Date();
   const hour = Number(
-    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format()
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format(now)
   );
+  const dateLabel = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone,
+  }).format(now);
+  const today = getCalendarDate(now, timeZone);
   let greeting = 'Good evening';
   if (hour < 12) greeting = 'Good morning';
   else if (hour < 18) greeting = 'Good afternoon';
@@ -79,7 +87,12 @@ export default async function DashboardPage() {
   return (
     <DashboardShell
       header={
-        <DashboardHeader userName={session.user.name} userImage={session.user.image} showDate />
+        <DashboardHeader
+          userName={session.user.name}
+          userImage={session.user.image}
+          showDate
+          dateLabel={dateLabel}
+        />
       }
     >
       <div className="mx-auto w-full max-w-(--container-content)">
@@ -100,7 +113,7 @@ export default async function DashboardPage() {
         )}
 
         {/* Goal Motivator (Carousel) */}
-        <GoalMotivator goals={goals} settings={settings} />
+        <GoalMotivator goals={goals} settings={settings} today={today} timeZone={timeZone} />
 
         {/* Quick Capture */}
         <div className="mb-8">
@@ -115,6 +128,8 @@ export default async function DashboardPage() {
             )}
             todayCount={stats.todayCount}
             dailyGoal={stats.dailyGoal}
+            initialDate={today}
+            initialTimeZone={timeZone}
           />
         </div>
 
@@ -155,6 +170,7 @@ export default async function DashboardPage() {
             activities={activities}
             totalCount={totalCount}
             initialTimeZone={timeZone}
+            initialToday={today}
           />
         </div>
       </div>

@@ -6,7 +6,12 @@ import { getProjectActivities } from '@/app/actions/projects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Activity, Calendar, Loader2, ChevronDown } from 'lucide-react';
-import { format } from 'date-fns';
+import {
+  DEFAULT_TIME_ZONE,
+  calendarDateToUtcMidnight,
+  getCalendarDate,
+  isValidTimeZone,
+} from '@/lib/date-semantics';
 
 type ActivityItem = {
   id: string;
@@ -15,22 +20,12 @@ type ActivityItem = {
   logDate: string; // Now a string like "2026-01-30"
 };
 
-// Helper to get YYYY-MM-DD from createdAt in local timezone
-function getCreatedAtLocalYMD(date: Date | string): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('en-CA');
-}
-
-// Helper to parse YYYY-MM-DD string to local Date
-function parseLocalYMD(ymd: string): Date {
-  const [year, month, day] = ymd.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
 interface ProjectActivityTimelineProps {
   projectId: string;
   initialActivities: ActivityItem[];
   totalCount: number;
+  timeZone?: string;
+  today?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -39,10 +34,14 @@ export function ProjectActivityTimeline({
   projectId,
   initialActivities,
   totalCount,
+  timeZone = DEFAULT_TIME_ZONE,
+  today,
 }: ProjectActivityTimelineProps) {
   const [activities, setActivities] = useState(initialActivities);
   const [isLoadingMore, startLoadingMore] = useTransition();
   const [hasMore, setHasMore] = useState(initialActivities.length < totalCount);
+  const displayTimeZone = isValidTimeZone(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
+  const displayToday = today ?? getCalendarDate(new Date(), displayTimeZone);
 
   const handleLoadMore = () => {
     startLoadingMore(async () => {
@@ -77,9 +76,8 @@ export function ProjectActivityTimeline({
       <div className="border-border/50 relative ml-6 space-y-8 border-l pb-4">
         {activities.map(activity => {
           const date = new Date(activity.createdAt);
-          const today = new Date();
-          const isToday = today.toDateString() === date.toDateString();
-          const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt);
+          const isToday = displayToday === getCalendarDate(date, displayTimeZone);
+          const createdAtYMD = getCalendarDate(date, displayTimeZone);
           const logDateYMD = activity.logDate; // Already a string like "2026-01-30"
           const datesDiffer = logDateYMD !== createdAtYMD;
 
@@ -92,22 +90,14 @@ export function ProjectActivityTimeline({
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
                     <Calendar className="h-3.5 w-3.5" />
-                    {date.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    {formatDate(date, displayTimeZone)}
                     <span className="text-muted-foreground/50 mx-1">•</span>
-                    {date.toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
+                    {formatTime(date, displayTimeZone)}
                     {datesDiffer && (
                       <>
                         <span className="text-muted-foreground/50 mx-1">•</span>
                         <span className="text-warning font-medium">
-                          For {format(parseLocalYMD(logDateYMD), 'MMM d')}
+                          For {formatCalendarDate(logDateYMD)}
                         </span>
                       </>
                     )}
@@ -146,7 +136,7 @@ export function ProjectActivityTimeline({
                 <span className="text-xs font-medium tracking-wider uppercase">Load more</span>
                 <div className="bg-border/50 group-hover:bg-border h-px w-12 transition-colors" />
               </div>
-              <ChevronDown className="h-4 w-4 animate-bounce opacity-50 transition-opacity group-hover:opacity-100" />
+              <ChevronDown className="h-4 w-4 opacity-50 transition-opacity group-hover:opacity-100" />
             </>
           )}
         </button>
@@ -158,4 +148,30 @@ export function ProjectActivityTimeline({
       </p>
     </div>
   );
+}
+
+function formatDate(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
+function formatTime(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function formatCalendarDate(value: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+  }).format(calendarDateToUtcMidnight(value));
 }

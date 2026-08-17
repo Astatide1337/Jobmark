@@ -120,6 +120,8 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
+                  aria-label={`Use ${c} project color`}
+                  aria-pressed={color === c}
                   className={`h-6 w-6 rounded-full transition-[border-color,box-shadow] ${
                     color === c
                       ? 'ring-ring ring-offset-background ring-2 ring-offset-2'

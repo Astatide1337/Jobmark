@@ -44,20 +44,12 @@ export function DashboardShell({
         <Sidebar isMobileOpen={isMobileOpen} onMobileClose={() => setIsMobileOpen(false)} />
       )}
 
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-clip">
         <CommandPalette />
         <Toaster position="bottom-right" richColors />
         {headerWithToggle}
 
-        <div
-          className={cn(
-            'flex min-h-0 flex-1 flex-col',
-            'scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent overflow-y-auto px-4 py-6 lg:px-8',
-            className
-          )}
-        >
-          {children}
-        </div>
+        <div className={cn('flex flex-1 flex-col', 'px-4 py-6 lg:px-8', className)}>{children}</div>
       </main>
     </div>
   );

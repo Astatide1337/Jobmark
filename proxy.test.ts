@@ -16,4 +16,11 @@ describe('route proxy authentication boundary', () => {
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe('https://jobmark.example.com/');
   });
+
+  it('returns 404 for the retired internal chat route', () => {
+    const response = proxy(new NextRequest('https://jobmark.example.com/chat'));
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('location')).toBeNull();
+  });
 });

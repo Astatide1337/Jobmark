@@ -17,16 +17,10 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
 
   const [cycleIndex, setCycleIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
 
   const currentStep = steps[stepIndex];
 
   useEffect(() => {
-    setVisible(true);
-    const fadeOut = setTimeout(
-      () => setVisible(false),
-      Math.max(0, (currentStep.duration - 0.8) * 1000)
-    );
     const advance = setTimeout(() => {
       const nextStep = stepIndex + 1;
       if (nextStep < steps.length) {
@@ -43,10 +37,7 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
       }
     }, currentStep.duration * 1000);
 
-    return () => {
-      clearTimeout(fadeOut);
-      clearTimeout(advance);
-    };
+    return () => clearTimeout(advance);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex, cycleIndex]);
 
@@ -57,7 +48,6 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
       cycleIndex={cycleIndex}
       totalCycles={cycles}
       size="full"
-      visible={visible}
     />
   );
 }

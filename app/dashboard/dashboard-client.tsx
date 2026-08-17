@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, FileText, ChevronDown, Trash2 } from 'lucide-react';
 
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import confetti from 'canvas-confetti';
 import { useSettings } from '@/components/providers/settings-provider';
 import { toast } from 'sonner';
@@ -135,6 +135,8 @@ interface QuickCaptureProps {
   todayCount?: number;
   dailyGoal?: number;
   demoMode?: boolean;
+  initialDate?: string;
+  initialTimeZone?: string;
 }
 
 export function QuickCapture({
@@ -142,8 +144,18 @@ export function QuickCapture({
   todayCount = 0,
   dailyGoal = 3,
   demoMode = false,
+  initialDate,
+  initialTimeZone,
 }: QuickCaptureProps) {
   const { settings } = useSettings();
+  let timeZone = DEFAULT_TIME_ZONE;
+  if (settings?.timeZone && isValidTimeZone(settings.timeZone)) {
+    timeZone = settings.timeZone;
+  } else if (initialTimeZone && isValidTimeZone(initialTimeZone)) {
+    timeZone = initialTimeZone;
+  }
+  const todayKey = initialDate ?? getCalendarDate(new Date(), timeZone);
+  const initialDateValue = useMemo(() => parseCalendarDate(todayKey), [todayKey]);
   const [state, formAction, isPending] = useActionState(createActivity, initialState);
   const [content, setContent] = useState('');
 
@@ -151,13 +163,13 @@ export function QuickCapture({
     if (!content && !formData.get('content')) return;
 
     setContent('');
-    setSelectedDate(new Date());
+    setSelectedDate(initialDateValue);
     triggerConfetti();
     toast.success('Note added (demo)');
   };
 
   const [selectedProject, setSelectedProject] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDateValue);
 
   // Keep a ref to the current date to avoid stale closure issues with useActionState
   const selectedDateRef = useRef<Date>(selectedDate);
@@ -193,7 +205,7 @@ export function QuickCapture({
   useEffect(() => {
     if (state.success) {
       setContent('');
-      setSelectedDate(new Date()); // Reset to today
+      setSelectedDate(initialDateValue); // Reset to the server's calendar today
 
       // Only trigger confetti if setting is enabled (default true)
       if (settings?.showConfetti !== false) {
@@ -204,16 +216,17 @@ export function QuickCapture({
         textareaRef.current?.focus();
       }, 100);
     }
-  }, [state, settings?.showConfetti]);
+  }, [initialDateValue, state, settings?.showConfetti]);
 
   const charCount = content.length;
   const isValidLength = charCount >= 10 && charCount <= 1000;
 
   // Get formatted date label
   const getDateLabel = () => {
-    if (isToday(selectedDate)) return 'Today';
-    if (isYesterday(selectedDate)) return 'Yesterday';
-    return format(selectedDate, 'MMM d');
+    const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
+    if (selectedDateKey === todayKey) return 'Today';
+    if (selectedDateKey === shiftCalendarDate(todayKey, -1)) return 'Yesterday';
+    return format(parseCalendarDate(selectedDateKey), 'MMM d');
   };
 
   // Global keyboard listener for Ctrl/Cmd + Enter
@@ -306,6 +319,7 @@ export function QuickCapture({
       visibleProjects={visibleProjects}
       selectedProject={selectedProject}
       selectedDate={selectedDate}
+      maxDate={initialDateValue}
       datePickerOpen={datePickerOpen}
       state={state}
       dateLabel={getDateLabel()}
@@ -331,6 +345,7 @@ interface ActivityTimelineProps {
   activities: Activity[];
   totalCount?: number;
   initialTimeZone?: string;
+  initialToday?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -339,6 +354,7 @@ export function ActivityTimeline({
   activities: initialActivities,
   totalCount,
   initialTimeZone,
+  initialToday,
 }: ActivityTimelineProps) {
   const { settings } = useSettings();
   let timeZone = DEFAULT_TIME_ZONE;
@@ -395,7 +411,7 @@ export function ActivityTimeline({
           <div key={dateKey}>
             <div className="mb-4 flex items-center gap-3">
               <h3 className="text-muted-foreground text-sm font-medium">
-                {formatDateHeader(dateKey, timeZone)}
+                {formatDateHeader(dateKey, timeZone, initialToday)}
               </h3>
               <div className="bg-border/50 h-px flex-1" />
               <span className="text-muted-foreground text-xs">
@@ -437,7 +453,7 @@ export function ActivityTimeline({
                 <div className="bg-border/50 group-hover:bg-primary/30 h-px w-12 transition-colors" />
               </div>
 
-              <ChevronDown className="h-4 w-4 animate-bounce opacity-50 transition-opacity group-hover:opacity-100" />
+              <ChevronDown className="h-4 w-4 opacity-50 transition-opacity group-hover:opacity-100" />
             </>
           )}
         </button>
@@ -522,6 +538,12 @@ function DeleteActivityButton({
   const [isPending, startTransition] = useTransition();
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+    };
+  }, []);
+
   const handleDelete = () => {
     onOptimisticDelete?.();
 
@@ -602,6 +624,11 @@ function groupByDate(
     }));
 }
 
+function parseCalendarDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
 function getLogDateYMD(date: string | Date): string {
   if (typeof date === 'string') {
     return date.substring(0, 10);
@@ -622,9 +649,9 @@ function parseLocalYMD(ymd: string): Date {
   return new Date(year, month - 1, day);
 }
 
-function formatDateHeader(dateKey: string, timeZone: string): string {
+function formatDateHeader(dateKey: string, timeZone: string, initialToday?: string): string {
   const date = parseLocalYMD(dateKey);
-  const today = getCalendarDate(new Date(), timeZone);
+  const today = initialToday ?? getCalendarDate(new Date(), timeZone);
 
   if (dateKey === today) {
     return 'Today';

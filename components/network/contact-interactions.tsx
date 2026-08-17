@@ -66,11 +66,13 @@ export function InteractionTimeline({
   interactions,
   contactId,
   timeZone,
+  today,
   onInteractionAdded,
 }: {
   interactions: Interaction[];
   contactId: string;
   timeZone: string;
+  today: string;
   onInteractionAdded?: () => void;
 }) {
   const router = useRouter();
@@ -132,6 +134,7 @@ export function InteractionTimeline({
         {showForm && (
           <InteractionLogForm
             contactId={contactId}
+            today={today}
             onSuccess={handleFormSuccess}
             onCancel={() => setShowForm(false)}
           />
@@ -281,14 +284,15 @@ export function InteractionTimeline({
 
 function InteractionLogForm({
   contactId,
+  today,
   onSuccess,
   onCancel,
 }: {
   contactId: string;
+  today: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }) {
-  const today = format(new Date(), 'yyyy-MM-dd');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showRawNotes, setShowRawNotes] = useState(false);
@@ -328,11 +332,7 @@ function InteractionLogForm({
     return new Date(y, m - 1, d);
   };
 
-  const todayLocalMidnight = (() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  })();
+  const todayLocalMidnight = ymdToLocalDate(today);
 
   const getFieldValue = (field: 'summary' | 'nextStep') =>
     field === 'summary' ? summary : nextStep;

@@ -13,7 +13,7 @@
  */
 'use client';
 
-import { useEffect, useState, useCallback, useTransition, useMemo } from 'react';
+import { useEffect, useState, useCallback, useTransition, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import debounce from 'lodash.debounce';
 import {
@@ -75,6 +75,7 @@ export function CommandPalette() {
   >([]);
   const [selectedActivity, setSelectedActivity] = useState<SearchResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
   // Load recent items when dialog opens
@@ -122,7 +123,12 @@ export function CommandPalette() {
     };
   }, [query, debouncedSearch]);
 
-  useEffect(() => () => debouncedSearch.cancel(), [debouncedSearch]);
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+    };
+  }, [debouncedSearch]);
 
   const handleSelect = useCallback(
     (item: { href?: string; action?: string }) => {
@@ -132,7 +138,8 @@ export function CommandPalette() {
 
       if (item.action === 'focus-capture') {
         // Focus the quick capture textarea
-        setTimeout(() => {
+        if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+        focusTimeoutRef.current = setTimeout(() => {
           const textarea = document.querySelector<HTMLTextAreaElement>(
             '[data-quick-capture="true"]'
           );

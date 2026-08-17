@@ -39,9 +39,16 @@ export function ReportsSection({ settings: initialSettings }: { settings: UserSe
   const currentSettings = settings || initialSettings;
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [customInstructions, setCustomInstructions] = useState(
     currentSettings.customInstructions || ''
   );
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   const hasChanges = useMemo(
     () => customInstructions !== (currentSettings.customInstructions || ''),
@@ -55,7 +62,8 @@ export function ReportsSection({ settings: initialSettings }: { settings: UserSe
     await refreshSettings();
     setIsSaving(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
   };
 
   return (
@@ -113,6 +121,7 @@ export function AppearanceSection({ settings }: { settings: UserSettingsData }) 
   const [hideArchived, setHideArchived] = useState(settings.hideArchived);
   const [showConfetti, setShowConfetti] = useState(settings.showConfetti);
   const [timeZone, setTimeZone] = useState(settings.timeZone);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasChanges = useMemo(
     () =>
@@ -145,6 +154,7 @@ export function AppearanceSection({ settings }: { settings: UserSettingsData }) 
   useEffect(() => {
     return () => {
       applyTheme(committedThemeRef.current.themePreset, committedThemeRef.current.themeMode);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
 
@@ -162,7 +172,8 @@ export function AppearanceSection({ settings }: { settings: UserSettingsData }) 
     await refreshSettings();
     setIsSaving(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
   };
 
   return (

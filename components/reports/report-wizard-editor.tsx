@@ -62,7 +62,13 @@ export function ReportWizardEditor({
     >
       <div className="flex h-full w-full flex-col gap-6">
         <div className="flex shrink-0 items-center gap-2 pl-1">
-          <Button variant="ghost" size="icon-sm" onClick={onBack} disabled={isStreaming}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onBack}
+            disabled={isStreaming}
+            aria-label="Back to report settings"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h2 className="flex items-center gap-2 text-xl font-bold">

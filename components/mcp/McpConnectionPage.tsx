@@ -192,7 +192,7 @@ export function McpConnectionPage({ baseUrl, connections }: McpConnectionProps) 
                         })}
                       </p>
                       <p className="text-muted-foreground mt-1 text-sm">
-                        Connected on {new Date(connection.createdAt).toLocaleDateString()}
+                        Connected on {formatConnectionDate(connection.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -298,6 +298,13 @@ export function McpConnectionPage({ baseUrl, connections }: McpConnectionProps) 
       </AlertDialog>
     </div>
   );
+}
+
+function formatConnectionDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeZone: 'UTC',
+  }).format(new Date(date));
 }
 
 function ConnectionProviderIcon({
