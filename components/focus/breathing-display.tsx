@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { BreathingPattern, BreathingStep } from '@/lib/focus/types';
 import { BREATHING_PATTERNS } from '@/lib/focus/defaults';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,6 @@ interface BreathingDisplayProps {
   cycleIndex: number;
   totalCycles: number;
   size?: BreathingDisplaySize;
-  visible?: boolean;
 }
 
 export function BreathingDisplay({
@@ -22,8 +21,8 @@ export function BreathingDisplay({
   cycleIndex,
   totalCycles,
   size = 'full',
-  visible = true,
 }: BreathingDisplayProps) {
+  const prefersReducedMotion = useReducedMotion();
   const patternDef = BREATHING_PATTERNS[pattern];
   const steps = patternDef.steps;
   const currentStep: BreathingStep = steps[stepIndex];
@@ -59,6 +58,16 @@ export function BreathingDisplay({
     targetScale = isFullSize ? 0.8 : 0.82;
   }
 
+  // Exhale starts at the size reached by the preceding hold and then shrinks
+  // for the full exhale duration. Starting the new label at its final scale
+  // makes the phase change look like a jump instead of one continuous breath.
+  let initialScale = targetScale;
+  if (isExhale) {
+    initialScale = maximumScale;
+  } else if (isInhale) {
+    initialScale = label === 'INHALE' ? 0.8 : physiologicalInhaleScale;
+  }
+
   const sizeClasses = {
     full: {
       root: 'h-[220px]',
@@ -68,7 +77,7 @@ export function BreathingDisplay({
     settings: {
       root: 'h-[220px]',
       stage: 'h-40 max-w-[36rem] overflow-visible px-2 sm:px-4',
-      label: 'max-w-full text-[clamp(2.25rem,5vw,3rem)]',
+      label: 'max-w-full text-[clamp(2rem,9vw,4rem)]',
     },
     compact: {
       root: 'h-[168px]',
@@ -91,21 +100,41 @@ export function BreathingDisplay({
         )}
       >
         <div className="absolute inset-0 flex items-center justify-center">
-          <motion.span
-            className={cn(
-              'text-primary inline-block font-serif tracking-[0.12em] whitespace-nowrap will-change-[transform,opacity]',
-              sizeClasses.label
-            )}
-            initial={{ opacity: 0, scale: isInhale && label === 'INHALE' ? 0.8 : targetScale }}
-            animate={{ opacity: visible ? 1 : 0, scale: targetScale }}
-            transition={{
-              opacity: { duration: 0.25, ease: 'easeOut' },
-              scale: { duration: currentStep.duration, ease: 'easeInOut' },
-            }}
-            style={{ transformOrigin: 'center center' }}
-          >
-            {label.replace(/[0-9]/g, '').trim()}
-          </motion.span>
+          <AnimatePresence mode="sync">
+            <motion.span
+              key={`${cycleIndex}-${stepIndex}`}
+              className={cn(
+                'text-primary absolute inline-block font-serif tracking-[0.12em] whitespace-nowrap will-change-[transform,opacity]',
+                sizeClasses.label
+              )}
+              initial={
+                prefersReducedMotion
+                  ? false
+                  : {
+                      // Keep the first frame visible; the scale animation is
+                      // the breathing cue and should not look like a flash.
+                      opacity: 1,
+                      scale: initialScale,
+                    }
+              }
+              animate={{ opacity: 1, scale: targetScale }}
+              exit={{
+                opacity: prefersReducedMotion ? 1 : 0,
+                scale: prefersReducedMotion ? targetScale : 0.92,
+              }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : {
+                      opacity: { duration: 0.3, ease: 'easeInOut' },
+                      scale: { duration: currentStep.duration, ease: 'easeInOut' },
+                    }
+              }
+              style={{ transformOrigin: 'center center' }}
+            >
+              {label.replace(/[0-9]/g, '').trim()}
+            </motion.span>
+          </AnimatePresence>
         </div>
       </div>
 

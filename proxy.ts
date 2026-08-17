@@ -4,6 +4,13 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // The internal chat product was retired. Return a real 404 instead of
+  // redirecting the stale path to the landing page, which makes old links
+  // look valid and violates the route contract in SPEC.md.
+  if (pathname === '/chat' || pathname.startsWith('/chat/')) {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   // API handlers return their own JSON auth/error responses. Redirecting an
   // unauthenticated API call to the landing page turns a useful 401 into an
   // HTML response and breaks clients such as MCP and the vault handoff.

@@ -29,6 +29,7 @@ interface DashboardHeaderProps {
   userName?: string | null;
   userImage?: string | null;
   showDate?: boolean;
+  dateLabel?: string;
   title?: string;
   onMenuClick?: () => void;
   demoMode?: boolean;
@@ -38,6 +39,7 @@ export function DashboardHeader({
   userName,
   userImage,
   showDate = false,
+  dateLabel,
   title,
   onMenuClick,
   demoMode = false,
@@ -98,13 +100,7 @@ export function DashboardHeader({
             {!title && showDate && (
               <div className="text-muted-foreground hidden items-center gap-2 lg:flex">
                 <Calendar className="h-4 w-4" />
-                <span className="text-sm" suppressHydrationWarning>
-                  {new Date().toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
+                <span className="text-sm">{dateLabel ?? 'Today'}</span>
               </div>
             )}
           </div>

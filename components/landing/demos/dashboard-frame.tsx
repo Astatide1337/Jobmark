@@ -78,6 +78,7 @@ export function DashboardFrame({
           userName="Demo User"
           title={titleForPath(currentPath)}
           showDate={currentPath === '/dashboard'}
+          dateLabel={currentPath === '/dashboard' ? 'Friday, August 14' : undefined}
           demoMode
           onMenuClick={() => setIsMobileOpen(true)}
         />

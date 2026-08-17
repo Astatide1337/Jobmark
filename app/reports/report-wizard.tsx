@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ReportConfig,
@@ -65,6 +65,13 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
@@ -194,8 +201,8 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
     await saveReportToHistory(reportContent, finalConfig);
     setIsSaving(false);
     setSaved(true);
-    // Maybe redirect or show success
-    setTimeout(() => setSaved(false), 3000);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
   };
 
   const handleDraftWithProvider = async (provider: ConnectedMcpProvider) => {

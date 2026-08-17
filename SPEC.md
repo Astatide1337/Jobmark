@@ -717,7 +717,7 @@ Update all copy that describes Jobmark as providing an internal AI coach or chat
 Update at minimum:
 
 - README.
-- Landing product tour and chat demo.
+- Landing product tour and assistant connection demo.
 - FAQ.
 - Privacy policy.
 - Terms.

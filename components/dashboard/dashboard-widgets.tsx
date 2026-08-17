@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import Link from 'next/link';
 import {
   Check,
@@ -19,6 +19,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cn } from '@/lib/utils';
 import type { GoalData } from '@/app/actions/goals';
 import type { UserSettingsData } from '@/app/actions/settings';
+import {
+  calendarDateToUtcMidnight,
+  DEFAULT_TIME_ZONE,
+  getCalendarDate,
+  isValidTimeZone,
+} from '@/lib/date-semantics';
 
 export function WorkflowStarter({
   activityCount,
@@ -175,6 +181,8 @@ interface Project {
 interface GoalMotivatorProps {
   goals: GoalData[];
   settings: UserSettingsData | null;
+  today?: string;
+  timeZone?: string;
 }
 
 function getGoalMotionX(shouldReduceMotion: boolean | null, direction: number, entering: boolean) {
@@ -183,8 +191,16 @@ function getGoalMotionX(shouldReduceMotion: boolean | null, direction: number, e
   return direction < 0 ? 1000 : -1000;
 }
 
-export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
+export function GoalMotivator({
+  goals,
+  settings,
+  today,
+  timeZone: initialTimeZone,
+}: GoalMotivatorProps) {
   const shouldReduceMotion = useReducedMotion();
+  const timeZone =
+    initialTimeZone && isValidTimeZone(initialTimeZone) ? initialTimeZone : DEFAULT_TIME_ZONE;
+  const todayKey = today ?? getCalendarDate(new Date(), timeZone);
   const hasGoals = goals.length > 0;
   const showLegacy = !hasGoals && settings?.primaryGoal;
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -233,7 +249,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
 
   if (showLegacy && settings?.primaryGoal) {
     const deadline = settings.goalDeadline ? new Date(settings.goalDeadline) : null;
-    const daysLeft = deadline ? differenceInDays(deadline, new Date()) : null;
+    const daysLeft = deadline ? getDaysLeft(deadline, todayKey, timeZone) : null;
     return (
       <Card className="border-primary/10 from-card to-primary/5 relative mb-8 overflow-hidden bg-gradient-to-br shadow-sm">
         <div className="bg-primary/5 absolute top-0 right-0 h-32 w-32 -translate-x-8 -translate-y-16 rounded-full blur-3xl" />
@@ -272,7 +288,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
 
   const currentGoal = goals[currentIndex];
   const deadline = currentGoal.deadline ? new Date(currentGoal.deadline) : null;
-  const daysLeft = deadline ? differenceInDays(deadline, new Date()) : null;
+  const daysLeft = deadline ? getDaysLeft(deadline, todayKey, timeZone) : null;
   const variants = {
     enter: (dir: number) => ({ x: getGoalMotionX(shouldReduceMotion, dir, true), opacity: 0 }),
     center: { zIndex: 1, x: 0, opacity: 1 },
@@ -327,7 +343,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
                   Days left
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
-                  {format(deadline, 'MMM d, yyyy')}
+                  {formatCalendarDate(deadline, timeZone)}
                 </div>
               </div>
             )}
@@ -340,6 +356,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
               size="icon"
               className="bg-background/50 hover:bg-background h-8 w-8 rounded-full backdrop-blur-sm"
               onClick={() => paginate(-1)}
+              aria-label="Previous goal"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -348,6 +365,7 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
               size="icon"
               className="bg-background/50 hover:bg-background h-8 w-8 rounded-full backdrop-blur-sm"
               onClick={() => paginate(1)}
+              aria-label="Next goal"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -356,6 +374,21 @@ export function GoalMotivator({ goals, settings }: GoalMotivatorProps) {
       </CardContent>
     </Card>
   );
+}
+
+function getDaysLeft(deadline: Date, today: string, timeZone: string): number {
+  const deadlineKey = getCalendarDate(deadline, timeZone);
+  return differenceInDays(calendarDateToUtcMidnight(deadlineKey), calendarDateToUtcMidnight(today));
+}
+
+function formatCalendarDate(date: Date, timeZone: string): string {
+  const dateKey = getCalendarDate(date, timeZone);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(calendarDateToUtcMidnight(dateKey));
 }
 
 interface ProjectChipSelectorProps {

@@ -31,8 +31,6 @@ import { OutreachWizard } from '@/app/network/[contactId]/outreach-wizard';
 import type { ConnectedMcpProvider } from '@/components/reports/mcp-draft-actions';
 import { deleteContact } from '@/app/actions/network';
 import { getAgeFromBirthday, formatDate } from '@/lib/network';
-import { useSettings } from '@/components/providers/settings-provider';
-import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 import { toast } from 'sonner';
 
 interface Contact {
@@ -58,6 +56,8 @@ interface ContactDetailViewProps {
     content: string;
     createdAt: Date;
   }>;
+  timeZone: string;
+  today: string;
 }
 
 export function ContactDetailView({
@@ -65,13 +65,10 @@ export function ContactDetailView({
   interactions,
   connectedMcpProviders,
   initialDrafts,
+  timeZone,
+  today,
 }: ContactDetailViewProps) {
   const router = useRouter();
-  const { settings } = useSettings();
-  const timeZone =
-    settings?.timeZone && isValidTimeZone(settings.timeZone)
-      ? settings.timeZone
-      : DEFAULT_TIME_ZONE;
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -148,6 +145,7 @@ export function ContactDetailView({
                 interactions={interactions}
                 contactId={contact.id}
                 timeZone={timeZone}
+                today={today}
                 onInteractionAdded={() => router.refresh()}
               />
             </TabsContent>

@@ -241,25 +241,15 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
   const patternDef = BREATHING_PATTERNS[pattern];
   const steps = patternDef.steps;
   const [stepIndex, setStepIndex] = useState(0);
-  const [fadedPhase, setFadedPhase] = useState<string | null>(null);
-  const phaseKey = `${pattern}-${stepIndex}`;
 
   useEffect(() => {
     const currentStep = steps[stepIndex];
-    const fadeOut = setTimeout(
-      () => setFadedPhase(phaseKey),
-      Math.max(0, (currentStep.duration - 0.8) * 1000)
-    );
-
     const advance = setTimeout(() => {
       setStepIndex(prev => (prev + 1) % steps.length);
     }, currentStep.duration * 1000);
 
-    return () => {
-      clearTimeout(fadeOut);
-      clearTimeout(advance);
-    };
-  }, [phaseKey, stepIndex, steps]);
+    return () => clearTimeout(advance);
+  }, [stepIndex, steps]);
 
   return (
     <div className="pointer-events-none w-full opacity-80">
@@ -269,7 +259,6 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
         cycleIndex={0}
         totalCycles={1}
         size="settings"
-        visible={fadedPhase !== phaseKey}
       />
     </div>
   );
@@ -384,6 +373,7 @@ function BreathingCarousel({
             size="icon"
             className="bg-background/50 hover:bg-background h-10 w-10 rounded-full shadow-sm backdrop-blur-sm"
             onClick={() => paginate(-1)}
+            aria-label="Previous breathing pattern"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -394,6 +384,7 @@ function BreathingCarousel({
             size="icon"
             className="bg-background/50 hover:bg-background h-10 w-10 rounded-full shadow-sm backdrop-blur-sm"
             onClick={() => paginate(1)}
+            aria-label="Next breathing pattern"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
@@ -528,6 +519,7 @@ function GoalCarousel({
             size="icon"
             className="bg-background/50 hover:bg-background h-10 w-10 rounded-full shadow-sm backdrop-blur-sm"
             onClick={() => paginate(-1)}
+            aria-label="Previous goal"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -538,6 +530,7 @@ function GoalCarousel({
             size="icon"
             className="bg-background/50 hover:bg-background h-10 w-10 rounded-full shadow-sm backdrop-blur-sm"
             onClick={() => paginate(1)}
+            aria-label="Next goal"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>

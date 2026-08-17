@@ -20,6 +20,7 @@ const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
 
 export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionHeatmapProps) {
   const columns = `2.75rem repeat(${weeks.length}, minmax(1rem, 1.25rem))`;
+  const rows = '1.25rem repeat(7, minmax(1rem, 1.25rem))';
 
   const getColorClass = (count: number): string => {
     if (count === 0) return 'bg-foreground/[0.08]';
@@ -37,68 +38,77 @@ export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionH
       <CardContent>
         <TooltipProvider delayDuration={50}>
           <div className="w-full overflow-x-auto pb-1">
-            <div className="min-w-max">
-              <div className="mb-3 grid items-end gap-1.5" style={{ gridTemplateColumns: columns }}>
-                <span aria-hidden="true" />
-                {weeks.map((_, weekIndex) => (
-                  <span
-                    key={`month-${weekIndex}`}
-                    className="text-foreground/70 h-5 text-center text-xs font-medium"
-                  >
-                    {monthLabels.find(label => label.weekIndex === weekIndex)?.month ?? ''}
-                  </span>
-                ))}
-              </div>
+            <div
+              className="grid min-w-max items-center gap-1.5"
+              style={{ gridTemplateColumns: columns, gridTemplateRows: rows }}
+            >
+              <span aria-hidden="true" style={{ gridColumn: 1, gridRow: 1 }} />
+              {monthLabels.map(monthLabel => (
+                <span
+                  key={`month-${monthLabel.weekIndex}`}
+                  className="text-foreground/70 h-5 text-center text-xs font-medium"
+                  style={{ gridColumn: monthLabel.weekIndex + 2, gridRow: 1 }}
+                >
+                  {monthLabel.month}
+                </span>
+              ))}
 
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: columns }}>
-                <div className="text-foreground/60 grid grid-rows-7 gap-1.5 pr-2 text-xs font-medium">
-                  <span aria-hidden="true" />
-                  <span>Mon</span>
-                  <span aria-hidden="true" />
-                  <span>Wed</span>
-                  <span aria-hidden="true" />
-                  <span>Fri</span>
-                  <span aria-hidden="true" />
-                </div>
+              {['', 'Mon', '', 'Wed', '', 'Fri', ''].map((label, dayIndex) => (
+                <span
+                  key={`weekday-${dayIndex}`}
+                  aria-hidden={label === ''}
+                  className="text-foreground/60 pr-2 text-xs font-medium"
+                  style={{ gridColumn: 1, gridRow: dayIndex + 2 }}
+                >
+                  {label}
+                </span>
+              ))}
 
-                {weeks.map((week, weekIndex) => (
-                  <div key={`week-${weekIndex}`} className="grid grid-rows-7 gap-1.5">
-                    {week.map((day, dayIndex) => {
-                      if (day.count < 0 || !day.date) {
-                        return <span key={`empty-${weekIndex}-${dayIndex}`} aria-hidden="true" />;
-                      }
+              {weeks.flatMap((week, weekIndex) =>
+                week.map((day, dayIndex) => {
+                  const cellStyle = { gridColumn: weekIndex + 2, gridRow: dayIndex + 2 };
 
-                      const label = `${formatDate(day.date)}: ${day.count} ${day.count === 1 ? 'note' : 'notes'}`;
-                      return (
-                        <Tooltip key={day.date}>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              aria-label={label}
-                              title={label}
-                              className={cn(
-                                'focus-visible:ring-ring/70 h-4 w-4 rounded-sm transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1 sm:h-5 sm:w-5',
-                                getColorClass(day.count),
-                                day.date === today &&
-                                  'ring-primary ring-offset-background ring-2 ring-offset-1',
-                                'hover:ring-foreground/30 hover:ring-1'
-                              )}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p className="font-semibold">
-                              {day.count === 0
-                                ? 'No notes'
-                                : `${day.count} ${day.count === 1 ? 'note' : 'notes'}`}
-                            </p>
-                            <p className="text-muted-foreground text-xs">{formatDate(day.date)}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+                  if (day.count < 0 || !day.date) {
+                    return (
+                      <span
+                        key={`empty-${weekIndex}-${dayIndex}`}
+                        aria-hidden="true"
+                        className="h-4 w-4 sm:h-5 sm:w-5"
+                        style={cellStyle}
+                      />
+                    );
+                  }
+
+                  const label = `${formatDate(day.date)}: ${day.count} ${day.count === 1 ? 'note' : 'notes'}`;
+                  return (
+                    <Tooltip key={day.date}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={label}
+                          title={label}
+                          style={cellStyle}
+                          className={cn(
+                            'focus-visible:ring-ring/70 h-4 w-4 rounded-sm transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1 sm:h-5 sm:w-5',
+                            getColorClass(day.count),
+                            day.date === today &&
+                              'ring-primary ring-offset-background ring-2 ring-offset-1',
+                            'hover:ring-foreground/30 hover:ring-1'
+                          )}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="font-semibold">
+                          {day.count === 0
+                            ? 'No notes'
+                            : `${day.count} ${day.count === 1 ? 'note' : 'notes'}`}
+                        </p>
+                        <p className="text-muted-foreground text-xs">{formatDate(day.date)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })
+              )}
             </div>
           </div>
 

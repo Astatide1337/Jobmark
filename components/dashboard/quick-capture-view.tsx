@@ -37,6 +37,7 @@ interface QuickCaptureViewProps {
   visibleProjects: QuickCaptureProject[];
   selectedProject: string;
   selectedDate: Date;
+  maxDate: Date;
   datePickerOpen: boolean;
   state: ActivityFormState;
   dateLabel: string;
@@ -63,6 +64,7 @@ export function QuickCaptureView({
   visibleProjects,
   selectedProject,
   selectedDate,
+  maxDate,
   datePickerOpen,
   state,
   dateLabel,
@@ -164,7 +166,7 @@ export function QuickCaptureView({
                     mode="single"
                     selected={selectedDate}
                     onSelect={onDateChange}
-                    disabled={date => date > new Date()}
+                    disabled={date => date > maxDate}
                     initialFocus
                   />
                 </PopoverContent>

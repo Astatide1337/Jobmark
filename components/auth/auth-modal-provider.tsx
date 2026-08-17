@@ -43,24 +43,20 @@ export function AuthModalProvider({ children }: AuthModalProviderProps) {
   return (
     <AuthModalContext.Provider value={{ openAuthModal, closeAuthModal, isOpen }}>
       {children}
-      <AuthModal open={isOpen} />
+      <AuthModal open={isOpen} onClose={closeAuthModal} />
     </AuthModalContext.Provider>
   );
 }
 
 interface AuthModalProps {
   open: boolean;
+  onClose: () => void;
 }
 
-function AuthModal({ open }: AuthModalProps) {
+function AuthModal({ open, onClose }: AuthModalProps) {
   return (
-    <Dialog open={open}>
-      <DialogContent
-        showCloseButton={false}
-        onPointerDownOutside={e => e.preventDefault()}
-        onEscapeKeyDown={e => e.preventDefault()}
-        className="bg-card border-border/50 max-w-md"
-      >
+    <Dialog open={open} onOpenChange={nextOpen => !nextOpen && onClose()}>
+      <DialogContent showCloseButton className="bg-card border-border/50 max-w-md">
         <div className="mb-2 flex justify-center">
           <div className="flex items-center gap-3">
             <div className="bg-primary flex h-11 w-11 items-center justify-center rounded-xl">

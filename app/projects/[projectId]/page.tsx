@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { getProjectDetails } from '@/app/actions/projects';
+import { getUserSettings } from '@/app/actions/settings';
+import { DEFAULT_TIME_ZONE, getCalendarDate, isValidTimeZone } from '@/lib/date-semantics';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { redirect } from 'next/navigation';
@@ -19,12 +21,21 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
   }
 
   const { projectId } = await params;
-  const project = await getProjectDetails(projectId, 20);
+  const [project, settings] = await Promise.all([
+    getProjectDetails(projectId, 20),
+    getUserSettings(),
+  ]);
 
   if (!project) {
     // Project not found or locked — redirect to projects list
     redirect('/projects');
   }
+
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const today = getCalendarDate(new Date(), timeZone);
 
   return (
     <DashboardShell
@@ -36,7 +47,7 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
         />
       }
     >
-      <div className="mx-auto w-full max-w-7xl space-y-8 px-6 py-8 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-8 py-2">
         {/* Back navigation */}
         <Link
           href="/projects"
@@ -88,6 +99,8 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
             projectId={projectId}
             initialActivities={project.activities}
             totalCount={project._count.activities}
+            timeZone={timeZone}
+            today={today}
           />
         </div>
       </div>

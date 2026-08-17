@@ -6,9 +6,11 @@ import { prisma } from '@/lib/db';
 import { getMcpProviderKey, getMcpProviderName } from '@/lib/mcp/provider-identity';
 import { getContactById, getInteractionsByContact } from '@/app/actions/network';
 import { getOutreachDraftsByContact } from '@/app/actions/network-ai';
+import { getUserSettings } from '@/app/actions/settings';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { ContactDetailView } from '@/components/network/contact-detail-view';
+import { DEFAULT_TIME_ZONE, getCalendarDate, isValidTimeZone } from '@/lib/date-semantics';
 
 export default async function ContactDetailPage({
   params,
@@ -19,7 +21,7 @@ export default async function ContactDetailPage({
   if (!session?.user?.id) redirect('/');
 
   const { contactId } = await params;
-  const [contact, interactions, initialDrafts, connections] = await Promise.all([
+  const [contact, interactions, initialDrafts, connections, settings] = await Promise.all([
     getContactById(contactId),
     getInteractionsByContact(contactId, 20),
     getOutreachDraftsByContact(contactId),
@@ -30,6 +32,7 @@ export default async function ContactDetailPage({
       },
       orderBy: { createdAt: 'desc' },
     }),
+    getUserSettings(),
   ]);
 
   if (!contact) notFound();
@@ -46,6 +49,11 @@ export default async function ContactDetailPage({
       })
     ).values()
   );
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const today = getCalendarDate(new Date(), timeZone);
 
   return (
     <DashboardShell
@@ -57,7 +65,7 @@ export default async function ContactDetailPage({
         />
       }
     >
-      <div className="mx-auto w-full max-w-7xl space-y-8 px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-8">
         <Link
           href="/network"
           className="text-muted-foreground hover:text-primary group inline-flex items-center gap-2 text-sm transition-colors"
@@ -70,6 +78,8 @@ export default async function ContactDetailPage({
           interactions={interactions}
           initialDrafts={initialDrafts}
           connectedMcpProviders={connectedMcpProviders}
+          timeZone={timeZone}
+          today={today}
         />
       </div>
     </DashboardShell>
