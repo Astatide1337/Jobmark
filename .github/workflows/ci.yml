@@ -45,36 +45,6 @@ jobs:
         run: npm run typecheck
       - name: Frontend invariants
         run: npm run test:frontend
-      - name: Format repair files
-        run: >-
-          npx prettier --write
-          .github/workflows/ci.yml
-          components/ui/magnetic-button.tsx
-          components/landing/dashboard-preview.tsx
-          components/landing/editorial-hero.tsx
-          components/landing/floating-nav.tsx
-          components/landing/product-tour.tsx
-          components/landing/problem-statement.tsx
-          components/landing/final-cta.tsx
-          components/landing/video-section.tsx
-          scripts/check-frontend-rules.mjs
-          docs/frontend-standards.md
-      - name: Upload formatted repair files
-        uses: actions/upload-artifact@v4
-        with:
-          name: formatted-motion-repair
-          path: |
-            .github/workflows/ci.yml
-            components/ui/magnetic-button.tsx
-            components/landing/dashboard-preview.tsx
-            components/landing/editorial-hero.tsx
-            components/landing/floating-nav.tsx
-            components/landing/product-tour.tsx
-            components/landing/problem-statement.tsx
-            components/landing/final-cta.tsx
-            components/landing/video-section.tsx
-            scripts/check-frontend-rules.mjs
-            docs/frontend-standards.md
       - name: Formatting
         run: npm run format:check
       - run: npm test
