@@ -27,10 +27,10 @@ export function FinalCTA() {
         className="relative mx-auto max-w-4xl space-y-8 px-6 text-center"
       >
         <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl md:text-6xl">
-          Keep your work while it is fresh.
+          Leave yourself a better starting point.
         </h2>
         <p className="text-muted-foreground mx-auto max-w-xl text-xl">
-          Start with one note. Sort it later.
+          Start with one short entry. Build from there.
         </p>
 
         <div className="pt-4">

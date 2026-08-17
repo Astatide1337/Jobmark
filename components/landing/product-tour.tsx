@@ -1,11 +1,20 @@
 /**
- * Accessible product storytelling: the selected scene is the only heavy preview
- * mounted, while Motion restores the continuity and energy of the original tour.
+ * Scroll-led product storytelling with one active product preview mounted at a
+ * time. The layout follows the original Jobmark tour, while the active-only
+ * panel keeps the landing page from running every dashboard demo at once.
  */
 'use client';
 
-import { useRef, useState, type KeyboardEvent } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useRef, useState } from 'react';
+import {
+  AnimatePresence,
+  motion,
+  useMotionValueEvent,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from 'framer-motion';
 import { DemoMcpConnector } from './demos/demo-mcp-connector';
 import { DemoReports } from './demos/demo-reports';
 import { DemoInsights } from './demos/demo-insights';
@@ -14,179 +23,176 @@ import { useMotionPreference } from './use-motion-preference';
 const steps = [
   {
     id: 'capture',
-    title: 'Write it down',
+    title: 'Capture the moment',
     subtitle: 'Save it while it is fresh.',
-    description: 'Save what you did, fixed, or learned.',
+    description: 'Record what you shipped, fixed, or learned.',
   },
   {
     id: 'timeline',
-    title: 'Keep notes together',
+    title: 'Give it a home',
     subtitle: 'Add a project.',
-    description: 'Group notes by project so you can find them later.',
+    description: 'Keep related entries together so the story is easy to follow.',
   },
   {
     id: 'reports',
-    title: 'Make a review draft',
-    subtitle: 'Start with your notes.',
-    description: 'Use your notes to make a review or weekly update.',
+    title: 'Build a review draft',
+    subtitle: 'Start with what you logged.',
+    description: 'Turn a group of entries into a review or weekly update.',
   },
   {
     id: 'assistant',
-    title: 'Connect an assistant',
+    title: 'Bring your own assistant',
     subtitle: 'Get help when you want it.',
     description: 'Connect Claude, ChatGPT, or Gemini to help edit a draft.',
   },
   {
     id: 'insights',
-    title: 'See your notes',
-    subtitle: 'Look for patterns.',
-    description: 'See which projects and days have the most notes.',
+    title: 'Spot the pattern',
+    subtitle: 'See what keeps moving.',
+    description: 'See which projects and days show up most in your work.',
   },
 ] as const;
 
 export function ProductTour() {
+  const containerRef = useRef<HTMLElement>(null);
   const [activeStep, setActiveStep] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const activeStepRef = useRef(0);
   const prefersReducedMotion = useMotionPreference();
-  const step = steps[activeStep];
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end end'],
+  });
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
+  const progress = prefersReducedMotion === true ? scrollYProgress : smoothProgress;
 
-  const selectStep = (index: number, focus = false) => {
-    setDirection(index >= activeStep ? 1 : -1);
-    setActiveStep(index);
-    if (focus) tabRefs.current[index]?.focus();
-  };
-
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    let nextIndex = activeStep;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown')
-      nextIndex = (activeStep + 1) % steps.length;
-    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp')
-      nextIndex = (activeStep - 1 + steps.length) % steps.length;
-    else if (event.key === 'Home') nextIndex = 0;
-    else if (event.key === 'End') nextIndex = steps.length - 1;
-    else return;
-    event.preventDefault();
-    selectStep(nextIndex, true);
-  };
+  useMotionValueEvent(progress, 'change', latest => {
+    const nextStep = Math.min(steps.length - 1, Math.floor(latest * steps.length));
+    if (nextStep === activeStepRef.current) return;
+    activeStepRef.current = nextStep;
+    setActiveStep(nextStep);
+  });
 
   return (
-    <section id="product-tour" className="bg-background relative overflow-hidden py-24 lg:py-32">
-      <motion.div
-        aria-hidden="true"
-        className="bg-primary/5 pointer-events-none absolute top-1/3 left-1/2 h-[32rem] w-[42rem] -translate-x-1/2 rounded-full blur-3xl"
-        animate={
-          prefersReducedMotion
-            ? undefined
-            : { scale: [0.96, 1.06, 0.96], opacity: [0.35, 0.65, 0.35] }
-        }
-        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+    <section ref={containerRef} id="product-tour" className="bg-background relative min-h-[400vh]">
+      <div className="sticky top-0 flex min-h-screen items-center justify-center overflow-hidden">
         <motion.div
-          initial={false}
-          whileInView={{ y: 0 }}
-          viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-10 max-w-2xl"
-        >
-          <p className="text-primary mb-3 font-mono text-sm tracking-wide uppercase">
-            How it works
-          </p>
-          <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl">
-            Keep the useful details.
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
-            Write things down once, then use them when a review, update, or next step comes up.
-          </p>
-        </motion.div>
+          aria-hidden="true"
+          className="bg-primary/5 pointer-events-none absolute top-1/3 left-1/2 h-[32rem] w-[42rem] -translate-x-1/2 rounded-full blur-3xl"
+          animate={
+            prefersReducedMotion === true
+              ? undefined
+              : { scale: [0.96, 1.06, 0.96], opacity: [0.35, 0.65, 0.35] }
+          }
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+        />
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-stretch">
-          <div>
-            <div className="bg-muted/40 mb-5 h-1 overflow-hidden rounded-full" aria-hidden="true">
-              <motion.div
-                className="bg-primary h-full rounded-full"
-                animate={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: [0.16, 1, 0.3, 1] }}
-              />
+        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 lg:px-8">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-20">
+            <div className="relative">
+              <ProgressBar progress={progress} />
+              <div className="relative mt-8 h-[280px]">
+                {steps.map((step, index) => (
+                  <TextScene key={step.id} progress={progress} index={index} step={step} />
+                ))}
+              </div>
             </div>
-            <div role="tablist" aria-label="Jobmark workflow" className="space-y-2">
-              {steps.map((item, index) => {
-                const active = activeStep === index;
-                return (
-                  <motion.button
-                    key={item.id}
-                    ref={element => {
-                      tabRefs.current[index] = element;
-                    }}
-                    id={`tour-tab-${item.id}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    aria-controls={`tour-panel-${item.id}`}
-                    tabIndex={active ? 0 : -1}
-                    onClick={() => selectStep(index)}
-                    onKeyDown={handleTabKeyDown}
-                    animate={prefersReducedMotion ? undefined : { x: active ? 8 : 0 }}
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className={
-                      active
-                        ? 'border-primary/50 bg-primary/10 text-foreground w-full rounded-2xl border p-5 text-left shadow-sm'
-                        : 'border-border/50 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground focus-visible:ring-ring/50 w-full rounded-2xl border p-5 text-left transition-[color,background-color,border-color,box-shadow] focus-visible:ring-2 focus-visible:outline-none'
-                    }
-                  >
-                    <span className="flex items-center justify-between gap-4">
-                      <span>
-                        <span className="text-primary mb-1 block font-mono text-xs uppercase">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        <span className="block font-semibold">{item.title}</span>
-                      </span>
-                      <motion.span
-                        aria-hidden="true"
-                        className="text-primary text-lg"
-                        animate={
-                          prefersReducedMotion
-                            ? undefined
-                            : { rotate: active ? 0 : -45, scale: active ? 1.08 : 0.82 }
-                        }
-                      >
-                        →
-                      </motion.span>
-                    </span>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
 
-          <div className="border-border/50 bg-card/40 relative min-h-[440px] overflow-hidden rounded-3xl border p-6 shadow-xl shadow-black/10 sm:p-8">
-            <AnimatePresence mode="wait" initial={false} custom={direction}>
-              <motion.div
-                key={step.id}
-                id={`tour-panel-${step.id}`}
-                role="tabpanel"
-                aria-labelledby={`tour-tab-${step.id}`}
-                custom={direction}
-                initial={false}
-                animate={{ opacity: 1, x: 0 }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, x: direction * -22 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
+            <div className="relative h-[480px] lg:h-[600px]">
+              <div className="bg-primary/8 absolute -inset-4 rounded-full opacity-60 blur-3xl" />
+              <div
+                aria-hidden="true"
+                inert
+                className="border-border/40 bg-card/90 relative h-full w-full overflow-hidden rounded-2xl border shadow-2xl shadow-black/20 backdrop-blur-sm"
               >
-                <div className="mb-6 max-w-lg">
-                  <p className="text-primary mb-2 text-sm font-medium">{step.subtitle}</p>
-                  <h3 className="font-serif text-3xl font-bold sm:text-4xl">{step.title}</h3>
-                  <p className="text-muted-foreground mt-3 leading-relaxed">{step.description}</p>
-                </div>
-                <div aria-live="polite" className="h-[280px] overflow-hidden rounded-2xl">
-                  <DemoPanel step={activeStep} />
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={steps[activeStep].id}
+                    initial={{ opacity: 0, y: 8, scale: 0.985 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={
+                      prefersReducedMotion === true ? undefined : { opacity: 0, y: -8, scale: 0.97 }
+                    }
+                    transition={{
+                      duration: prefersReducedMotion === true ? 0 : 0.35,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    className="absolute inset-0"
+                  >
+                    <DemoPanel step={activeStep} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function ProgressBar({ progress }: { progress: MotionValue<number> }) {
+  const width = useTransform(progress, [0, 1], ['0%', '100%']);
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="bg-muted/50 h-[3px] flex-1 overflow-hidden rounded-full">
+        <motion.div className="bg-primary h-full rounded-full" style={{ width }} />
+      </div>
+      <StepCounter progress={progress} />
+    </div>
+  );
+}
+
+function StepCounter({ progress }: { progress: MotionValue<number> }) {
+  const opacities = [
+    useTransform(progress, [0, 0.18, 0.22], [1, 1, 0]),
+    useTransform(progress, [0.18, 0.22, 0.38, 0.42], [0, 1, 1, 0]),
+    useTransform(progress, [0.38, 0.42, 0.58, 0.62], [0, 1, 1, 0]),
+    useTransform(progress, [0.58, 0.62, 0.78, 0.82], [0, 1, 1, 0]),
+    useTransform(progress, [0.78, 0.82, 1], [0, 1, 1]),
+  ];
+
+  return (
+    <div className="text-muted-foreground relative mb-5 w-15 font-mono text-sm tabular-nums">
+      {opacities.map((opacity, index) => (
+        <motion.span key={index} className="absolute inset-0" style={{ opacity }}>
+          {String(index + 1).padStart(2, '0')} / 05
+        </motion.span>
+      ))}
+    </div>
+  );
+}
+
+function TextScene({
+  progress,
+  index,
+  step,
+}: {
+  progress: MotionValue<number>;
+  index: number;
+  step: (typeof steps)[number];
+}) {
+  const start = index * 0.2;
+  const end = (index + 1) * 0.2;
+  const opacity = useTransform(progress, [start, start + 0.05, end, end + 0.05], [0, 1, 1, 0]);
+  const y = useTransform(progress, [start, start + 0.05, end, end + 0.05], [40, 0, 0, -40]);
+
+  return (
+    <motion.div className="absolute inset-0 flex flex-col justify-center" style={{ opacity, y }}>
+      <p className="text-primary mb-3 text-sm font-medium tracking-wide uppercase">
+        {step.subtitle}
+      </p>
+      <h2 className="mb-4 font-serif text-3xl leading-[1.1] font-bold sm:text-4xl lg:text-5xl">
+        {step.title}
+      </h2>
+      <p className="text-muted-foreground max-w-lg text-base leading-relaxed lg:text-lg">
+        {step.description}
+      </p>
+    </motion.div>
   );
 }
 

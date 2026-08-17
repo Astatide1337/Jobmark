@@ -4,7 +4,7 @@
  * Why: Marketing content should show the shape of a feature without mounting
  * the authenticated report editor, its actions, or its animation tree.
  */
-import { CheckCircle2, FileText } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, FileText } from 'lucide-react';
 import { DashboardFrame } from './dashboard-frame';
 
 const highlights = [
@@ -38,6 +38,37 @@ export function DemoReports() {
             ))}
           </ul>
         </article>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="border-border/50 bg-card/60 rounded-xl border p-3">
+            <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+              Entries used
+            </p>
+            <p className="mt-1 text-2xl font-semibold">47</p>
+            <p className="text-muted-foreground mt-1 text-xs">from this quarter</p>
+          </div>
+          <div className="border-border/50 bg-card/60 rounded-xl border p-3">
+            <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+              Projects covered
+            </p>
+            <p className="mt-1 text-2xl font-semibold">3</p>
+            <p className="text-muted-foreground mt-1 text-xs">with recent activity</p>
+          </div>
+        </div>
+
+        <div className="border-border/60 bg-primary/5 flex items-center justify-between gap-4 rounded-2xl border p-4">
+          <div className="min-w-0">
+            <p className="text-primary text-[10px] font-semibold tracking-wide uppercase">
+              Ready to share
+            </p>
+            <p className="text-foreground mt-1 text-sm font-medium">
+              Review, copy, or export the draft.
+            </p>
+          </div>
+          <span className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium">
+            Copy update <ArrowUpRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
       </div>
     </DashboardFrame>
   );

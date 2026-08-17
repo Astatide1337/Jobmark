@@ -24,18 +24,18 @@ export function VideoSection() {
             <div className="flex items-center gap-3">
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Keep your work
+                A clearer starting point
               </span>
             </div>
             <h2
               id="product-film-title"
               className="font-serif text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl lg:text-6xl"
             >
-              Keep the details of your work.
+              Give your work a record.
             </h2>
             <p className="text-foreground/75 max-w-lg text-lg leading-[1.6] sm:text-xl">
-              Write down what you did while it is fresh. Add the project and a short note. When you
-              need an update or review, start with your notes.
+              Capture what happened as you go. Add the project and move on. When an update or review
+              comes around, you have something solid to start from.
             </p>
           </motion.div>
 

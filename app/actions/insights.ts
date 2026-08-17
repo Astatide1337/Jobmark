@@ -28,6 +28,7 @@ import {
 } from '@/lib/date-semantics';
 import {
   buildHeatmapGrid,
+  getHeatmapStartDate,
   type HeatmapDataPoint,
   type HeatmapDay,
   type MonthLabel,
@@ -145,7 +146,7 @@ export async function getInsightsData(): Promise<InsightsData> {
   const heatmapData: HeatmapDataPoint[] = Array.from(heatmapMap.entries())
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));
-  const heatmapStart = heatmapData[0]?.date ?? shiftCalendarDate(todayDate, -364);
+  const heatmapStart = getHeatmapStartDate(heatmapData[0]?.date, todayDate);
   const { heatmapGrid, monthLabels } = buildHeatmapGrid(heatmapData, heatmapStart, todayDate);
 
   // Find best day

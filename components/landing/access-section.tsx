@@ -17,12 +17,12 @@ const accessPoints = [
   },
   {
     title: 'Keep your data',
-    description: 'Download your notes any time.',
+    description: 'Download your record any time.',
     icon: Database,
   },
   {
     title: 'Use your assistant',
-    description: 'Connect Claude, ChatGPT, or Gemini if you want help editing a draft.',
+    description: 'Connect Claude, ChatGPT, or Gemini when you want help editing a draft.',
     icon: Link2,
   },
 ];
@@ -44,11 +44,11 @@ export function AccessSection() {
           </div>
 
           <h2 className="mb-4 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Make reviews easier.
+            Get something useful from every week.
           </h2>
 
           <p className="text-muted-foreground text-lg">
-            Start with one note. Add more when you need to.
+            Start with one entry. Add more when you have something worth keeping.
           </p>
         </div>
 

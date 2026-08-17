@@ -21,7 +21,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const metadata = {
   title: 'Focus | Jobmark',
-  description: 'Take a short break and decide what to do next.',
+  description: 'Reset and reflect at the end of the day.',
 };
 
 export default async function FocusPage() {
@@ -46,7 +46,7 @@ export default async function FocusPage() {
   ]);
 
   // Primary goal resolution chain
-  const primaryGoalText = userSettings?.primaryGoal || goals[0]?.title || 'a clear next step';
+  const primaryGoalText = userSettings?.primaryGoal || goals[0]?.title || 'peace of mind';
 
   // Goal id -> title map
   const goalMap = new Map<string, string>(goals.map(g => [g.id, g.title]));
@@ -69,7 +69,7 @@ export default async function FocusPage() {
         config: {
           ...block.config,
           resolvedTexts:
-            block.config.texts.length > 0 ? block.config.texts : ['I can take the next step.'],
+            block.config.texts.length > 0 ? block.config.texts : ['I am capable of great things.'],
         },
       };
     }

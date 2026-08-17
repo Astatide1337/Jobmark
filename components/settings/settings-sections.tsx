@@ -18,6 +18,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { SettingsSaveBar } from '@/components/settings/settings-save-bar';
 import {
   clearAllActivities,
@@ -254,21 +261,28 @@ export function AppearanceSection({ settings }: { settings: UserSettingsData }) 
           </div>
           <div className="space-y-2">
             <Label htmlFor="timeZone">Calendar time zone</Label>
-            <select
-              id="timeZone"
+            <Select
               value={timeZone}
-              onChange={event => {
-                setTimeZone(event.target.value);
+              onValueChange={value => {
+                setTimeZone(value);
                 setSaved(false);
               }}
-              className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
             >
-              <option value="America/New_York">Eastern Time</option>
-              <option value="America/Chicago">Central Time</option>
-              <option value="America/Denver">Mountain Time</option>
-              <option value="America/Los_Angeles">Pacific Time</option>
-              <option value="UTC">UTC</option>
-            </select>
+              <SelectTrigger id="timeZone" className="bg-background w-full">
+                <SelectValue placeholder="Choose a time zone" />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                align="start"
+                className="w-(--radix-select-trigger-width)"
+              >
+                <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                <SelectItem value="America/Chicago">Central Time</SelectItem>
+                <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                <SelectItem value="UTC">UTC</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center justify-between gap-4">
             <div>

@@ -3,12 +3,14 @@
 import { useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  ArrowUpRight,
   BarChart3,
   BookOpen,
   CalendarDays,
   CheckCircle2,
   Coffee,
   FileText,
+  Flame,
   Folder,
   Link2,
   Network,
@@ -39,7 +41,7 @@ export function DashboardPreview() {
 
   return (
     <div className="border-border/50 bg-card/90 relative overflow-hidden rounded-2xl border shadow-2xl shadow-black/25">
-      <div className="grid min-h-[480px] grid-cols-[92px_1fr] sm:grid-cols-[230px_1fr]">
+      <div className="grid min-h-[540px] grid-cols-[92px_1fr] sm:min-h-[580px] sm:grid-cols-[180px_1fr] lg:min-h-[620px] lg:grid-cols-[200px_1fr]">
         <aside className="border-border/50 bg-sidebar/70 flex flex-col border-r p-3 sm:p-5">
           <div className="mb-7 flex items-center justify-center gap-3 sm:justify-start">
             <div className="bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-xl">
@@ -54,23 +56,34 @@ export function DashboardPreview() {
             {navigation.map(({ id, label, icon: Icon }) => {
               const active = activeView === id;
               return (
-                <button
+                <motion.button
                   key={id}
                   type="button"
                   aria-label={label}
                   aria-pressed={active}
                   onClick={() => setActiveView(id)}
+                  whileHover={prefersReducedMotion ? undefined : { x: 2 }}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.985 }}
+                  transition={{ duration: 0.18 }}
                   className={
                     active
-                      ? 'bg-sidebar-accent text-foreground focus-visible:ring-ring/50 flex w-full items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none sm:justify-start'
+                      ? 'text-foreground focus-visible:ring-ring/50 relative flex w-full items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none sm:justify-start'
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-foreground focus-visible:ring-ring/50 flex w-full items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-[color,background-color] focus-visible:ring-2 focus-visible:outline-none sm:justify-start'
                   }
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span aria-hidden="true" className="hidden truncate sm:inline">
+                  {active ? (
+                    <motion.span
+                      aria-hidden="true"
+                      layoutId="preview-active-nav"
+                      className="bg-sidebar-accent absolute inset-0 rounded-xl"
+                      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    />
+                  ) : null}
+                  <Icon className="relative z-10 h-4 w-4 shrink-0" />
+                  <span aria-hidden="true" className="relative z-10 hidden truncate sm:inline">
                     {label}
                   </span>
-                </button>
+                </motion.button>
               );
             })}
           </nav>
@@ -85,10 +98,11 @@ export function DashboardPreview() {
 
         <div className="min-w-0">
           <header className="border-border/50 flex items-center justify-between border-b px-4 py-4 sm:px-7">
-            <div className="text-muted-foreground flex items-center gap-2 text-xs sm:text-sm">
-              <CalendarDays className="h-4 w-4" /> Monday, August 17
+            <div className="text-muted-foreground flex shrink-0 items-center gap-2 text-xs whitespace-nowrap sm:text-sm">
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span>Monday, August 17</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex shrink-0 items-center gap-2 text-sm whitespace-nowrap">
               <span className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold">
                 DU
               </span>
@@ -96,17 +110,20 @@ export function DashboardPreview() {
             </div>
           </header>
 
-          <div className="relative min-h-[414px] overflow-hidden">
+          <div className="relative min-h-[472px] overflow-hidden sm:min-h-[512px] lg:min-h-[552px]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.main
                 key={activeView}
-                initial={false}
-                animate={{ opacity: 1, x: 0 }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, x: -14 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
                 transition={{ duration: prefersReducedMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute inset-0 p-4 sm:p-7"
               >
-                <PreviewPanel view={activeView} />
+                <PreviewPanel
+                  view={activeView}
+                  prefersReducedMotion={prefersReducedMotion === true}
+                />
               </motion.main>
             </AnimatePresence>
           </div>
@@ -125,51 +142,87 @@ function Heading({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function PreviewPanel({ view }: { view: PreviewView }) {
-  if (view === 'capture') return <CapturePanel />;
+function PreviewPanel({
+  view,
+  prefersReducedMotion,
+}: {
+  view: PreviewView;
+  prefersReducedMotion: boolean;
+}) {
+  if (view === 'capture') return <CapturePanel prefersReducedMotion={prefersReducedMotion} />;
   if (view === 'projects') return <ProjectsPanel />;
   if (view === 'reviews') return <ReviewsPanel />;
   if (view === 'insights') return <InsightsPanel />;
-  if (view === 'focus') return <FocusPanel />;
+  if (view === 'focus') return <FocusPanel prefersReducedMotion={prefersReducedMotion} />;
   if (view === 'network') return <NetworkPanel />;
   if (view === 'connect') return <ConnectPanel />;
   return <GuidesPanel />;
 }
 
-function CapturePanel() {
+function CapturePanel({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
+  const [saved, setSaved] = useState(false);
+
   return (
     <div>
-      <Heading title="Good morning.">Write down what you did while it is fresh.</Heading>
-      <section className="border-border/60 bg-background/40 rounded-2xl border p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            New note
-          </p>
-          <span className="text-primary text-xs">Today</span>
+      <Heading title="Good morning.">Save a clear note while the work is still fresh.</Heading>
+      <section className="border-border/60 bg-background/40 rounded-2xl border p-5 sm:p-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-primary text-xs font-semibold tracking-wide uppercase">
+              Capture to record
+            </p>
+            <p className="text-muted-foreground mt-1 text-xs">What changed today?</p>
+          </div>
+          <span className="text-primary flex shrink-0 items-center gap-1.5 text-xs">
+            <span className="bg-success h-1.5 w-1.5 animate-pulse rounded-full motion-reduce:animate-none" />
+            Today
+          </span>
         </div>
-        <p className="text-foreground text-sm leading-relaxed sm:text-base">
+        <p className="text-foreground text-base leading-relaxed sm:text-lg">
           Finished the quarterly review and walked the team through the key decisions.
         </p>
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="mt-6 flex items-center justify-between gap-3">
           <span className="bg-primary/15 text-primary rounded-full px-3 py-1 text-xs font-medium">
             Q4 Planning
           </span>
-          <span className="bg-primary text-primary-foreground rounded-xl px-4 py-2 text-sm font-medium">
-            Save note
-          </span>
+          <motion.button
+            type="button"
+            onClick={() => setSaved(true)}
+            whileTap={prefersReducedMotion ? undefined : { scale: 0.97 }}
+            className="bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-[background-color,box-shadow] hover:shadow-lg hover:shadow-black/15 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            {saved ? <CheckCircle2 className="h-4 w-4" /> : null}
+            {saved ? 'Saved' : 'Save entry'}
+          </motion.button>
         </div>
       </section>
       <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
         {[
-          ['Notes', '42'],
-          ['Active days', '18'],
-          ['Projects', '5'],
-        ].map(([label, value]) => (
-          <div key={label} className="border-border/50 bg-card/60 rounded-xl border p-3 sm:p-4">
-            <p className="text-muted-foreground text-[10px] uppercase sm:text-xs">{label}</p>
+          { label: 'Activities', value: '42', note: 'this month', icon: FileText },
+          { label: 'Days with notes', value: '18', note: 'this month', icon: Flame },
+          { label: 'Projects', value: '5', note: 'active', icon: Folder },
+        ].map(({ label, value, note, icon: Icon }) => (
+          <div
+            key={label}
+            className="border-border/50 bg-card/60 hover:border-primary/30 rounded-xl border p-3 transition-[border-color,transform] duration-300 hover:-translate-y-0.5 motion-reduce:transition-none sm:p-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-muted-foreground text-[10px] uppercase sm:text-xs">{label}</p>
+              <Icon className="text-muted-foreground/70 h-3.5 w-3.5" />
+            </div>
             <p className="text-foreground mt-2 text-xl font-semibold sm:text-2xl">{value}</p>
+            <p className="text-muted-foreground mt-1 text-[10px] sm:text-xs">{note}</p>
           </div>
         ))}
+      </div>
+      <div className="border-border/50 bg-primary/5 mt-4 flex items-center justify-between gap-4 rounded-xl border px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-primary text-[10px] font-semibold tracking-wide uppercase">Next up</p>
+          <p className="text-foreground mt-1 text-sm font-medium">Draft your weekly update.</p>
+        </div>
+        <span className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium">
+          Open draft <ArrowUpRight className="h-3.5 w-3.5" />
+        </span>
       </div>
     </div>
   );
@@ -267,17 +320,23 @@ function InsightsPanel() {
   );
 }
 
-function FocusPanel() {
+function FocusPanel({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
   return (
     <div className="flex h-full flex-col">
       <Heading title="Focus">Reset before the next thing.</Heading>
       <div className="border-border/50 bg-primary/5 flex flex-1 flex-col items-center justify-center rounded-2xl border text-center">
-        <div className="border-primary/30 bg-primary/10 flex h-32 w-32 items-center justify-center rounded-full border sm:h-40 sm:w-40">
+        <motion.div
+          animate={
+            prefersReducedMotion ? undefined : { scale: [0.9, 1.04, 0.9], opacity: [0.78, 1, 0.78] }
+          }
+          transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
+          className="border-primary/30 bg-primary/10 shadow-primary/10 flex h-32 w-32 items-center justify-center rounded-full border shadow-[0_0_60px] sm:h-40 sm:w-40"
+        >
           <span className="text-primary font-serif text-2xl tracking-[0.12em] sm:text-3xl">
             INHALE
           </span>
-        </div>
-        <p className="text-muted-foreground mt-5 text-sm">Box breathing · cycle 2 of 4</p>
+        </motion.div>
+        <p className="text-muted-foreground mt-5 text-sm">A short reset before the next thing.</p>
       </div>
     </div>
   );

@@ -87,7 +87,7 @@ export function FocusSection({
         newBlock = {
           id,
           type,
-          config: { texts: ['I can take the next step.'], totalDuration: 60 },
+          config: { texts: ['I am capable of achieving my goals.'], totalDuration: 60 },
         };
         break;
       case 'goal':
@@ -113,9 +113,9 @@ export function FocusSection({
     const result = await saveFocusConfig(blocks);
     if (result.success) {
       setLastSavedBlocks(blocks);
-      toast.success('Focus settings saved.');
+      toast.success('Focus session saved');
     } else {
-      toast.error(result.error ?? 'Could not save your focus settings.');
+      toast.error(result.error ?? 'Failed to save');
     }
     setIsSaving(false);
   }
@@ -127,7 +127,7 @@ export function FocusSection({
     setBlocks(defaults);
     setLastSavedBlocks(defaults);
     setExpandedId(null);
-    toast.success('Focus settings reset.');
+    toast.success('Reset to defaults');
     setIsResetting(false);
   }
 
@@ -137,9 +137,9 @@ export function FocusSection({
 
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h3 className="text-lg font-medium">Focus session</h3>
+          <h3 className="text-lg font-medium">Focus Sequence</h3>
           <p className="text-muted-foreground text-sm">
-            Choose the blocks in your focus session and put them in order.
+            End your day with intention. Drag to reorder your session blocks.
           </p>
         </div>
         <AddBlockSelector onSelect={addBlock} />
@@ -173,14 +173,14 @@ export function FocusSection({
 
         {blocks.length === 0 && (
           <div className="text-muted-foreground rounded-2xl border border-dashed py-12 text-center text-sm">
-            No blocks yet. Add one to get started.
+            No blocks in your sequence. Add one to get started.
           </div>
         )}
       </div>
 
       <div className="flex justify-between pt-4">
         <p className="text-muted-foreground text-xs italic">
-          Tip: A short session can help you end work and focus.
+          Tip: Design a sequence that helps you transition from work to a state of calm focus.
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -190,14 +190,14 @@ export function FocusSection({
               className="text-muted-foreground hover:text-foreground"
             >
               <RotateCcw className="mr-2 h-3.5 w-3.5" />
-              Reset defaults
+              Reset Defaults
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Reset your focus session?</AlertDialogTitle>
+              <AlertDialogTitle>Reset focus sequence?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will restore the original blocks. Your changes will be lost.
+                This will restore the original sequence. Your current customizations will be lost.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeatmapGrid } from '@/lib/insights-grid';
+import { buildHeatmapGrid, getHeatmapStartDate } from '@/lib/insights-grid';
 
 describe('buildHeatmapGrid', () => {
   it('keeps weekday alignment and month labels on one canonical grid', () => {
@@ -23,5 +23,13 @@ describe('buildHeatmapGrid', () => {
       { date: '', count: -1, dayOfWeek: 2 },
     ]);
     expect(week[3].date).toBe('2026-08-05');
+  });
+
+  it('keeps a new all-time record at least one year wide', () => {
+    expect(getHeatmapStartDate('2026-08-17', '2026-08-17')).toBe('2025-08-18');
+  });
+
+  it('includes activity older than the minimum all-time window', () => {
+    expect(getHeatmapStartDate('2024-01-10', '2026-08-17')).toBe('2024-01-10');
   });
 });

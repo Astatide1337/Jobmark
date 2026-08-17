@@ -17,9 +17,9 @@ import { ChevronDown } from 'lucide-react';
 const values = [
   {
     id: 'private',
-    title: 'Write down the details',
-    subtitle: 'Memory is easy to lose',
-    description: 'A short note today helps you remember the details at review time.',
+    title: 'Save what happened',
+    subtitle: 'Do not rely on memory',
+    description: 'A short entry today gives you a clear starting point later.',
     // Custom SVG for lock - warm amber
     icon: (
       <svg
@@ -39,9 +39,9 @@ const values = [
   },
   {
     id: 'no-pressure',
-    title: 'Keep your notes',
-    subtitle: 'Download any time',
-    description: 'Download your notes and use them somewhere else.',
+    title: 'Take it with you',
+    subtitle: 'Your work stays yours',
+    description: 'Download your record whenever you want and use it somewhere else.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -60,9 +60,10 @@ const values = [
   },
   {
     id: 'ai-ready',
-    title: 'Use an assistant when you want',
-    subtitle: 'You stay in control',
-    description: 'Jobmark keeps your notes. Connect an assistant if you want help editing a draft.',
+    title: 'Bring help when you need it',
+    subtitle: 'The assistant is optional',
+    description:
+      'Connect Claude, ChatGPT, or Gemini when you want another pair of eyes on a draft.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -81,10 +82,10 @@ const values = [
   },
   {
     id: 'real-people',
-    title: 'Add notes over time',
-    subtitle: 'Small notes help later',
+    title: 'Build a record over time',
+    subtitle: 'Small entries add up',
     description:
-      'You do not need a perfect routine. A few notes each week can help with reviews and updates.',
+      'You do not need a perfect routine. A few entries each week give you more to work with when review time comes.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -124,11 +125,11 @@ export function ProductValues() {
           </div>
 
           <h2 className="mb-4 font-serif text-4xl font-bold md:text-5xl">
-            A simple way to keep notes.
+            A simple habit for better reviews.
           </h2>
 
           <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-            Easy to use now. Easy to find later.
+            Start small. Build something useful over time.
           </p>
         </div>
 

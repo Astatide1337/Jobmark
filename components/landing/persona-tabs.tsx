@@ -13,6 +13,7 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Trophy,
   TrendingUp,
@@ -24,7 +25,7 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useMotionPreference } from './use-motion-preference';
 
 interface Tab {
   id: string;
@@ -39,26 +40,20 @@ interface Tab {
 const tabs: Tab[] = [
   {
     id: 'track',
-    label: 'Keep work notes',
+    label: 'Capture as you go',
     icon: <Trophy className="h-4 w-4" />,
-    headline: 'Write it down while it is fresh',
-    description: 'Save a short note, add a project, and get back to work.',
-    features: ['Daily notes', 'One list of notes', 'Find notes by project', 'Simple tags'],
+    headline: 'Save the moment and get back to work',
+    description: 'Add a short entry, link a project, and move on.',
+    features: ['Daily entries', 'One timeline', 'Find by project', 'Simple tags'],
     visual: <TrackVisual />,
   },
   {
     id: 'prove',
-    label: 'Get ready for reviews',
+    label: 'Prepare for reviews',
     icon: <TrendingUp className="h-4 w-4" />,
-    headline: 'Go into reviews with your notes',
-    description:
-      'Use your notes from the quarter or project instead of trying to remember everything.',
-    features: [
-      'Review drafts',
-      'Notes for promotion reviews',
-      'Show what changed',
-      'Drafts you can download',
-    ],
+    headline: 'Go into reviews with examples',
+    description: 'Use the work you logged instead of trying to rebuild the quarter from memory.',
+    features: ['Review drafts', 'Promotion notes', 'Show what changed', 'Drafts you can download'],
     visual: <ProveVisual />,
   },
   {
@@ -66,8 +61,8 @@ const tabs: Tab[] = [
     label: 'Write an update',
     icon: <Share2 className="h-4 w-4" />,
     headline: 'Say what happened',
-    description: 'Use your notes to write a weekly update or status message.',
-    features: ['Weekly updates', 'Status notes', 'Copy and share', 'One place for notes'],
+    description: 'Turn a week of work into a clear status update.',
+    features: ['Weekly updates', 'Status notes', 'Copy and share', 'One place for your record'],
     visual: <ShareVisual />,
   },
 ];
@@ -210,6 +205,8 @@ function ShareVisual() {
 export function PersonaTabs() {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const prefersReducedMotion = useMotionPreference();
+  const activeTabData = tabs.find(tab => tab.id === activeTab) ?? tabs[0];
 
   const selectTab = (id: string, focus = false) => {
     setActiveTab(id);
@@ -240,23 +237,40 @@ export function PersonaTabs() {
     <section className="relative py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-6">
         {/* Section header */}
-        <div className="mb-16 max-w-2xl">
+        <motion.div
+          initial={prefersReducedMotion === true ? false : { opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.45 }}
+          transition={{
+            duration: prefersReducedMotion === true ? 0 : 0.65,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          className="mb-16 max-w-2xl"
+        >
           <div className="mb-6 flex items-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
-              Write it down as you go
+              Make your work easier to explain
             </span>
           </div>
 
           <h2 className="mb-6 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Keep the details while they are fresh.
+            Keep the useful parts while they are clear.
           </h2>
-        </div>
+        </motion.div>
 
         {/* Tab navigation */}
-        <div className="mb-12 flex flex-wrap gap-2" role="tablist" aria-label="Ways to use Jobmark">
+        <motion.div
+          initial={prefersReducedMotion === true ? false : { opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{ duration: prefersReducedMotion === true ? 0 : 0.5, delay: 0.08 }}
+          className="mb-12 flex flex-wrap gap-2"
+          role="tablist"
+          aria-label="Ways to use Jobmark"
+        >
           {tabs.map((tab, index) => (
-            <button
+            <motion.button
               key={tab.id}
               ref={element => {
                 tabRefs.current[index] = element;
@@ -268,73 +282,100 @@ export function PersonaTabs() {
               tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => selectTab(tab.id)}
               onKeyDown={event => handleTabKeyDown(event, index)}
-              className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-300 ${
+              whileHover={prefersReducedMotion === true ? undefined : { y: -2 }}
+              whileTap={prefersReducedMotion === true ? undefined : { scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className={`relative flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-[color,border-color,box-shadow] duration-300 ${
                 activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'text-primary-foreground border-transparent'
                   : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border-border/40 border'
               } `}
             >
-              {tab.icon}
-              {tab.label}
-            </button>
+              {activeTab === tab.id ? (
+                <motion.span
+                  aria-hidden="true"
+                  layoutId="persona-tab-active"
+                  className="bg-primary absolute inset-0 rounded-full"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                />
+              ) : null}
+              <span className="relative z-10 flex items-center gap-2">
+                {tab.icon}
+                {tab.label}
+              </span>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Tab content stays mounted so switching tabs does not blank or reload the section. */}
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           {/* Left - Text content */}
-          <div className="grid items-start">
-            {tabs.map(tab => {
-              const isActive = activeTab === tab.id;
+          <div className="relative min-h-[280px]">
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={activeTabData.id}
+                id={`persona-panel-${activeTabData.id}`}
+                role="tabpanel"
+                aria-hidden="false"
+                initial={prefersReducedMotion === true ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={prefersReducedMotion === true ? undefined : { opacity: 0, y: -10 }}
+                transition={{
+                  duration: prefersReducedMotion === true ? 0 : 0.35,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="absolute inset-0 space-y-6"
+              >
+                <h3 className="text-foreground font-serif text-2xl font-semibold sm:text-3xl">
+                  {activeTabData.headline}
+                </h3>
 
-              return (
-                <div
-                  key={tab.id}
-                  id={`persona-panel-${tab.id}`}
-                  role="tabpanel"
-                  aria-hidden={!isActive}
-                  className={cn(
-                    'col-start-1 row-start-1 space-y-6',
-                    isActive ? 'relative z-10' : 'pointer-events-none invisible'
-                  )}
-                >
-                  <h3 className="text-foreground font-serif text-2xl font-semibold sm:text-3xl">
-                    {tab.headline}
-                  </h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  {activeTabData.description}
+                </p>
 
-                  <p className="text-muted-foreground text-lg leading-relaxed">{tab.description}</p>
-
-                  <ul className="space-y-3 pt-2">
-                    {tab.features.map(feature => (
-                      <li key={feature} className="text-muted-foreground flex items-center gap-3">
-                        <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
+                <ul className="space-y-3 pt-2">
+                  {activeTabData.features.map((feature, index) => (
+                    <motion.li
+                      key={feature}
+                      initial={prefersReducedMotion === true ? false : { opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: prefersReducedMotion === true ? 0 : 0.25,
+                        delay: prefersReducedMotion === true ? 0 : index * 0.045,
+                      }}
+                      className="text-muted-foreground flex items-center gap-3"
+                    >
+                      <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
+                      {feature}
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Right - Visuals stay mounted to avoid replaying their entrance animations. */}
-          <div className="grid items-center lg:pl-8">
-            {tabs.map(tab => {
-              const isActive = activeTab === tab.id;
-
-              return (
-                <div
-                  key={tab.id}
-                  aria-hidden={!isActive}
-                  className={cn(
-                    'col-start-1 row-start-1',
-                    isActive ? 'relative z-10' : 'pointer-events-none invisible'
-                  )}
-                >
-                  {tab.visual}
-                </div>
-              );
-            })}
+          <div className="relative min-h-[400px] lg:pl-8">
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={activeTabData.id}
+                aria-hidden="false"
+                initial={
+                  prefersReducedMotion === true ? false : { opacity: 0, y: 16, scale: 0.985 }
+                }
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={
+                  prefersReducedMotion === true ? undefined : { opacity: 0, y: -10, scale: 0.985 }
+                }
+                transition={{
+                  duration: prefersReducedMotion === true ? 0 : 0.4,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="absolute inset-0"
+              >
+                {activeTabData.visual}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>

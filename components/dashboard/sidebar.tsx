@@ -95,7 +95,7 @@ export function Sidebar({
             : 'sm:static sm:flex sm:h-full sm:w-64 sm:translate-x-0'
         )}
       >
-        <div className="relative p-6">
+        <div className={cn('relative', mode === 'demo' ? 'p-4' : 'p-6')}>
           {isMobileOpen && (
             <Button
               variant="ghost"
@@ -124,7 +124,12 @@ export function Sidebar({
           )}
         </div>
 
-        <nav className="min-h-0 flex-1 px-3">
+        <nav
+          className={cn(
+            'scrollbar-none min-h-0 flex-1 overflow-y-auto px-3',
+            mode === 'demo' && 'px-2'
+          )}
+        >
           {navItems.map(item => (
             <NavItem
               key={item.href}
@@ -142,7 +147,7 @@ export function Sidebar({
             />
           ))}
         </nav>
-        <div className="border-border/50 border-t p-3">
+        <div className={cn('border-border/50 shrink-0 border-t p-3', mode === 'demo' && 'p-2')}>
           <NavItem
             mode={mode}
             href={settingsItem.href}
@@ -185,8 +190,8 @@ function NavItem({
         />
       )}
 
-      <Icon className="relative z-10 h-4 w-4 transition-colors" />
-      <span className="relative z-10 transition-colors">{label}</span>
+      <Icon className="relative z-10 h-4 w-4 shrink-0 transition-colors" />
+      <span className="relative z-10 whitespace-nowrap transition-colors">{label}</span>
     </>
   );
 
@@ -196,6 +201,7 @@ function NavItem({
         type="button"
         className={cn(
           'group relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow]',
+          mode === 'demo' && 'gap-2 rounded-lg px-2 py-2 text-xs',
           isActive
             ? 'text-sidebar-accent-foreground'
             : 'text-muted-foreground hover:text-foreground'

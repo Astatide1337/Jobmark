@@ -13,6 +13,7 @@ interface BreathingDisplayProps {
   cycleIndex: number;
   totalCycles: number;
   size?: BreathingDisplaySize;
+  visible?: boolean;
 }
 
 export function BreathingDisplay({
@@ -21,6 +22,7 @@ export function BreathingDisplay({
   cycleIndex,
   totalCycles,
   size = 'full',
+  visible = true,
 }: BreathingDisplayProps) {
   const prefersReducedMotion = useReducedMotion();
   const patternDef = BREATHING_PATTERNS[pattern];
@@ -100,40 +102,39 @@ export function BreathingDisplay({
         )}
       >
         <div className="absolute inset-0 flex items-center justify-center">
-          <AnimatePresence mode="sync">
-            <motion.span
-              key={`${cycleIndex}-${stepIndex}`}
-              className={cn(
-                'text-primary absolute inline-block font-serif tracking-[0.12em] whitespace-nowrap will-change-[transform,opacity]',
-                sizeClasses.label
-              )}
-              initial={
-                prefersReducedMotion
-                  ? false
-                  : {
-                      // Keep the first frame visible; the scale animation is
-                      // the breathing cue and should not look like a flash.
-                      opacity: 1,
-                      scale: initialScale,
-                    }
-              }
-              animate={{ opacity: 1, scale: targetScale }}
-              exit={{
-                opacity: prefersReducedMotion ? 1 : 0,
-                scale: prefersReducedMotion ? targetScale : 0.92,
-              }}
-              transition={
-                prefersReducedMotion
-                  ? { duration: 0 }
-                  : {
-                      opacity: { duration: 0.3, ease: 'easeInOut' },
-                      scale: { duration: currentStep.duration, ease: 'easeInOut' },
-                    }
-              }
-              style={{ transformOrigin: 'center center' }}
-            >
-              {label.replace(/[0-9]/g, '').trim()}
-            </motion.span>
+          <AnimatePresence mode="popLayout">
+            {visible && (
+              <motion.span
+                key={`${cycleIndex}-${stepIndex}`}
+                className={cn(
+                  'text-primary absolute inline-block font-serif tracking-[0.12em] whitespace-nowrap will-change-[transform,opacity,filter]',
+                  sizeClasses.label
+                )}
+                initial={
+                  prefersReducedMotion
+                    ? false
+                    : { opacity: 0, scale: initialScale, filter: 'blur(10px)' }
+                }
+                animate={{ opacity: 1, scale: targetScale, filter: 'blur(0px)' }}
+                exit={
+                  prefersReducedMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, scale: 0.98, filter: 'blur(10px)' }
+                }
+                transition={
+                  prefersReducedMotion
+                    ? { duration: 0 }
+                    : {
+                        opacity: { duration: 0.4, ease: 'easeInOut' },
+                        filter: { duration: 0.4, ease: 'easeInOut' },
+                        scale: { duration: currentStep.duration, ease: 'easeInOut' },
+                      }
+                }
+                style={{ transformOrigin: 'center center' }}
+              >
+                {label.replace(/[0-9]/g, '').trim()}
+              </motion.span>
+            )}
           </AnimatePresence>
         </div>
       </div>

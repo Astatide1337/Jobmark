@@ -22,14 +22,14 @@ export function ProblemStatement() {
       <motion.div style={{ y }} className="relative mx-auto max-w-4xl px-6 text-center">
         <p className="text-foreground/90 font-serif text-2xl leading-[1.3] sm:text-3xl md:text-4xl lg:text-5xl">
           <span className="text-muted-foreground">Work is easy to forget. </span>
-          <span className="text-foreground">The details disappear first.</span>
+          <span className="text-foreground">The useful parts disappear first.</span>
           <span className="text-muted-foreground">
             {' '}
             A fix in Slack, a decision in a meeting, or a launch that took a month can be hard to
             remember by review time.
           </span>
           <br />
-          <span className="text-primary">Write it down once. Find it when you need it.</span>
+          <span className="text-primary">Put it somewhere you can use it again.</span>
         </p>
 
         <motion.div
@@ -47,7 +47,7 @@ export function ProblemStatement() {
           transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: 0.08 }}
           className="text-muted-foreground mt-8 text-lg"
         >
-          Jobmark keeps those notes in one place.
+          Jobmark brings those pieces together.
         </motion.p>
       </motion.div>
     </section>

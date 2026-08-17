@@ -17,6 +17,20 @@ export interface MonthLabel {
 }
 
 /**
+ * Keep the all-time view useful when the record is new. It shows at least
+ * one year, but expands farther back when the user has older activity.
+ */
+export function getHeatmapStartDate(firstActivityDate: string | undefined, today: string): string {
+  const minimumStartDate = shiftCalendarDate(today, -364);
+
+  if (firstActivityDate && firstActivityDate < minimumStartDate) {
+    return firstActivityDate;
+  }
+
+  return minimumStartDate;
+}
+
+/**
  * Build the calendar used by both the server-rendered Insights page and its
  * range filter. Keeping one implementation prevents the two views from
  * drifting at month and week boundaries.

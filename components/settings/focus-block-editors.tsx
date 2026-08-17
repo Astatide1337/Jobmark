@@ -36,9 +36,9 @@ export function AddBlockSelector({ onSelect }: { onSelect: (type: FocusBlockType
   const [isOpen, setIsOpen] = useState(false);
 
   const OPTIONS: { type: FocusBlockType; label: string; icon: React.ReactNode }[] = [
-    { type: 'breathing', label: 'Breathing', icon: <Wind className="h-4 w-4" /> },
-    { type: 'affirmation', label: 'Short reminders', icon: <Sparkles className="h-4 w-4" /> },
-    { type: 'goal', label: 'Think about your goal', icon: <Target className="h-4 w-4" /> },
+    { type: 'breathing', label: 'Breathing Exercise', icon: <Wind className="h-4 w-4" /> },
+    { type: 'affirmation', label: 'Affirmations', icon: <Sparkles className="h-4 w-4" /> },
+    { type: 'goal', label: 'Goal Visualization', icon: <Target className="h-4 w-4" /> },
   ];
 
   return (
@@ -54,7 +54,7 @@ export function AddBlockSelector({ onSelect }: { onSelect: (type: FocusBlockType
             : 'border-border/50 hover:border-border'
         )}
       >
-        <span className="text-sm font-medium">Add block</span>
+        <span className="text-sm font-medium">Add Block</span>
         <ChevronDown
           className={cn(
             'text-muted-foreground h-4 w-4 transition-transform duration-200',
@@ -168,8 +168,8 @@ export function SortableBlockCard({
             {!isExpanded && (
               <p className="text-muted-foreground line-clamp-1 text-xs font-medium">
                 {block.type === 'breathing' && BREATHING_PATTERNS[block.config.pattern].label}
-                {block.type === 'affirmation' && `${block.config.texts.length} reminders`}
-                {block.type === 'goal' && 'Think about your goal'}
+                {block.type === 'affirmation' && `${block.config.texts.length} affirmations`}
+                {block.type === 'goal' && `${block.config.duration}s visualization`}
               </p>
             )}
           </div>
@@ -241,14 +241,23 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
   const patternDef = BREATHING_PATTERNS[pattern];
   const steps = patternDef.steps;
   const [stepIndex, setStepIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const currentStep = steps[stepIndex];
+    const fadeOut = setTimeout(
+      () => setVisible(false),
+      Math.max(0, (currentStep.duration - 0.8) * 1000)
+    );
     const advance = setTimeout(() => {
+      setVisible(true);
       setStepIndex(prev => (prev + 1) % steps.length);
     }, currentStep.duration * 1000);
 
-    return () => clearTimeout(advance);
+    return () => {
+      clearTimeout(fadeOut);
+      clearTimeout(advance);
+    };
   }, [stepIndex, steps]);
 
   return (
@@ -259,6 +268,7 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
         cycleIndex={0}
         totalCycles={1}
         size="settings"
+        visible={visible}
       />
     </div>
   );
@@ -423,8 +433,8 @@ function GoalCarousel({
   const options = [
     {
       id: undefined,
-      title: 'Use my main goal',
-      why: 'Uses your main goal.',
+      title: 'Auto (Primary Goal)',
+      why: 'Automatically picks your most important goal.',
     },
     ...goals,
   ];
@@ -568,7 +578,7 @@ function AffirmationEditor({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-          Short reminders
+          Affirmations
         </Label>
         <div className="flex items-center gap-3">
           <Label htmlFor={`focus-reminder-duration-${block.id}`} className="text-xs font-medium">
@@ -598,14 +608,14 @@ function AffirmationEditor({
               {i + 1}
             </div>
             <Input
-              aria-label={`Reminder ${i + 1}`}
+              aria-label={`Affirmation ${i + 1}`}
               value={text}
               onChange={e => {
                 const newTexts = [...block.config.texts];
                 newTexts[i] = e.target.value;
                 onUpdate({ ...block, config: { ...block.config, texts: newTexts } });
               }}
-              placeholder="Write a short reminder..."
+              placeholder="Type an affirmation..."
               className="border-border/40 bg-muted/20 focus:bg-background h-10"
             />
             <button
@@ -614,7 +624,7 @@ function AffirmationEditor({
                 const newTexts = block.config.texts.filter((_, idx) => idx !== i);
                 onUpdate({ ...block, config: { ...block.config, texts: newTexts } });
               }}
-              aria-label={`Delete reminder ${i + 1}`}
+              aria-label={`Delete affirmation ${i + 1}`}
               className="text-muted-foreground/30 hover:text-destructive opacity-0 transition-[color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
@@ -631,7 +641,7 @@ function AffirmationEditor({
           className="text-muted-foreground hover:text-primary w-full rounded-2xl border border-dashed py-6"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add reminder
+          Add Affirmation
         </Button>
       </div>
     </div>

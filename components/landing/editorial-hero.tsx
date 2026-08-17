@@ -6,78 +6,18 @@
  */
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { useAuthModal } from '@/components/auth';
 import { MagneticButton } from '@/components/ui/magnetic-button';
+import { FlipWords } from '@/components/ui/flip-words';
 import { DashboardPreview } from './dashboard-preview';
 import { useMotionPreference } from './use-motion-preference';
 
-const headlineWords = ['did.', 'fixed.', 'learned.', 'built.'];
-
-function RotatingWord() {
-  const [wordIndex, setWordIndex] = useState(0);
-  const [outgoingWordIndex, setOutgoingWordIndex] = useState<number | null>(null);
-  const [isCrossfading, setIsCrossfading] = useState(false);
-  const wordIndexRef = useRef(0);
-  const transitionTimerRef = useRef<number | null>(null);
-  const firstFrameRef = useRef<number | null>(null);
-  const secondFrameRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mediaQuery.matches) return;
-
-    const advanceWord = () => {
-      const previousIndex = wordIndexRef.current;
-      const nextIndex = (previousIndex + 1) % headlineWords.length;
-      setOutgoingWordIndex(previousIndex);
-      setIsCrossfading(false);
-      wordIndexRef.current = nextIndex;
-      setWordIndex(nextIndex);
-
-      firstFrameRef.current = window.requestAnimationFrame(() => {
-        secondFrameRef.current = window.requestAnimationFrame(() => setIsCrossfading(true));
-      });
-
-      if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
-      transitionTimerRef.current = window.setTimeout(() => {
-        setOutgoingWordIndex(null);
-        setIsCrossfading(false);
-      }, 260);
-    };
-
-    const interval = window.setInterval(advanceWord, 3500);
-    return () => {
-      window.clearInterval(interval);
-      if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
-      if (firstFrameRef.current !== null) window.cancelAnimationFrame(firstFrameRef.current);
-      if (secondFrameRef.current !== null) window.cancelAnimationFrame(secondFrameRef.current);
-    };
-  }, []);
-
-  return (
-    <span aria-live="polite" className="relative inline-block w-[8ch]">
-      {outgoingWordIndex !== null && (
-        <span
-          aria-hidden="true"
-          className={`absolute inset-0 transition-opacity duration-200 ${isCrossfading ? 'opacity-0' : 'opacity-100'}`}
-        >
-          {headlineWords[outgoingWordIndex]}
-        </span>
-      )}
-      <span
-        className={`relative inline-block transition-opacity duration-200 ${
-          outgoingWordIndex !== null && !isCrossfading ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        {headlineWords[wordIndex]}
-      </span>
-    </span>
-  );
-}
+const headlinePrefixes = ['Remember what', 'Be ready for', 'Keep your', 'See your'];
+const headlineHighlights = ['you did.', 'your next review.', 'work together.', 'progress grow.'];
 
 export function EditorialHero() {
   const containerRef = useRef<HTMLElement>(null);
@@ -108,9 +48,12 @@ export function EditorialHero() {
         transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      <div className="relative mx-auto w-full max-w-[1400px] px-6 lg:px-10">
-        <div className="flex flex-col gap-16 xl:flex-row xl:items-center xl:justify-between xl:gap-24 2xl:gap-32">
-          <motion.div style={{ y: textY }} className="relative z-10 w-full space-y-8 xl:max-w-xl">
+      <div className="relative mx-auto w-full max-w-[1500px] px-6 lg:px-10">
+        <div className="flex flex-col gap-16 xl:flex-row xl:items-center xl:justify-between xl:gap-16 2xl:gap-20">
+          <motion.div
+            style={{ y: textY }}
+            className="relative z-10 w-full space-y-8 xl:max-w-[39rem]"
+          >
             <motion.div
               initial={false}
               animate={{ y: 0 }}
@@ -119,20 +62,29 @@ export function EditorialHero() {
             >
               <div className="bg-primary/50 h-px w-12" />
               <span className="text-primary font-mono text-sm tracking-wide uppercase">
-                Save your work
+                Keep a clear record
               </span>
             </motion.div>
 
-            <h1 className="font-serif text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl lg:text-7xl">
-              <span className="text-foreground block">Remember what you</span>
-              <span className="text-primary block min-h-[1.1em]">
-                <RotatingWord />
-              </span>
-            </h1>
+            <div className="relative h-[10rem] w-full overflow-visible sm:h-[11rem] lg:h-[12rem]">
+              <h1 className="font-serif text-3xl leading-[1.08] font-bold tracking-tight sm:text-6xl sm:whitespace-nowrap lg:text-6xl xl:text-7xl">
+                <FlipWords
+                  words={headlinePrefixes}
+                  duration={3000}
+                  className="text-foreground !px-0"
+                />
+                <br />
+                <FlipWords
+                  words={headlineHighlights}
+                  duration={3000}
+                  className="text-primary !px-0"
+                />
+              </h1>
+            </div>
 
             <p className="text-muted-foreground max-w-lg text-xl leading-relaxed">
-              Jobmark gives you one place to write down what you did, fixed, and learned. Use those
-              notes later for reviews and updates.
+              Jobmark gives you a quick place to record what you shipped, solved, and learned. When
+              it is time for an update or review, you already have a clear starting point.
             </p>
 
             <div className="flex flex-col items-start gap-4 pt-2 sm:flex-row sm:items-center">
@@ -154,19 +106,18 @@ export function EditorialHero() {
               </Link>
             </div>
 
-            <p className="text-muted-foreground/60 text-sm">Free to start. Your notes are yours.</p>
+            <p className="text-muted-foreground/60 text-sm">
+              Free to start. Your record stays yours.
+            </p>
           </motion.div>
 
-          <motion.div
-            style={{ y: previewY }}
-            className="w-full min-w-0 xl:max-w-[1000px] xl:flex-1"
-          >
+          <motion.div style={{ y: previewY }} className="w-full min-w-0 xl:max-w-[760px] xl:flex-1">
             <motion.div
               style={prefersReducedMotion ? undefined : { scale: previewScale }}
-              initial={false}
-              animate={{ y: 0 }}
+              initial={prefersReducedMotion ? false : { y: 24, rotateX: 1.5 }}
+              animate={{ y: 0, rotateX: 0 }}
               transition={{ duration: 0.85, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="group relative"
+              className="group relative [transform-style:preserve-3d]"
             >
               <motion.div
                 aria-hidden="true"

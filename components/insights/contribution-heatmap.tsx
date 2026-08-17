@@ -19,8 +19,10 @@ interface ContributionHeatmapProps {
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
 
 export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionHeatmapProps) {
-  const columns = `2.75rem repeat(${weeks.length}, minmax(1rem, 1.25rem))`;
-  const rows = '1.25rem repeat(7, minmax(1rem, 1.25rem))';
+  // Why: The all-time view can contain 52+ weeks. Fractional tracks let the
+  // calendar use the card width instead of forcing a second horizontal scroll.
+  const columns = `2.75rem repeat(${weeks.length}, minmax(0, 1fr))`;
+  const rows = '1.25rem repeat(7, auto)';
 
   const getColorClass = (count: number): string => {
     if (count === 0) return 'bg-foreground/[0.08]';
@@ -37,16 +39,16 @@ export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionH
       </CardHeader>
       <CardContent>
         <TooltipProvider delayDuration={50}>
-          <div className="w-full overflow-x-auto pb-1">
+          <div className="w-full overflow-visible px-1 pb-1">
             <div
-              className="grid min-w-max items-center gap-1.5"
+              className="grid w-full min-w-0 items-center gap-[clamp(1px,0.35vw,6px)]"
               style={{ gridTemplateColumns: columns, gridTemplateRows: rows }}
             >
               <span aria-hidden="true" style={{ gridColumn: 1, gridRow: 1 }} />
               {monthLabels.map(monthLabel => (
                 <span
                   key={`month-${monthLabel.weekIndex}`}
-                  className="text-foreground/70 h-5 text-center text-xs font-medium"
+                  className="text-foreground/70 h-5 overflow-visible text-center text-xs font-medium whitespace-nowrap"
                   style={{ gridColumn: monthLabel.weekIndex + 2, gridRow: 1 }}
                 >
                   {monthLabel.month}
@@ -73,7 +75,7 @@ export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionH
                       <span
                         key={`empty-${weekIndex}-${dayIndex}`}
                         aria-hidden="true"
-                        className="h-4 w-4 sm:h-5 sm:w-5"
+                        className="aspect-square h-auto w-full max-w-5 min-w-0 justify-self-center"
                         style={cellStyle}
                       />
                     );
@@ -89,7 +91,7 @@ export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionH
                           title={label}
                           style={cellStyle}
                           className={cn(
-                            'focus-visible:ring-ring/70 h-4 w-4 rounded-sm transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1 sm:h-5 sm:w-5',
+                            'focus-visible:ring-ring/70 aspect-square h-auto w-full max-w-5 min-w-0 justify-self-center rounded-sm transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
                             getColorClass(day.count),
                             day.date === today &&
                               'ring-primary ring-offset-background ring-2 ring-offset-1',

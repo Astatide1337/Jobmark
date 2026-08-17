@@ -49,7 +49,10 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
           <GoalsSection settings={settings} goals={goals} />
         </TabsContent>
         <TabsContent value="focus">
-          <SettingsIntro title="Focus" description="Set up your focus session." />
+          <SettingsIntro
+            title="Reflection"
+            description="Configure the end-of-day flow that helps you step back, reset, and stay intentional."
+          />
           <FocusSection
             key={JSON.stringify(focusConfig)}
             initialBlocks={focusConfig}

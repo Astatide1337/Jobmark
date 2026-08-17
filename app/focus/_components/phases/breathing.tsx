@@ -17,10 +17,24 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
 
   const [cycleIndex, setCycleIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
+  const phaseKey = `${cycleIndex}-${stepIndex}`;
+  const [previousPhaseKey, setPreviousPhaseKey] = useState(phaseKey);
+  const [visible, setVisible] = useState(true);
+
+  // Why: Reset visibility in the same render as the new phase so the next
+  // cue can enter with its blur-fade instead of appearing one frame late.
+  if (phaseKey !== previousPhaseKey) {
+    setPreviousPhaseKey(phaseKey);
+    setVisible(true);
+  }
 
   const currentStep = steps[stepIndex];
 
   useEffect(() => {
+    const fadeOut = setTimeout(
+      () => setVisible(false),
+      Math.max(0, (currentStep.duration - 0.8) * 1000)
+    );
     const advance = setTimeout(() => {
       const nextStep = stepIndex + 1;
       if (nextStep < steps.length) {
@@ -37,7 +51,10 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
       }
     }, currentStep.duration * 1000);
 
-    return () => clearTimeout(advance);
+    return () => {
+      clearTimeout(fadeOut);
+      clearTimeout(advance);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex, cycleIndex]);
 
@@ -48,6 +65,7 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
       cycleIndex={cycleIndex}
       totalCycles={cycles}
       size="full"
+      visible={visible}
     />
   );
 }

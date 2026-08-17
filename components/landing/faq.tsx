@@ -17,34 +17,36 @@ const faqs = [
   {
     id: 'what-is',
     question: 'What is Jobmark?',
-    answer: 'Jobmark helps you save notes about your work and use them for reviews and updates.',
+    answer:
+      'Jobmark helps you record your work and turn it into reviews, updates, and a clearer view of your progress.',
   },
   {
     id: 'different',
     question: 'Is Jobmark just a notes app?',
     answer:
-      'It starts with notes. You can also add projects, make review drafts, and connect an assistant.',
+      'It gives your work a home. You can group entries by project, make review drafts, and connect an assistant.',
   },
   {
     id: 'notion',
     question: 'Why not use Notion or Docs?',
-    answer: 'You can. Jobmark already has a simple setup for work notes and reviews.',
+    answer: 'You can. Jobmark is built around the entries and summaries you need for work reviews.',
   },
   {
     id: 'ai-work',
     question: 'Can I connect an assistant?',
     answer:
-      'Yes. Connect Claude, ChatGPT, or Gemini if you want help editing a draft. Jobmark keeps your notes.',
+      'Yes. Connect Claude, ChatGPT, or Gemini when you want help editing a draft. You decide what to share.',
   },
   {
     id: 'export',
-    question: 'Can I download my notes?',
-    answer: 'Yes. You can download your notes and use them somewhere else.',
+    question: 'Can I download what I add here?',
+    answer: 'Yes. Export your record whenever you want and use it somewhere else.',
   },
   {
     id: 'who',
     question: 'Who is Jobmark for?',
-    answer: 'Anyone who wants to remember their work for reviews, updates, or their next job.',
+    answer:
+      'Anyone who wants a better way to explain what they have done and where they are headed.',
   },
 ];
 

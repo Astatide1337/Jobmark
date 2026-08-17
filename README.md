@@ -12,7 +12,7 @@ Jobmark is a personal career management platform that lets you:
 - **Build review drafts** — Weekly, monthly, and quarterly drafts from your notes
 - **Manage your network** — CRM-lite for professional contacts and interactions
 - **Draft outreach** — Editable messages built from your saved conversations
-- **Focus sessions** — Guided breathing, goals, and short reminders
+- **Focus & decompress** — Guided breathing, intention-setting, and affirmations
 - **Connect your assistant** — Use Jobmark through Claude, ChatGPT, Gemini, or another MCP-compatible assistant
 
 ## Architecture
