@@ -28,7 +28,9 @@ export function FinalCTA() {
         <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl md:text-6xl">
           Keep your work while it is fresh.
         </h2>
-        <p className="text-muted-foreground mx-auto max-w-xl text-xl">Start with one note. Sort it later.</p>
+        <p className="text-muted-foreground mx-auto max-w-xl text-xl">
+          Start with one note. Sort it later.
+        </p>
 
         <div className="pt-4">
           <MagneticButton strength={0.13} onClick={openAuthModal}>
