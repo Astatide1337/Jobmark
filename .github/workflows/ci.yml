@@ -39,7 +39,14 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma migrate deploy
-      - run: npm run verify
+      - name: Lint
+        run: npm run lint -- --max-warnings=0
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Frontend invariants
+        run: npm run test:frontend
+      - name: Formatting
+        run: npm run format:check
       - run: npm test
         env:
           INTEGRATION_TESTS: '1'
