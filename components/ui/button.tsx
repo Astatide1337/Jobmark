@@ -2,8 +2,9 @@
  * Universal Button Component
  *
  * Why: The primary interaction element. Includes consistent "Café"
- * styling, scale-down physics on click (`active:scale-95`), and
- * support for multiple visual variants (ghost, outline, primary).
+ * styling and support for multiple visual variants (ghost, outline, primary).
+ * Default motion is limited to color, border, shadow, and opacity changes so
+ * buttons do not move the layout or jitter under repeated interaction.
  */
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
@@ -12,7 +13,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {

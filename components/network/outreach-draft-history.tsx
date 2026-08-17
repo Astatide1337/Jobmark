@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
@@ -56,13 +56,6 @@ export function OutreachDraftHistory({
   const [editContent, setEditContent] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Sync internal state if initialDrafts changes (during render phase to avoid cascading effects)
-  const [prevInitialDrafts, setPrevInitialDrafts] = useState(initialDrafts);
-  if (initialDrafts !== prevInitialDrafts) {
-    setDrafts(initialDrafts);
-    setPrevInitialDrafts(initialDrafts);
-  }
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id));

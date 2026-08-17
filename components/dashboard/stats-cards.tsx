@@ -5,9 +5,8 @@
  * principles (Goal-Gradient, Loss Aversion).
  *
  * Technical Implementation:
- * - Client-Side Streaks: Calculates streaks based on the user's local
- *   timezone to ensure that "Today" matches their actual calendar day,
- *   while using server-provided ISO strings for accuracy.
+ * - Server-aligned streaks: The server sends date-only values and the
+ *   user's persisted calendar date, so browser timezone cannot shift a day.
  * - Progress Tracking: Visualizes the "Monthly Activity Goal" to build momentum.
  */
 'use client';
@@ -27,6 +26,7 @@ import { FileText, Flame, FolderOpen, TrendingUp } from 'lucide-react';
  */
 
 import { useMemo } from 'react';
+import { shiftCalendarDate } from '@/lib/date-semantics';
 
 interface StatsProps {
   thisMonth: number;
@@ -34,7 +34,7 @@ interface StatsProps {
   projects: number;
   monthlyGoal: number;
   summaries?: number;
-  serverDate?: string;
+  today: string;
 }
 
 export function StatsCards({
@@ -43,23 +43,16 @@ export function StatsCards({
   monthlyGoal,
   summaries = 0,
   dates = [],
-  serverDate,
+  today,
 }: StatsProps) {
-  // Client-side streak calculation - server sends full ISO timestamps, we convert to local dates
   const currentStreak = useMemo(() => {
     if (!dates.length) return 0;
 
-    // Convert full ISO timestamps to local YYYY-MM-DD strings
-    const localDates = dates.map(d => new Date(d).toLocaleDateString('en-CA'));
-    const uniqueDates = Array.from(new Set(localDates)).sort((a, b) => b.localeCompare(a));
+    const uniqueDates = Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
 
     if (uniqueDates.length === 0) return 0;
 
-    // Get today and yesterday as YYYY-MM-DD in LOCAL timezone
-    // Use serverDate as fallback to ensure consistency if provided
-    const referenceDate = serverDate ? new Date(serverDate) : new Date();
-    const today = referenceDate.toLocaleDateString('en-CA');
-    const yesterday = new Date(referenceDate.getTime() - 86400000).toLocaleDateString('en-CA');
+    const yesterday = shiftCalendarDate(today, -1);
 
     // Check if the most recent activity is recent enough to count
     const latest = uniqueDates[0];
@@ -74,11 +67,7 @@ export function StatsCards({
       const current = uniqueDates[i - 1];
       const previous = uniqueDates[i];
 
-      // Calculate expected previous day from current
-      const currentDate = new Date(current + 'T12:00:00'); // Use noon to avoid DST issues
-      const expectedPrevious = new Date(currentDate.getTime() - 86400000)
-        .toISOString()
-        .split('T')[0];
+      const expectedPrevious = shiftCalendarDate(current, -1);
 
       if (previous === expectedPrevious) {
         streak++;
@@ -88,7 +77,7 @@ export function StatsCards({
     }
 
     return streak;
-  }, [dates, serverDate]);
+  }, [dates, today]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -115,7 +104,7 @@ function ActivityStatCard({ count, goal }: { count: number; goal: number }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-all duration-300 hover:shadow-xl">
+        <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-[background-color,box-shadow] duration-300 hover:shadow-xl">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <FileText className="text-muted-foreground h-4 w-4" />
@@ -157,7 +146,7 @@ function CoverageStatCard({ streak }: { streak: number }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-all duration-300 hover:shadow-xl">
+        <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-[background-color,box-shadow] duration-300 hover:shadow-xl">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <Flame
@@ -197,7 +186,7 @@ function ProjectStatCard({ count, summaries }: { count: number; summaries: numbe
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-all duration-300 hover:shadow-xl">
+        <Card className="bg-card/40 border-border/40 hover:bg-card/60 hover:shadow-primary/5 cursor-default rounded-2xl transition-[background-color,box-shadow] duration-300 hover:shadow-xl">
           <CardContent className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <FolderOpen className="text-muted-foreground h-4 w-4" />

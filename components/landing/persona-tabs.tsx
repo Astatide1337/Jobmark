@@ -12,7 +12,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import {
   Trophy,
   TrendingUp,
@@ -142,7 +142,7 @@ function ProveVisual() {
               'Shipped 12 features ahead of schedule',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                <CheckCircle2 className="text-success mt-0.5 h-4 w-4 shrink-0" />
                 <span>{item}</span>
               </li>
             ))}
@@ -209,6 +209,32 @@ function ShareVisual() {
 
 export function PersonaTabs() {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const selectTab = (id: string, focus = false) => {
+    setActiveTab(id);
+    if (focus) {
+      const index = tabs.findIndex(tab => tab.id === id);
+      tabRefs.current[index]?.focus();
+    }
+  };
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex = index;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    selectTab(tabs[nextIndex].id, true);
+  };
 
   return (
     <section className="relative py-24 lg:py-32">
@@ -229,15 +255,20 @@ export function PersonaTabs() {
 
         {/* Tab navigation */}
         <div className="mb-12 flex flex-wrap gap-2" role="tablist" aria-label="Ways to use Jobmark">
-          {tabs.map(tab => (
+          {tabs.map((tab, index) => (
             <button
               key={tab.id}
+              ref={element => {
+                tabRefs.current[index] = element;
+              }}
               type="button"
               role="tab"
               aria-selected={activeTab === tab.id}
               aria-controls={`persona-panel-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all duration-300 ${
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              onClick={() => selectTab(tab.id)}
+              onKeyDown={event => handleTabKeyDown(event, index)}
+              className={`flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-300 ${
                 activeTab === tab.id
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border-border/40 border'

@@ -14,7 +14,6 @@ import { List, ListChecks, ListOrdered, Loader2, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useUI } from '@/components/providers/ui-provider';
 import { applyQuickEdit, type QuickEditAction } from '@/lib/deterministic-drafts';
 
 interface LiveEditorProps {
@@ -44,7 +43,6 @@ export function LiveEditor({
   placeholder,
   enableQuickEdit = false,
 }: LiveEditorProps) {
-  const { uiV2 } = useUI();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -170,17 +168,13 @@ export function LiveEditor({
     <div
       ref={containerRef}
       className={cn(
-        'bg-card/50 border-border/50 group relative flex h-[500px] w-full flex-col rounded-lg border font-sans text-base leading-relaxed shadow-sm',
-        uiV2 && 'h-auto min-h-[400px]',
+        'bg-card/50 border-border/50 group relative flex h-auto min-h-[400px] w-full flex-col rounded-lg border font-sans text-base leading-relaxed shadow-sm',
         className
       )}
     >
       <div
         ref={scrollContainerRef}
-        className={cn(
-          'relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto',
-          uiV2 && 'overflow-visible'
-        )}
+        className="relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto"
       >
         <div className="relative min-h-full">
           <div

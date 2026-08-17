@@ -9,8 +9,8 @@
  *   session rather than trusting a caller-supplied user ID.
  * - Dynamic Greeting: Calculates a time-of-day greeting (Morning/Afternoon/Evening)
  *   server-side to ensure it's correct on first paint.
- * - Hydration Safety: Passes `serverDate` to the `StatsCards` to prevent
- *   mismatches between server-rendered and client-calculated streaks.
+ * - Hydration Safety: Passes the server's calendar date to `StatsCards` so
+ *   streaks do not change when a browser uses a different timezone.
  */
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -113,7 +113,7 @@ export default async function DashboardPage() {
                 archived: p.archived,
               })
             )}
-            todayCount={stats.today}
+            todayCount={stats.todayCount}
             dailyGoal={stats.dailyGoal}
           />
         </div>
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
             projects={stats.projects}
             monthlyGoal={stats.monthlyGoal}
             summaries={reports}
-            serverDate={new Date().toISOString()}
+            today={stats.today}
           />
         </div>
 
@@ -151,6 +151,7 @@ export default async function DashboardPage() {
             </span>
           </div>
           <ActivityTimeline
+            key={activities.map(activity => activity.id).join('|') || `empty-${totalCount}`}
             activities={activities}
             totalCount={totalCount}
             initialTimeZone={timeZone}

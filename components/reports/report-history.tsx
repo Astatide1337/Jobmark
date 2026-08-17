@@ -11,7 +11,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   Trash2,
@@ -76,13 +76,6 @@ export function ReportHistory({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
-  // Sync internal state if initialReports changes (during render phase to avoid cascading effects)
-  const [prevInitialReports, setPrevInitialReports] = useState(initialReports);
-  if (initialReports !== prevInitialReports) {
-    setReports(initialReports);
-    setPrevInitialReports(initialReports);
-  }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // prevent expand toggle
@@ -181,7 +174,7 @@ export function ReportHistory({
       {reports.map(report => (
         <div
           key={report.id}
-          className="bg-card hover:border-primary/50 overflow-hidden rounded-xl border transition-all"
+          className="bg-card hover:border-primary/50 overflow-hidden rounded-xl border transition-[border-color]"
         >
           {/* Header / Summary */}
           <div className="flex items-center justify-between gap-3 p-4">

@@ -81,14 +81,6 @@ export function FocusSection({
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
-  // Sync with props if they change externally (during render phase to avoid cascading effects)
-  const [prevInitialBlocks, setPrevInitialBlocks] = useState(initialBlocks);
-  if (initialBlocks !== prevInitialBlocks) {
-    setBlocks(initialBlocks);
-    setLastSavedBlocks(initialBlocks);
-    setPrevInitialBlocks(initialBlocks);
-  }
-
   const hasChanges = JSON.stringify(blocks) !== JSON.stringify(lastSavedBlocks);
 
   const sensors = useSensors(
@@ -261,7 +253,7 @@ function AddBlockSelector({ onSelect }: { onSelect: (type: FocusBlockType) => vo
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center gap-2 rounded-xl border px-3 py-2 transition-all',
+          'flex items-center gap-2 rounded-xl border px-3 py-2 transition-[color,background-color,border-color,box-shadow]',
           'bg-background/50 hover:bg-background/80',
           isOpen
             ? 'border-primary/50 ring-primary/20 ring-2'
@@ -344,7 +336,7 @@ function SortableBlockCard({
       style={style}
       layout
       className={cn(
-        'group relative rounded-2xl border transition-all duration-300',
+        'group relative rounded-2xl border transition-[border-color,background-color,box-shadow,opacity] duration-300',
         isDragging ? 'opacity-50' : 'opacity-100',
         isExpanded
           ? 'border-primary/30 bg-card/80 shadow-lg'
@@ -391,7 +383,7 @@ function SortableBlockCard({
           type="button"
           onClick={onDelete}
           aria-label={`Delete ${BLOCK_LABELS[block.type]} block`}
-          className="text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive bg-background absolute -top-2 -right-2 rounded-full border p-1.5 opacity-0 shadow-sm transition-all group-hover:opacity-100"
+          className="text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive bg-background absolute -top-2 -right-2 rounded-full border p-1.5 opacity-0 shadow-sm transition-[color,background-color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -450,19 +442,13 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
   const patternDef = BREATHING_PATTERNS[pattern];
   const steps = patternDef.steps;
   const [stepIndex, setStepIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [fadedPhase, setFadedPhase] = useState<string | null>(null);
   const phaseKey = `${pattern}-${stepIndex}`;
-  const [previousPhaseKey, setPreviousPhaseKey] = useState(phaseKey);
-
-  if (phaseKey !== previousPhaseKey) {
-    setPreviousPhaseKey(phaseKey);
-    setVisible(true);
-  }
 
   useEffect(() => {
     const currentStep = steps[stepIndex];
     const fadeOut = setTimeout(
-      () => setVisible(false),
+      () => setFadedPhase(phaseKey),
       Math.max(0, (currentStep.duration - 0.8) * 1000)
     );
 
@@ -474,7 +460,7 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
       clearTimeout(fadeOut);
       clearTimeout(advance);
     };
-  }, [stepIndex, steps]);
+  }, [phaseKey, stepIndex, steps]);
 
   return (
     <div className="pointer-events-none w-full opacity-80">
@@ -484,7 +470,7 @@ function BreathingPreview({ pattern }: { pattern: BreathingPattern }) {
         cycleIndex={0}
         totalCycles={1}
         size="settings"
-        visible={visible}
+        visible={fadedPhase !== phaseKey}
       />
     </div>
   );
@@ -561,7 +547,7 @@ function BreathingCarousel({
       </div>
 
       <div className="bg-muted/20 relative overflow-hidden rounded-3xl border p-2">
-        <div className="relative h-[280px] w-full items-center justify-center overflow-hidden">
+        <div className="relative h-[360px] w-full items-center justify-center overflow-hidden">
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div
               key={block.config.pattern}
@@ -584,7 +570,7 @@ function BreathingCarousel({
               </div>
 
               {/* Visual Preview */}
-              <div className="relative mt-2 flex h-36 w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl bg-black/60 shadow-inner">
+              <div className="relative mt-2 flex h-[220px] w-full max-w-[360px] items-center justify-center overflow-hidden rounded-2xl bg-black/60 shadow-inner">
                 <BreathingPreview pattern={block.config.pattern} />
                 <div className="absolute inset-0 z-10" />
               </div>
@@ -620,7 +606,7 @@ function BreathingCarousel({
             <div
               key={p}
               className={cn(
-                'h-1 rounded-full transition-all duration-300',
+                'h-1 rounded-full transition-[width,background-color] duration-300',
                 i === currentIndex ? 'bg-primary w-4' : 'bg-primary/20 w-1'
               )}
             />
@@ -764,7 +750,7 @@ function GoalCarousel({
             <div
               key={o.id ?? 'auto'}
               className={cn(
-                'h-1 rounded-full transition-all duration-300',
+                'h-1 rounded-full transition-[width,background-color] duration-300',
                 i === currentIndex ? 'bg-primary w-4' : 'bg-primary/20 w-1'
               )}
             />
@@ -837,7 +823,7 @@ function AffirmationEditor({
                 onUpdate({ ...block, config: { ...block.config, texts: newTexts } });
               }}
               aria-label={`Delete reminder ${i + 1}`}
-              className="text-muted-foreground/30 hover:text-destructive opacity-0 transition-all group-hover:opacity-100"
+              className="text-muted-foreground/30 hover:text-destructive opacity-0 transition-[color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
             </button>

@@ -6,7 +6,6 @@
  */
 'use client';
 
-import { motion } from 'framer-motion';
 import { ArrowRight, Shield, Database, Link2 } from 'lucide-react';
 import { useAuthModal } from '@/components/auth';
 
@@ -36,52 +35,30 @@ export function AccessSection() {
       <div className="mx-auto max-w-7xl px-6">
         {/* Section header */}
         <div className="mx-auto mb-12 max-w-2xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-6 flex items-center justify-center gap-3"
-          >
+          <div className="mb-6 flex items-center justify-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
               Start small
             </span>
             <div className="bg-primary/50 h-px w-12" />
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-4 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
-          >
+          <h2 className="mb-4 font-serif text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
             Make reviews easier.
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-muted-foreground text-lg"
-          >
+          <p className="text-muted-foreground text-lg">
             Start with one note. Add more when you need to.
-          </motion.p>
+          </p>
         </div>
 
         {/* Access cards */}
         <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
-          {accessPoints.map((point, index) => {
+          {accessPoints.map(point => {
             const Icon = point.icon;
             return (
-              <motion.div
+              <div
                 key={point.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
                 className="border-border/50 bg-card/60 rounded-2xl border p-6 shadow-sm"
               >
                 <div className="bg-primary/10 text-primary mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl">
@@ -89,18 +66,12 @@ export function AccessSection() {
                 </div>
                 <h3 className="mb-2 text-lg font-semibold">{point.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{point.description}</p>
-              </motion.div>
+              </div>
             );
           })}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex justify-center"
-        >
+        <div className="mt-10 flex justify-center">
           <button
             onClick={openAuthModal}
             className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-8 py-3 text-base font-medium transition-colors"
@@ -108,7 +79,7 @@ export function AccessSection() {
             Add a note
             <ArrowRight className="h-4 w-4" />
           </button>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

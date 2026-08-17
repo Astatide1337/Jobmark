@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  appearanceSettingsSchema,
-  goalSettingsSchema,
-  projectUpdateSchema,
-} from './input-schemas';
+import { appearanceSettingsSchema, goalSettingsSchema, projectUpdateSchema } from './input-schemas';
 
 describe('server action input allowlists', () => {
   it('rejects unrelated security fields', () => {

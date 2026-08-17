@@ -1,22 +1,13 @@
 /**
- * Intelligent Floating Navigation
+ * Public-page navigation.
  *
- * Why: Maintains access to primary CTAs without occupying permanent
- * vertical space. It follows a "Scroll-Aware" pattern.
- *
- * Behavior:
- * - Hidden on Scroll Down: To give the user more focus on the content.
- * - Shown on Scroll Up: Anticipates the user's desire to navigate or sign up.
- * - Glassmorphism: Uses `backdrop-blur` to stay legible over any background.
+ * Why: Navigation should remain available without scroll listeners, springs,
+ * pointer tracking, or an animated visibility state that can hide focus.
  */
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MagneticButton } from '@/components/ui/magnetic-button';
 import { useAuthModal } from '@/components/auth';
-import { cn } from '@/lib/utils';
 import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 const navItems = [
@@ -27,108 +18,48 @@ const navItems = [
 ];
 
 export function FloatingNav() {
-  const [isVisible, setIsVisible] = useState(true);
-  const [isAtTop, setIsAtTop] = useState(true);
-  const lastScrollY = useRef(0);
-  const ticking = useRef(false);
   const { openAuthModal } = useAuthModal();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!ticking.current) {
-        window.requestAnimationFrame(() => {
-          const currentScrollY = window.scrollY;
-          const scrollDelta = currentScrollY - lastScrollY.current;
-
-          // Only change visibility if scroll delta is significant (prevents flicker)
-          if (Math.abs(scrollDelta) > 5) {
-            const shouldShow = scrollDelta < 0 || currentScrollY < 100;
-            setIsVisible(shouldShow);
-          }
-
-          const atTop = currentScrollY < 50;
-          setIsAtTop(atTop);
-          lastScrollY.current = currentScrollY;
-          ticking.current = false;
-        });
-        ticking.current = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
-    <motion.nav
-      initial={false}
-      animate={{
-        y: isVisible ? 0 : -100,
-        opacity: isVisible ? 1 : 0,
-      }}
-      transition={{
-        duration: 0.2,
-        ease: [0.4, 0, 0.2, 1],
-      }}
-      aria-hidden={!isVisible}
-      inert={!isVisible}
-      className={cn(
-        'fixed top-6 left-1/2 z-50 -translate-x-1/2',
-        'rounded-full px-2 py-2',
-        'border-border/20 border',
-        'backdrop-blur-xl',
-        'shadow-lg shadow-black/10',
-        isAtTop ? 'bg-background/60' : 'bg-background/90',
-        !isVisible && 'pointer-events-none'
-      )}
+    <nav
+      aria-label="Main navigation"
+      className="border-border/20 bg-background/90 fixed top-6 left-1/2 z-50 w-[calc(100%-2rem)] max-w-max -translate-x-1/2 rounded-full border px-2 py-2 shadow-lg shadow-black/10 backdrop-blur-xl"
     >
       <div className="flex items-center gap-1">
-        {/* Logo */}
-        <MagneticButton as="div" strength={0.2}>
-          <Link
-            href="/"
-            className="hover:bg-primary/10 flex items-center gap-2 rounded-full px-3 py-2 transition-colors"
-          >
-            <div className="bg-primary flex h-6 w-6 items-center justify-center rounded-md">
-              <JobmarkMark className="h-4 w-4" sizes="16px" />
-            </div>
-            <span className="text-foreground hidden font-serif text-sm font-semibold sm:inline">
-              Jobmark
-            </span>
-          </Link>
-        </MagneticButton>
+        <Link
+          href="/"
+          className="hover:bg-primary/10 focus-visible:ring-ring/50 text-foreground flex items-center gap-2 rounded-full px-3 py-2 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <div className="bg-primary flex h-6 w-6 items-center justify-center rounded-md">
+            <JobmarkMark className="h-4 w-4" sizes="16px" />
+          </div>
+          <span className="hidden font-serif text-sm font-semibold sm:inline">Jobmark</span>
+        </Link>
 
-        {/* Divider */}
         <div className="bg-border/30 mx-1 hidden h-6 w-px sm:block" />
 
-        {/* Nav Items */}
         <div className="hidden items-center gap-1 sm:flex">
           {navItems.map(item => (
-            <MagneticButton key={item.label} as="div" strength={0.15}>
-              <Link
-                href={item.href}
-                className="text-muted-foreground hover:text-foreground hover:bg-primary/5 focus-visible:ring-ring/50 focus-visible:text-foreground rounded-full px-3 py-2 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
-              >
-                {item.label}
-              </Link>
-            </MagneticButton>
+            <Link
+              key={item.label}
+              href={item.href}
+              className="text-muted-foreground hover:bg-primary/5 hover:text-foreground focus-visible:ring-ring/50 focus-visible:text-foreground rounded-full px-3 py-2 text-sm transition-[color,background-color] focus-visible:ring-2 focus-visible:outline-none"
+            >
+              {item.label}
+            </Link>
           ))}
         </div>
 
-        {/* Divider */}
         <div className="bg-border/30 mx-1 h-6 w-px" />
 
-        {/* CTA */}
-        <MagneticButton as="div" strength={0.2}>
-          <button
-            type="button"
-            onClick={openAuthModal}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-2 text-sm font-medium transition-colors"
-          >
-            Add a note
-          </button>
-        </MagneticButton>
+        <button
+          type="button"
+          onClick={openAuthModal}
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/50 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        >
+          Add a note
+        </button>
       </div>
-    </motion.nav>
+    </nav>
   );
 }

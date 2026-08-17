@@ -266,8 +266,9 @@ export async function getActivityStats() {
       }),
     ]);
 
-  // Return date-only values at noon UTC so browser-local formatting cannot move
-  // a represented calendar date across midnight.
+  // Return calendar dates, not timestamps. The dashboard uses the same
+  // persisted timezone as the server query, so the client never has to
+  // reinterpret a date-only value in its own timezone.
   const recentActivities = await prisma.activity.findMany({
     where: {
       userId: targetUserId,
@@ -278,14 +279,11 @@ export async function getActivityStats() {
     take: 365,
   });
 
-  // Return full ISO timestamps - client will convert to local dates
-  const recentDates = recentActivities.map(
-    a => `${a.logDate.toISOString().slice(0, 10)}T12:00:00.000Z`
-  );
+  const recentDates = recentActivities.map(a => a.logDate.toISOString().slice(0, 10));
 
   return {
     thisMonth: thisMonthCount,
-    today: todayCount,
+    todayCount,
     thisWeek: thisWeekCount,
     recentDates,
     projects: projectCount,
@@ -293,5 +291,7 @@ export async function getActivityStats() {
     dailyGoal: settings?.dailyTarget ?? 3,
     weeklyGoal: settings?.weeklyTarget ?? 15,
     totalCount,
+    today: todayDate,
+    timeZone,
   };
 }

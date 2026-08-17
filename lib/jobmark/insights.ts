@@ -54,29 +54,49 @@ export async function getDashboardStats(actor: JobmarkActor): Promise<DashboardS
   const weekRange = getCalendarRange({ kind: '7d', now, timeZone });
   const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
 
-  const [totalActivities, thisWeek, thisMonth, activeProjects, archivedProjects, totalReports, totalGoals, totalContacts] =
-    await Promise.all([
-      prisma.activity.count({ where: { userId: actor.userId, ...lockedFilter } }),
-      prisma.activity.count({
-        where: {
-          userId: actor.userId,
-          logDate: { gte: weekRange.start, lt: weekRange.endExclusive },
-          ...lockedFilter,
-        },
-      }),
-      prisma.activity.count({
-        where: {
-          userId: actor.userId,
-          logDate: { gte: monthRange.start, lt: monthRange.endExclusive },
-          ...lockedFilter,
-        },
-      }),
-      prisma.project.count({ where: { userId: actor.userId, archived: false, ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }) } }),
-      prisma.project.count({ where: { userId: actor.userId, archived: true, ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }) } }),
-      prisma.report.count({ where: { userId: actor.userId, ...lockedFilter } }),
-      prisma.goal.count({ where: { userId: actor.userId } }),
-      prisma.contact.count({ where: { userId: actor.userId } }),
-    ]);
+  const [
+    totalActivities,
+    thisWeek,
+    thisMonth,
+    activeProjects,
+    archivedProjects,
+    totalReports,
+    totalGoals,
+    totalContacts,
+  ] = await Promise.all([
+    prisma.activity.count({ where: { userId: actor.userId, ...lockedFilter } }),
+    prisma.activity.count({
+      where: {
+        userId: actor.userId,
+        logDate: { gte: weekRange.start, lt: weekRange.endExclusive },
+        ...lockedFilter,
+      },
+    }),
+    prisma.activity.count({
+      where: {
+        userId: actor.userId,
+        logDate: { gte: monthRange.start, lt: monthRange.endExclusive },
+        ...lockedFilter,
+      },
+    }),
+    prisma.project.count({
+      where: {
+        userId: actor.userId,
+        archived: false,
+        ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
+      },
+    }),
+    prisma.project.count({
+      where: {
+        userId: actor.userId,
+        archived: true,
+        ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
+      },
+    }),
+    prisma.report.count({ where: { userId: actor.userId, ...lockedFilter } }),
+    prisma.goal.count({ where: { userId: actor.userId } }),
+    prisma.contact.count({ where: { userId: actor.userId } }),
+  ]);
 
   // Calculate streak
   const recentActivities = await prisma.activity.findMany({
@@ -121,11 +141,19 @@ export async function getDashboardStats(actor: JobmarkActor): Promise<DashboardS
 
 export async function getInsights(
   actor: JobmarkActor,
-  options: { includeHeatmap?: boolean; includeWeeklyTrend?: boolean; includeProjectDistribution?: boolean } = {}
+  options: {
+    includeHeatmap?: boolean;
+    includeWeeklyTrend?: boolean;
+    includeProjectDistribution?: boolean;
+  } = {}
 ): Promise<InsightsData> {
   assertActor(actor);
 
-  const { includeHeatmap = true, includeWeeklyTrend = true, includeProjectDistribution = true } = options;
+  const {
+    includeHeatmap = true,
+    includeWeeklyTrend = true,
+    includeProjectDistribution = true,
+  } = options;
 
   const lockedIds = await getLockedProjectIds(actor.userId);
   const lockedFilter = buildLockedActivityFilter(lockedIds);
@@ -194,10 +222,14 @@ export async function getInsights(
     includeProjectDistribution
       ? (async () => {
           const projects = await prisma.project.findMany({
-            where: { userId: actor.userId, archived: false, ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }) },
+            where: {
+              userId: actor.userId,
+              archived: false,
+              ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
+            },
             select: { id: true, name: true, color: true, _count: { select: { activities: true } } },
           });
-          return projects.map((p) => ({
+          return projects.map(p => ({
             projectId: p.id,
             projectName: p.name,
             color: p.color,

@@ -18,11 +18,7 @@ import { verifyPKCE } from '@/lib/mcp/auth/crypto';
 
 type RateLimitResult = Awaited<ReturnType<typeof checkRateLimit>>;
 
-function tokenResponse(
-  rateLimit: RateLimitResult,
-  error: string,
-  status = 400
-): NextResponse {
+function tokenResponse(rateLimit: RateLimitResult, error: string, status = 400): NextResponse {
   return NextResponse.json(
     { error },
     { status, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token) }
@@ -164,7 +160,9 @@ async function readTokenBody(request: NextRequest): Promise<Record<string, strin
     return (await request.json()) as Record<string, string>;
   }
   const formData = await request.formData();
-  return Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, value.toString()]));
+  return Object.fromEntries(
+    Array.from(formData.entries()).map(([key, value]) => [key, value.toString()])
+  );
 }
 
 export async function POST(request: NextRequest) {

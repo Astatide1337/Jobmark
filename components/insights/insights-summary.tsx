@@ -92,7 +92,7 @@ function MetricCard({ icon: Icon, label, value, subtitle, tooltip, highlight }: 
         <Card
           className={cn(
             CARD_STYLES,
-            'cursor-default transition-all duration-300',
+            'cursor-default transition-[background-color,border-color,box-shadow] duration-300',
             'hover:bg-card/60 hover:border-border/60 hover:shadow-primary/5 hover:shadow-xl'
           )}
         >

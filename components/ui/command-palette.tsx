@@ -111,6 +111,7 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (!query.trim()) {
+      debouncedSearch.cancel();
       return;
     }
 
@@ -121,10 +122,13 @@ export function CommandPalette() {
     };
   }, [query, debouncedSearch]);
 
+  useEffect(() => () => debouncedSearch.cancel(), [debouncedSearch]);
+
   const handleSelect = useCallback(
     (item: { href?: string; action?: string }) => {
       setOpen(false);
       setQuery('');
+      setResults([]);
 
       if (item.action === 'focus-capture') {
         // Focus the quick capture textarea
@@ -148,6 +152,7 @@ export function CommandPalette() {
     (result: SearchResult) => {
       setOpen(false);
       setQuery('');
+      setResults([]);
 
       if (result.type === 'activity') {
         setSelectedActivity(result);
@@ -160,6 +165,11 @@ export function CommandPalette() {
   );
 
   const isSearching = query.trim().length > 0;
+
+  const handleQueryChange = (nextQuery: string) => {
+    setQuery(nextQuery);
+    if (!nextQuery.trim()) setResults([]);
+  };
 
   // Use derived state for results to avoid setting state in the effect
   const displayedResults = isSearching ? results : [];
@@ -177,13 +187,23 @@ export function CommandPalette() {
     <>
       <CommandDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={nextOpen => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            setQuery('');
+            setResults([]);
+          }
+        }}
         title="Search your notes"
         description="Search notes, projects, review drafts, contacts, and conversations."
         showCloseButton={false}
         shouldFilter={false} // Disable internal filtering to allow server results (e.g. "today") to show
       >
-        <CommandInput placeholder="Search your notes..." value={query} onValueChange={setQuery} />
+        <CommandInput
+          placeholder="Search your notes..."
+          value={query}
+          onValueChange={handleQueryChange}
+        />
         <CommandList>
           <CommandEmpty>{isPending ? 'Searching...' : 'No results found.'}</CommandEmpty>
 
@@ -286,7 +306,7 @@ export function CommandPalette() {
                       >
                         <span
                           className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: result.color || '#6366f1' }}
+                          style={{ backgroundColor: result.color || 'var(--primary)' }}
                         />
                         <div className="flex-1">
                           <p className="text-sm">{result.title}</p>

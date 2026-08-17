@@ -6,17 +6,14 @@
  *
  * Responsibilities:
  * - Mobile Navigation: Manages the `isMobileOpen` state for the slide-over sidebar.
- * - Layout Switching: Seamlessly toggles between "Full Height" (v1) and
- *   "Scrollable Document" (v2) layouts based on user settings.
- * - Transitions: Wraps children in `PageTransition` for smooth route changes.
+ * - App tooling: Mounts authenticated-only tools such as the command palette.
  */
 'use client';
 
 import React, { useState } from 'react';
 import { Sidebar } from './sidebar';
-import { PageTransition } from '@/components/ui/page-transition';
-import { useUI } from '@/components/providers/ui-provider';
 import { cn } from '@/lib/utils';
+import { CommandPalette } from '@/components/ui/command-palette';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -31,7 +28,6 @@ export function DashboardShell({
   className,
   hideSidebar = false,
 }: DashboardShellProps) {
-  const { uiV2 } = useUI();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Inject mobile toggle into header if it's a valid React element
@@ -42,35 +38,24 @@ export function DashboardShell({
     : header;
 
   return (
-    <div
-      className={cn(
-        'bg-background flex w-full',
-        uiV2 ? 'min-h-screen' : 'h-screen overflow-hidden'
-      )}
-    >
+    <div className={cn('bg-background flex min-h-screen w-full')}>
       {!hideSidebar && (
-        <Sidebar
-          isMobileOpen={isMobileOpen}
-          onMobileClose={() => setIsMobileOpen(false)}
-        />
+        <Sidebar isMobileOpen={isMobileOpen} onMobileClose={() => setIsMobileOpen(false)} />
       )}
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <CommandPalette />
         {headerWithToggle}
 
-        <PageTransition className={cn('flex min-h-0 flex-1 flex-col', !uiV2 && 'h-full')}>
-          <div
-            className={cn(
-              'flex min-h-0 flex-1 flex-col',
-              uiV2
-                ? 'scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent overflow-y-auto px-4 py-6 lg:px-8'
-                : 'h-full overflow-hidden',
-              className
-            )}
-          >
-            {children}
-          </div>
-        </PageTransition>
+        <div
+          className={cn(
+            'flex min-h-0 flex-1 flex-col',
+            'scrollbar-thin scrollbar-thumb-border/50 scrollbar-track-transparent overflow-y-auto px-4 py-6 lg:px-8',
+            className
+          )}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );

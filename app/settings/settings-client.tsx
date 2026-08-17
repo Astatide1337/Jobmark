@@ -73,12 +73,22 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
   return (
     <div className="mx-auto max-w-4xl">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-8 grid w-full grid-cols-3 sm:grid-cols-5">
-          <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="focus">Focus</TabsTrigger>
-          <TabsTrigger value="reports">Reviews</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="data">Data</TabsTrigger>
+        <TabsList className="mb-8 flex h-auto w-full max-w-full flex-nowrap justify-start overflow-x-auto sm:grid sm:grid-cols-5 sm:overflow-visible">
+          <TabsTrigger className="min-w-24 flex-1" value="goals">
+            Goals
+          </TabsTrigger>
+          <TabsTrigger className="min-w-24 flex-1" value="focus">
+            Focus
+          </TabsTrigger>
+          <TabsTrigger className="min-w-24 flex-1" value="reports">
+            Reviews
+          </TabsTrigger>
+          <TabsTrigger className="min-w-24 flex-1" value="appearance">
+            Appearance
+          </TabsTrigger>
+          <TabsTrigger className="min-w-24 flex-1" value="data">
+            Data
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="goals">
@@ -88,7 +98,11 @@ export function SettingsClient({ settings, goals, focusConfig }: SettingsClientP
 
         <TabsContent value="focus">
           <SettingsIntro title="Focus" description="Set up your focus session." />
-          <FocusSection initialBlocks={focusConfig} goals={goals} />
+          <FocusSection
+            key={JSON.stringify(focusConfig)}
+            initialBlocks={focusConfig}
+            goals={goals}
+          />
         </TabsContent>
 
         <TabsContent value="reports">
@@ -381,7 +395,7 @@ function GoalsSection({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all active:scale-95"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-[color,background-color]"
                   onClick={() => handleDeleteGoal(goal.id)}
                   aria-label={`Delete goal ${goal.title}`}
                 >
@@ -480,6 +494,7 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
   const [saved, setSaved] = useState(false);
 
   const [themePreset, setThemePreset] = useState(settings.themePreset);
+  const [themeMode] = useState(settings.themeMode);
   const [hideArchived, setHideArchived] = useState(settings.hideArchived);
   const [showConfetti, setShowConfetti] = useState(settings.showConfetti);
   const [timeZone, setTimeZone] = useState(settings.timeZone);
@@ -494,8 +509,9 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
   }, [themePreset, hideArchived, showConfetti, timeZone, settings]);
 
   useEffect(() => {
-    applyTheme(themePreset, 'dark');
-  }, [themePreset]);
+    applyTheme(themePreset, themeMode);
+    return () => applyTheme(settings.themePreset, settings.themeMode);
+  }, [settings, themeMode, themePreset]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -503,7 +519,7 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
 
     await updateAppearanceSettings({
       themePreset,
-      themeMode: 'dark',
+      themeMode,
       hideArchived,
       showConfetti,
       timeZone,
@@ -537,7 +553,7 @@ function AppearanceSection({ settings }: { settings: UserSettingsData }) {
                   key={preset.id}
                   onClick={() => setThemePreset(preset.id)}
                   className={cn(
-                    'relative rounded-xl border-2 p-4 text-left transition-all',
+                    'relative rounded-xl border-2 p-4 text-left transition-[border-color,background-color,box-shadow]',
                     isSelected
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50'

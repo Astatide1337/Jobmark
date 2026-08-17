@@ -39,10 +39,10 @@ export function DictateButton({
       variant={isListening ? 'destructive' : 'ghost'}
       size="sm"
       className={cn(
-        'h-9 rounded-xl px-3 transition-all duration-300',
+        'h-9 rounded-xl px-3 transition-[color,background-color,border-color,box-shadow,opacity] duration-300',
         isListening
-          ? 'animate-pulse border border-red-500/20 bg-red-500/10 text-red-500 shadow-lg shadow-red-500/5 hover:bg-red-500/20 hover:text-red-600'
-          : 'text-muted-foreground hover:bg-muted/40 hover:text-primary active:scale-95',
+          ? 'border-destructive/20 bg-destructive/10 text-destructive-text shadow-destructive/5 hover:bg-destructive/20 hover:text-destructive-text animate-pulse border shadow-lg'
+          : 'text-muted-foreground hover:bg-muted/40 hover:text-primary',
         className
       )}
       onClick={onClick}
@@ -51,8 +51,8 @@ export function DictateButton({
       {isListening && (
         <>
           <span className="relative mr-2 flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+            <span className="bg-destructive absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
+            <span className="bg-destructive relative inline-flex h-2 w-2 rounded-full"></span>
           </span>
           {showLabel && 'Stop'}
         </>

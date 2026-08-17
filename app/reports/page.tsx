@@ -90,7 +90,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </TabsContent>
 
           <TabsContent value="history" className="flex-1">
-            <ReportHistory initialReports={reports} connectedMcpProviders={connectedMcpProviders} />
+            <ReportHistory
+              key={reports.map(report => `${report.id}:${report.content}`).join('|')}
+              initialReports={reports}
+              connectedMcpProviders={connectedMcpProviders}
+            />
           </TabsContent>
         </Tabs>
       </div>
