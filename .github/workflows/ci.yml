@@ -9,7 +9,28 @@ permissions:
   contents: read
 
 jobs:
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Assert Node.js 22
+        run: |
+          node --version
+          test "$(node -p "process.versions.node.split('.')[0]")" = "22"
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Block high and critical dependency advisories
+        run: npm audit --audit-level=high
+
   verify:
+    name: Verify application
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -31,14 +52,25 @@ jobs:
       AUTH_GOOGLE_SECRET: ci-google-secret
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/jobmark
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npx prisma migrate deploy
+      - name: Assert Node.js 22
+        run: |
+          node --version
+          test "$(node -p "process.versions.node.split('.')[0]")" = "22"
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate Prisma schema
+        run: npx prisma validate
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Apply committed migrations to clean PostgreSQL 16
+        run: npm run db:migrate:deploy
       - name: Lint
         run: npm run lint -- --max-warnings=0
       - name: Typecheck
@@ -47,11 +79,58 @@ jobs:
         run: npm run test:frontend
       - name: Formatting
         run: npm run format:check
-      - run: npm test
+      - name: Unit and integration tests
+        run: npm test
         env:
           INTEGRATION_TESTS: '1'
-      - run: npm run build
-      - run: docker build --tag jobmark-ci .
+      - name: Install Chromium for browser E2E
+        run: npx playwright install --with-deps chromium
+      - name: Start development server for browser E2E
+        env:
+          NODE_ENV: development
+          AUTH_TRUST_HOST: 'true'
+          NEXTAUTH_URL: http://127.0.0.1:3001
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3001
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3001
+          MCP_PUBLIC_BASE_URL: http://127.0.0.1:3001
+        run: |
+          npm run dev -- --hostname 127.0.0.1 --port 3001 > /tmp/jobmark-e2e.log 2>&1 &
+          echo $! > /tmp/jobmark-e2e.pid
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3001/signin > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/jobmark-e2e.log
+          exit 1
+      - name: Run browser E2E
+        env:
+          NODE_ENV: development
+          AUTH_TRUST_HOST: 'true'
+          NEXTAUTH_URL: http://127.0.0.1:3001
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3001
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3001
+          MCP_PUBLIC_BASE_URL: http://127.0.0.1:3001
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
+        run: npx playwright test
+      - name: Stop browser E2E server
+        if: always()
+        run: if [ -f /tmp/jobmark-e2e.pid ]; then kill "$(cat /tmp/jobmark-e2e.pid)" || true; fi
+      - name: Upload browser E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+            /tmp/jobmark-e2e.log
+          if-no-files-found: ignore
+      - name: Production build
+        run: npm run build
+      - name: Build production container
+        run: docker build --tag jobmark-ci .
       - name: Start container
         run: >-
           docker run --detach --rm --name jobmark-ci-container --publish 3000:3000
@@ -66,6 +145,7 @@ jobs:
             if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then
               exit 0
             fi
+            echo "Container not ready (attempt $attempt/30)" >&2
             sleep 2
           done
           docker logs jobmark-ci-container

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { COMPLIANCE_COOKIE_NAME, isValidComplianceCookieValue } from '@/lib/compliance-cookie';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // The internal chat product was retired. Return a real 404 instead of
@@ -33,6 +34,7 @@ export function proxy(request: NextRequest) {
     '/api/auth',
     '/terms',
     '/privacy',
+    '/onboarding',
     '/articles',
     '/mcp',
     '/api/auth/mcp',
@@ -59,6 +61,12 @@ export function proxy(request: NextRequest) {
   // Redirect unauthenticated users to landing page (modal will handle auth)
   if (!sessionToken) {
     return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  if (!(await isValidComplianceCookieValue(request.cookies.get(COMPLIANCE_COOKIE_NAME)?.value))) {
+    const onboardingUrl = new URL('/onboarding', request.url);
+    onboardingUrl.searchParams.set('callbackUrl', `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(onboardingUrl);
   }
 
   return NextResponse.next();

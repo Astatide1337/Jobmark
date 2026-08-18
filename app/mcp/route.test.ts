@@ -174,12 +174,26 @@ describe('MCP modern discovery and tool listing', () => {
 
       expect(response.status).toBe(401);
       expect(response.headers.get('WWW-Authenticate')).toBe(
-        'Bearer realm="mcp://jobmark", resource_metadata="https://jobmark.astatide.com/.well-known/oauth-protected-resource/mcp"'
+        'Bearer realm="mcp://jobmark", resource_metadata="https://jobmark.astatide.com/.well-known/oauth-protected-resource/mcp", scope="jobmark:read"'
       );
     } finally {
       if (previousPublicBaseUrl === undefined) delete process.env.MCP_PUBLIC_BASE_URL;
       else process.env.MCP_PUBLIC_BASE_URL = previousPublicBaseUrl;
     }
+  });
+
+  it('rejects an untrusted Origin before authentication', async () => {
+    mocks.validateAccessToken.mockClear();
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/mcp', {
+        method: 'POST',
+        headers: { origin: 'https://attacker.example' },
+      })
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(mocks.validateAccessToken).not.toHaveBeenCalled();
   });
 
   it('rejects a modern header/body protocol mismatch before dispatch', async () => {

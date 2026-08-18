@@ -32,6 +32,7 @@ function ConsentForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const clientId = searchParams.get('client_id') ?? '';
+  const resource = searchParams.get('resource') ?? '';
   const redirectUri = searchParams.get('redirect_uri') ?? '';
   const scope = searchParams.get('scope') ?? '';
   const state = searchParams.get('state') ?? '';
@@ -56,6 +57,7 @@ function ConsentForm() {
 
     const fields: Record<string, string> = {
       client_id: clientId,
+      resource,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: selectedScopes.join(' '),

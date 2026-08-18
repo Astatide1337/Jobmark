@@ -47,9 +47,11 @@ describe('MCP token introspection', () => {
     );
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
     await expect(response.json()).resolves.toMatchObject({
       active: true,
       client_id: 'public-client-id',
+      aud: 'https://jobmark.example.com/mcp',
     });
   });
 });

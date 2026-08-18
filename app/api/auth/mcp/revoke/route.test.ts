@@ -78,4 +78,30 @@ describe('MCP token revocation', () => {
       expect(mocks.revokeToken).not.toHaveBeenCalled();
     }
   );
+
+  it('returns a safe error for malformed input and rejects unsupported hints', async () => {
+    const malformed = await POST(
+      new NextRequest('https://jobmark.example.com/api/auth/mcp/revoke', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{',
+      })
+    );
+    expect(malformed.status).toBe(400);
+    await expect(malformed.json()).resolves.toEqual({ error: 'invalid_request' });
+
+    const unsupported = await POST(
+      new NextRequest('https://jobmark.example.com/api/auth/mcp/revoke', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          token: 'access-token',
+          client_id: 'public-client-id',
+          token_type_hint: 'id_token',
+        }),
+      })
+    );
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: 'unsupported_token_type' });
+  });
 });

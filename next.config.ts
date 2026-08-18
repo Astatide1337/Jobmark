@@ -11,9 +11,21 @@
  */
 import type { NextConfig } from 'next';
 
+import { getSecurityHeaders } from './lib/observability/security-headers';
+
 const nextConfig: NextConfig = {
   // Required by the production Docker runner, which starts Next's standalone server.
   output: 'standalone',
+  async headers() {
+    const isHttpsDeployment = process.env.NEXT_PUBLIC_SITE_URL?.startsWith('https://') ?? false;
+
+    return [
+      {
+        source: '/(.*)',
+        headers: getSecurityHeaders(process.env.NODE_ENV === 'production' && isHttpsDeployment),
+      },
+    ];
+  },
 };
 
 export default nextConfig;

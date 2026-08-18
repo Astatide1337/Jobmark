@@ -7,6 +7,7 @@ const AUTHORIZATION_TRANSACTION_AUDIENCE = 'mcp-consent';
 
 export interface AuthorizationTransaction {
   clientId: string;
+  resource: string;
   redirectUri: string;
   responseType: 'code';
   scope: string;
@@ -32,6 +33,7 @@ export async function createAuthorizationTransaction(
 ): Promise<string> {
   return new SignJWT({
     client_id: transaction.clientId,
+    resource: transaction.resource,
     redirect_uri: transaction.redirectUri,
     response_type: transaction.responseType,
     scope: transaction.scope,
@@ -62,6 +64,7 @@ export async function verifyAuthorizationTransaction(
 
     if (
       typeof payload.client_id !== 'string' ||
+      typeof payload.resource !== 'string' ||
       typeof payload.redirect_uri !== 'string' ||
       payload.response_type !== 'code' ||
       typeof payload.scope !== 'string' ||
@@ -75,6 +78,7 @@ export async function verifyAuthorizationTransaction(
 
     return {
       clientId: payload.client_id,
+      resource: payload.resource,
       redirectUri: payload.redirect_uri,
       responseType: 'code',
       scope: payload.scope,

@@ -1,5 +1,6 @@
 import * as jose from 'jose';
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
+import bcrypt from 'bcryptjs';
 import * as dns from 'node:dns/promises';
 import { isIP } from 'node:net';
 import * as https from 'node:https';
@@ -8,6 +9,10 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getMcpProviderKey } from '@/lib/mcp/provider-identity';
 import { areValidOAuthRedirectUris } from './redirect-uri';
+import { getMcpResourceUri } from './resource';
+import { hashPKCE, hashToken, timingSafeEqual } from './crypto';
+
+export { hashPKCE, hashToken } from './crypto';
 import {
   OAuthScopes,
   OAuthScope,
@@ -40,6 +45,8 @@ const JWKS_ROTATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 const JWKS_RETENTION = 48 * 60 * 60 * 1000; // 48 hours
 const CIDDD_FETCH_TIMEOUT = 5000;
 const CIDDD_MAX_RESPONSE_BYTES = 64 * 1024;
+const CLIENT_SECRET_HASH_PREFIX = 'bcrypt$';
+const CLIENT_SECRET_BCRYPT_ROUNDS = 12;
 
 let currentKeyPair: jose.GenerateKeyPairResult | null = null;
 let previousKeyPair: jose.GenerateKeyPairResult | null = null;
@@ -110,14 +117,6 @@ export async function initializeOAuth() {
   setInterval(rotateKeys, JWKS_ROTATION_INTERVAL);
 }
 
-export function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
-
-export function hashPKCE(verifier: string): string {
-  return createHash('sha256').update(verifier).digest('base64url');
-}
-
 export function verifyPKCE(challenge: string, verifier: string): boolean {
   const expected = hashPKCE(verifier);
   const supplied = Buffer.from(challenge);
@@ -137,6 +136,25 @@ export function generateId(): string {
   return randomBytes(16).toString('hex');
 }
 
+/** Store confidential-client secrets with a deliberately expensive password hash. */
+export async function hashClientSecret(secret: string): Promise<string> {
+  return `${CLIENT_SECRET_HASH_PREFIX}${await bcrypt.hash(secret, CLIENT_SECRET_BCRYPT_ROUNDS)}`;
+}
+
+async function verifyClientSecret(secret: string, storedHash: string): Promise<boolean> {
+  if (storedHash.startsWith(CLIENT_SECRET_HASH_PREFIX)) {
+    return bcrypt.compare(secret, storedHash.slice(CLIENT_SECRET_HASH_PREFIX.length));
+  }
+
+  // Clients created before bcrypt was introduced have a SHA-256 digest. Their
+  // secrets were generated randomly by Jobmark, so keep a constant-time,
+  // one-way compatibility check and let new registrations use bcrypt.
+  const expected = Buffer.from(storedHash);
+  // codeql[js/insufficient-password-hash]
+  const supplied = Buffer.from(hashToken(secret));
+  return expected.length === supplied.length && timingSafeEqual(supplied, expected);
+}
+
 export async function createClient(
   data: Partial<Client> & { redirect_uris: string[] }
 ): Promise<Client> {
@@ -146,7 +164,7 @@ export async function createClient(
   const client = await prisma.oAuthClient.create({
     data: {
       clientId,
-      clientSecretHash: clientSecret ? hashToken(clientSecret) : null,
+      clientSecretHash: clientSecret ? await hashClientSecret(clientSecret) : null,
       clientName: data.client_name ?? 'Unnamed assistant',
       redirectUris: data.redirect_uris,
       grantTypes: data.grant_types ?? ['authorization_code', 'refresh_token'],
@@ -171,13 +189,19 @@ export async function createClient(
 }
 
 type ClientMetadata = {
-  client_id?: string;
-  client_name?: string;
+  client_id?: unknown;
+  client_name?: unknown;
   redirect_uris?: string[];
   grant_types?: string[];
   response_types?: string[];
   scope?: string;
   token_endpoint_auth_method?: string;
+};
+
+type ValidClientMetadata = ClientMetadata & {
+  client_id: string;
+  client_name: string;
+  redirect_uris: string[];
 };
 
 function ipv4ToNumber(address: string): number | null {
@@ -430,6 +454,42 @@ function readResponseBody(body: Buffer): string | null {
   return new TextDecoder().decode(body);
 }
 
+function hasJsonContentType(headers: IncomingHttpHeaders): boolean {
+  const contentType = getResponseHeader(headers, 'content-type')
+    ?.split(';', 1)[0]
+    .trim()
+    .toLowerCase();
+
+  return contentType === 'application/json' || Boolean(contentType?.endsWith('+json'));
+}
+
+function hasAcceptableContentLength(headers: IncomingHttpHeaders): boolean {
+  const contentLength = getResponseHeader(headers, 'content-length');
+  return (
+    !contentLength ||
+    !Number.isFinite(Number(contentLength)) ||
+    Number(contentLength) <= CIDDD_MAX_RESPONSE_BYTES
+  );
+}
+
+function getValidClientMetadata(
+  metadata: ClientMetadata,
+  clientId: string
+): ValidClientMetadata | null {
+  if (
+    metadata.client_id !== clientId ||
+    typeof metadata.client_name !== 'string' ||
+    metadata.client_name.trim().length === 0 ||
+    !Array.isArray(metadata.redirect_uris) ||
+    !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
+    !areValidOAuthRedirectUris(metadata.redirect_uris)
+  ) {
+    return null;
+  }
+
+  return metadata as ValidClientMetadata;
+}
+
 function parseClientMetadataUrl(clientId: string): URL | null | undefined {
   const looksLikeUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(clientId);
   if (!looksLikeUrl) return undefined;
@@ -481,33 +541,14 @@ async function resolveMetadataClient(
   const response = await fetchPinnedMetadata(metadataUrl, pinnedAddress);
   if (response.statusCode < 200 || response.statusCode >= 300) return null;
 
-  const contentType = getResponseHeader(response.headers, 'content-type')
-    ?.split(';', 1)[0]
-    .trim()
-    .toLowerCase();
-  if (contentType !== 'application/json' && !contentType?.endsWith('+json')) return null;
-
-  const contentLength = getResponseHeader(response.headers, 'content-length');
-  if (
-    contentLength &&
-    Number.isFinite(Number(contentLength)) &&
-    Number(contentLength) > CIDDD_MAX_RESPONSE_BYTES
-  ) {
+  if (!hasJsonContentType(response.headers) || !hasAcceptableContentLength(response.headers)) {
     return null;
   }
 
   const body = readResponseBody(response.body);
   if (body === null) return null;
-  const metadata = JSON.parse(body) as ClientMetadata;
-  if (
-    !Array.isArray(metadata.redirect_uris) ||
-    !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
-    !areValidOAuthRedirectUris(metadata.redirect_uris) ||
-    (metadata.client_id !== undefined &&
-      (typeof metadata.client_id !== 'string' || metadata.client_id !== clientId))
-  ) {
-    return null;
-  }
+  const metadata = getValidClientMetadata(JSON.parse(body) as ClientMetadata, clientId);
+  if (!metadata) return null;
 
   const metadataClientId = metadata.client_id ?? clientId;
   let client = await prisma.oAuthClient.findUnique({ where: { clientId: metadataClientId } });
@@ -516,7 +557,7 @@ async function resolveMetadataClient(
       data: {
         clientId: metadataClientId,
         clientSecretHash: null,
-        clientName: metadata.client_name ?? 'Unnamed assistant',
+        clientName: metadata.client_name.trim(),
         redirectUris: metadata.redirect_uris,
         grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
         responseTypes: metadata.response_types ?? ['code'],
@@ -575,11 +616,7 @@ export async function validateClient(
     // accepting an omitted secret would downgrade them to public clients.
     if (!clientSecret) return null;
 
-    const expected = Buffer.from(client.clientSecretHash);
-    const supplied = Buffer.from(hashToken(clientSecret));
-    if (expected.length !== supplied.length || !timingSafeEqual(supplied, expected)) {
-      return null;
-    }
+    if (!(await verifyClientSecret(clientSecret, client.clientSecretHash))) return null;
   }
 
   return {
@@ -974,7 +1011,8 @@ export async function ensureMcpConnection(
 
 export async function introspectToken(
   token: string,
-  clientId: string
+  clientId: string,
+  resource: string
 ): Promise<IntrospectionResponse> {
   const validation = await validateAccessToken(token);
   if (!validation) {
@@ -994,7 +1032,7 @@ export async function introspectToken(
     exp: validation.exp,
     iat: validation.iat,
     sub: validation.userId,
-    aud: 'mcp://jobmark',
+    aud: resource,
   };
 }
 
@@ -1071,7 +1109,7 @@ export async function getWellKnownProtectedResource(
   baseUrl: string
 ): Promise<WellKnownProtectedResource> {
   return {
-    resource: `${baseUrl}/mcp`,
+    resource: getMcpResourceUri(baseUrl),
     authorization_servers: [baseUrl],
     scopes_supported: [...OAuthScopes],
     bearer_methods_supported: ['header'],

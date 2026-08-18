@@ -171,6 +171,7 @@ export default async function DashboardPage() {
             totalCount={totalCount}
             initialTimeZone={timeZone}
             initialToday={today}
+            initialNow={now.toISOString()}
           />
         </div>
       </div>

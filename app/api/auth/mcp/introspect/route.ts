@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { validateClient, validateAccessToken, hashToken } from '@/lib/mcp/auth/provider';
+import { validateClient, validateAccessToken } from '@/lib/mcp/auth/provider';
 import {
   checkRateLimit,
   getClientIp,
   createRateLimitHeaders,
   RATE_LIMITS,
 } from '@/lib/mcp/auth/rate-limit';
+import { readOAuthRequestBody } from '@/lib/mcp/auth/request-body';
+import { getMcpPublicBaseUrl } from '@/lib/mcp/auth/public-origin';
+import { getMcpResourceUri } from '@/lib/mcp/auth/resource';
+
+function introspectionHeaders(rateLimit: Awaited<ReturnType<typeof checkRateLimit>>): HeadersInit {
+  return {
+    ...createRateLimitHeaders(rateLimit, RATE_LIMITS.introspect),
+    'Cache-Control': 'no-store',
+    Pragma: 'no-cache',
+  };
+}
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -17,19 +28,17 @@ export async function POST(request: NextRequest) {
       { active: false },
       {
         status: 429,
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.introspect),
+        headers: introspectionHeaders(rateLimit),
       }
     );
   }
 
-  const contentType = request.headers.get('content-type') ?? '';
-  let body: Record<string, string>;
-
-  if (contentType.includes('application/json')) {
-    body = (await request.json()) as Record<string, string>;
-  } else {
-    const formData = await request.formData();
-    body = Object.fromEntries(Array.from(formData.entries()).map(([k, v]) => [k, v.toString()]));
+  const body = await readOAuthRequestBody(request);
+  if (!body) {
+    return NextResponse.json(
+      { active: false },
+      { status: 200, headers: introspectionHeaders(rateLimit) }
+    );
   }
 
   const token = body.token;
@@ -49,7 +58,7 @@ export async function POST(request: NextRequest) {
       { active: false },
       {
         status: 200,
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.introspect),
+        headers: introspectionHeaders(rateLimit),
       }
     );
   }
@@ -71,7 +80,7 @@ export async function POST(request: NextRequest) {
       { active: false },
       {
         status: 200,
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.introspect),
+        headers: introspectionHeaders(rateLimit),
       }
     );
   }
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
       { active: false },
       {
         status: 200,
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.introspect),
+        headers: introspectionHeaders(rateLimit),
       }
     );
   }
@@ -97,11 +106,11 @@ export async function POST(request: NextRequest) {
       exp: validation.exp,
       iat: validation.iat,
       sub: validation.userId,
-      aud: 'mcp://jobmark',
+      aud: getMcpResourceUri(getMcpPublicBaseUrl(request)),
     },
     {
       status: 200,
-      headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.introspect),
+      headers: introspectionHeaders(rateLimit),
     }
   );
 }

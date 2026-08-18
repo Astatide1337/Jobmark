@@ -7,6 +7,15 @@ import {
   createRateLimitHeaders,
   RATE_LIMITS,
 } from '@/lib/mcp/auth/rate-limit';
+import { readOAuthRequestBody } from '@/lib/mcp/auth/request-body';
+
+function revocationHeaders(rateLimit: Awaited<ReturnType<typeof checkRateLimit>>): HeadersInit {
+  return {
+    ...createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
+    'Cache-Control': 'no-store',
+    Pragma: 'no-cache',
+  };
+}
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -19,18 +28,22 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const contentType = request.headers.get('content-type') ?? '';
-  let body: Record<string, string>;
-
-  if (contentType.includes('application/json')) {
-    body = (await request.json()) as Record<string, string>;
-  } else {
-    const formData = await request.formData();
-    body = Object.fromEntries(Array.from(formData.entries()).map(([k, v]) => [k, v.toString()]));
+  const body = await readOAuthRequestBody(request);
+  if (!body) {
+    return NextResponse.json(
+      { error: 'invalid_request' },
+      { status: 400, headers: revocationHeaders(rateLimit) }
+    );
   }
 
   const token = body.token;
   const tokenTypeHint = body.token_type_hint;
+  if (tokenTypeHint && !['access_token', 'refresh_token'].includes(tokenTypeHint)) {
+    return NextResponse.json(
+      { error: 'unsupported_token_type' },
+      { status: 400, headers: revocationHeaders(rateLimit) }
+    );
+  }
   let clientId = body.client_id;
   let clientSecret = body.client_secret;
 
@@ -45,7 +58,7 @@ export async function POST(request: NextRequest) {
   if (!token) {
     return new NextResponse(null, {
       status: 200,
-      headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
+      headers: revocationHeaders(rateLimit),
     });
   }
 
@@ -67,10 +80,7 @@ export async function POST(request: NextRequest) {
   if (!authenticatedClientId) {
     return NextResponse.json(
       { error: 'invalid_client' },
-      {
-        status: 401,
-        headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
-      }
+      { status: 401, headers: revocationHeaders(rateLimit) }
     );
   }
 
@@ -78,6 +88,6 @@ export async function POST(request: NextRequest) {
 
   return new NextResponse(null, {
     status: 200,
-    headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
+    headers: revocationHeaders(rateLimit),
   });
 }

@@ -50,3 +50,47 @@ export function getMcpPublicBaseUrl(request: Request): string {
     requestUrl.protocol.replace(/:$/, '');
   return normalizeBaseUrl(`${protocol}://${forwardedHost}`) ?? requestUrl.origin;
 }
+
+function normalizeOrigin(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (
+      !PUBLIC_URL_PROTOCOLS.has(url.protocol) ||
+      url.username ||
+      url.password ||
+      url.pathname !== '/' ||
+      url.search ||
+      url.hash
+    ) {
+      return null;
+    }
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Streamable HTTP requires rejecting an invalid Origin to prevent DNS
+ * rebinding. Cross-origin browser callers must be explicitly allowlisted;
+ * absent Origin remains valid for non-browser MCP clients.
+ */
+export function isAllowedMcpOrigin(request: Request): boolean {
+  const originHeader = request.headers.get('origin');
+  if (!originHeader) return true;
+
+  const origin = normalizeOrigin(originHeader);
+  if (!origin) return false;
+
+  const allowedOrigins = new Set<string>();
+  const publicBaseUrl = getMcpPublicBaseUrl(request);
+  const publicOrigin = normalizeOrigin(new URL(publicBaseUrl).origin);
+  if (publicOrigin) allowedOrigins.add(publicOrigin);
+
+  for (const configuredOrigin of (process.env.MCP_ALLOWED_ORIGINS ?? '').split(',')) {
+    const normalizedOrigin = normalizeOrigin(configuredOrigin.trim());
+    if (normalizedOrigin) allowedOrigins.add(normalizedOrigin);
+  }
+
+  return allowedOrigins.has(origin);
+}

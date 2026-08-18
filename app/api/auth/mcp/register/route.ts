@@ -17,6 +17,8 @@ const MAX_REDIRECT_URI_LENGTH = 2_048;
 const MAX_CLIENT_NAME_LENGTH = 120;
 const MAX_SCOPE_LENGTH = 256;
 
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store', Pragma: 'no-cache' };
+
 type RegistrationMetadata = Parameters<typeof createClient>[0];
 
 function isTransientDatabaseConnectionError(error: unknown): boolean {
@@ -172,7 +174,10 @@ export async function POST(request: NextRequest) {
         error: 'invalid_json',
       })
     );
-    return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'invalid_request' },
+      { status: 400, headers: NO_STORE_HEADERS }
+    );
   }
 
   console.info(
@@ -186,7 +191,12 @@ export async function POST(request: NextRequest) {
   );
 
   const metadata = parseRegistrationMetadata(body);
-  if (!metadata) return NextResponse.json({ error: 'invalid_client_metadata' }, { status: 400 });
+  if (!metadata) {
+    return NextResponse.json(
+      { error: 'invalid_client_metadata' },
+      { status: 400, headers: NO_STORE_HEADERS }
+    );
+  }
 
   let client;
   try {
@@ -205,7 +215,7 @@ export async function POST(request: NextRequest) {
         error_description: 'Jobmark could not connect this assistant. Try again.',
         request_id: requestId,
       },
-      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+      { status: 500, headers: NO_STORE_HEADERS }
     );
   }
 
