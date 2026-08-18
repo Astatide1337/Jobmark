@@ -29,11 +29,11 @@ public site and authenticated product. Prefer the existing system over adding a 
 - Use the shared primitives in `components/ui` for buttons, cards, inputs, dialogs, menus, tabs,
   badges, tooltips, and other standard controls. Extend a primitive when the product concept is the
   same instead of rebuilding the control locally.
-- `Button` owns button sizing, focus, disabled behavior, and standard interaction motion. Do not
-  recreate primary, outline, ghost, or destructive buttons with one-off class strings.
+- `Button` owns button sizing, focus, disabled behavior, and standard interaction motion. New
+  product controls should not recreate primary, outline, ghost, or destructive buttons with
+  one-off class strings when the shared primitive fits the interaction.
 - A `Card` owns its surface. `CardHeader`, `CardContent`, and `CardFooter` own their padding. Add an
   explicit interactive treatment when a card is clickable instead of making every card hover.
-- Use `SectionHeading` for the repeated landing-page eyebrow, title, and description hierarchy.
 - Keep spacing, radii, icon sizing, and focus states consistent with existing primitives. Avoid
   dynamic Tailwind class construction; use static class mappings or CSS variables.
 - Split client components around real state responsibilities. Forms, dialogs, lists, editors, and
@@ -42,43 +42,45 @@ public site and authenticated product. Prefer the existing system over adding a 
 
 ## Motion and scrolling
 
-Motion is part of Jobmark's product and brand language, but it should communicate hierarchy or
-feedback rather than become a second interaction system.
+Motion is part of Jobmark's product and brand language. Preserve purposeful choreography rather
+than flattening the interface into generic transitions.
 
 - Above-the-fold copy and controls must be visible immediately. Motion can add depth after first
   paint, but hydration must never be required to reveal important content.
-- Framer Motion is approved for purposeful transforms, opacity changes, shared-layout effects, and
-  a small number of premium interactions. CSS transitions remain appropriate for simple
-  hover/focus states.
-- Landing Motion components use the shared durations/easing in `components/landing/motion.ts`.
-  Introduce a new timing only when the interaction genuinely needs different physical behavior.
-- Magnetic motion is reserved for a small number of high-value CTAs. Ordinary navigation and
-  repeated controls use the shared `Button` interaction language.
+- Framer Motion is approved for purposeful transforms, opacity changes, scroll-linked depth,
+  tab/panel transitions, shared-layout effects, and a small number of premium interactions. CSS
+  transitions remain appropriate for simple hover/focus states.
+- Reuse a small motion language for equivalent interactions. Similar reveals, panel changes, and
+  hover feedback should feel related even when their exact implementation differs.
+- Magnetic motion is reserved for a small number of high-value CTAs.
 - Respect `prefers-reduced-motion`. Reduced-motion users get the same information and controls
   without waiting for animation.
 - Animate targeted properties, usually opacity, transform, color, or shadow. Never use
   `transition-all` as a default and never add active scale to every control.
 - Use native page scrolling. Do not add a smooth-scroll runtime or scroll hijacking.
-- Do not build giant artificial scroll tracks to advance marketing scenes. Product storytelling
-  belongs in normal document flow and should remain understandable without scroll choreography.
+- Scroll-led product storytelling is acceptable when it stays understandable, keeps expensive
+  scenes bounded, and does not require animation to expose the core information.
 
 ## Landing page and product proof
 
-The landing page should market the product Jobmark actually ships.
+The landing page should market the product Jobmark actually ships while preserving the established
+Jobmark visual identity and editorial character.
 
-- Move quickly from the promise to product proof. The current hierarchy is: concise hero, real
-  product preview, workflow, use cases, product video, trust/ownership, FAQ, CTA.
-- Prefer fewer strong sections over repeating `copy + decorative product window` blocks.
-- Marketing previews reuse Jobmark's real navigation and shared UI primitives where practical.
-  They may use representative data, but it must be clearly presented as example data.
-- Purpose-built previews may simplify data and state, but must not invent routes, controls,
-  integrations, metrics, or capabilities that do not exist in the authenticated product.
+- Treat the existing landing page as a product surface, not as a disposable template. Large changes
+  to its narrative, section order, or visual composition require a concrete improvement rather than
+  change for its own sake.
+- Purpose-built marketing previews may simplify the authenticated product, but they should mirror
+  real capabilities and interaction patterns closely enough that the signed-in product feels like
+  the same application.
 - Do not import live user queries or authenticated application state merely to power a public demo.
-  Reuse the visual/component language without exposing private product data.
-- Never fabricate customer counts, usage metrics, testimonials, logos, performance improvements, or
+- Representative data is acceptable for product previews. Do not present sample numbers as real
+  customer, usage, or product-wide metrics; label them when the distinction could be unclear.
+- Never fabricate customer counts, testimonials, logos, performance improvements, integrations, or
   product support claims.
 - When marketing and implementation disagree, correct the marketing unless the product task
   explicitly includes implementing the missing capability.
+- Prefer a coherent product story over adding more sections. New landing content must earn its place
+  by explaining something the current page does not explain well.
 
 ## Product language
 
@@ -107,7 +109,7 @@ The landing page should market the product Jobmark actually ships.
 ## Responsive behavior
 
 - Treat mobile as a deliberate layout, not the desktop composition stacked into one column.
-- Marketing previews must remain legible without requiring a desktop-width fake browser window.
+- Marketing previews must remain legible at mobile widths without forcing horizontal page overflow.
 - Check navigation, forms, dialogs, product previews, cards, tables/lists, long copy, and overflow at
   representative mobile and desktop widths.
 - Touch targets and primary actions remain easy to reach without relying on hover.

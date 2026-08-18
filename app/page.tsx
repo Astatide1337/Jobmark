@@ -1,18 +1,32 @@
+/**
+ * jobmark Public Landing Page
+ *
+ * Why: This is the public entrance for the product. It uses an editorial
+ * layout with a small number of direct, purposeful interactions.
+ *
+ * Pattern: Purely aesthetic Server Component that wraps everything in
+ * the `AuthModalProvider` to allow "Sign In" triggers from any CTA
+ * section without extra page reloads.
+ */
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { AuthModalProvider } from '@/components/auth';
-import { JobmarkMark } from '@/components/brand/jobmark-mark';
-import { AccessSection } from '@/components/landing/access-section';
+import { FloatingNav } from '@/components/landing/floating-nav';
 import { EditorialHero } from '@/components/landing/editorial-hero';
+import { ProblemStatement } from '@/components/landing/problem-statement';
+import { PersonaTabs } from '@/components/landing/persona-tabs';
+import { ProductTour } from '@/components/landing/product-tour';
+import { VideoSection } from '@/components/landing/video-section';
+import { AccessSection } from '@/components/landing/access-section';
+import { ProductValues } from '@/components/landing/product-values';
 import { FAQ } from '@/components/landing/faq';
 import { FinalCTA } from '@/components/landing/final-cta';
-import { FloatingNav } from '@/components/landing/floating-nav';
-import { ProductTour } from '@/components/landing/product-tour';
-import { UseCases } from '@/components/landing/use-cases';
-import { VideoSection } from '@/components/landing/video-section';
+import { SectionDivider } from '@/components/landing/section-divider';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 export default async function Home() {
+  // Redirect logged-in users to dashboard
   const session = await auth();
   if (session?.user?.id) {
     redirect('/dashboard');
@@ -21,31 +35,72 @@ export default async function Home() {
   return (
     <AuthModalProvider>
       <main className="bg-background">
+        {/* Floating Navigation */}
         <FloatingNav />
+
+        {/* Hero Section - Editorial Split Layout with Linear-style Dashboard */}
         <EditorialHero />
+
+        {/* Divider */}
+        <SectionDivider />
+
+        {/* Problem Statement - Editorial Text */}
+        <ProblemStatement />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} />
+
+        {/* Persona Tabs - Use Cases */}
+        <PersonaTabs />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} />
+
+        {/* Product tour - one active preview at a time */}
         <ProductTour />
-        <UseCases />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} />
+
+        {/* Video Section - Demo */}
         <VideoSection />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} className="py-4 md:py-6" />
+
+        {/* Access Section */}
         <AccessSection />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} />
+
+        {/* Product Values - Accordion Style */}
+        <ProductValues />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} />
+
+        {/* FAQ - Common Questions */}
         <FAQ />
+
+        {/* Divider */}
+        <SectionDivider delay={0.1} glow />
+
+        {/* Final CTA */}
         <FinalCTA />
 
-        <footer className="border-border/30 bg-card/20 border-t py-10">
-          <div className="text-muted-foreground mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 text-sm sm:flex-row">
+        {/* Footer - Minimal Cafe Style */}
+        <footer className="border-border/20 bg-card/30 relative z-10 border-t py-12">
+          <div className="text-muted-foreground mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 text-sm md:flex-row">
             <div className="flex items-center gap-3">
               <div className="bg-primary flex h-7 w-7 items-center justify-center rounded-md">
-                <JobmarkMark className="h-4 w-4" sizes="16px" />
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
-              <span className="text-foreground font-medium">Jobmark</span>
-              <span aria-hidden="true" className="text-border">
-                /
-              </span>
+              <span className="text-foreground font-serif">Jobmark</span>
+              <span className="text-border">|</span>
               <span>© {new Date().getFullYear()}</span>
             </div>
-            <div className="flex items-center gap-6">
-              <Link href="/articles" className="hover:text-foreground transition-colors">
-                Guides
-              </Link>
+            <div className="flex items-center gap-8">
               <Link href="/privacy" className="hover:text-foreground transition-colors">
                 Privacy
               </Link>

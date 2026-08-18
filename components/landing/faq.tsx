@@ -1,109 +1,163 @@
+/**
+ * FAQ (Frequently Asked Questions) Section
+ *
+ * Why: Anticipates user concerns regarding data safety, AI behavior,
+ * and pricing. It provides definitive answers in a clean,
+ * collapsible format to avoid information overload.
+ *
+ * Logic: Keeps answers mounted and animates only the surrounding grid row so
+ * changing an item does not fade or remount the text.
+ */
 'use client';
 
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { SectionHeading } from './section-heading';
 
 const faqs = [
   {
     id: 'what-is',
     question: 'What is Jobmark?',
     answer:
-      'Jobmark is a place to save work notes, group them by project, and use them later for review drafts, updates, and planning.',
+      'Jobmark helps you record your work and turn it into reviews, updates, and a clearer view of your progress.',
   },
   {
-    id: 'notes-app',
+    id: 'different',
     question: 'Is Jobmark just a notes app?',
     answer:
-      'Notes are the source of truth, but Jobmark also gives them structure through projects, goals, review drafts, insights, conversations, exports, and assistant connections.',
+      'It gives your work a home. You can group entries by project, make review drafts, and connect an assistant.',
   },
   {
-    id: 'docs',
-    question: 'Why not use Docs or Notion?',
-    answer:
-      'You can. Jobmark is narrower: it is organized around keeping a usable record of work and reusing that record when a review or update comes around.',
+    id: 'notion',
+    question: 'Why not use Notion or Docs?',
+    answer: 'You can. Jobmark is built around the entries and summaries you need for work reviews.',
   },
   {
-    id: 'assistant',
-    question: 'Can I connect an AI assistant?',
+    id: 'ai-work',
+    question: 'Can I connect an assistant?',
     answer:
-      'Yes. Jobmark supports MCP connections for Claude, ChatGPT, Gemini, and other compatible assistants. You choose when to connect one.',
+      'Yes. Connect Claude, ChatGPT, or Gemini when you want help editing a draft. You decide what to share.',
   },
   {
     id: 'export',
-    question: 'Can I download my data?',
-    answer: 'Yes. You can export your record from Jobmark and use it somewhere else.',
+    question: 'Can I download what I add here?',
+    answer: 'Yes. Export your record whenever you want and use it somewhere else.',
   },
   {
-    id: 'private-projects',
-    question: 'Can I protect private projects?',
+    id: 'who',
+    question: 'Who is Jobmark for?',
     answer:
-      'Yes. Jobmark includes a vault flow for private projects so protected project data can stay locked until you unlock it.',
+      'Anyone who wants a better way to explain what they have done and where they are headed.',
   },
-] as const;
+];
 
 export function FAQ() {
   const [openId, setOpenId] = useState<string | null>('what-is');
 
+  const toggleItem = (id: string) => {
+    setOpenId(currentId => (currentId === id ? null : id));
+  };
+
   return (
-    <section id="faq" className="border-border/30 border-t py-20 sm:py-24 lg:py-28">
-      <div className="mx-auto max-w-4xl px-6">
-        <SectionHeading
-          eyebrow="FAQ"
-          title="Common questions"
-          description="What Jobmark does, what it does not replace, and what stays under your control."
-          align="center"
-        />
+    <section id="faq" className="relative overflow-hidden py-32">
+      {/* Subtle background gradient */}
+      <div className="via-primary/[0.02] pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-transparent" />
 
-        <div className="mt-12 space-y-2">
-          {faqs.map(faq => {
-            const isOpen = openId === faq.id;
-            return (
-              <div
-                key={faq.id}
-                className={cn(
-                  'rounded-xl border transition-[border-color,background-color] duration-200',
-                  isOpen
-                    ? 'border-border/60 bg-card/60'
-                    : 'border-border/30 bg-card/20 hover:border-border/50 hover:bg-card/40'
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenId(current => (current === faq.id ? null : faq.id))}
-                  aria-expanded={isOpen}
-                  aria-controls={`faq-${faq.id}-content`}
-                  className="focus-visible:ring-ring/50 flex w-full items-center justify-between gap-4 rounded-xl p-5 text-left focus-visible:ring-2 focus-visible:outline-none"
-                >
-                  <span className="font-medium">{faq.question}</span>
-                  <ChevronDown
-                    className={cn(
-                      'text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200',
-                      isOpen && 'rotate-180'
-                    )}
-                  />
-                </button>
+      <div className="relative mx-auto max-w-3xl px-6">
+        {/* Section Header */}
+        <div className="mb-16 text-center">
+          <div className="mb-6 flex items-center justify-center gap-3">
+            <div className="bg-primary/50 h-px w-12" />
+            <span className="text-primary font-mono text-sm tracking-wide uppercase">FAQ</span>
+            <div className="bg-primary/50 h-px w-12" />
+          </div>
 
-                <div
-                  id={`faq-${faq.id}-content`}
-                  aria-hidden={!isOpen}
-                  className={cn(
-                    'grid overflow-hidden transition-[grid-template-rows] duration-200',
-                    isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                  )}
-                >
-                  <div className="min-h-0 overflow-hidden">
-                    <p className="text-muted-foreground border-border/30 mx-5 border-t pt-4 pb-5 leading-relaxed">
-                      {faq.answer}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <h2 className="mb-4 font-serif text-4xl font-bold md:text-5xl">Common questions</h2>
+
+          <p className="text-muted-foreground text-lg">Answers to common questions.</p>
         </div>
+
+        {/* FAQ Accordion */}
+        <div className="space-y-2">
+          {faqs.map(faq => (
+            <FAQItem
+              key={faq.id}
+              faq={faq}
+              isOpen={openId === faq.id}
+              onToggle={() => toggleItem(faq.id)}
+            />
+          ))}
+        </div>
+
+        {/* Contact prompt */}
+        <p className="text-muted-foreground mt-12 text-center">
+          Have a question?{' '}
+          <a
+            href="mailto:hello@jobmark.app"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Get in touch
+          </a>
+        </p>
       </div>
     </section>
+  );
+}
+
+function FAQItem({
+  faq,
+  isOpen,
+  onToggle,
+}: {
+  faq: (typeof faqs)[0];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={`relative rounded-xl border transition-[border-color,background-color,box-shadow] duration-300 ${
+        isOpen
+          ? 'border-border/40 bg-card/50'
+          : 'border-border/20 bg-card/20 hover:border-border/30 hover:bg-card/30'
+      }`}
+    >
+      {/* Question - Always visible */}
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`faq-${faq.id}-content`}
+        className="group flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left"
+      >
+        <span
+          className={`text-base font-medium transition-colors ${
+            isOpen ? 'text-foreground' : 'text-foreground/80 group-hover:text-foreground'
+          }`}
+        >
+          {faq.question}
+        </span>
+
+        <ChevronDown
+          className={`text-muted-foreground h-5 w-5 flex-shrink-0 transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {/* Keep the answer mounted; only the row height changes. */}
+      <div
+        id={`faq-${faq.id}-content`}
+        aria-hidden={!isOpen}
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${
+          isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="px-5 pb-5">
+            <div className="bg-border/20 mb-4 h-px" />
+            <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
