@@ -1,7 +1,7 @@
 # Frontend standards
 
-This is the canonical frontend standard for Jobmark. It replaces older split guidance in
-`UI_GOVERNANCE.md`, `docs/standards.md`, and historical render-phase advice.
+This is the canonical frontend standard for Jobmark. Historical audit evidence is kept under
+`docs/archive/`; it is not active implementation guidance.
 
 The goal is one visual language, one interaction language, and one component language across the
 public site and authenticated product. Prefer the existing system over adding a parallel one.
@@ -129,5 +129,5 @@ route-level change also needs a desktop/mobile browser pass with no page errors,
 overflow, visible first-paint flash, or broken interactions. Motion should be checked once at normal
 settings and once with reduced motion where the changed surface uses animation.
 
-Historical audit and security documents may remain under `docs/` as evidence, but they are not
-current implementation guidance unless explicitly marked otherwise.
+Historical audit and security documents under `docs/archive/` are evidence only. Update the active
+standards and release documents when implementation guidance changes.

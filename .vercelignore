@@ -22,5 +22,4 @@ yarn-error.log*
 # Documentation that isn't needed in production
 docs/
 CLAUDE.md
-UI_GOVERNANCE.md
 README.md
