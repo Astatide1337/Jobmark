@@ -6,7 +6,7 @@ import { allTools, toolDefinitions } from '@/lib/mcp/tools';
 import { McpValidationError } from '@/lib/mcp/errors';
 import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
 import { claimIdempotency, completeIdempotency, releaseIdempotency } from '@/lib/mcp/idempotency';
-import { getMcpPublicBaseUrl } from '@/lib/mcp/auth/public-origin';
+import { getMcpPublicBaseUrl, isAllowedMcpOrigin } from '@/lib/mcp/auth/public-origin';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -216,7 +216,7 @@ function addModernResultMetadata(result: unknown): unknown {
 
 function getAuthenticateHeader(request: NextRequest): string {
   const baseUrl = getMcpPublicBaseUrl(request);
-  return `Bearer realm="mcp://jobmark", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource/mcp"`;
+  return `Bearer realm="mcp://jobmark", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource/mcp", scope="jobmark:read"`;
 }
 
 type McpAuthRejectionReason =
@@ -513,6 +513,10 @@ async function executeMcpMethod({
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAllowedMcpOrigin(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const startTime = Date.now();
 
   const authResult = await validateMcpConnection(request);
@@ -641,6 +645,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  if (!isAllowedMcpOrigin(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const authResult = await validateMcpConnection(request);
   if (!authResult) {
     return NextResponse.json(

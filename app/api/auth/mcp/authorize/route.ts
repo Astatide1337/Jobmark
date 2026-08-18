@@ -19,6 +19,8 @@ import {
 } from '@/lib/mcp/auth/authorization-transaction';
 import { isValidOAuthRedirectUri } from '@/lib/mcp/auth/redirect-uri';
 import { getMcpPublicBaseUrl } from '@/lib/mcp/auth/public-origin';
+import { getMcpResourceUri, isMcpResource } from '@/lib/mcp/auth/resource';
+import { getComplianceStatus } from '@/lib/compliance';
 
 function isOAuthScope(scope: string): scope is OAuthScope {
   return OAuthScopes.includes(scope as OAuthScope);
@@ -55,6 +57,7 @@ function getFormString(formData: FormData, name: string): string | null {
 
 type AuthorizationQuery = {
   clientId: string;
+  resource: string;
   redirectUri: string;
   scope: string;
   state: string;
@@ -62,7 +65,10 @@ type AuthorizationQuery = {
   prompt: string | null;
 };
 
-function parseAuthorizationQuery(searchParams: URLSearchParams): AuthorizationQuery | null {
+function parseAuthorizationQuery(
+  searchParams: URLSearchParams,
+  expectedResource: string
+): AuthorizationQuery | null {
   const clientId = searchParams.get('client_id');
   const redirectUri = searchParams.get('redirect_uri');
   const responseType = searchParams.get('response_type');
@@ -70,11 +76,14 @@ function parseAuthorizationQuery(searchParams: URLSearchParams): AuthorizationQu
   const state = searchParams.get('state');
   const codeChallenge = searchParams.get('code_challenge');
   const codeChallengeMethod = searchParams.get('code_challenge_method');
+  const resourceValues = searchParams.getAll('resource');
   if (
     !clientId ||
     !redirectUri ||
     responseType !== 'code' ||
     !state ||
+    resourceValues.length !== 1 ||
+    !isMcpResource(resourceValues[0], expectedResource) ||
     !codeChallenge ||
     codeChallengeMethod !== 'S256' ||
     !isValidOAuthRedirectUri(redirectUri) ||
@@ -83,7 +92,15 @@ function parseAuthorizationQuery(searchParams: URLSearchParams): AuthorizationQu
   ) {
     return null;
   }
-  return { clientId, redirectUri, scope, state, codeChallenge, prompt: searchParams.get('prompt') };
+  return {
+    clientId,
+    resource: resourceValues[0],
+    redirectUri,
+    scope,
+    state,
+    codeChallenge,
+    prompt: searchParams.get('prompt'),
+  };
 }
 
 function buildSignInRedirect(request: NextRequest): NextResponse {
@@ -105,6 +122,7 @@ async function buildConsentRedirect(
 ): Promise<NextResponse> {
   const consentUrl = new URL('/mcp/consent', getMcpPublicBaseUrl(request));
   consentUrl.searchParams.set('client_id', clientId);
+  consentUrl.searchParams.set('resource', params.resource);
   consentUrl.searchParams.set('redirect_uri', params.redirectUri);
   consentUrl.searchParams.set('scope', scope);
   consentUrl.searchParams.set('state', params.state);
@@ -114,6 +132,7 @@ async function buildConsentRedirect(
     'transaction',
     await createAuthorizationTransaction({
       clientId,
+      resource: params.resource,
       redirectUri: params.redirectUri,
       responseType: 'code',
       scope,
@@ -128,6 +147,7 @@ async function buildConsentRedirect(
 
 type AuthorizationForm = {
   clientId: string | null;
+  resource: string | null;
   redirectUri: string | null;
   responseType: string | null;
   scope: string | null;
@@ -142,6 +162,7 @@ function parseAuthorizationForm(formData: FormData): AuthorizationForm {
   const submittedScope = formData.get('scope');
   return {
     clientId: getFormString(formData, 'client_id'),
+    resource: getFormString(formData, 'resource'),
     redirectUri: getFormString(formData, 'redirect_uri'),
     responseType: getFormString(formData, 'response_type'),
     scope: typeof submittedScope === 'string' ? submittedScope : null,
@@ -156,6 +177,7 @@ function parseAuthorizationForm(formData: FormData): AuthorizationForm {
 function isValidAuthorizationForm(form: AuthorizationForm): boolean {
   return Boolean(
     form.clientId &&
+    form.resource &&
     form.redirectUri &&
     form.responseType === 'code' &&
     (form.action !== 'allow' || form.scope) &&
@@ -173,11 +195,19 @@ function matchesAuthorizationTransaction(
   claims: Awaited<ReturnType<typeof verifyAuthorizationTransaction>>,
   form: AuthorizationForm
 ): boolean {
-  if (!claims || !form.clientId || !form.redirectUri || !form.state || !form.codeChallenge) {
+  if (
+    !claims ||
+    !form.clientId ||
+    !form.resource ||
+    !form.redirectUri ||
+    !form.state ||
+    !form.codeChallenge
+  ) {
     return false;
   }
   return (
     claims.clientId === form.clientId &&
+    claims.resource === form.resource &&
     claims.redirectUri === form.redirectUri &&
     claims.responseType === form.responseType &&
     claims.state === form.state &&
@@ -212,7 +242,7 @@ function invalidRequestResponse(message = 'invalid_request'): NextResponse {
 
 function authorizationErrorRedirect(
   request: NextRequest,
-  error: 'invalid_request' | 'unauthorized_client' | 'invalid_scope',
+  error: 'invalid_request' | 'invalid_target' | 'unauthorized_client' | 'invalid_scope',
   state: string | null
 ): NextResponse {
   const url = new URL('/mcp/authorize', getMcpPublicBaseUrl(request));
@@ -233,7 +263,17 @@ export async function GET(request: NextRequest) {
   }
 
   const session = await auth();
-  const params = parseAuthorizationQuery(request.nextUrl.searchParams);
+  const expectedResource = getMcpResourceUri(getMcpPublicBaseUrl(request));
+  const requestedResources = request.nextUrl.searchParams.getAll('resource');
+  if (requestedResources.length !== 1 || !isMcpResource(requestedResources[0], expectedResource)) {
+    return authorizationErrorRedirect(
+      request,
+      'invalid_target',
+      request.nextUrl.searchParams.get('state')
+    );
+  }
+
+  const params = parseAuthorizationQuery(request.nextUrl.searchParams, expectedResource);
   if (!params) {
     const state = request.nextUrl.searchParams.get('state');
     return authorizationErrorRedirect(request, 'invalid_request', state);
@@ -250,6 +290,15 @@ export async function GET(request: NextRequest) {
 
   if (!session?.user?.id) {
     return buildSignInRedirect(request);
+  }
+
+  if (!(await getComplianceStatus(session.user.id)).isComplete) {
+    const onboardingUrl = new URL('/onboarding', getMcpPublicBaseUrl(request));
+    onboardingUrl.searchParams.set(
+      'callbackUrl',
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    );
+    return NextResponse.redirect(onboardingUrl);
   }
 
   const userId = session.user.id;
@@ -308,6 +357,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   }
 
+  if (!(await getComplianceStatus(session.user.id)).isComplete) {
+    return NextResponse.redirect(new URL('/onboarding', getMcpPublicBaseUrl(request)), 303);
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -320,7 +373,11 @@ export async function POST(request: NextRequest) {
   }
 
   const transactionClaims = await verifyAuthorizationTransaction(form.transaction, session.user.id);
-  if (!matchesAuthorizationTransaction(transactionClaims, form)) {
+  const expectedResource = getMcpResourceUri(getMcpPublicBaseUrl(request));
+  if (
+    !isMcpResource(form.resource, expectedResource) ||
+    !matchesAuthorizationTransaction(transactionClaims, form)
+  ) {
     return invalidRequestResponse();
   }
 

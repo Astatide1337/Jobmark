@@ -15,14 +15,32 @@ import {
   RATE_LIMITS,
 } from '@/lib/mcp/auth/rate-limit';
 import { verifyPKCE } from '@/lib/mcp/auth/crypto';
+import { readOAuthRequestBody } from '@/lib/mcp/auth/request-body';
+import { getMcpPublicBaseUrl } from '@/lib/mcp/auth/public-origin';
+import { getMcpResourceUri, isMcpResource } from '@/lib/mcp/auth/resource';
 
 type RateLimitResult = Awaited<ReturnType<typeof checkRateLimit>>;
 
 function tokenResponse(rateLimit: RateLimitResult, error: string, status = 400): NextResponse {
   return NextResponse.json(
     { error },
-    { status, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token) }
+    {
+      status,
+      headers: {
+        ...createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
+        'Cache-Control': 'no-store',
+        Pragma: 'no-cache',
+      },
+    }
   );
+}
+
+function tokenHeaders(rateLimit: RateLimitResult): HeadersInit {
+  return {
+    ...createRateLimitHeaders(rateLimit, RATE_LIMITS.token),
+    'Cache-Control': 'no-store',
+    Pragma: 'no-cache',
+  };
 }
 
 async function handleAuthorizationCodeGrant(
@@ -74,7 +92,7 @@ async function handleAuthorizationCodeGrant(
       refresh_token: refreshToken.token,
       scope: accessToken.scope,
     },
-    { status: 200, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token) }
+    { status: 200, headers: tokenHeaders(rateLimit) }
   );
 }
 
@@ -135,7 +153,7 @@ async function handleRefreshGrant(
       refresh_token: rotated.refreshToken.token,
       scope: rotated.accessToken.scope,
     },
-    { status: 200, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.token) }
+    { status: 200, headers: tokenHeaders(rateLimit) }
   );
 }
 
@@ -154,17 +172,6 @@ function getClientCredentials(
   return { clientId, clientSecret };
 }
 
-async function readTokenBody(request: NextRequest): Promise<Record<string, string>> {
-  const contentType = request.headers.get('content-type') ?? '';
-  if (contentType.includes('application/json')) {
-    return (await request.json()) as Record<string, string>;
-  }
-  const formData = await request.formData();
-  return Object.fromEntries(
-    Array.from(formData.entries()).map(([key, value]) => [key, value.toString()])
-  );
-}
-
 export async function POST(request: NextRequest) {
   const rateLimit = await checkRateLimit(getClientIp(request), RATE_LIMITS.token);
   if (!rateLimit.allowed) {
@@ -174,7 +181,14 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const body = await readTokenBody(request);
+  const body = await readOAuthRequestBody(request);
+  if (!body) return tokenResponse(rateLimit, 'invalid_request');
+
+  const expectedResource = getMcpResourceUri(getMcpPublicBaseUrl(request));
+  if (!isMcpResource(body.resource, expectedResource)) {
+    return tokenResponse(rateLimit, 'invalid_target');
+  }
+
   const { clientId, clientSecret } = getClientCredentials(request, body);
   if (!clientId) return tokenResponse(rateLimit, 'invalid_client', 401);
 

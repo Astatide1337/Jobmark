@@ -78,6 +78,7 @@ describe('MCP OAuth token exchange', () => {
   it('persists the MCP connection before returning tokens to Claude', async () => {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
+      resource: 'https://jobmark.example.com/mcp',
       client_id: 'claude-client',
       code: 'authorization-code',
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
@@ -92,6 +93,8 @@ describe('MCP OAuth token exchange', () => {
     const response = await POST(request);
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('pragma')).toBe('no-cache');
     await expect(response.json()).resolves.toMatchObject({
       access_token: 'access-token',
       refresh_token: 'refresh-token',
@@ -111,6 +114,7 @@ describe('MCP OAuth token exchange', () => {
   it('rejects an authorization code exchange without its PKCE verifier', async () => {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
+      resource: 'https://jobmark.example.com/mcp',
       client_id: 'claude-client',
       code: 'authorization-code',
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
@@ -133,6 +137,7 @@ describe('MCP OAuth token exchange', () => {
     mocks.authCodeDeleteMany.mockResolvedValue({ count: 0 });
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
+      resource: 'https://jobmark.example.com/mcp',
       client_id: 'claude-client',
       code: 'authorization-code',
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
@@ -162,6 +167,7 @@ describe('MCP OAuth token exchange', () => {
 
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
+      resource: 'https://jobmark.example.com/mcp',
       client_id: 'claude-client',
       refresh_token: 'refresh-token',
       scope: 'jobmark:read\tjobmark:destructive',
@@ -177,5 +183,27 @@ describe('MCP OAuth token exchange', () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: 'invalid_scope' });
     expect(mocks.rotateRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('rejects token requests for a different resource', async () => {
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      resource: 'https://other.example.com/mcp',
+      client_id: 'claude-client',
+      code: 'authorization-code',
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      code_verifier: 'verifier',
+    });
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/api/auth/mcp/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body,
+      })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: 'invalid_target' });
+    expect(mocks.validateClient).not.toHaveBeenCalled();
   });
 });

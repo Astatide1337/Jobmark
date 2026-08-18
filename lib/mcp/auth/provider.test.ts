@@ -348,6 +348,7 @@ describe('MCP OAuth authorization-code PKCE', () => {
 describe('CIDDD client metadata SSRF and response limits', () => {
   const claudeMetadataUrl = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
   const metadata = {
+    client_id: claudeMetadataUrl,
     redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
     client_name: 'Claude',
     grant_types: ['authorization_code', 'refresh_token'],
@@ -449,6 +450,14 @@ describe('CIDDD client metadata SSRF and response limits', () => {
       expect.objectContaining({ agent: false, method: 'GET', lookup: expect.any(Function) }),
       expect.any(Function)
     );
+  });
+
+  it('requires CIDDD documents to self-identify the exact client ID', async () => {
+    responseQueue.length = 0;
+    const { client_id: _clientId, ...withoutClientId } = metadata;
+    queueResponse({ body: JSON.stringify(withoutClientId) });
+
+    await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
   });
 
   it('rejects CIDDD metadata that weakens the callback or changes its client ID', async () => {

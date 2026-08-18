@@ -8,6 +8,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getMcpProviderKey } from '@/lib/mcp/provider-identity';
 import { areValidOAuthRedirectUris } from './redirect-uri';
+import { getMcpResourceUri } from './resource';
 import {
   OAuthScopes,
   OAuthScope,
@@ -171,13 +172,19 @@ export async function createClient(
 }
 
 type ClientMetadata = {
-  client_id?: string;
-  client_name?: string;
+  client_id?: unknown;
+  client_name?: unknown;
   redirect_uris?: string[];
   grant_types?: string[];
   response_types?: string[];
   scope?: string;
   token_endpoint_auth_method?: string;
+};
+
+type ValidClientMetadata = ClientMetadata & {
+  client_id: string;
+  client_name: string;
+  redirect_uris: string[];
 };
 
 function ipv4ToNumber(address: string): number | null {
@@ -430,6 +437,42 @@ function readResponseBody(body: Buffer): string | null {
   return new TextDecoder().decode(body);
 }
 
+function hasJsonContentType(headers: IncomingHttpHeaders): boolean {
+  const contentType = getResponseHeader(headers, 'content-type')
+    ?.split(';', 1)[0]
+    .trim()
+    .toLowerCase();
+
+  return contentType === 'application/json' || Boolean(contentType?.endsWith('+json'));
+}
+
+function hasAcceptableContentLength(headers: IncomingHttpHeaders): boolean {
+  const contentLength = getResponseHeader(headers, 'content-length');
+  return (
+    !contentLength ||
+    !Number.isFinite(Number(contentLength)) ||
+    Number(contentLength) <= CIDDD_MAX_RESPONSE_BYTES
+  );
+}
+
+function getValidClientMetadata(
+  metadata: ClientMetadata,
+  clientId: string
+): ValidClientMetadata | null {
+  if (
+    metadata.client_id !== clientId ||
+    typeof metadata.client_name !== 'string' ||
+    metadata.client_name.trim().length === 0 ||
+    !Array.isArray(metadata.redirect_uris) ||
+    !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
+    !areValidOAuthRedirectUris(metadata.redirect_uris)
+  ) {
+    return null;
+  }
+
+  return metadata as ValidClientMetadata;
+}
+
 function parseClientMetadataUrl(clientId: string): URL | null | undefined {
   const looksLikeUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(clientId);
   if (!looksLikeUrl) return undefined;
@@ -481,33 +524,14 @@ async function resolveMetadataClient(
   const response = await fetchPinnedMetadata(metadataUrl, pinnedAddress);
   if (response.statusCode < 200 || response.statusCode >= 300) return null;
 
-  const contentType = getResponseHeader(response.headers, 'content-type')
-    ?.split(';', 1)[0]
-    .trim()
-    .toLowerCase();
-  if (contentType !== 'application/json' && !contentType?.endsWith('+json')) return null;
-
-  const contentLength = getResponseHeader(response.headers, 'content-length');
-  if (
-    contentLength &&
-    Number.isFinite(Number(contentLength)) &&
-    Number(contentLength) > CIDDD_MAX_RESPONSE_BYTES
-  ) {
+  if (!hasJsonContentType(response.headers) || !hasAcceptableContentLength(response.headers)) {
     return null;
   }
 
   const body = readResponseBody(response.body);
   if (body === null) return null;
-  const metadata = JSON.parse(body) as ClientMetadata;
-  if (
-    !Array.isArray(metadata.redirect_uris) ||
-    !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
-    !areValidOAuthRedirectUris(metadata.redirect_uris) ||
-    (metadata.client_id !== undefined &&
-      (typeof metadata.client_id !== 'string' || metadata.client_id !== clientId))
-  ) {
-    return null;
-  }
+  const metadata = getValidClientMetadata(JSON.parse(body) as ClientMetadata, clientId);
+  if (!metadata) return null;
 
   const metadataClientId = metadata.client_id ?? clientId;
   let client = await prisma.oAuthClient.findUnique({ where: { clientId: metadataClientId } });
@@ -516,7 +540,7 @@ async function resolveMetadataClient(
       data: {
         clientId: metadataClientId,
         clientSecretHash: null,
-        clientName: metadata.client_name ?? 'Unnamed assistant',
+        clientName: metadata.client_name.trim(),
         redirectUris: metadata.redirect_uris,
         grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
         responseTypes: metadata.response_types ?? ['code'],
@@ -974,7 +998,8 @@ export async function ensureMcpConnection(
 
 export async function introspectToken(
   token: string,
-  clientId: string
+  clientId: string,
+  resource: string
 ): Promise<IntrospectionResponse> {
   const validation = await validateAccessToken(token);
   if (!validation) {
@@ -994,7 +1019,7 @@ export async function introspectToken(
     exp: validation.exp,
     iat: validation.iat,
     sub: validation.userId,
-    aud: 'mcp://jobmark',
+    aud: resource,
   };
 }
 
@@ -1071,7 +1096,7 @@ export async function getWellKnownProtectedResource(
   baseUrl: string
 ): Promise<WellKnownProtectedResource> {
   return {
-    resource: `${baseUrl}/mcp`,
+    resource: getMcpResourceUri(baseUrl),
     authorization_servers: [baseUrl],
     scopes_supported: [...OAuthScopes],
     bearer_methods_supported: ['header'],

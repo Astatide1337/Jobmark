@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, FileText, ChevronDown, Trash2 } from 'lucide-react';
 
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistance } from 'date-fns';
 import confetti from 'canvas-confetti';
 import { useSettings } from '@/components/providers/settings-provider';
 import { toast } from 'sonner';
@@ -346,6 +346,7 @@ interface ActivityTimelineProps {
   totalCount?: number;
   initialTimeZone?: string;
   initialToday?: string;
+  initialNow?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -355,6 +356,7 @@ export function ActivityTimeline({
   totalCount,
   initialTimeZone,
   initialToday,
+  initialNow,
 }: ActivityTimelineProps) {
   const { settings } = useSettings();
   let timeZone = DEFAULT_TIME_ZONE;
@@ -425,6 +427,7 @@ export function ActivityTimeline({
                   key={activity.id}
                   activity={activity}
                   timeZone={timeZone}
+                  initialNow={initialNow}
                   onOptimisticDelete={() => handleOptimisticDelete(activity.id)}
                   onUndoDelete={() => handleUndoDelete(activity.id)}
                 />
@@ -472,11 +475,18 @@ export function ActivityTimeline({
 interface ActivityCardProps {
   activity: Activity;
   timeZone: string;
+  initialNow?: string;
   onOptimisticDelete: () => void;
   onUndoDelete: () => void;
 }
 
-function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: ActivityCardProps) {
+function ActivityCard({
+  activity,
+  timeZone,
+  initialNow,
+  onOptimisticDelete,
+  onUndoDelete,
+}: ActivityCardProps) {
   const logDateYMD = getLogDateYMD(activity.logDate);
   const createdAtYMD = getCreatedAtLocalYMD(activity.createdAt, timeZone);
 
@@ -496,7 +506,13 @@ function ActivityCard({ activity, timeZone, onOptimisticDelete, onUndoDelete }: 
                 </span>
               )}
 
-              <span>{formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}</span>
+              <span>
+                {formatDistance(
+                  new Date(activity.createdAt),
+                  initialNow ? new Date(initialNow) : new Date(),
+                  { addSuffix: true }
+                )}
+              </span>
 
               {activity.project && (
                 <>

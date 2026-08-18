@@ -16,6 +16,7 @@ type AuthorizationErrorPageProps = {
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_request: 'The assistant sent an incomplete or old connection request.',
+  invalid_target: 'The assistant requested access to an unknown Jobmark resource.',
   unauthorized_client: 'Jobmark could not recognize this assistant.',
   invalid_scope: 'The assistant requested permissions that Jobmark cannot give it.',
 };

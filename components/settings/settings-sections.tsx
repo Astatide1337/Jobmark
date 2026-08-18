@@ -422,11 +422,11 @@ export function DataSection() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear all notes?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    <p>
+                    <span className="block">
                       This will permanently delete all your notes. Your projects and drafts will
                       remain. This action cannot be undone.
-                    </p>
-                    <p className="mt-3 font-medium">Type CLEAR ALL NOTES to confirm:</p>
+                    </span>
+                    <span className="mt-3 block font-medium">Type CLEAR ALL NOTES to confirm:</span>
                     <Input
                       aria-label="Confirmation for clearing all notes"
                       placeholder="CLEAR ALL NOTES"
@@ -467,13 +467,13 @@ export function DataSection() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete account?</AlertDialogTitle>
                   <AlertDialogDescription className="space-y-4">
-                    <p>
+                    <span className="block">
                       This will permanently delete your account and all associated data, including
                       projects, notes, drafts, and settings.
-                    </p>
-                    <p className="font-medium">
+                    </span>
+                    <span className="block font-medium">
                       Type <span className="text-destructive">DELETE</span> to confirm:
-                    </p>
+                    </span>
                     <Input
                       aria-label="Confirmation for deleting your account"
                       placeholder="DELETE"
