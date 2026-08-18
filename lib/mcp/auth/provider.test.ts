@@ -59,6 +59,7 @@ import {
   consumeAuthorizationCode,
   ensureMcpConnection,
   hashPKCE,
+  hashClientSecret,
   hashToken,
   resolveClientId,
   validateAccessToken,
@@ -282,11 +283,11 @@ describe('MCP OAuth token persistence', () => {
 });
 
 describe('MCP OAuth client authentication', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mocks.clientFindUnique.mockResolvedValue({
       clientId: 'confidential-client',
-      clientSecretHash: hashToken('correct-secret'),
+      clientSecretHash: await hashClientSecret('correct-secret'),
       redirectUris: ['https://client.example.com/callback'],
       grantTypes: ['authorization_code'],
       responseTypes: ['code'],
@@ -305,6 +306,23 @@ describe('MCP OAuth client authentication', () => {
     await expect(validateClient('confidential-client', 'correct-secret')).resolves.toMatchObject({
       client_id: 'confidential-client',
       token_endpoint_auth_method: 'client_secret_post',
+    });
+  });
+
+  it('continues to accept a legacy randomly generated client secret hash', async () => {
+    mocks.clientFindUnique.mockResolvedValue({
+      clientId: 'confidential-client',
+      clientSecretHash: hashToken('correct-secret'),
+      redirectUris: ['https://client.example.com/callback'],
+      grantTypes: ['authorization_code'],
+      responseTypes: ['code'],
+      scope: 'jobmark:read',
+      tokenEndpointAuthMethod: 'client_secret_post',
+      clientName: 'Confidential client',
+    });
+
+    await expect(validateClient('confidential-client', 'correct-secret')).resolves.toMatchObject({
+      client_id: 'confidential-client',
     });
   });
 });

@@ -2,10 +2,18 @@ import { createHash, timingSafeEqual as _timingSafeEqual, randomBytes } from 'cr
 
 export const timingSafeEqual = _timingSafeEqual;
 
+/**
+ * OAuth artifacts are generated with 256 bits of randomness, not chosen by a
+ * person. A fast digest is intentional here so indexed token lookups do not
+ * require a password-hash cost for values that already have high entropy.
+ */
+// codeql[js/insufficient-password-hash]
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+/** RFC 7636 requires the S256 code-challenge method to use SHA-256. */
+// codeql[js/insufficient-password-hash]
 export function hashPKCE(verifier: string): string {
   return createHash('sha256').update(verifier).digest('base64url');
 }

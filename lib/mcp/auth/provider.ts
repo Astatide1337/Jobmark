@@ -1,5 +1,6 @@
 import * as jose from 'jose';
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
+import bcrypt from 'bcryptjs';
 import * as dns from 'node:dns/promises';
 import { isIP } from 'node:net';
 import * as https from 'node:https';
@@ -9,6 +10,9 @@ import { prisma } from '@/lib/db';
 import { getMcpProviderKey } from '@/lib/mcp/provider-identity';
 import { areValidOAuthRedirectUris } from './redirect-uri';
 import { getMcpResourceUri } from './resource';
+import { hashPKCE, hashToken, timingSafeEqual } from './crypto';
+
+export { hashPKCE, hashToken } from './crypto';
 import {
   OAuthScopes,
   OAuthScope,
@@ -41,6 +45,8 @@ const JWKS_ROTATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 const JWKS_RETENTION = 48 * 60 * 60 * 1000; // 48 hours
 const CIDDD_FETCH_TIMEOUT = 5000;
 const CIDDD_MAX_RESPONSE_BYTES = 64 * 1024;
+const CLIENT_SECRET_HASH_PREFIX = 'bcrypt$';
+const CLIENT_SECRET_BCRYPT_ROUNDS = 12;
 
 let currentKeyPair: jose.GenerateKeyPairResult | null = null;
 let previousKeyPair: jose.GenerateKeyPairResult | null = null;
@@ -111,14 +117,6 @@ export async function initializeOAuth() {
   setInterval(rotateKeys, JWKS_ROTATION_INTERVAL);
 }
 
-export function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
-
-export function hashPKCE(verifier: string): string {
-  return createHash('sha256').update(verifier).digest('base64url');
-}
-
 export function verifyPKCE(challenge: string, verifier: string): boolean {
   const expected = hashPKCE(verifier);
   const supplied = Buffer.from(challenge);
@@ -138,6 +136,25 @@ export function generateId(): string {
   return randomBytes(16).toString('hex');
 }
 
+/** Store confidential-client secrets with a deliberately expensive password hash. */
+export async function hashClientSecret(secret: string): Promise<string> {
+  return `${CLIENT_SECRET_HASH_PREFIX}${await bcrypt.hash(secret, CLIENT_SECRET_BCRYPT_ROUNDS)}`;
+}
+
+async function verifyClientSecret(secret: string, storedHash: string): Promise<boolean> {
+  if (storedHash.startsWith(CLIENT_SECRET_HASH_PREFIX)) {
+    return bcrypt.compare(secret, storedHash.slice(CLIENT_SECRET_HASH_PREFIX.length));
+  }
+
+  // Clients created before bcrypt was introduced have a SHA-256 digest. Their
+  // secrets were generated randomly by Jobmark, so keep a constant-time,
+  // one-way compatibility check and let new registrations use bcrypt.
+  const expected = Buffer.from(storedHash);
+  // codeql[js/insufficient-password-hash]
+  const supplied = Buffer.from(hashToken(secret));
+  return expected.length === supplied.length && timingSafeEqual(supplied, expected);
+}
+
 export async function createClient(
   data: Partial<Client> & { redirect_uris: string[] }
 ): Promise<Client> {
@@ -147,7 +164,7 @@ export async function createClient(
   const client = await prisma.oAuthClient.create({
     data: {
       clientId,
-      clientSecretHash: clientSecret ? hashToken(clientSecret) : null,
+      clientSecretHash: clientSecret ? await hashClientSecret(clientSecret) : null,
       clientName: data.client_name ?? 'Unnamed assistant',
       redirectUris: data.redirect_uris,
       grantTypes: data.grant_types ?? ['authorization_code', 'refresh_token'],
@@ -599,11 +616,7 @@ export async function validateClient(
     // accepting an omitted secret would downgrade them to public clients.
     if (!clientSecret) return null;
 
-    const expected = Buffer.from(client.clientSecretHash);
-    const supplied = Buffer.from(hashToken(clientSecret));
-    if (expected.length !== supplied.length || !timingSafeEqual(supplied, expected)) {
-      return null;
-    }
+    if (!(await verifyClientSecret(clientSecret, client.clientSecretHash))) return null;
   }
 
   return {
