@@ -34,11 +34,24 @@ function normalizeOrigin(value: string): string | null {
  * host and make an authenticated request look anonymous.
  */
 export function getAppPublicOrigin(request: Request): string {
-  for (const configuredUrl of [
-    process.env.NEXT_PUBLIC_APP_URL,
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.NEXTAUTH_URL,
-  ]) {
+  // Why: local development can intentionally keep a production site URL in
+  // the shared environment file while Auth.js is bound to localhost. Using
+  // the Auth.js URL first in development keeps redirects on the same host as
+  // the browser session and prevents local E2E runs from escaping to prod.
+  const configuredUrls =
+    process.env.NODE_ENV === 'development'
+      ? [
+          process.env.NEXTAUTH_URL,
+          process.env.NEXT_PUBLIC_APP_URL,
+          process.env.NEXT_PUBLIC_SITE_URL,
+        ]
+      : [
+          process.env.NEXT_PUBLIC_APP_URL,
+          process.env.NEXT_PUBLIC_SITE_URL,
+          process.env.NEXTAUTH_URL,
+        ];
+
+  for (const configuredUrl of configuredUrls) {
     if (!configuredUrl) continue;
     const configuredOrigin = normalizeOrigin(configuredUrl);
     if (configuredOrigin) return configuredOrigin;

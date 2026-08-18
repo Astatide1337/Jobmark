@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getAppPublicOrigin } from './app-origin';
 
 const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -6,6 +6,7 @@ const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const originalNextAuthUrl = process.env.NEXTAUTH_URL;
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   if (originalAppUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
   else process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
   if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
@@ -22,6 +23,17 @@ describe('getAppPublicOrigin', () => {
 
     expect(getAppPublicOrigin(new Request('http://localhost:3001/api/compliance/continue'))).toBe(
       'http://127.0.0.1:3001'
+    );
+  });
+
+  it('keeps development redirects on the Auth.js host', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    process.env.NEXTAUTH_URL = 'http://localhost:3000';
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://jobmark.astatide.com';
+    delete process.env.NEXT_PUBLIC_APP_URL;
+
+    expect(getAppPublicOrigin(new Request('http://localhost:3000/api/compliance/continue'))).toBe(
+      'http://localhost:3000'
     );
   });
 

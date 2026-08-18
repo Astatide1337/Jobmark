@@ -73,8 +73,9 @@ export function OnboardingForm({ status, userName, continueTo }: OnboardingFormP
           A quick confirmation before you begin
         </h1>
         <p className="text-muted-foreground mt-4 leading-7">
-          Jobmark is available to people around the world who are at least {COMPLIANCE_MINIMUM_AGE}{' '}
-          years old. Please review the current documents and confirm the statements below.
+          Jobmark is intended for people who are at least {COMPLIANCE_MINIMUM_AGE} years old, or
+          older where local law requires it. Please review the current documents and confirm the
+          statements below.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">

@@ -6,6 +6,26 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('public entry points', () => {
+  test('publishes the current Terms and Privacy Policy versions', async ({ page }) => {
+    const legalPages = [
+      { path: '/terms', heading: 'Terms of Service', marker: 'Connected assistants' },
+      { path: '/privacy', heading: 'Privacy Policy', marker: 'Cookies and similar storage' },
+    ];
+
+    for (const legalPage of legalPages) {
+      await page.goto(legalPage.path);
+      await expect(
+        page.getByRole('heading', { name: legalPage.heading, exact: true })
+      ).toBeVisible();
+      await expect(page.getByText('Version 2026-08-18', { exact: false })).toBeVisible();
+      await expect(page.locator('article')).toContainText(legalPage.marker);
+      await expect(page.getByRole('link', { name: '← Jobmark', exact: true })).toHaveAttribute(
+        'href',
+        '/'
+      );
+    }
+  });
+
   test('renders the public landing page and opens sign-in', async ({ page }) => {
     await page.goto('/');
 

@@ -23,9 +23,9 @@ The current workspace contains a dependency override resolving `deepmerge-ts` to
 The local release candidate passes the application verification sequence, the
 production build, the full unit/integration suite, and the local Chromium E2E
 smoke suite. The browser suite is intentionally local-only and uses the
-development demo login; production OAuth, Cloudflare/Kubernetes probes,
-external security review, and counsel approval remain release gates outside
-the repository test suite.
+development demo login; production OAuth, Cloudflare/Kubernetes probes, and a
+product-owner review of the self-authored legal documents remain release gates
+outside the repository test suite.
 
 ## Repository settings required
 
