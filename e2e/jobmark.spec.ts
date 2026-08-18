@@ -120,7 +120,14 @@ test.describe('core CRUD smoke paths', () => {
       .click();
     await page.getByRole('menuitem', { name: 'Archive project', exact: true }).click();
     await page.reload();
-    await page.getByRole('tab', { name: 'Archived', exact: true }).click();
+    const archivedTab = page.getByRole('tab', { name: 'Archived', exact: true });
+    if (await archivedTab.isVisible()) {
+      await archivedTab.click();
+    } else {
+      // The active-project empty state replaces the tabs with a direct link.
+      await page.getByRole('button', { name: 'View archived projects', exact: true }).click();
+    }
+    await expect(page).toHaveURL(/\/projects\?filter=archived$/);
     await expect(page.getByRole('heading', { name: projectName, exact: true })).toBeVisible();
   });
 
