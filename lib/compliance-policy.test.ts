@@ -26,7 +26,7 @@ describe('compliance policy', () => {
 
   it('does not model a birth date as part of eligibility', () => {
     expect(COMPLIANCE_MINIMUM_AGE).toBe(16);
-    expect(COMPLIANCE_DOCUMENT_VERSIONS).toEqual({ terms: '2026-03-31', privacy: '2026-03-31' });
+    expect(COMPLIANCE_DOCUMENT_VERSIONS).toEqual({ terms: '2026-08-18', privacy: '2026-08-18' });
     expect(
       complianceAcceptanceInputSchema.safeParse({
         termsAccepted: true,
