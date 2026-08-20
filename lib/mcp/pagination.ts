@@ -1,28 +1,4 @@
-/**
- * MCP Pagination utilities
- */
-
-export interface McpPaginatedResult<T> {
-  items: T[];
-  nextCursor: string | null;
-  totalCount?: number;
-}
-
-export function paginate<T extends { id: string }>(
-  items: T[],
-  cursor: string | undefined,
-  limit: number
-): McpPaginatedResult<T> {
-  const startIndex = cursor ? items.findIndex(item => item.id === cursor) + 1 : 0;
-  const page = items.slice(startIndex, startIndex + limit + 1);
-  let nextCursor: string | null = null;
-  if (page.length > limit) {
-    nextCursor = page.pop()!.id;
-  }
-  return { items: page, nextCursor };
-}
-
-export const DEFAULT_LIMITS = {
+const DEFAULT_LIMITS = {
   activities: 50,
   projects: 100,
   goals: 100,

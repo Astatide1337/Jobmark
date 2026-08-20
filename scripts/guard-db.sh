@@ -32,7 +32,7 @@ for ep in "${PROD_ENDPOINTS[@]}"; do
   if echo "$URL" | grep -F -q "$ep"; then
     echo -e "${RED}████████████████████████████████████████████████████████████████████████${NC}" >&2
     echo -e "${RED}██  BLOCKED: DATABASE_URL points to PRODUCTION database              ██${NC}" >&2
-    echo -e "${RED}██  This endpoint is reserved for Vercel deploys only.               ██${NC}" >&2
+    echo -e "${RED}██  This endpoint is reserved for the production deployment only.   ██${NC}" >&2
     echo -e "${RED}██  For local dev, set DATABASE_URL to the dev branch in .env.local   ██${NC}" >&2
     echo -e "${RED}████████████████████████████████████████████████████████████████████████${NC}" >&2
     exit 1

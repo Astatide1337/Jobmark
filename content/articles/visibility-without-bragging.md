@@ -50,6 +50,7 @@ This is not about showing off. It gives people the information they need to help
 When you make a decision, write down why. What did you know? What choices did you consider? What would you do differently?
 
 That helps people understand the decision later.
+
 **3. Share results**
 
 When something is done, share the result. Not as "look what I did," but as "here is what happened."

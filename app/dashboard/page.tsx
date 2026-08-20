@@ -18,7 +18,8 @@ import { redirect } from 'next/navigation';
 import { getActivities, getActivityStats } from '@/app/actions/activities';
 import { getProjects } from '@/app/actions/projects';
 import { getUserSettings } from '@/app/actions/settings';
-import { QuickCapture, ActivityTimeline } from './dashboard-client';
+import { QuickCapture } from './dashboard-client';
+import { ActivityTimeline } from '@/components/dashboard/activity-timeline';
 import {
   GoalMotivator,
   NextBestAction,

@@ -3,11 +3,10 @@ title: How to stay in touch without networking
 description: A simple way to stay in touch with people without making networking a big task.
 slug: network-maintenance-for-people-who-hate-networking
 publishedAt: 2026-03-07
-updatedAt: 2026-03-07
+updatedAt: 2026-08-20
 category: career-development
 tags:
   - networking
-  - relationships
   - relationships
 author: Jobmark
 draft: false
@@ -18,8 +17,6 @@ series: Staying in touch
 bestFor: staying in touch
 primaryAction: Open network
 primaryHref: /network
-secondaryAction: Open dashboard
-secondaryHref: /dashboard
 ---
 
 Networking can feel forced when every message feels like a trade. A small routine is easier to keep.
@@ -32,7 +29,7 @@ You do not need to send many messages. Pick a few people and stay in touch.
 
 You do not need a huge network. You need a few strong relationships.
 
-Having three people who know your work and will speak well of you is worth more than having three hundred LinkedIn connections.
+Having three people who know your work can be more useful than having hundreds of weak connections.
 
 Focus on a few real relationships.
 

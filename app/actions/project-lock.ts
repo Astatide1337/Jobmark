@@ -87,50 +87,6 @@ export async function setVaultPassword(password: string, confirmPassword: string
 }
 
 /**
- * Change the vault password.
- */
-export async function changeVaultPassword(currentPassword: string, newPassword: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, message: 'Sign in to change the private project password.' };
-  }
-
-  if (!newPassword || newPassword.length < VAULT_PASSWORD_MIN_LENGTH) {
-    return {
-      success: false,
-      message: `Use at least ${VAULT_PASSWORD_MIN_LENGTH} characters for the new password.`,
-    };
-  }
-
-  const settings = await prisma.userSettings.findUnique({
-    where: { userId: session.user.id },
-    select: { vaultPasswordHash: true },
-  });
-
-  if (!settings?.vaultPasswordHash) {
-    return { success: false, message: 'Private projects are not set up yet.' };
-  }
-
-  if (!(await checkUnlockRateLimit(session.user.id))) {
-    return { success: false, message: 'Too many tries. Try again later.' };
-  }
-
-  const isValid = await bcrypt.compare(currentPassword, settings.vaultPasswordHash);
-  if (!isValid) {
-    return { success: false, message: 'The current password is not correct.' };
-  }
-
-  const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
-  await prisma.userSettings.update({
-    where: { userId: session.user.id },
-    data: { vaultPasswordHash: hash, vaultVersion: { increment: 1 } },
-  });
-  await setVaultUnlocked(false, session.user.id);
-
-  return { success: true, message: 'Private project password changed.' };
-}
-
-/**
  * Unlock the vault by verifying the password.
  */
 export async function unlockVault(password: string) {
@@ -286,7 +242,7 @@ export async function getVaultProjects() {
 /**
  * Check if the user has a vault password set.
  */
-export async function hasVaultPassword(): Promise<boolean> {
+async function hasVaultPassword(): Promise<boolean> {
   const targetUserId = await requireUserId();
 
   const settings = await prisma.userSettings.findUnique({

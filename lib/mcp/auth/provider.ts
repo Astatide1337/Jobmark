@@ -1,39 +1,26 @@
-import * as jose from 'jose';
-import { randomBytes, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
-import * as dns from 'node:dns/promises';
-import { isIP } from 'node:net';
-import * as https from 'node:https';
-import type { ClientRequest, IncomingHttpHeaders } from 'node:http';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getMcpProviderKey } from '@/lib/mcp/provider-identity';
-import { areValidOAuthRedirectUris } from './redirect-uri';
+import { fetchDynamicClientMetadata, type DynamicClientMetadata } from './client-metadata';
 import { getMcpResourceUri } from './resource';
-import { hashPKCE, hashToken, timingSafeEqual } from './crypto';
-
+import {
+  generateAuthCode,
+  generateId,
+  generateToken,
+  hashToken,
+  timingSafeEqual,
+  verifyPKCE,
+} from './crypto';
 export { hashPKCE, hashToken } from './crypto';
+export { getJWKSKeys } from './jwks';
 import {
   OAuthScopes,
-  OAuthScope,
-  ClientSchema,
-  AuthorizationCodeSchema,
-  AccessTokenSchema,
-  RefreshTokenSchema,
-  TokenResponseSchema,
-  IntrospectionResponseSchema,
-  RevocationRequestSchema,
-  JWKSSchema,
-  WellKnownAuthServerSchema,
-  WellKnownProtectedResourceSchema,
   type Client,
   type AuthorizationCode,
   type AccessToken,
   type RefreshToken,
-  type TokenResponse,
-  type IntrospectionResponse,
-  type RevocationRequest,
-  type JWKS,
   type WellKnownAuthServer,
   type WellKnownProtectedResource,
 } from './types';
@@ -41,100 +28,8 @@ import {
 const ACCESS_TOKEN_TTL = 15 * 60 * 1000; // 15 minutes
 const REFRESH_TOKEN_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 const AUTH_CODE_TTL = 10 * 60 * 1000; // 10 minutes
-const JWKS_ROTATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
-const JWKS_RETENTION = 48 * 60 * 60 * 1000; // 48 hours
-const CIDDD_FETCH_TIMEOUT = 5000;
-const CIDDD_MAX_RESPONSE_BYTES = 64 * 1024;
 const CLIENT_SECRET_HASH_PREFIX = 'bcrypt$';
 const CLIENT_SECRET_BCRYPT_ROUNDS = 12;
-
-let currentKeyPair: jose.GenerateKeyPairResult | null = null;
-let previousKeyPair: jose.GenerateKeyPairResult | null = null;
-let currentKid: string;
-let previousKid: string | null = null;
-
-async function generateKeyPair(): Promise<jose.GenerateKeyPairResult> {
-  return jose.generateKeyPair('RS256', { extractable: true });
-}
-
-async function rotateKeys() {
-  previousKeyPair = currentKeyPair;
-  previousKid = currentKid;
-  currentKeyPair = await generateKeyPair();
-  currentKid = randomBytes(16).toString('hex');
-
-  // Clean up keys older than 48 hours
-  setTimeout(() => {
-    if (previousKeyPair) {
-      previousKeyPair = null;
-      previousKid = null;
-    }
-  }, JWKS_RETENTION);
-}
-
-async function getSigningKey(): Promise<{ key: CryptoKey; kid: string }> {
-  if (!currentKeyPair) {
-    currentKeyPair = await generateKeyPair();
-    currentKid = randomBytes(16).toString('hex');
-  }
-  return { key: currentKeyPair.privateKey, kid: currentKid };
-}
-
-async function getVerificationKeys(): Promise<Map<string, CryptoKey>> {
-  const keys = new Map<string, CryptoKey>();
-  if (!currentKeyPair) {
-    currentKeyPair = await generateKeyPair();
-    currentKid = randomBytes(16).toString('hex');
-  }
-  keys.set(currentKid, currentKeyPair.publicKey);
-  if (previousKeyPair && previousKid) {
-    keys.set(previousKid, previousKeyPair.publicKey);
-  }
-  return keys;
-}
-
-async function getJWKS(): Promise<JWKS> {
-  const keys = await getVerificationKeys();
-  const jwksKeys = [];
-
-  for (const [kid, publicKey] of keys) {
-    const jwk = await jose.exportJWK(publicKey);
-    jwksKeys.push({
-      kty: 'RSA' as const,
-      use: 'sig' as const,
-      kid,
-      n: jwk.n!,
-      e: jwk.e!,
-      alg: 'RS256' as const,
-    });
-  }
-
-  return { keys: jwksKeys };
-}
-
-export async function initializeOAuth() {
-  await rotateKeys();
-  setInterval(rotateKeys, JWKS_ROTATION_INTERVAL);
-}
-
-export function verifyPKCE(challenge: string, verifier: string): boolean {
-  const expected = hashPKCE(verifier);
-  const supplied = Buffer.from(challenge);
-  const computed = Buffer.from(expected);
-  return supplied.length === computed.length && timingSafeEqual(supplied, computed);
-}
-
-export function generateToken(): string {
-  return randomBytes(32).toString('base64url');
-}
-
-export function generateAuthCode(): string {
-  return randomBytes(32).toString('base64url');
-}
-
-export function generateId(): string {
-  return randomBytes(16).toString('hex');
-}
 
 /** Store confidential-client secrets with a deliberately expensive password hash. */
 export async function hashClientSecret(secret: string): Promise<string> {
@@ -188,322 +83,6 @@ export async function createClient(
   } as Client;
 }
 
-type ClientMetadata = {
-  client_id?: unknown;
-  client_name?: unknown;
-  redirect_uris?: string[];
-  grant_types?: string[];
-  response_types?: string[];
-  scope?: string;
-  token_endpoint_auth_method?: string;
-};
-
-type ValidClientMetadata = ClientMetadata & {
-  client_id: string;
-  client_name: string;
-  redirect_uris: string[];
-};
-
-function ipv4ToNumber(address: string): number | null {
-  const parts = address.split('.');
-  if (parts.length !== 4 || parts.some(part => !/^\d{1,3}$/.test(part))) return null;
-
-  const octets = parts.map(Number);
-  if (octets.some(octet => octet > 255)) return null;
-  return ((octets[0] * 256 + octets[1]) * 256 + octets[2]) * 256 + octets[3];
-}
-
-function ipv4NumberToString(value: number): string {
-  return [value >>> 24, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff].join('.');
-}
-
-function isBlockedIPv4(address: string): boolean {
-  const value = ipv4ToNumber(address);
-  if (value === null) return true;
-
-  const blockedRanges: Array<[number, number]> = [
-    [0x00000000, 0x00ffffff], // "this" network / unspecified
-    [0x0a000000, 0x0affffff], // RFC 1918
-    [0x64400000, 0x647fffff], // RFC 6598
-    [0x7f000000, 0x7fffffff], // loopback
-    [0xa9fe0000, 0xa9feffff], // link-local
-    [0xac100000, 0xac1fffff], // RFC 1918
-    [0xc0000000, 0xc00000ff], // IETF protocol assignments
-    [0xc0000200, 0xc00002ff], // TEST-NET-1
-    [0xc0586300, 0xc05863ff], // deprecated 6to4 relay anycast
-    [0xc0a80000, 0xc0a8ffff], // RFC 1918
-    [0xc6120000, 0xc613ffff], // benchmarking
-    [0xc6336400, 0xc63364ff], // TEST-NET-2
-    [0xcb007100, 0xcb0071ff], // TEST-NET-3
-    [0xe0000000, 0xffffffff], // multicast and reserved
-  ];
-
-  return blockedRanges.some(([start, end]) => value >= start && value <= end);
-}
-
-function parseIPv6(address: string): string | null {
-  let normalized = address.toLowerCase();
-  if (normalized.includes('%')) return null; // scoped addresses are not valid fetch targets
-
-  // Normalize an IPv4-embedded tail into two hexadecimal groups.
-  if (normalized.includes('.')) {
-    const separator = normalized.lastIndexOf(':');
-    if (separator < 0) return null;
-    const ipv4 = ipv4ToNumber(normalized.slice(separator + 1));
-    if (ipv4 === null) return null;
-    normalized = `${normalized.slice(0, separator + 1)}${((ipv4 >>> 16) & 0xffff).toString(16)}:${(ipv4 & 0xffff).toString(16)}`;
-  }
-
-  const compressionIndex = normalized.indexOf('::');
-  let groups: string[];
-  if (compressionIndex >= 0) {
-    if (normalized.indexOf('::', compressionIndex + 2) >= 0) return null;
-    const left = normalized.slice(0, compressionIndex);
-    const right = normalized.slice(compressionIndex + 2);
-    const leftGroups = left ? left.split(':') : [];
-    const rightGroups = right ? right.split(':') : [];
-    if (leftGroups.length + rightGroups.length >= 8) return null;
-    groups = [
-      ...leftGroups,
-      ...Array(8 - leftGroups.length - rightGroups.length).fill('0'),
-      ...rightGroups,
-    ];
-  } else {
-    groups = normalized.split(':');
-    if (groups.length !== 8) return null;
-  }
-
-  if (groups.length !== 8 || groups.some(group => !/^[0-9a-f]{1,4}$/.test(group))) return null;
-  return groups.map(group => group.padStart(4, '0')).join('');
-}
-
-function hasIPv6Prefix(value: string, bits: number, prefix: string): boolean {
-  const hexDigits = Math.ceil(bits / 4);
-  const normalizedPrefix = prefix.padStart(hexDigits, '0');
-  const completeDigits = Math.floor(bits / 4);
-  if (value.slice(0, completeDigits) !== normalizedPrefix.slice(0, completeDigits)) return false;
-  if (bits % 4 === 0) return true;
-
-  const mask = 0xf << (4 - (bits % 4));
-  return (
-    (parseInt(value[completeDigits], 16) & mask) ===
-    (parseInt(normalizedPrefix[completeDigits], 16) & mask)
-  );
-}
-
-function isBlockedIPv6(address: string): boolean {
-  const value = parseIPv6(address);
-  if (value === null) return true;
-
-  // IPv4-mapped IPv6 addresses inherit the IPv4 address's restrictions.
-  if (value.slice(0, 24) === '00000000000000000000ffff') {
-    return isBlockedIPv4(ipv4NumberToString(parseInt(value.slice(24), 16)));
-  }
-
-  return (
-    value === '0'.repeat(32) || // unspecified
-    value === `0${'0'.repeat(31 - 1)}1` || // loopback
-    hasIPv6Prefix(value, 7, 'fc') || // fc00::/7, unique local
-    hasIPv6Prefix(value, 10, 'fe80') || // fe80::/10, link-local
-    hasIPv6Prefix(value, 8, 'ff') || // multicast
-    value.slice(0, 24) === '0'.repeat(24) || // IPv4-compatible / reserved ::/96
-    hasIPv6Prefix(value, 32, '20010db8') || // documentation
-    hasIPv6Prefix(value, 48, '200100000002') || // benchmarking
-    hasIPv6Prefix(value, 28, '2001001') || // ORCHID
-    hasIPv6Prefix(value, 28, '2001002') || // ORCHIDv2
-    hasIPv6Prefix(value, 64, '0100000000000000') || // discard-only
-    hasIPv6Prefix(value, 96, '0064ff9b0000000000000000') || // NAT64 well-known prefix
-    hasIPv6Prefix(value, 20, '3fff0') // documentation (RFC 9637)
-  );
-}
-
-function isBlockedAddress(address: string): boolean {
-  const family = isIP(address);
-  if (family === 4) return isBlockedIPv4(address);
-  if (family === 6) return isBlockedIPv6(address);
-  return true;
-}
-
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timeout = setTimeout(() => reject(new Error('timeout')), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
-}
-
-type PinnedAddress = {
-  address: string;
-  family: 4 | 6;
-};
-
-async function resolveSafeAddress(hostname: string): Promise<PinnedAddress | null> {
-  const normalizedHostname = hostname.replace(/^\[/, '').replace(/\]$/, '');
-  const family = isIP(normalizedHostname);
-  if (family)
-    return isBlockedAddress(normalizedHostname)
-      ? null
-      : { address: normalizedHostname, family: family as 4 | 6 };
-
-  if (
-    normalizedHostname === 'localhost' ||
-    normalizedHostname.endsWith('.localhost') ||
-    normalizedHostname.endsWith('.local')
-  )
-    return null;
-
-  const results = await withTimeout(
-    Promise.allSettled([dns.resolve4(normalizedHostname), dns.resolve6(normalizedHostname)]),
-    CIDDD_FETCH_TIMEOUT
-  );
-  const addresses = results.flatMap(result => {
-    if (result.status === 'fulfilled') return result.value;
-    return [];
-  });
-  if (addresses.length === 0 || addresses.some(address => isBlockedAddress(address))) return null;
-
-  const address = addresses[0];
-  return { address, family: isIP(address) as 4 | 6 };
-}
-
-type PinnedResponse = {
-  statusCode: number;
-  headers: IncomingHttpHeaders;
-  body: Buffer;
-};
-
-async function fetchPinnedMetadata(
-  url: URL,
-  pinnedAddress: PinnedAddress
-): Promise<PinnedResponse> {
-  let request: ClientRequest | undefined;
-  const responsePromise = new Promise<PinnedResponse>((resolve, reject) => {
-    request = https.request(
-      url,
-      {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        // Disable connection pooling so every request uses the pinned lookup.
-        agent: false,
-        // Keep the original hostname for TLS certificate validation and SNI,
-        // while forcing the socket connection to the address checked above.
-        servername: isIP(url.hostname.replace(/^\[/, '').replace(/\]$/, ''))
-          ? undefined
-          : url.hostname,
-        lookup: (_hostname, options, callback) => {
-          // Node 20+ may request all DNS answers for its Happy Eyeballs
-          // connection strategy. Return the already-validated pinned address
-          // in the shape requested by either lookup callback overload.
-          if (options.all) {
-            callback(null, [{ address: pinnedAddress.address, family: pinnedAddress.family }]);
-            return;
-          }
-
-          callback(null, pinnedAddress.address, pinnedAddress.family);
-        },
-      },
-      response => {
-        const chunks: Buffer[] = [];
-        let total = 0;
-        response.on('data', (chunk: Buffer | string) => {
-          const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-          total += bytes.byteLength;
-          if (total > CIDDD_MAX_RESPONSE_BYTES) {
-            response.destroy(new Error('response too large'));
-            return;
-          }
-          chunks.push(bytes);
-        });
-        response.once('end', () => {
-          if (total <= CIDDD_MAX_RESPONSE_BYTES) {
-            resolve({
-              statusCode: response.statusCode ?? 0,
-              headers: response.headers,
-              body: Buffer.concat(chunks),
-            });
-          }
-        });
-        response.once('error', reject);
-      }
-    );
-    request.once('error', reject);
-    request.end();
-  });
-
-  try {
-    return await withTimeout(responsePromise, CIDDD_FETCH_TIMEOUT);
-  } catch (error) {
-    request?.destroy();
-    throw error;
-  }
-}
-
-function getResponseHeader(headers: IncomingHttpHeaders, name: string): string | undefined {
-  const value = headers[name];
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function readResponseBody(body: Buffer): string | null {
-  if (body.byteLength > CIDDD_MAX_RESPONSE_BYTES) return null;
-  return new TextDecoder().decode(body);
-}
-
-function hasJsonContentType(headers: IncomingHttpHeaders): boolean {
-  const contentType = getResponseHeader(headers, 'content-type')
-    ?.split(';', 1)[0]
-    .trim()
-    .toLowerCase();
-
-  return contentType === 'application/json' || Boolean(contentType?.endsWith('+json'));
-}
-
-function hasAcceptableContentLength(headers: IncomingHttpHeaders): boolean {
-  const contentLength = getResponseHeader(headers, 'content-length');
-  return (
-    !contentLength ||
-    !Number.isFinite(Number(contentLength)) ||
-    Number(contentLength) <= CIDDD_MAX_RESPONSE_BYTES
-  );
-}
-
-function getValidClientMetadata(
-  metadata: ClientMetadata,
-  clientId: string
-): ValidClientMetadata | null {
-  if (
-    metadata.client_id !== clientId ||
-    typeof metadata.client_name !== 'string' ||
-    metadata.client_name.trim().length === 0 ||
-    !Array.isArray(metadata.redirect_uris) ||
-    !metadata.redirect_uris.every(uri => typeof uri === 'string') ||
-    !areValidOAuthRedirectUris(metadata.redirect_uris)
-  ) {
-    return null;
-  }
-
-  return metadata as ValidClientMetadata;
-}
-
-function parseClientMetadataUrl(clientId: string): URL | null | undefined {
-  const looksLikeUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(clientId);
-  if (!looksLikeUrl) return undefined;
-
-  try {
-    const url = new URL(clientId);
-    if (url.protocol !== 'https:') return null;
-    if (url.username || url.password || url.port !== '' || !url.hostname) return null;
-    return url;
-  } catch {
-    return null;
-  }
-}
-
 async function resolveRegisteredClient(clientId: string): Promise<Client | null> {
   const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
   if (!client) return null;
@@ -533,24 +112,8 @@ function toOAuthClient(client: {
   } as Client;
 }
 
-async function resolveMetadataClient(
-  metadataUrl: URL,
-  clientId: string,
-  pinnedAddress: PinnedAddress
-): Promise<Client | null> {
-  const response = await fetchPinnedMetadata(metadataUrl, pinnedAddress);
-  if (response.statusCode < 200 || response.statusCode >= 300) return null;
-
-  if (!hasJsonContentType(response.headers) || !hasAcceptableContentLength(response.headers)) {
-    return null;
-  }
-
-  const body = readResponseBody(response.body);
-  if (body === null) return null;
-  const metadata = getValidClientMetadata(JSON.parse(body) as ClientMetadata, clientId);
-  if (!metadata) return null;
-
-  const metadataClientId = metadata.client_id ?? clientId;
+async function resolveMetadataClient(metadata: DynamicClientMetadata): Promise<Client | null> {
+  const metadataClientId = metadata.client_id;
   let client = await prisma.oAuthClient.findUnique({ where: { clientId: metadataClientId } });
   if (!client) {
     client = await prisma.oAuthClient.create({
@@ -576,32 +139,17 @@ async function resolveMetadataClient(
  * If client_id is a URL, fetch metadata from it and create a transient client record.
  */
 export async function resolveClientId(clientId: string): Promise<Client | null> {
-  // If not a URL, treat as a regular pre-registered client_id.
-  const metadataUrl = parseClientMetadataUrl(clientId);
-  if (metadataUrl === undefined) {
+  const metadata = await fetchDynamicClientMetadata(clientId);
+  if (metadata === undefined) {
     // The authorization endpoint identifies the client but does not receive
     // token-endpoint credentials. Secret validation happens when exchanging
     // the authorization code, so preserve lookup here without authenticating
     // the client as a token endpoint caller.
     return resolveRegisteredClient(clientId);
   }
-  if (metadataUrl === null) return null;
+  if (metadata === null) return null;
 
-  let pinnedAddress: PinnedAddress;
-  try {
-    const resolvedAddress = await resolveSafeAddress(metadataUrl.hostname);
-    if (!resolvedAddress) return null;
-    pinnedAddress = resolvedAddress;
-  } catch {
-    return null;
-  }
-
-  // CIDDD: Fetch metadata from the URL.
-  try {
-    return await resolveMetadataClient(metadataUrl, clientId, pinnedAddress);
-  } catch {
-    return null;
-  }
+  return resolveMetadataClient(metadata);
 }
 
 export async function validateClient(
@@ -630,19 +178,6 @@ export async function validateClient(
       client.tokenEndpointAuthMethod as Client['token_endpoint_auth_method'],
     client_name: client.clientName,
   } as Client;
-}
-
-export async function validateRedirectUri(clientId: string, redirectUri: string): Promise<boolean> {
-  const client = await prisma.oAuthClient.findUnique({ where: { clientId } });
-  if (!client) return false;
-
-  return client.redirectUris.some(uri => {
-    if (uri.includes('*')) {
-      const pattern = uri.replace(/\*/g, '.*');
-      return new RegExp(`^${pattern}$`).test(redirectUri);
-    }
-    return uri === redirectUri;
-  });
 }
 
 export async function createAuthorizationCode(
@@ -733,8 +268,7 @@ export async function createAccessToken(
   await prisma.oAuthAccessToken.create({
     data: {
       // Access tokens are intentionally opaque. The DB hash is the source of
-      // truth, so tokens remain valid when requests land on another Vercel
-      // function instance (where in-memory signing keys do not exist).
+      // truth, so tokens remain valid across independent application instances.
       tokenHash: hashToken(token),
       clientId,
       userId,
@@ -1009,33 +543,6 @@ export async function ensureMcpConnection(
   ]);
 }
 
-export async function introspectToken(
-  token: string,
-  clientId: string,
-  resource: string
-): Promise<IntrospectionResponse> {
-  const validation = await validateAccessToken(token);
-  if (!validation) {
-    return { active: false };
-  }
-
-  if (validation.clientId !== clientId) {
-    return { active: false };
-  }
-
-  return {
-    active: true,
-    scope: validation.scope,
-    client_id: validation.clientId,
-    username: validation.userId,
-    token_type: 'Bearer',
-    exp: validation.exp,
-    iat: validation.iat,
-    sub: validation.userId,
-    aud: resource,
-  };
-}
-
 export async function revokeToken(
   token: string,
   tokenTypeHint?: string,
@@ -1114,8 +621,4 @@ export async function getWellKnownProtectedResource(
     scopes_supported: [...OAuthScopes],
     bearer_methods_supported: ['header'],
   };
-}
-
-export async function getJWKSKeys(): Promise<JWKS> {
-  return getJWKS();
 }

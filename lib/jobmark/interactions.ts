@@ -67,22 +67,6 @@ export async function listInteractions(
   return { interactions: interactions.map(toInteractionDTO), nextCursor };
 }
 
-export async function getInteraction(
-  actor: JobmarkActor,
-  interactionId: string
-): Promise<InteractionDTO> {
-  assertActor(actor);
-
-  const interaction = await prisma.interactionLog.findFirst({
-    where: { id: interactionId, userId: actor.userId },
-    include: { contact: { select: { id: true, fullName: true } } },
-  });
-
-  if (!interaction) throw new NotFoundError('Interaction');
-
-  return toInteractionDTO(interaction);
-}
-
 export async function createInteraction(
   actor: JobmarkActor,
   input: InteractionInput

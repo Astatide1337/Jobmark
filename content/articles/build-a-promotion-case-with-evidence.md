@@ -18,8 +18,6 @@ ctaVariant: default
 bestFor: promotion review
 primaryAction: Build review draft
 primaryHref: /reports?tab=new
-secondaryAction: Open dashboard
-secondaryHref: /dashboard
 ---
 
 Have you sat down to write a self-review and thought, "I did good work, but I cannot remember the details"?

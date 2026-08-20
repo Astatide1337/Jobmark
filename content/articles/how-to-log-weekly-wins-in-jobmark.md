@@ -18,8 +18,6 @@ ctaVariant: checklist
 bestFor: weekly updates
 primaryAction: Open dashboard
 primaryHref: /dashboard
-secondaryAction: Build weekly review draft
-secondaryHref: /reports?tab=new
 ---
 
 Here is the hard part: people who do good work can look average on paper.

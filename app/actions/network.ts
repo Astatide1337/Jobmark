@@ -321,46 +321,6 @@ export async function createInteraction(
   }
 }
 
-export async function updateInteraction(
-  interactionId: string,
-  data: {
-    occurredAt?: Date;
-    channel?: string;
-    summary?: string;
-    nextStep?: string | null;
-    followUpDate?: Date | null;
-    rawNotes?: string | null;
-  }
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Sign in to edit this conversation.' };
-
-  try {
-    const existing = await prisma.interactionLog.findUnique({
-      where: { id: interactionId },
-    });
-
-    if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: 'That conversation is no longer available.' };
-    }
-
-    await prisma.interactionLog.update({
-      where: { id: interactionId },
-      data: {
-        ...data,
-        occurredAt: data.occurredAt ? parseUTCDate(data.occurredAt) || data.occurredAt : undefined,
-        followUpDate: data.followUpDate ? parseUTCDate(data.followUpDate) : undefined,
-      },
-    });
-
-    revalidatePath('/network');
-    return { success: true, message: 'Conversation updated.' };
-  } catch (error) {
-    console.error('Failed to update interaction:', error);
-    return { success: false, message: 'The conversation was not updated. Try again.' };
-  }
-}
-
 export async function deleteInteraction(interactionId: string) {
   const session = await auth();
   if (!session?.user?.id)

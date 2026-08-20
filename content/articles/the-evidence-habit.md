@@ -3,10 +3,10 @@ title: The note-taking habit
 description: Why writing down your work matters and how to make it part of your week.
 slug: the-evidence-habit
 publishedAt: 2026-03-07
-updatedAt: 2026-03-07
+updatedAt: 2026-08-20
 category: career-development
 tags:
-  - documentation
+  - evidence
   - notes
   - reviews
 author: Jobmark

@@ -76,19 +76,6 @@ export async function listOutreach(
   return { outreach: items.map(toOutreachPreviewDTO), nextCursor };
 }
 
-export async function getOutreach(actor: JobmarkActor, outreachId: string): Promise<OutreachDTO> {
-  assertActor(actor);
-
-  const outreach = await prisma.outreachDraft.findFirst({
-    where: { id: outreachId, userId: actor.userId },
-    include: { contact: { select: { id: true, fullName: true } } },
-  });
-
-  if (!outreach) throw new NotFoundError('Message draft');
-
-  return toOutreachDTO(outreach);
-}
-
 export async function generateOutreach(
   actor: JobmarkActor,
   input: OutreachGenerateInput
