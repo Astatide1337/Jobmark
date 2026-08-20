@@ -285,7 +285,7 @@ export const themePresets: ThemePreset[] = [
   },
 ];
 
-export const themeSurfacePalettes: Record<string, ThemeSurfacePalette> = {
+const themeSurfacePalettes: Record<string, ThemeSurfacePalette> = {
   cafe: {
     dark: darkSurface({}),
     light: lightSurface({}),
@@ -551,36 +551,3 @@ export function getThemeSurfacePalette(id: string): ThemeSurfacePalette {
 export function getThemePreset(id: string): ThemePreset | undefined {
   return themePresets.find(t => t.id === id);
 }
-
-export const dashboardLayouts = [
-  { id: 'compact', name: 'Compact', description: 'Dense information, less whitespace' },
-  { id: 'standard', name: 'Standard', description: 'Balanced layout' },
-  { id: 'focused', name: 'Focused', description: 'Minimal, only essentials' },
-] as const;
-
-export type DashboardLayout = (typeof dashboardLayouts)[number]['id'];
-
-export const reportTones = [
-  {
-    id: 'professional',
-    name: 'Formal',
-    description: 'Clear and structured',
-  },
-  { id: 'casual', name: 'Casual', description: 'Friendly and quick to read' },
-  { id: 'bullet-points', name: 'Bullet points', description: 'Just the facts in a short list' },
-] as const;
-
-export type ReportTone = (typeof reportTones)[number]['id'];
-
-// Unused exports removed
-
-export const dateFormats = [
-  { id: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-  { id: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
-  { id: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-] as const;
-
-export const weekStartOptions = [
-  { id: 0, name: 'Sunday' },
-  { id: 1, name: 'Monday' },
-] as const;

@@ -7,7 +7,7 @@
  * - Turbopack: Enabled in dev mode via `package.json` for ~10x faster HMR.
  * - Server Components: Utilizes the App Router by default for zero-bundle-size
  *   backend logic.
- * - Vercel: Optimized for serverless deployment with automatic edge caching.
+ * - Runtime: Runs in the Node.js container used by the GitOps deployments.
  */
 import type { NextConfig } from 'next';
 

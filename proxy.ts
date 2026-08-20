@@ -7,7 +7,7 @@ export async function proxy(request: NextRequest) {
 
   // The internal chat product was retired. Return a real 404 instead of
   // redirecting the stale path to the landing page, which makes old links
-  // look valid and violates the route contract in SPEC.md.
+  // look valid.
   if (pathname === '/chat' || pathname.startsWith('/chat/')) {
     return new NextResponse('Not Found', { status: 404 });
   }

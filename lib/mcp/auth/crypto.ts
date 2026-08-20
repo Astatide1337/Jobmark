@@ -36,7 +36,3 @@ export function generateAuthCode(): string {
 export function generateId(): string {
   return randomBytes(16).toString('hex');
 }
-
-export function generateCodeChallenge(verifier: string): string {
-  return hashPKCE(verifier);
-}

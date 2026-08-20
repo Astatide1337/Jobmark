@@ -251,23 +251,3 @@ export async function getRecentProjects(limit = 3) {
     select: { id: true, name: true, color: true },
   });
 }
-
-// Get recent reports for default view
-export async function getRecentReports(limit = 3) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return [];
-  }
-
-  const lockedIds = await getLockedProjectIds(session.user.id);
-  const reports = await prisma.report.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    select: { id: true, title: true, metadata: true },
-  });
-  return filterLockedReports(reports, lockedIds)
-    .slice(0, limit)
-    .map(report => ({ id: report.id, title: report.title }));
-}

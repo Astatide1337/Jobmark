@@ -1,9 +1,9 @@
 ---
-title: Turn advice into action
-description: A practical way to turn career advice into weekly actions and clear results.
+title: Turn career advice into action
+description: A practical way to turn advice from a mentor, manager, peer, or assistant into weekly actions and clear results.
 slug: turn-chat-mentor-advice-into-action
 publishedAt: 2026-03-05
-updatedAt: 2026-03-07
+updatedAt: 2026-08-20
 category: help
 tags:
   - mentor
@@ -16,21 +16,19 @@ difficulty: intermediate
 series: From advice to action
 ctaVariant: default
 bestFor: turning advice into action
-primaryAction: Open Connect AI
-primaryHref: /settings/connections
-secondaryAction: Add recent note
-secondaryHref: /dashboard
+primaryAction: Open dashboard
+primaryHref: /dashboard
 ---
 
-Most mentor conversations feel great in the moment.
+Advice conversations can feel useful in the moment.
 
-Then Monday hits. Priorities shift. The advice becomes a screenshot you never open again.
+Then Monday hits. Priorities shift. The advice becomes a note you never open again.
 
-Treat mentor advice as something to use, not just something to read.
+Treat advice as something to use, not just something to read.
 
 ## Choose one clear goal
 
-After each chat, write one goal a teammate could understand without more explanation.
+After each conversation, write one goal a teammate could understand without more explanation.
 
 - Vague: "Get better at communication."
 - Clear: "Cut confusion between teams by publishing a weekly update with decisions, risks, and questions."

@@ -17,7 +17,7 @@ export interface ConnectedMcpProvider {
   name: string;
 }
 
-export const MCP_PROVIDER_URLS: Record<string, string> = {
+const MCP_PROVIDER_URLS: Record<string, string> = {
   claude: 'https://claude.ai/new',
   chatgpt: 'https://chatgpt.com/',
   gemini: 'https://gemini.google.com/app',
@@ -54,7 +54,7 @@ interface McpDraftActionsProps {
   providerAction?: string;
 }
 
-export function ProviderIcon({ providerKey }: { providerKey: string }) {
+function ProviderIcon({ providerKey }: { providerKey: string }) {
   if (providerKey === 'claude') return <Claude.Color size={18} />;
   if (providerKey === 'chatgpt') {
     return <OpenAI aria-hidden="true" className="text-foreground" size={18} />;

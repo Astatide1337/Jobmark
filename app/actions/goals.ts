@@ -74,49 +74,6 @@ export async function createGoal(data: { title: string; deadline?: Date | null; 
   }
 }
 
-export async function updateGoal(
-  id: string,
-  data: {
-    title?: string;
-    deadline?: Date | null;
-    why?: string;
-  }
-) {
-  const session = await auth();
-  if (!session?.user?.id) return { success: false, message: 'Sign in to edit this goal.' };
-  const parsed = goalInputSchema.partial().safeParse(data);
-  if (!parsed.success) return { success: false, message: 'Check the goal and try again.' };
-
-  try {
-    const existing = await prisma.goal.findUnique({
-      where: { id },
-    });
-
-    if (!existing || existing.userId !== session.user.id) {
-      return { success: false, message: 'That goal is no longer available.' };
-    }
-
-    const goal = await prisma.goal.update({
-      where: { id },
-      data: parsed.data,
-    });
-
-    const goalData: GoalData = {
-      ...goal,
-      deadline: goal.deadline?.toISOString() ?? null,
-      createdAt: goal.createdAt.toISOString(),
-      updatedAt: goal.updatedAt.toISOString(),
-    };
-
-    revalidatePath('/dashboard');
-    revalidatePath('/settings');
-    return { success: true, goal: goalData };
-  } catch (error) {
-    console.error('Failed to update goal:', error);
-    return { success: false, message: 'The goal was not updated. Try again.' };
-  }
-}
-
 export async function deleteGoal(id: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Sign in to delete this goal.' };

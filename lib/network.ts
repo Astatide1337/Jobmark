@@ -111,23 +111,6 @@ function getUTCYMD(date: Date | string): string {
 }
 
 /**
- * Get a relative time string (e.g., "2 days ago", "in 3 days")
- */
-export function getRelativeTime(date: Date | string | null | undefined): string {
-  if (!date) return '';
-  const now = new Date();
-  const d = new Date(date);
-  const diffMs = d.getTime() - now.getTime();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'tomorrow';
-  if (diffDays === -1) return 'yesterday';
-  if (diffDays > 0) return `in ${diffDays} days`;
-  return `${Math.abs(diffDays)} days ago`;
-}
-
-/**
  * Get a relative day label for date-only fields (e.g., follow-up dates).
  * Uses UTC date parts for the stored value (to preserve intended calendar day)
  * and compares against the user's local "today".

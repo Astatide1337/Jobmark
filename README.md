@@ -51,11 +51,14 @@ Copy `.env.example` to `.env.local` and fill in the required values. Never commi
 ```bash
 cp .env.example .env.local
 npm ci
-npx prisma migrate deploy
+npm run db:migrate:deploy
 npm run dev
 ```
 
-Open http://localhost:3000. For schema changes, edit `prisma/schema.prisma`, create a migration with `npx prisma migrate dev --name <description>`, and apply committed migrations with `npx prisma migrate deploy`.
+Open http://localhost:3000. Confirm `DATABASE_URL` points to the development database before any
+Prisma command. For schema changes, edit `prisma/schema.prisma`, create a migration with
+`npm run db:migrate:dev -- --name <description>`, and apply committed migrations with
+`npm run db:migrate:deploy`.
 
 ## Verification and production build
 
@@ -115,32 +118,14 @@ Neon endpoint values, and preview must never point at the production branch.
 }
 ```
 
-### Available Tools (50+)
+### Available tools
 
-**Projects**: `projects_list`, `projects_get`, `projects_create`, `projects_update`, `projects_set_archived`, `projects_delete`
+The authorized `tools/list` response is the exact tool catalog. Definitions live
+in `lib/mcp/tools/` and cover notes, projects, goals, review drafts, contacts,
+conversations, outreach drafts, Focus, settings, and private projects.
 
-**Activities**: `activities_list`, `activities_get`, `activities_create`, `activities_update`, `activities_delete`
-
-**Goals**: `goals_list`, `goals_get`, `goals_create`, `goals_update`, `goals_delete`
-
-**Reports**: `reports_list`, `reports_get`, `reports_generate`, `reports_delete`, `reports_regenerate`, `reports_improve_text`
-
-**Search & Insights**: `search_global`, `dashboard_stats`, `insights_get`
-
-**Contacts**: `contacts_list`, `contacts_get`, `contacts_create`, `contacts_update`, `contacts_delete`
-
-**Interactions**: `interactions_list`, `interactions_create`, `interactions_update`, `interactions_delete`, `network_stats`
-
-**Outreach**: `outreach_list`, `outreach_generate`, `outreach_create`, `outreach_update`, `outreach_delete`, `outreach_improve_text`
-
-**Focus & Writing**: `focus_get`, `focus_save`, `focus_reset`, `focus_log_decompression`, `dictation_polish`
-
-**Settings**: `settings_get`, `settings_update`
-
-**Vault**: `vault_status`, `vault_list_projects`, `vault_begin_setup`, `vault_begin_change_password`, `vault_begin_unlock`, `vault_lock`, `vault_set_project_locked`
-
-**Account data**: export and account deletion are available from Settings → Data. The MCP
-connection can clear activities after an explicit confirmation: `account_clear_activities`.
+Export and account deletion remain browser-only Settings → Data flows. The MCP
+connection can clear notes only after explicit confirmation.
 
 ## Assistant handoffs and privacy
 

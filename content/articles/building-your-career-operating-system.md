@@ -3,7 +3,7 @@ title: A simple career routine
 description: Weekly and monthly routines to help you keep track of your work.
 slug: building-your-career-operating-system
 publishedAt: 2026-03-07
-updatedAt: 2026-03-07
+updatedAt: 2026-08-20
 category: career-development
 tags:
   - habits
@@ -29,7 +29,7 @@ A simple routine helps you remember that work and decide what to do next.
 - Share one update or demo
 - Spend 15 minutes asking what worked and what needs to change
 
-This takes about 30 minutes total if you do it consistently.
+Aim for about 30 minutes total, adjusting the routine to fit your week.
 
 The point is to avoid asking, "What did I do this month?"
 
@@ -43,7 +43,7 @@ The point is to avoid asking, "What did I do this month?"
 - Pick one skill to practice. Not a huge project. One clear action.
 - Stay in touch with one person outside your team.
 
-A monthly review takes an hour. That's it.
+Start with an hour for the monthly review, then adjust as needed.
 
 ## Each quarter
 

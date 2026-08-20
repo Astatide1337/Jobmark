@@ -163,21 +163,6 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
   }));
 }
 
-export async function getActivityCount() {
-  const targetUserId = await requireUserId();
-
-  const lockedIds = await getLockedProjectIds(targetUserId);
-
-  return prisma.activity.count({
-    where: {
-      userId: targetUserId,
-      ...(lockedIds.length > 0 && {
-        OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
-      }),
-    },
-  });
-}
-
 export async function deleteActivity(activityId: string) {
   const session = await auth();
 

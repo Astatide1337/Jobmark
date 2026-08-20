@@ -3,7 +3,7 @@ title: Quarterly career reviews
 description: A simple self-review you can do on your own schedule.
 slug: quarterly-career-audits
 publishedAt: 2026-03-07
-updatedAt: 2026-03-07
+updatedAt: 2026-08-20
 category: career-development
 tags:
   - review
@@ -31,7 +31,7 @@ It also gives you notes for later conversations.
 
 ## When to do it
 
-End of every quarter. March, June, September, December.
+At the end of your organization's quarter, or every three months if you set your own schedule.
 
 Block 90 minutes. Go somewhere quiet. No interruptions.
 
@@ -98,5 +98,3 @@ The review should lead to a plan.
 Do this every quarter. Same time. Same process.
 
 Over time, you will have notes about your work and progress. You will see patterns.
-
-Over time, you will see patterns in your work.

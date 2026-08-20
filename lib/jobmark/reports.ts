@@ -17,24 +17,11 @@ import { z } from 'zod';
 import { buildReviewBrief, deterministicRewrite } from '@/lib/deterministic-drafts';
 import { getActivityDisplayContent } from './activity-copy';
 
-const reportCreateSchema = z.object({
-  projectId: z.string().optional().nullable(),
-  title: z.string().min(1).max(200),
-  content: z.string(),
-});
-
-const reportUpdateSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  content: z.string().optional(),
-});
-
 const reportImproveSchema = z.object({
   reportId: z.string(),
   instructions: z.string().optional(),
 });
 
-export type ReportInput = z.infer<typeof reportCreateSchema>;
-export type ReportUpdateInput = z.infer<typeof reportUpdateSchema>;
 export type ReportImproveInput = z.infer<typeof reportImproveSchema>;
 
 export type ReportDTO = {
@@ -128,24 +115,6 @@ export async function getReport(actor: JobmarkActor, reportId: string): Promise<
   return toReportDTO(report);
 }
 
-export async function checkActivityCount(actor: JobmarkActor): Promise<{
-  eligible: boolean;
-  count: number;
-  minimum: number;
-}> {
-  assertActor(actor);
-
-  const lockedIds = await getLockedProjectIds(actor.userId);
-  const lockedFilter =
-    lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
-
-  const count = await prisma.activity.count({
-    where: { userId: actor.userId, ...lockedFilter },
-  });
-
-  return { eligible: count >= 3, count, minimum: 3 };
-}
-
 export async function generateReport(
   actor: JobmarkActor,
   projectId: string | null,
@@ -202,65 +171,6 @@ export async function regenerateReport(actor: JobmarkActor, reportId: string): P
   const updated = await prisma.report.update({
     where: { id: report.id },
     data: { content, metadata: { generated: true, deterministic: true } },
-    include: { project: { select: { id: true, name: true, color: true } } },
-  });
-
-  return toReportDTO(updated);
-}
-
-export async function createReport(actor: JobmarkActor, input: ReportInput): Promise<ReportDTO> {
-  assertActor(actor);
-
-  const result = reportCreateSchema.safeParse(input);
-  if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
-  }
-
-  if (result.data.projectId) {
-    const project = await prisma.project.findFirst({
-      where: { id: result.data.projectId, userId: actor.userId },
-      select: { locked: true },
-    });
-    if (!project) throw new NotFoundError('Project');
-    if (project.locked && !actor.vaultUnlocked) throw new VaultLockedError();
-  }
-
-  const report = await prisma.report.create({
-    data: {
-      userId: actor.userId,
-      projectId: result.data.projectId || null,
-      title: result.data.title,
-      content: result.data.content,
-    },
-    include: { project: { select: { id: true, name: true, color: true } } },
-  });
-
-  return toReportDTO(report);
-}
-
-export async function updateReport(
-  actor: JobmarkActor,
-  reportId: string,
-  input: ReportUpdateInput
-): Promise<ReportDTO> {
-  assertActor(actor);
-
-  const result = reportUpdateSchema.safeParse(input);
-  if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
-  }
-
-  const report = await prisma.report.findFirst({
-    where: { id: reportId, userId: actor.userId },
-    include: { project: { select: { locked: true } } },
-  });
-
-  if (!report) throw new NotFoundError('Review draft');
-  if (report.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
-
-  const updated = await prisma.report.update({
-    where: { id: reportId },
-    data: result.data,
     include: { project: { select: { id: true, name: true, color: true } } },
   });
 
