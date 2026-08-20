@@ -55,7 +55,10 @@ npm run db:migrate:deploy
 npm run dev
 ```
 
-Open http://localhost:3000. For schema changes, edit `prisma/schema.prisma`, create a migration with `npm run db:migrate:dev -- --name <description>`, and apply committed migrations with `npm run db:migrate:deploy`.
+Open http://localhost:3000. Confirm `DATABASE_URL` points to the development database before any
+Prisma command. For schema changes, edit `prisma/schema.prisma`, create a migration with
+`npm run db:migrate:dev -- --name <description>`, and apply committed migrations with
+`npm run db:migrate:deploy`.
 
 ## Verification and production build
 

@@ -66,8 +66,9 @@ contacts, Focus sessions, and connections to external AI assistants.
 
 ## Database and operations
 
-- Use the development PostgreSQL database from `.env.local`. Verify `DATABASE_URL` before schema
-  work; never point Prisma at production. Use the guarded scripts `npm run db:push`,
+- Use the development PostgreSQL database from `.env.local`. Verify the effective `DATABASE_URL`
+  yourself before schema work; the command launcher only loads local environment files and does not
+  validate the target. Never point local Prisma commands at production. Use `npm run db:push`,
   `npm run db:migrate:dev`, `npm run db:migrate:deploy`, and `npm run db:migrate:resolve`.
 - Commit migrations, never edit an applied migration, and validate both web and MCP paths that use a
   changed schema. `prisma generate` is safe without a database; `db:studio` requires a disposable
