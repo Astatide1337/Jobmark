@@ -4,25 +4,26 @@ import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Check, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { McpAuthCard, McpAuthShell } from '@/components/mcp/mcp-auth-shell';
 
 const SCOPE_LABELS: Record<string, { label: string; description: string }> = {
   'jobmark:read': {
-    label: 'Read',
-    description: 'View your activities, projects, goals, and contacts',
+    label: 'View',
+    description: 'View your notes, projects, goals, and contacts',
   },
   'jobmark:write': {
-    label: 'Write',
-    description: 'Create and update your activities, projects, goals, and contacts',
+    label: 'Make changes',
+    description: 'Create and update your notes, projects, goals, and contacts',
   },
   'jobmark:destructive': {
     label: 'Delete',
-    description: 'Delete activities, projects, goals, and contacts',
+    description: 'Delete notes, projects, goals, and contacts',
   },
   offline_access: {
-    label: 'Offline access',
-    description: 'Stay connected between sessions',
+    label: 'Stay connected',
+    description: 'Keep this connection between sessions.',
   },
 };
 
@@ -31,6 +32,7 @@ function ConsentForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const clientId = searchParams.get('client_id') ?? '';
+  const resource = searchParams.get('resource') ?? '';
   const redirectUri = searchParams.get('redirect_uri') ?? '';
   const scope = searchParams.get('scope') ?? '';
   const state = searchParams.get('state') ?? '';
@@ -55,6 +57,7 @@ function ConsentForm() {
 
     const fields: Record<string, string> = {
       client_id: clientId,
+      resource,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: selectedScopes.join(' '),
@@ -78,23 +81,22 @@ function ConsentForm() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center p-4">
-      <Card className="border-border/50 bg-card/60 w-full max-w-lg overflow-hidden rounded-3xl shadow-sm">
+    <McpAuthShell>
+      <McpAuthCard>
         <CardHeader className="relative p-8 text-center">
-          <div className="border-primary/20 bg-primary/10 absolute -top-16 -right-16 h-40 w-40 rounded-full border blur-3xl" />
           <div className="bg-primary/10 text-primary relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
             <Shield className="h-7 w-7" />
           </div>
           <CardTitle className="relative text-2xl tracking-tight">
-            Connect this app to Jobmark
+            Connect this assistant to Jobmark
           </CardTitle>
           <CardDescription className="relative mx-auto mt-3 max-w-sm leading-relaxed">
-            Choose what this app can access. You can disconnect it from Jobmark at any time.
+            Choose what this assistant can access. You can disconnect it from Jobmark at any time.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-6 pt-0">
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Choose permissions</h3>
+            <h3 className="text-sm font-medium">Choose what this assistant can do</h3>
             <ul className="space-y-2">
               {scopes.map(s => {
                 const info = SCOPE_LABELS[s];
@@ -106,7 +108,7 @@ function ConsentForm() {
                         id={`scope-${s.replace(/[^a-z0-9]+/gi, '-')}`}
                         checked={isSelected}
                         onCheckedChange={checked => toggleScope(s, checked === true)}
-                        aria-label={`${isSelected ? 'Remove' : 'Allow'} ${info?.label ?? s} permission`}
+                        aria-label={`${isSelected ? 'Remove' : 'Allow'} access to ${info?.label ?? s}`}
                         className="mt-0.5"
                       />
                       <label
@@ -145,12 +147,12 @@ function ConsentForm() {
               type="button"
             >
               <Check className="mr-2 h-4 w-4" />
-              Connect app
+              Allow access
             </Button>
           </div>
         </CardContent>
-      </Card>
-    </div>
+      </McpAuthCard>
+    </McpAuthShell>
   );
 }
 
@@ -158,9 +160,13 @@ export default function ConsentPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-background flex min-h-screen items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+        <McpAuthShell>
+          <McpAuthCard>
+            <CardContent className="text-muted-foreground p-8 text-center text-sm">
+              Loading...
+            </CardContent>
+          </McpAuthCard>
+        </McpAuthShell>
       }
     >
       <ConsentForm />

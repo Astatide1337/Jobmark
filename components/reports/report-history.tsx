@@ -11,7 +11,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   Trash2,
@@ -77,16 +77,9 @@ export function ReportHistory({
   const [editContent, setEditContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync internal state if initialReports changes (during render phase to avoid cascading effects)
-  const [prevInitialReports, setPrevInitialReports] = useState(initialReports);
-  if (initialReports !== prevInitialReports) {
-    setReports(initialReports);
-    setPrevInitialReports(initialReports);
-  }
-
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // prevent expand toggle
-    if (!confirm('Are you sure you want to delete this report?')) return;
+    if (!confirm('Delete this review draft?')) return;
 
     setIsDeleting(id);
     try {
@@ -97,7 +90,7 @@ export function ReportHistory({
       }
       setReports(reports.filter(r => r.id !== id));
     } catch (error) {
-      console.error('Failed to delete report:', error);
+      console.error('Failed to delete draft:', error);
     } finally {
       setIsDeleting(null);
     }
@@ -129,12 +122,12 @@ export function ReportHistory({
 
       // Update local state
       setReports(reports.map(r => (r.id === reportId ? { ...r, content: editContent } : r)));
-      toast.success('Draft saved');
+      toast.success('Draft saved.');
       setEditingId(null);
       setEditContent('');
     } catch (error) {
-      console.error('Failed to save report:', error);
-      toast.error('Failed to save draft');
+      console.error('Failed to save draft:', error);
+      toast.error('Could not save the draft.');
     } finally {
       setIsSaving(false);
     }
@@ -150,14 +143,14 @@ export function ReportHistory({
     try {
       const copied = await copyPromise;
       if (!copied) throw new Error('clipboard_unavailable');
-      toast.success(`${provider.name} instructions copied`, {
+      toast.success(`${provider.name} instructions copied.`, {
         description:
           launchPrompt && providerSupportsPromptUrl(provider.key)
             ? `Open ${provider.name} to continue your review.`
             : `Open ${provider.name} and paste the instructions to continue.`,
       });
     } catch {
-      toast.error('Could not copy the drafting instructions');
+      toast.error('Could not copy the instructions.');
     }
   };
 
@@ -165,12 +158,12 @@ export function ReportHistory({
     return (
       <div className="text-muted-foreground py-12 text-center">
         <FileText className="mx-auto mb-4 h-12 w-12 opacity-20" />
-        <p className="text-foreground text-sm font-medium">No saved drafts yet.</p>
+        <p className="text-foreground text-sm font-medium">No review drafts yet.</p>
         <p className="text-muted-foreground mt-1 text-sm">
-          Generate a review draft to turn your work record into a clear narrative.
+          Make a review draft when you need to explain your work.
         </p>
         <Button variant="link" size="sm" asChild className="mt-3">
-          <Link href="/reports?tab=new">Build your first review draft</Link>
+          <Link href="/reports?tab=new">Make your first review draft</Link>
         </Button>
       </div>
     );
@@ -181,7 +174,7 @@ export function ReportHistory({
       {reports.map(report => (
         <div
           key={report.id}
-          className="bg-card hover:border-primary/50 overflow-hidden rounded-xl border transition-all"
+          className="bg-card hover:border-primary/50 overflow-hidden rounded-xl border transition-[border-color]"
         >
           {/* Header / Summary */}
           <div className="flex items-center justify-between gap-3 p-4">
@@ -201,7 +194,7 @@ export function ReportHistory({
                   {formatReportDate(report.createdAt, displayTimeZone)}
                 </p>
                 <p className="text-muted-foreground/80 mt-1 text-xs">
-                  Reopen, refine, export, or reuse in your next review cycle.
+                  Open it, edit it, export it, or use it for your next review.
                 </p>
               </div>
             </button>
@@ -301,15 +294,15 @@ export function ReportHistory({
                         <DropdownMenuItem
                           onClick={async () => {
                             try {
-                              toast.info('Generating PDF...');
+                              toast.info('Creating the PDF...');
                               const contentToExport =
                                 editingId === report.id ? editContent : report.content;
                               await exportToPdf(contentToExport, {
                                 filename: `${report.title}.pdf`,
                               });
-                              toast.success('PDF Downloaded');
+                              toast.success('PDF downloaded.');
                             } catch (e) {
-                              toast.error('Failed to generate PDF');
+                              toast.error('Could not create the PDF.');
                             }
                           }}
                           className="cursor-pointer"
@@ -319,18 +312,18 @@ export function ReportHistory({
                         <DropdownMenuItem
                           onClick={() => {
                             try {
-                              toast.info('Generating Word Doc...');
+                              toast.info('Creating the Word document...');
                               const contentToExport =
                                 editingId === report.id ? editContent : report.content;
                               exportToWord(contentToExport, { filename: `${report.title}.doc` });
-                              toast.success('Word Doc Downloaded');
+                              toast.success('Word document downloaded.');
                             } catch (e) {
-                              toast.error('Failed to generate Word Doc');
+                              toast.error('Could not create the Word document.');
                             }
                           }}
                           className="cursor-pointer"
                         >
-                          <FileText className="mr-2 h-4 w-4" /> Word
+                          <FileText className="mr-2 h-4 w-4" /> Word document
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -342,11 +335,11 @@ export function ReportHistory({
                         const contentToCopy =
                           editingId === report.id ? editContent : report.content;
                         const copied = await copyTextToClipboard(contentToCopy);
-                        if (copied) toast.success('Copied to clipboard');
-                        else toast.error('Could not copy the report');
+                        if (copied) toast.success('Draft copied.');
+                        else toast.error('Could not copy the draft.');
                       }}
                     >
-                      Copy
+                      Copy draft
                     </Button>
                     {editingId === report.id && (
                       <Button
@@ -356,7 +349,7 @@ export function ReportHistory({
                         className="bg-primary text-primary-foreground"
                       >
                         <Save className="mr-2 h-4 w-4" />
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                        {isSaving ? 'Saving...' : 'Save changes'}
                       </Button>
                     )}
                   </div>

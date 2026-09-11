@@ -44,12 +44,11 @@ describe('cross-tenant relationship protection', () => {
 
     const result = await createActivity({ success: false, message: '' }, formData);
 
-    expect(result).toEqual({ success: false, message: 'The selected project is not available' });
+    expect(result).toEqual({ success: false, message: 'That project is not available.' });
     expect(tx.project.findFirst).toHaveBeenCalledWith({
       where: { id: 'user-b-project', userId: 'user-a' },
       select: { locked: true },
     });
     expect(tx.activity.create).not.toHaveBeenCalled();
   });
-
 });

@@ -14,16 +14,18 @@ afterEach(() => {
 
 describe('safeAuthRedirect', () => {
   it('accepts relative paths', () => {
-    expect(safeAuthRedirect('/chat?connect=claude')).toBe('/chat?connect=claude');
+    expect(safeAuthRedirect('/settings/connections?connect=claude')).toBe(
+      '/settings/connections?connect=claude'
+    );
   });
 
   it('accepts an absolute URL on a configured Jobmark origin', () => {
     process.env.NEXTAUTH_URL = 'https://jobmark.example.com';
     process.env.NEXT_PUBLIC_SITE_URL = 'https://www.jobmark.example.com';
 
-    expect(safeAuthRedirect('https://jobmark.example.com/chat?connect=claude')).toBe(
-      'https://jobmark.example.com/chat?connect=claude'
-    );
+    expect(
+      safeAuthRedirect('https://jobmark.example.com/settings/connections?connect=claude')
+    ).toBe('https://jobmark.example.com/settings/connections?connect=claude');
     expect(safeAuthRedirect('https://www.jobmark.example.com/dashboard')).toBe(
       'https://www.jobmark.example.com/dashboard'
     );

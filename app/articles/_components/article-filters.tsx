@@ -145,8 +145,8 @@ export function SortAndSearchBar({ topic, query, sort }: SortAndSearchBarProps) 
           type="search"
           value={queryValue}
           onChange={event => setQueryValue(event.target.value)}
-          placeholder="Search stories"
-          aria-label="Search stories"
+          placeholder="Search guides"
+          aria-label="Search guides"
           className="h-10 w-full pl-9"
         />
       </div>

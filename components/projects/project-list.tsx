@@ -15,25 +15,10 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  archiveProject,
-  createProject,
-  unarchiveProject,
-  updateProject,
-} from '@/app/actions/projects';
+import { archiveProject, unarchiveProject } from '@/app/actions/projects';
 import { moveProjectToVault, moveProjectFromVault, lockVault } from '@/app/actions/project-lock';
-import { projectColors } from '@/lib/constants';
 import { VaultPasswordDialog } from './vault-password-dialog';
+import { ProjectDialog } from './project-dialog';
 import {
   FolderPlus,
   Plus,
@@ -200,10 +185,10 @@ export function ProjectList({
   const tabsNav = (
     <Tabs value={initialFilter} onValueChange={handleTabChange} className="w-full sm:w-auto">
       <TabsList>
-        <TabsTrigger value="active">Active Projects</TabsTrigger>
+        <TabsTrigger value="active">Active projects</TabsTrigger>
         <TabsTrigger value="archived">Archived</TabsTrigger>
         <TabsTrigger value="locked" className="gap-1.5">
-          <Lock className="h-3 w-3" /> Locked
+          <Lock className="h-3 w-3" /> Private
         </TabsTrigger>
       </TabsList>
     </Tabs>
@@ -221,10 +206,9 @@ export function ProjectList({
               <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                 <ShieldCheck className="text-primary h-6 w-6" />
               </div>
-              <h3 className="text-foreground mb-2 font-semibold">Set Up Your Vault</h3>
+              <h3 className="text-foreground mb-2 font-semibold">Set up private projects</h3>
               <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-                Protect sensitive projects behind a password. Locked projects are hidden from all
-                views until you unlock the vault.
+                Add a password to hide selected projects.
               </p>
               <Button
                 onClick={() => {
@@ -233,7 +217,7 @@ export function ProjectList({
                 }}
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
-                Set Up Vault Password
+                Set up password
               </Button>
             </CardContent>
           </Card>
@@ -246,9 +230,9 @@ export function ProjectList({
               <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                 <Lock className="text-primary h-6 w-6" />
               </div>
-              <h3 className="text-foreground mb-2 font-semibold">Vault is Locked</h3>
+              <h3 className="text-foreground mb-2 font-semibold">Private projects are closed</h3>
               <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-                Enter your vault password to view and manage locked projects.
+                Enter your password to open them.
               </p>
               <Button
                 onClick={() => {
@@ -257,7 +241,7 @@ export function ProjectList({
                 }}
               >
                 <Unlock className="mr-2 h-4 w-4" />
-                Enter Password
+                Enter password
               </Button>
             </CardContent>
           </Card>
@@ -270,7 +254,7 @@ export function ProjectList({
             <div className="bg-primary/5 border-primary/20 flex items-center justify-between rounded-xl border px-4 py-3">
               <div className="flex items-center gap-2 text-sm">
                 <LockOpen className="text-primary h-4 w-4" />
-                <span className="text-foreground font-medium">Vault is unlocked</span>
+                <span className="text-foreground font-medium">Private projects are open</span>
               </div>
               <Button variant="outline" size="sm" onClick={handleLockVault} disabled={isLocking}>
                 {isLocking ? (
@@ -278,7 +262,7 @@ export function ProjectList({
                 ) : (
                   <Lock className="mr-2 h-3.5 w-3.5" />
                 )}
-                Re-lock
+                Close private projects
               </Button>
             </div>
 
@@ -288,10 +272,9 @@ export function ProjectList({
                   <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                     <Lock className="text-muted-foreground h-6 w-6" />
                   </div>
-                  <h3 className="text-foreground mb-2 font-semibold">No locked projects</h3>
+                  <h3 className="text-foreground mb-2 font-semibold">No private projects yet</h3>
                   <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-                    Move projects here from the Active or Archived tab to hide them behind your
-                    vault password.
+                    Move a project here to hide it with your password.
                   </p>
                 </CardContent>
               </Card>
@@ -332,21 +315,26 @@ export function ProjectList({
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No projects yet</h3>
             <p className="text-muted-foreground mx-auto mb-6 max-w-sm text-sm">
-              Group your work into streams so your evidence and summaries stay clear.
+              Group related work into projects so your notes and drafts stay together.
             </p>
             <Button onClick={() => setShowCreate(true)}>
               <FolderPlus className="mr-2 h-4 w-4" />
-              Create Your First Project
+              Create your first project
             </Button>
 
             <div className="mt-8">
               <Button variant="link" size="sm" onClick={() => handleTabChange('archived')}>
-                View Archived Projects
+                View archived projects
               </Button>
             </div>
           </CardContent>
         </Card>
-        <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
+        <ProjectDialog
+          key={`create-${showCreate}`}
+          open={showCreate}
+          onOpenChange={setShowCreate}
+          onSubmit={onCreate}
+        />
       </>
     );
   }
@@ -364,7 +352,7 @@ export function ProjectList({
             </div>
             <h3 className="text-foreground mb-2 font-semibold">No archived projects</h3>
             <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-              Projects you archive will appear here safely stored away.
+              Your archived projects will appear here.
             </p>
           </CardContent>
         </Card>
@@ -380,7 +368,7 @@ export function ProjectList({
 
           {initialFilter === 'active' && (
             <Button onClick={() => setShowCreate(true)} size="sm" className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" /> New Project
+              <Plus className="mr-2 h-4 w-4" /> New project
             </Button>
           )}
         </div>
@@ -390,7 +378,8 @@ export function ProjectList({
           <div className="relative flex-1">
             <Search className="text-muted-foreground/60 absolute top-2.5 left-2.5 h-4 w-4" />
             <Input
-              placeholder="Search projects..."
+              placeholder="Search projects"
+              aria-label="Search projects"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="bg-background/50 border-border/40 h-9 pl-9"
@@ -401,20 +390,20 @@ export function ProjectList({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 shrink-0 gap-2">
                 <ArrowUpDown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Sort by:</span>
+                <span className="hidden sm:inline">Sort by</span>
                 <span className="font-medium">
                   {sortOption === 'recent' && 'Recent'}
-                  {sortOption === 'activity' && 'Activity'}
+                  {sortOption === 'activity' && 'Notes'}
                   {sortOption === 'name' && 'Name'}
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setSortOption('recent')}>
-                Most Recent
+                Most recent
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption('activity')}>
-                Most Activity
+                Most notes
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOption('name')}>Name (A-Z)</DropdownMenuItem>
             </DropdownMenuContent>
@@ -425,7 +414,7 @@ export function ProjectList({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredProjects.length === 0 ? (
           <div className="text-muted-foreground col-span-full py-12 text-center italic">
-            No projects match your search.
+            No projects found.
           </div>
         ) : (
           filteredProjects.map(project => (
@@ -444,7 +433,12 @@ export function ProjectList({
         )}
       </div>
 
-      <ProjectDialog open={showCreate} onOpenChange={setShowCreate} onSubmit={onCreate} />
+      <ProjectDialog
+        key={`create-${showCreate}`}
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onSubmit={onCreate}
+      />
 
       <VaultPasswordDialog
         open={showVaultDialog}
@@ -515,7 +509,7 @@ function ProjectCard({
     <>
       <Card
         className={cn(
-          'bg-card/40 border-border/40 group/project hover:border-border hover:shadow-primary/5 relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-xl',
+          'bg-card/40 border-border/40 group/project hover:border-border hover:shadow-primary/5 relative flex h-full flex-col overflow-hidden rounded-2xl transition-[border-color,box-shadow,opacity] duration-300 hover:shadow-xl',
           project.archived && 'bg-muted/10 border-border/30 opacity-75'
         )}
       >
@@ -530,15 +524,15 @@ function ProjectCard({
           <CardContent className="relative flex-1 p-6">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div
-                className="group-hover/project:bg-primary/10 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/5 shadow-sm transition-all duration-300 group-hover/project:scale-105 group-hover/project:shadow-md"
+                className="group-hover/project:bg-primary/10 relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/5 shadow-sm transition-[background-color,box-shadow] duration-300 group-hover/project:shadow-md"
                 style={{
-                  backgroundColor: project.archived ? 'hsl(var(--muted))' : `${project.color}15`,
+                  backgroundColor: project.archived ? 'var(--muted)' : `${project.color}15`,
                 }}
               >
                 <FolderOpen
                   className="h-7 w-7"
                   style={{
-                    color: project.archived ? 'hsl(var(--muted-foreground))' : project.color,
+                    color: project.archived ? 'var(--muted-foreground)' : project.color,
                   }}
                 />
                 {project.archived && (
@@ -566,7 +560,7 @@ function ProjectCard({
                   </p>
                 ) : (
                   <div className="h-full w-full opacity-0" aria-hidden="true">
-                    No description provided
+                    No description added.
                   </div>
                 )}
               </div>
@@ -579,13 +573,15 @@ function ProjectCard({
             <div className="text-muted-foreground/70 flex w-full items-center justify-between gap-4 text-[11px] font-medium tracking-wider uppercase">
               <div
                 className="bg-muted/30 border-border/20 flex items-center gap-2 rounded-xl border px-2.5 py-1"
-                title="Total Activities Logged"
+                title="Total notes"
               >
                 <Activity className="h-3 w-3" />
-                <span>{project._count.activities} entries</span>
+                <span>
+                  {project._count.activities} {project._count.activities === 1 ? 'note' : 'notes'}
+                </span>
               </div>
               {lastActive && (
-                <div className="flex items-center gap-1.5" title="Last Activity">
+                <div className="flex items-center gap-1.5" title="Last note">
                   <Clock className="h-3 w-3" />
                   {formatDistanceToNow(new Date(lastActive))} ago
                 </div>
@@ -600,7 +596,8 @@ function ProjectCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:bg-muted/40 hover:text-primary h-8 w-8 p-0 opacity-50 transition-all group-hover/project:opacity-100"
+                aria-label={`More actions for ${project.name}`}
+                className="text-muted-foreground hover:bg-muted/40 hover:text-primary h-8 w-8 p-0 opacity-50 transition-[color,background-color,opacity] group-focus-within/project:opacity-100 group-hover/project:opacity-100 focus-visible:opacity-100"
                 disabled={isPending}
               >
                 <MoreVertical className="h-4 w-4" />
@@ -620,13 +617,13 @@ function ProjectCard({
                   }}
                   className="cursor-pointer"
                 >
-                  <Activity className="mr-2 h-4 w-4" /> View Timeline
+                  <Activity className="mr-2 h-4 w-4" /> View notes
                 </Link>
               </DropdownMenuItem>
 
               {!project.archived && (
                 <DropdownMenuItem onClick={() => setShowEdit(true)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                  <Pencil className="mr-2 h-4 w-4" /> Edit project
                 </DropdownMenuItem>
               )}
 
@@ -636,7 +633,7 @@ function ProjectCard({
                   disabled={isMovingFromVault}
                   className="text-primary focus:text-primary focus:bg-primary/10 font-medium"
                 >
-                  <LockOpen className="mr-2 h-4 w-4" /> Move to Active
+                  <LockOpen className="mr-2 h-4 w-4" /> Move out of private
                 </DropdownMenuItem>
               ) : (
                 <>
@@ -645,18 +642,18 @@ function ProjectCard({
                       onClick={handleUnarchive}
                       className="text-primary focus:text-primary focus:bg-primary/10 font-medium"
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" /> Restore Project
+                      <RotateCcw className="mr-2 h-4 w-4" /> Restore project
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem variant="destructive" onClick={handleArchive}>
-                      <Archive className="mr-2 h-4 w-4" /> Archive Project
+                      <Archive className="mr-2 h-4 w-4" /> Archive project
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
                     onClick={() => onMoveToVault?.(project.id)}
                     disabled={isMovingToVault}
                   >
-                    <Lock className="mr-2 h-4 w-4" /> Move to Locked
+                    <Lock className="mr-2 h-4 w-4" /> Move to private
                   </DropdownMenuItem>
                 </>
               )}
@@ -666,149 +663,12 @@ function ProjectCard({
       </Card>
 
       <ProjectDialog
+        key={`edit-${project.id}-${showEdit}`}
         open={showEdit}
         onOpenChange={setShowEdit}
         project={project}
         onSubmit={onUpdate ? data => onUpdate(project.id, data) : undefined}
       />
     </>
-  );
-}
-
-interface ProjectDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  project?: {
-    id: string;
-    name: string;
-    description: string | null;
-    color: string;
-  };
-  onSubmit?: (
-    data: FormData
-  ) => Promise<{ success: boolean; message: string; errors?: Record<string, string[]> }>;
-}
-
-function ProjectDialog({ open, onOpenChange, project, onSubmit }: ProjectDialogProps) {
-  const isEditing = !!project;
-  const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState(projectColors[0]);
-  const [errors, setErrors] = useState<{ name?: string }>({});
-
-  useEffect(() => {
-    if (open) {
-      setName(project?.name || '');
-      setDescription(project?.description || '');
-      setColor(project?.color || projectColors[0]);
-      setErrors({});
-    }
-  }, [open, project]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrors({});
-
-    try {
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('color', color);
-      formData.append('description', description);
-
-      let result: { success: boolean; message: string; errors?: Record<string, string[]> };
-      if (onSubmit) {
-        result = await onSubmit(formData);
-      } else if (isEditing && project) {
-        result = await updateProject(project.id, { name, color, description });
-      } else {
-        result = (await createProject({ success: false, message: '' }, formData)) as {
-          success: boolean;
-          message: string;
-          errors?: Record<string, string[]>;
-        };
-      }
-
-      if (result.success) {
-        onOpenChange(false);
-      } else if (result.errors?.name) {
-        setErrors({ name: result.errors.name[0] });
-      } else {
-        console.error(result.message);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Project' : 'New Project'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? 'Update your project details.' : 'Create a container for your activities.'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Project Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Website Redesign"
-              maxLength={50}
-            />
-            {errors.name && <p className="text-destructive text-xs">{errors.name}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="desc">Description (Optional)</Label>
-            <Textarea
-              id="desc"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Brief details about this project..."
-              className="h-20 resize-none"
-              maxLength={200}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex flex-wrap gap-2">
-              {projectColors.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-6 w-6 rounded-full transition-all ${
-                    color === c
-                      ? 'ring-ring ring-offset-background scale-110 ring-2 ring-offset-2'
-                      : 'opacity-80 hover:scale-110 hover:opacity-100'
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Save Changes' : 'Create Project'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

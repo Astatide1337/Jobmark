@@ -1,7 +1,7 @@
 /**
  * Focus Subsystem Type Definitions
  *
- * Why: Defines the "Domain Model" for the decompression ritual. It supports
+ * Why: Defines the domain model for a focus session. It supports
  * a polymorphic `FocusBlock` structure that allows the wizard to render
  * disparate activities (Breathing, Goals, Affirmations) through a unified
  * sequence interface.

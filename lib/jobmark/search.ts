@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds } from '@/lib/project-lock';
 import { JobmarkActor, assertActor } from './index';
+import { getActivityDisplayContent } from './activity-copy';
 
 export type SearchResult = {
   type: 'activity' | 'project' | 'report' | 'contact' | 'interaction';
@@ -25,9 +26,8 @@ export async function globalSearch(
   const { limit = 20 } = options;
   const lockedIds = await getLockedProjectIds(actor.userId);
 
-  const lockedFilter = lockedIds.length > 0
-    ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] }
-    : {};
+  const lockedFilter =
+    lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
 
   const results: SearchResult[] = [];
 
@@ -43,11 +43,11 @@ export async function globalSearch(
   });
 
   results.push(
-    ...activities.map((a) => ({
+    ...activities.map(a => ({
       type: 'activity' as const,
       id: a.id,
-      title: a.content.slice(0, 80),
-      snippet: a.content.slice(0, 160),
+      title: getActivityDisplayContent(a.content).slice(0, 80),
+      snippet: getActivityDisplayContent(a.content).slice(0, 160),
       metadata: { project: a.project, logDate: a.logDate.toISOString().split('T')[0] },
     }))
   );
@@ -63,7 +63,7 @@ export async function globalSearch(
   });
 
   results.push(
-    ...projects.map((p) => ({
+    ...projects.map(p => ({
       type: 'project' as const,
       id: p.id,
       title: p.name,
@@ -87,7 +87,7 @@ export async function globalSearch(
   });
 
   results.push(
-    ...reports.map((r) => ({
+    ...reports.map(r => ({
       type: 'report' as const,
       id: r.id,
       title: r.title,
@@ -110,7 +110,7 @@ export async function globalSearch(
   });
 
   results.push(
-    ...contacts.map((c) => ({
+    ...contacts.map(c => ({
       type: 'contact' as const,
       id: c.id,
       title: c.fullName,
@@ -134,7 +134,7 @@ export async function globalSearch(
   });
 
   results.push(
-    ...interactions.map((i) => ({
+    ...interactions.map(i => ({
       type: 'interaction' as const,
       id: i.id,
       title: i.contact.fullName,

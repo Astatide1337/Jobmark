@@ -1,82 +1,45 @@
 /**
- * Animated Section Divider
+ * A quiet visual separator for the public page.
  *
- * Why: Provides a high-quality visual separation between landing
- * page sections. Instead of a hard line, it "draws" itself into view
- * using `useInView`.
- *
- * Design: Features an optional "Glow" effect to emphasize the
- * "Physical UI" aesthetic.
+ * Why: Decorative dividers should not need client JavaScript, observers, or
+ * entrance animation. A stable line keeps the landing page available on the
+ * first paint and avoids adding another motion system to the page.
  */
-'use client';
-
-import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface SectionDividerProps {
   className?: string;
   maxWidth?: string;
+  /** Kept for call-site compatibility; decorative separators do not animate. */
   delay?: number;
   glow?: boolean;
 }
 
+const maxWidthClasses: Record<string, string> = {
+  'max-w-3xl': 'max-w-3xl',
+  'max-w-4xl': 'max-w-4xl',
+  'max-w-5xl': 'max-w-5xl',
+  'max-w-6xl': 'max-w-6xl',
+  'max-w-7xl': 'max-w-7xl',
+};
+
 export function SectionDivider({
   className,
   maxWidth = 'max-w-4xl',
-  delay = 0,
+  delay: _delay,
   glow = false,
 }: SectionDividerProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-50px' });
-
   return (
     <div
-      ref={ref}
-      className={cn(
-        'pointer-events-none relative flex w-full items-center justify-center px-6 py-8 md:py-12',
-        className
-      )}
+      aria-hidden="true"
+      className={cn('pointer-events-none flex w-full justify-center px-6 py-8 md:py-12', className)}
     >
-      {/* Optional glow effect */}
-      {glow && (
-        <motion.div
-          className={cn('absolute h-px', maxWidth, 'w-full')}
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.8, delay: delay + 0.4 }}
-        >
-          <div className="bg-primary/20 absolute inset-0 blur-md" />
-        </motion.div>
-      )}
-
-      {/* Left line - draws from left edge toward center */}
-      <motion.div
+      <div
         className={cn(
-          'to-border/40 h-px flex-1 bg-gradient-to-r from-transparent',
-          maxWidth ? `${maxWidth.replace('max-w-', 'max-w-[')}` : ''
+          'bg-border/50 h-px w-full',
+          maxWidthClasses[maxWidth] ?? maxWidthClasses['max-w-4xl'],
+          glow && 'shadow-primary/20 shadow-[0_0_18px]'
         )}
-        style={{ maxWidth: '50%' }}
-        initial={{ scaleX: 0, opacity: 0, originX: 0 }}
-        animate={isInView ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
-        transition={{
-          duration: 0.6,
-          delay,
-          ease: [0.25, 0.4, 0.25, 1],
-        }}
-      />
-
-      {/* Right line - draws from right edge toward center */}
-      <motion.div
-        className="to-border/40 h-px flex-1 bg-gradient-to-l from-transparent"
-        style={{ maxWidth: '50%' }}
-        initial={{ scaleX: 0, opacity: 0, originX: 1 }}
-        animate={isInView ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
-        transition={{
-          duration: 0.6,
-          delay,
-          ease: [0.25, 0.4, 0.25, 1],
-        }}
       />
     </div>
   );

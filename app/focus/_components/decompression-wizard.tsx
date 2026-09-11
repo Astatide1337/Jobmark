@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { useUI } from '@/components/providers/ui-provider';
-import { cn } from '@/lib/utils';
 import type { ResolvedFocusBlock } from '@/lib/focus/types';
 import { AffirmationPhase } from './phases/affirmation';
 import { BreathingPhase } from './phases/breathing';
@@ -17,7 +15,6 @@ interface DecompressionWizardProps {
 }
 
 export default function DecompressionWizard({ blocks }: DecompressionWizardProps) {
-  const { uiV2 } = useUI();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -30,21 +27,44 @@ export default function DecompressionWizard({ blocks }: DecompressionWizardProps
     audio.volume = 0;
     audioRef.current = audio;
 
-    // Fade in
-    audio.play().catch(e => console.warn('Audio play failed:', e));
-    let vol = 0;
-    fadeIntervalRef.current = setInterval(() => {
-      if (audioRef.current) {
+    let fadeStarted = false;
+
+    const fadeIn = () => {
+      if (fadeStarted) return;
+      fadeStarted = true;
+
+      let vol = audio.volume;
+      fadeIntervalRef.current = setInterval(() => {
+        if (audioRef.current !== audio) return;
+
         vol = Math.min(vol + 0.01, 0.2);
-        audioRef.current.volume = vol;
+        audio.volume = vol;
         if (vol >= 0.2 && fadeIntervalRef.current) {
           clearInterval(fadeIntervalRef.current);
+          fadeIntervalRef.current = null;
         }
-      }
-    }, 200);
+      }, 200);
+    };
+
+    const tryPlay = () => {
+      if (audioRef.current !== audio || !audio.paused) return;
+
+      void audio
+        .play()
+        .then(fadeIn)
+        .catch(() => {
+          // Browsers may block autoplay until the user interacts with the page.
+          // The pointer listener below retries without surfacing a console error.
+        });
+    };
+
+    tryPlay();
+    window.addEventListener('pointerdown', tryPlay, { once: true });
 
     return () => {
+      window.removeEventListener('pointerdown', tryPlay);
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -116,12 +136,7 @@ export default function DecompressionWizard({ blocks }: DecompressionWizardProps
   }
 
   return (
-    <div
-      className={cn(
-        'relative flex min-h-[60vh] w-full flex-col items-center justify-center px-6 text-center',
-        uiV2 ? 'overflow-visible' : 'h-screen overflow-hidden'
-      )}
-    >
+    <div className="relative flex min-h-[60vh] w-full flex-col items-center justify-center overflow-visible px-6 text-center">
       {/* Exit link */}
       <Link
         href="/dashboard"

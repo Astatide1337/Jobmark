@@ -23,13 +23,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </div>
         <p className="text-primary mb-2 text-xs font-semibold tracking-widest uppercase">Error</p>
         <h1 className="text-foreground mb-3 font-serif text-2xl font-semibold">
-          Something went wrong
+          We could not load this page.
         </h1>
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-          An unexpected error occurred. You can try again or return to the dashboard.
+          Try again, or return to your dashboard.
           {error.digest && (
             <span className="text-muted-foreground/50 mt-2 block font-mono text-xs">
-              Ref: {error.digest}
+              Error code: {error.digest}
             </span>
           )}
         </p>

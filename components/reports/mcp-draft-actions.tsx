@@ -17,7 +17,7 @@ export interface ConnectedMcpProvider {
   name: string;
 }
 
-export const MCP_PROVIDER_URLS: Record<string, string> = {
+const MCP_PROVIDER_URLS: Record<string, string> = {
   claude: 'https://claude.ai/new',
   chatgpt: 'https://chatgpt.com/',
   gemini: 'https://gemini.google.com/app',
@@ -54,7 +54,7 @@ interface McpDraftActionsProps {
   providerAction?: string;
 }
 
-export function ProviderIcon({ providerKey }: { providerKey: string }) {
+function ProviderIcon({ providerKey }: { providerKey: string }) {
   if (providerKey === 'claude') return <Claude.Color size={18} />;
   if (providerKey === 'chatgpt') {
     return <OpenAI aria-hidden="true" className="text-foreground" size={18} />;
@@ -66,10 +66,10 @@ export function ProviderIcon({ providerKey }: { providerKey: string }) {
 export function McpDraftActions({
   connectedMcpProviders,
   onDraftWithProvider,
-  eyebrow = 'Choose where to draft',
-  title = 'Use a connected AI app',
-  description = 'Choose an AI app to give your Jobmark draft another pass.',
-  providerAction = 'Draft with',
+  eyebrow = 'Optional',
+  title = 'Edit with an assistant',
+  description = 'Use a connected assistant to edit the draft.',
+  providerAction = 'Edit with',
 }: McpDraftActionsProps) {
   return (
     <div className="border-border/50 bg-card/30 rounded-2xl border p-5">
@@ -79,8 +79,7 @@ export function McpDraftActions({
         <p className="text-muted-foreground text-sm">{description}</p>
         {connectedMcpProviders.some(provider => provider.key === 'gemini') && (
           <p className="text-muted-foreground mt-1 text-xs">
-            Gemini opens separately. Your instructions are copied so you can paste them into the
-            message box.
+            Gemini opens in a new tab. Copy the text and paste it there.
           </p>
         )}
       </div>
@@ -108,7 +107,7 @@ export function McpDraftActions({
         <Button asChild variant="outline" className="mt-4 h-11 rounded-xl px-4">
           <Link href="/settings/connections">
             <Link2 className="mr-2 h-4 w-4" />
-            Connect an AI app
+            Connect an assistant
           </Link>
         </Button>
       )}
@@ -144,7 +143,7 @@ export function McpProviderMenu({
       >
         <Link href="/settings/connections">
           <Link2 className="mr-2 h-4 w-4" />
-          Connect an AI app
+          Connect an assistant
         </Link>
       </Button>
     );
@@ -184,7 +183,7 @@ export function McpProviderMenu({
           )}
         >
           <ArrowRight className="mr-2 h-4 w-4" />
-          Choose where to continue
+          Continue with
           <ChevronDown className="text-muted-foreground ml-auto h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>

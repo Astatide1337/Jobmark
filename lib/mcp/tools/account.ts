@@ -5,19 +5,19 @@ import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 
 const accountClearActivitiesSchema = z.object({
-  confirmation: z.literal('DELETE ALL MY ACTIVITIES'),
+  confirmation: z.literal('DELETE ALL MY NOTES'),
 });
 
 export const accountClearActivitiesTool = {
   definition: {
     name: 'account_clear_activities',
-    title: 'Clear All Activities',
+    title: 'Clear all notes',
     description:
-      'Permanently delete all activities. Requires exact confirmation phrase. Requires jobmark:destructive scope.',
+      'Delete all notes. Type the exact words below. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
-        confirmation: { type: 'string', pattern: '^DELETE ALL MY ACTIVITIES$' },
+        confirmation: { type: 'string', pattern: '^DELETE ALL MY NOTES$' },
       },
       required: ['confirmation'],
       additionalProperties: false,
@@ -40,7 +40,7 @@ export const accountClearActivitiesTool = {
     const result = accountClearActivitiesSchema.safeParse(input);
     if (!result.success) {
       throw new McpValidationError(
-        'Invalid input. Confirmation phrase must be exactly: DELETE ALL MY ACTIVITIES',
+        'Check the confirmation and type DELETE ALL MY NOTES exactly.',
         result.error.flatten().fieldErrors
       );
     }
@@ -48,9 +48,6 @@ export const accountClearActivitiesTool = {
     const { deletedCount } = await clearActivities(actor, {
       confirmation: result.data.confirmation,
     });
-    return createStructuredResult(
-      { deletedCount, success: true },
-      `Permanently deleted ${deletedCount} activities`
-    );
+    return createStructuredResult({ deletedCount, success: true }, `Deleted ${deletedCount} notes`);
   },
 };

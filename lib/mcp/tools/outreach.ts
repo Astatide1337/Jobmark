@@ -49,8 +49,8 @@ const outreachImproveSchema = z.object({
 export const outreachListTool = {
   definition: {
     name: 'outreach_list',
-    title: 'List Outreach Messages',
-    description: 'List outreach drafts with pagination. Requires jobmark:read scope.',
+    title: 'List message drafts',
+    description: 'List saved message drafts with pagination. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,16 +98,16 @@ export const outreachListTool = {
       limit: getLimit('outreach', result.data.limit),
       cursor: result.data.cursor,
     });
-    return createStructuredResult(data, `Found ${data.outreach.length} outreach messages`);
+    return createStructuredResult(data, `Found ${data.outreach.length} message drafts`);
   },
 };
 
 export const outreachGenerateTool = {
   definition: {
     name: 'outreach_generate',
-    title: 'Generate Outreach Draft',
+    title: 'Make a message draft',
     description:
-      'Generate an editable outreach message from a contact and its history. The message is grounded in the record and ready for the user to review. Requires jobmark:write scope.',
+      'Make an editable message from a contact and the saved conversations with that person. Let the user review it. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -136,15 +136,15 @@ export const outreachGenerateTool = {
     }
 
     const draft = await generateOutreach(actor, result.data);
-    return createStructuredResult(draft, 'Outreach draft generated');
+    return createStructuredResult(draft, 'Message draft created');
   },
 };
 
 export const outreachCreateTool = {
   definition: {
     name: 'outreach_create',
-    title: 'Create Outreach Draft',
-    description: 'Save an outreach draft. Requires jobmark:write scope.',
+    title: 'Save a message draft',
+    description: 'Save a message draft. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -181,15 +181,15 @@ export const outreachCreateTool = {
     }
 
     const outreach = await createOutreach(actor, result.data);
-    return createStructuredResult(outreach, 'Outreach draft saved');
+    return createStructuredResult(outreach, 'Message draft saved');
   },
 };
 
 export const outreachUpdateTool = {
   definition: {
     name: 'outreach_update',
-    title: 'Update Outreach Draft',
-    description: 'Update an outreach draft. Requires jobmark:write scope.',
+    title: 'Update a message draft',
+    description: 'Update a message draft. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -224,15 +224,15 @@ export const outreachUpdateTool = {
 
     const { outreachId, ...data } = result.data;
     const outreach = await updateOutreach(actor, outreachId, data);
-    return createStructuredResult(outreach, 'Outreach updated');
+    return createStructuredResult(outreach, 'Message draft updated');
   },
 };
 
 export const outreachDeleteTool = {
   definition: {
     name: 'outreach_delete',
-    title: 'Delete Outreach',
-    description: 'Delete an outreach draft. Requires jobmark:destructive scope.',
+    title: 'Delete a message draft',
+    description: 'Delete a message draft. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -261,16 +261,16 @@ export const outreachDeleteTool = {
     }
 
     await deleteOutreach(actor, result.data.outreachId);
-    return createStructuredResult({ success: true }, 'Outreach deleted');
+    return createStructuredResult({ success: true }, 'Message draft deleted');
   },
 };
 
 export const outreachImproveTextTool = {
   definition: {
     name: 'outreach_improve_text',
-    title: 'Improve Outreach Text',
+    title: 'Edit message draft text',
     description:
-      'Apply a predictable edit to a saved outreach draft. For richer writing, use a connected AI app with Jobmark. Requires jobmark:write scope.',
+      'Make a small edit to a saved message draft. For a larger rewrite, open the draft in a connected assistant. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -300,6 +300,6 @@ export const outreachImproveTextTool = {
       result.data.outreachId,
       result.data.instructions
     );
-    return createStructuredResult(improved, 'Outreach text improved');
+    return createStructuredResult(improved, 'Message draft text updated');
   },
 };

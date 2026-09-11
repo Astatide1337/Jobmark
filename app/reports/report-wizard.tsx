@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ReportConfig,
@@ -55,22 +55,9 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
   const [config, setConfig] = useState<ReportConfig>({
     dateRange: '7d',
     projectId: undefined, // All projects
-    tone: 'professional',
-    notes: '', // Placeholder for custom instructions
+    tone: (settings?.defaultTone as ReportConfig['tone']) || 'professional',
+    notes: settings?.customInstructions || '',
   });
-
-  // Apply user's default settings when they load (during render phase to avoid cascading effects)
-  const [prevSettings, setPrevSettings] = useState(settings);
-  if (settings !== prevSettings) {
-    if (settings) {
-      setConfig(prev => ({
-        ...prev,
-        tone: (settings.defaultTone as ReportConfig['tone']) || prev.tone,
-        notes: settings.customInstructions || prev.notes,
-      }));
-    }
-    setPrevSettings(settings);
-  }
 
   // Custom date selection state
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -78,6 +65,13 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   const nextStep = () => setStep(step + 1);
   const prevStep = () => setStep(step - 1);
@@ -162,7 +156,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
       setReportContent(output);
     } catch (error) {
       console.error('Streaming error', error);
-      setReportContent('We couldn’t create your draft. Try again.');
+      setReportContent('Could not create the draft. Try again.');
     } finally {
       setIsStreaming(false);
     }
@@ -184,14 +178,14 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
   };
 
   const handleEmail = () => {
-    const subject = `Work Summary - ${format(new Date(), 'MMM dd, yyyy')}`;
+    const subject = `Jobmark review draft - ${format(new Date(), 'MMM dd, yyyy')}`;
     const body = getCleanEmailBody();
     const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   };
 
   const handleGmail = () => {
-    const subject = `Work Summary - ${format(new Date(), 'MMM dd, yyyy')}`;
+    const subject = `Jobmark review draft - ${format(new Date(), 'MMM dd, yyyy')}`;
     const body = getCleanEmailBody();
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(gmailUrl, '_blank');
@@ -207,8 +201,8 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
     await saveReportToHistory(reportContent, finalConfig);
     setIsSaving(false);
     setSaved(true);
-    // Maybe redirect or show success
-    setTimeout(() => setSaved(false), 3000);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
   };
 
   const handleDraftWithProvider = async (provider: ConnectedMcpProvider) => {
@@ -242,11 +236,11 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
         description: promptDescription,
       });
     } catch {
-      toast.error('Could not copy the drafting instructions');
+      toast.error('Could not copy the instructions.');
     }
   };
 
-  const stepLabels = ['Scope', 'Notes', 'Tone', 'Draft'];
+  const stepLabels = ['Dates', 'Projects', 'Style', 'Draft'];
   const dateRangeLabel = getDateRangeButtonLabel(config, dateRange);
   const validationStatus = getValidationStatus(
     config.dateRange,
@@ -260,10 +254,9 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
       {/* Progress Indicator */}
       <div className="mb-8">
         <div className="mb-3">
-          <h1 className="text-foreground text-2xl font-bold">Build a review draft</h1>
+          <h1 className="text-foreground text-2xl font-bold">Make a review draft</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Scope the period, choose the right focus, and turn your record into something you can
-            reuse for updates, reviews, or promotion prep.
+            Choose dates, projects, and a writing style.
           </p>
         </div>
       </div>
@@ -274,7 +267,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             <div key={i} className="flex flex-col items-center gap-2">
               <div
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all duration-300',
+                  'flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-[color,background-color,box-shadow] duration-300',
                   step >= i
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
@@ -301,27 +294,25 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             className="space-y-6"
           >
             <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold">Scope the draft</h2>
-              <p className="text-muted-foreground">
-                Choose the period you want this summary to reflect.
-              </p>
+              <h2 className="mb-2 text-2xl font-bold">Choose which dates to include</h2>
+              <p className="text-muted-foreground">Choose the dates to use in the draft.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <OptionCard
                 selected={config.dateRange === '7d'}
                 onClick={() => setConfig({ ...config, dateRange: '7d' })}
-                label="Last 7 Days"
+                label="Last 7 days"
               />
               <OptionCard
                 selected={config.dateRange === '30d'}
                 onClick={() => setConfig({ ...config, dateRange: '30d' })}
-                label="Last 30 Days"
+                label="Last 30 days"
               />
               <OptionCard
                 selected={config.dateRange === 'month'}
                 onClick={() => setConfig({ ...config, dateRange: 'month' })}
-                label="This Month"
+                label="This month"
               />
             </div>
 
@@ -388,14 +379,12 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             className="space-y-6"
           >
             <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold">Add focus notes</h2>
-              <p className="text-muted-foreground">
-                Narrow the draft to the work and context you want emphasized.
-              </p>
+              <h2 className="mb-2 text-2xl font-bold">Choose projects</h2>
+              <p className="text-muted-foreground">Choose which notes to include.</p>
             </div>
 
             <div className="space-y-4">
-              <Label>Project Filter</Label>
+              <Label htmlFor="review-draft-projects">Projects</Label>
               <Select
                 value={config.projectId === null ? 'unassigned' : config.projectId || 'all'}
                 onValueChange={v => {
@@ -406,12 +395,12 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
                   setConfig({ ...config, projectId: pid });
                 }}
               >
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="All Projects" />
+                <SelectTrigger id="review-draft-projects" className="h-12">
+                  <SelectValue placeholder="All projects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Everything (All Projects)</SelectItem>
-                  <SelectItem value="unassigned">Unassigned Only (No Project)</SelectItem>
+                  <SelectItem value="all">All projects</SelectItem>
+                  <SelectItem value="unassigned">Notes without a project</SelectItem>
                   {projects.map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name}
@@ -422,9 +411,10 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             </div>
 
             <div className="space-y-4">
-              <Label>What should this draft emphasize? (Optional)</Label>
+              <Label htmlFor="review-draft-notes">What should the draft mention? (optional)</Label>
               <Input
-                placeholder="e.g. customer impact, cross-team work, or a measurable outcome"
+                id="review-draft-notes"
+                placeholder="e.g. a result you achieved or work with another team"
                 value={config.notes || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setConfig({ ...config, notes: e.target.value })
@@ -454,28 +444,28 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             className="space-y-6"
           >
             <div className="mb-8 text-center">
-              <h2 className="mb-2 text-2xl font-bold">Choose the tone</h2>
-              <p className="text-muted-foreground">Match the draft to how you plan to use it.</p>
+              <h2 className="mb-2 text-2xl font-bold">Choose the style</h2>
+              <p className="text-muted-foreground">Choose how this draft should sound.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <OptionCard
                 selected={config.tone === 'professional'}
                 onClick={() => setConfig({ ...config, tone: 'professional' })}
-                label="Professional"
-                description="Formal, structured, executive summary."
+                label="Formal"
+                description="Clear and formal."
               />
               <OptionCard
                 selected={config.tone === 'casual'}
                 onClick={() => setConfig({ ...config, tone: 'casual' })}
-                label="Casual Update"
-                description="Friendly, team-focused, quick read."
+                label="Casual"
+                description="Friendly and short."
               />
               <OptionCard
                 selected={config.tone === 'bullet-points'}
                 onClick={() => setConfig({ ...config, tone: 'bullet-points' })}
-                label="Bullet Points"
-                description="Just the facts. Short and punchy."
+                label="Bullet points"
+                description="Short facts in a list."
               />
             </div>
 
@@ -494,7 +484,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
                 className="bg-primary hover:bg-primary/90 px-8"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Build Review Draft
+                Make review draft
               </Button>
             </div>
           </motion.div>
@@ -536,7 +526,7 @@ function getDateRangeLabel(range: ReportConfig['dateRange'], customRange?: DateR
 
 function getDateRangeButtonLabel(config: ReportConfig, dateRange?: DateRange): ReactNode {
   if (config.dateRange !== 'custom' || !dateRange?.from) {
-    return <span>Custom Range from Calendar</span>;
+    return <span>Choose a date range</span>;
   }
   if (dateRange.to) {
     return `${format(dateRange.from, 'LLL dd')} - ${format(dateRange.to, 'LLL dd')}`;
@@ -551,34 +541,34 @@ function getValidationStatus(
   isValidating: boolean
 ): ReactNode {
   if (dateRangeKind === 'custom' && (!dateRange?.from || !dateRange?.to)) {
-    return <p className="text-muted-foreground text-xs">Please select start & end date.</p>;
+    return <p className="text-muted-foreground text-xs">Choose a start and end date.</p>;
   }
   if (isValidating) {
-    return <p className="text-muted-foreground animate-pulse text-xs">Checking activities...</p>;
+    return <p className="text-muted-foreground animate-pulse text-xs">Checking notes...</p>;
   }
   if (!hasValidActivities) {
     return (
       <p className="text-destructive flex items-center justify-center gap-1 text-xs font-medium">
-        <AlertCircle className="h-3 w-3" /> No activities found in this range.
+        <AlertCircle className="h-3 w-3" /> No notes in this range.
       </p>
     );
   }
   return (
-    <p className="animate-in fade-in slide-in-from-bottom-1 flex items-center justify-center gap-1 text-xs text-green-600 opacity-0">
-      <CheckCircle className="h-3 w-3" /> Ready
+    <p className="text-success flex items-center justify-center gap-1 text-xs font-medium">
+      <CheckCircle className="h-3 w-3" /> Ready to make the draft
     </p>
   );
 }
 
 function getProjectScopeLabel(projectId: string | null | undefined, projects: Project[]) {
   if (projectId === undefined) return 'All projects';
-  if (projectId === null) return 'Unassigned work only';
+  if (projectId === null) return 'Notes without a project';
   return projects.find(project => project.id === projectId)?.name ?? 'Selected project';
 }
 
 function getToneLabel(tone: ReportConfig['tone']) {
-  if (tone === 'professional') return 'Professional';
-  if (tone === 'casual') return 'Casual update';
+  if (tone === 'professional') return 'Formal';
+  if (tone === 'casual') return 'Casual';
   return 'Bullet points';
 }
 
@@ -598,7 +588,7 @@ function OptionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full cursor-pointer rounded-xl border-2 p-6 text-left transition-all duration-200 hover:scale-[1.02]',
+        'w-full cursor-pointer rounded-xl border-2 p-6 text-left transition-[border-color,background-color,box-shadow] duration-200',
         selected
           ? 'border-primary bg-primary/5 shadow-primary/10 shadow-lg'
           : 'border-border/50 bg-card hover:border-primary/50'

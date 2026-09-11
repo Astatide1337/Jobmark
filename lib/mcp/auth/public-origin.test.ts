@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getMcpPublicBaseUrl } from './public-origin';
+import { getMcpPublicBaseUrl, isAllowedMcpOrigin } from './public-origin';
 
 const originalPublicBaseUrl = process.env.MCP_PUBLIC_BASE_URL;
+const originalAllowedOrigins = process.env.MCP_ALLOWED_ORIGINS;
 
 afterEach(() => {
   if (originalPublicBaseUrl === undefined) delete process.env.MCP_PUBLIC_BASE_URL;
   else process.env.MCP_PUBLIC_BASE_URL = originalPublicBaseUrl;
+  if (originalAllowedOrigins === undefined) delete process.env.MCP_ALLOWED_ORIGINS;
+  else process.env.MCP_ALLOWED_ORIGINS = originalAllowedOrigins;
 });
 
 describe('MCP public base URL resolution', () => {
@@ -45,5 +48,36 @@ describe('MCP public base URL resolution', () => {
     expect(getMcpPublicBaseUrl(new Request('http://localhost:3000/mcp'))).toBe(
       'http://localhost:3000'
     );
+  });
+
+  it('allows absent and same-origin requests but rejects untrusted Origins', () => {
+    delete process.env.MCP_PUBLIC_BASE_URL;
+    const requestUrl = 'https://jobmark.example.com/mcp';
+
+    expect(isAllowedMcpOrigin(new Request(requestUrl))).toBe(true);
+    expect(
+      isAllowedMcpOrigin(
+        new Request(requestUrl, { headers: { origin: 'https://jobmark.example.com' } })
+      )
+    ).toBe(true);
+    expect(
+      isAllowedMcpOrigin(
+        new Request(requestUrl, { headers: { origin: 'https://attacker.example' } })
+      )
+    ).toBe(false);
+    expect(isAllowedMcpOrigin(new Request(requestUrl, { headers: { origin: 'null' } }))).toBe(
+      false
+    );
+  });
+
+  it('supports an explicit browser Origin allowlist without allowing a wildcard', () => {
+    process.env.MCP_ALLOWED_ORIGINS = 'https://assistant.example';
+    const request = new Request('https://jobmark.example.com/mcp', {
+      headers: { origin: 'https://assistant.example' },
+    });
+
+    expect(isAllowedMcpOrigin(request)).toBe(true);
+    process.env.MCP_ALLOWED_ORIGINS = '*';
+    expect(isAllowedMcpOrigin(request)).toBe(false);
   });
 });

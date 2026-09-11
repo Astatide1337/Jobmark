@@ -14,7 +14,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getUserSettings, type UserSettingsData } from '@/app/actions/settings';
-import { getThemePreset } from '@/lib/themes';
+import { getThemePreset, getThemeSurfacePalette } from '@/lib/themes';
 
 interface SettingsContextType {
   settings: UserSettingsData | null;
@@ -49,7 +49,7 @@ export function SettingsProvider({
   isAuthenticated,
 }: SettingsProviderProps) {
   const [settings, setSettings] = useState<UserSettingsData | null>(initialSettings || null);
-  const [isLoading, setIsLoading] = useState(!initialSettings);
+  const [isLoading, setIsLoading] = useState(initialSettings === undefined);
 
   const refreshSettings = async () => {
     // Public pages share this provider but have no session by design. Keep a
@@ -59,11 +59,7 @@ export function SettingsProvider({
       return;
     }
 
-    // Only set loading if we're not already in the initial loading state
-    setSettings(prev => {
-      if (prev === null) setIsLoading(true);
-      return prev;
-    });
+    if (settings === null) setIsLoading(true);
 
     try {
       const newSettings = await getUserSettings();
@@ -104,8 +100,6 @@ export function SettingsProvider({
         }
       };
       void init();
-    } else if (!isAuthenticated) {
-      setIsLoading(false);
     }
 
     return () => {
@@ -123,8 +117,22 @@ export function SettingsProvider({
 function applyTheme(presetId: string, mode: string) {
   const preset = getThemePreset(presetId);
   if (!preset) return;
+  const surfaces = getThemeSurfacePalette(presetId);
 
   const root = document.documentElement;
+
+  for (const [name, value] of Object.entries(surfaces.dark)) {
+    root.style.setProperty(
+      `--theme-dark-${name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`,
+      value
+    );
+  }
+  for (const [name, value] of Object.entries(surfaces.light)) {
+    root.style.setProperty(
+      `--theme-light-${name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`,
+      value
+    );
+  }
 
   // Apply color variables using hex values
   root.style.setProperty('--primary', preset.colors.primary);
@@ -136,6 +144,13 @@ function applyTheme(presetId: string, mode: string) {
   root.style.setProperty('--sidebar-primary', preset.colors.sidebarPrimary);
   root.style.setProperty('--sidebar-ring', preset.colors.sidebarRing);
   root.style.setProperty('--chart-1', preset.colors.chart1);
+  root.style.setProperty('--chart-2', preset.colors.chart2);
+  root.style.setProperty('--chart-3', preset.colors.chart3);
+  root.style.setProperty('--chart-4', preset.colors.chart4);
+  root.style.setProperty('--chart-5', preset.colors.chart5);
+  root.style.setProperty('--success', preset.colors.success);
+  root.style.setProperty('--warning', preset.colors.warning);
+  root.style.setProperty('--info', preset.colors.info);
 
   // Apply theme mode (light/dark)
   if (mode === 'system') {
