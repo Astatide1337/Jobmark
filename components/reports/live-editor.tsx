@@ -14,7 +14,6 @@ import { List, ListChecks, ListOrdered, Loader2, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useUI } from '@/components/providers/ui-provider';
 import { applyQuickEdit, type QuickEditAction } from '@/lib/deterministic-drafts';
 
 interface LiveEditorProps {
@@ -44,7 +43,6 @@ export function LiveEditor({
   placeholder,
   enableQuickEdit = false,
 }: LiveEditorProps) {
-  const { uiV2 } = useUI();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -170,17 +168,13 @@ export function LiveEditor({
     <div
       ref={containerRef}
       className={cn(
-        'bg-card/50 border-border/50 group relative flex h-[500px] w-full flex-col rounded-lg border font-sans text-base leading-relaxed shadow-sm',
-        uiV2 && 'h-auto min-h-[400px]',
+        'bg-card/50 border-border/50 group relative flex h-auto min-h-[400px] w-full flex-col rounded-lg border font-sans text-base leading-relaxed shadow-sm',
         className
       )}
     >
       <div
         ref={scrollContainerRef}
-        className={cn(
-          'relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto',
-          uiV2 && 'overflow-visible'
-        )}
+        className="relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto"
       >
         <div className="relative min-h-full">
           <div
@@ -222,7 +216,7 @@ export function LiveEditor({
               }
             }}
             className="text-foreground absolute inset-0 z-10 h-full w-full resize-none overflow-hidden bg-transparent p-6 font-sans text-base leading-relaxed break-words focus:outline-none"
-            placeholder={placeholder ?? 'Content will appear here...'}
+            placeholder={placeholder ?? 'Your draft will show here...'}
             spellCheck="false"
           />
         </div>
@@ -231,14 +225,14 @@ export function LiveEditor({
       {isStreaming && (
         <div className="pointer-events-none absolute right-4 bottom-4 z-20">
           <span className="text-muted-foreground flex animate-pulse items-center gap-2 text-xs">
-            <Loader2 className="h-3 w-3 animate-spin" /> Preparing…
+            <Loader2 className="h-3 w-3 animate-spin" /> Writing your draft...
           </span>
         </div>
       )}
 
       {editHistory.length > 0 && !isStreaming && (
         <div className="bg-background/90 border-border/50 text-muted-foreground absolute right-4 bottom-4 z-20 flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs shadow-sm backdrop-blur-sm">
-          <span>Quick edit applied</span>
+          <span>Changes made.</span>
           <Button
             type="button"
             size="sm"
@@ -271,9 +265,11 @@ export function LiveEditor({
                 ref={menuRef}
                 className="bg-popover border-border flex max-w-[calc(100vw-2rem)] items-center gap-1 rounded-xl border p-1.5 shadow-xl backdrop-blur-md"
                 role="toolbar"
-                aria-label="Quick edits"
+                aria-label="Edit selected text"
               >
-                <span className="text-muted-foreground px-2 text-xs font-medium">Format</span>
+                <span className="text-muted-foreground px-2 text-xs font-medium">
+                  Format selected text
+                </span>
                 {quickEditActions.map(({ action, label, icon: Icon }) => (
                   <Button
                     key={action}

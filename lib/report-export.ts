@@ -39,7 +39,7 @@ export async function exportToPdf(content: string, options: ExportOptions = {}) 
 
   // Add a Header
   const header = document.createElement('h1');
-  header.textContent = 'Report';
+  header.textContent = 'Review draft';
   header.style.marginBottom = '20px';
   header.style.fontSize = '24px';
   header.style.borderBottom = '2px solid #333';
@@ -52,7 +52,7 @@ export async function exportToPdf(content: string, options: ExportOptions = {}) 
 
   const opt = {
     margin: 10,
-    filename: options.filename || 'report.pdf',
+    filename: options.filename || 'review-draft.pdf',
     image: { type: 'jpeg' as const, quality: 0.98 },
     html2canvas: {
       scale: 2,
@@ -68,7 +68,7 @@ export async function exportToPdf(content: string, options: ExportOptions = {}) 
 }
 
 export function exportToWord(content: string, options: ExportOptions = {}) {
-  const filename = options.filename || 'report.doc';
+  const filename = options.filename || 'review-draft.doc';
 
   // Create a proper HTML document structure that Word understands
   const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' 
@@ -76,7 +76,7 @@ export function exportToWord(content: string, options: ExportOptions = {}) {
                         xmlns='http://www.w3.org/TR/REC-html40'>
   <head>
     <meta charset="utf-8">
-    <title>Export HTML to Word Document with JavaScript</title>
+    <title>Jobmark review draft</title>
     <style>
       body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.6; }
       h1 { font-size: 18pt; margin-bottom: 20px; }
@@ -94,7 +94,7 @@ export function exportToWord(content: string, options: ExportOptions = {}) {
     .replace(/>/g, '&gt;')
     .replace(/\n/g, '<br/>');
 
-  const sourceHTML = header + `<h1>Report</h1><br/>` + safeContent + footer;
+  const sourceHTML = header + `<h1>Review draft</h1><br/>` + safeContent + footer;
 
   const blob = new Blob(['\ufeff', sourceHTML], {
     type: 'application/msword',

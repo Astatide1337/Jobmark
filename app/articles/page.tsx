@@ -6,21 +6,21 @@ import { TopicChipsBar, SortAndSearchBar } from './_components/article-filters';
 
 const categoryLabels = {
   all: 'All',
-  help: 'How to use Jobmark',
+  help: 'Using Jobmark',
   'career-development': 'Career development',
 } as const;
 
 type CategoryFilter = keyof typeof categoryLabels;
 const articlesDescription =
-  'Practical notes for capturing progress, telling a clearer story, and taking your next step.';
+  'Short guides for saving your work and preparing for reviews and updates.';
 
 const validCategories = new Set<CategoryFilter>(['all', 'help', 'career-development']);
 
 export const metadata: Metadata = {
-  title: 'Articles | Jobmark',
+  title: 'Guides | Jobmark',
   description: articlesDescription,
   openGraph: {
-    title: 'Articles | Jobmark',
+    title: 'Guides | Jobmark',
     description: articlesDescription,
     type: 'website',
   },
@@ -78,7 +78,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
       <header className="border-border/60 border-b pb-10 sm:pb-14">
         <div className="max-w-3xl">
           <h1 className="text-foreground max-w-3xl font-serif text-4xl leading-[0.98] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
-            Jobmark Articles
+            Jobmark guides
           </h1>
           <p className="text-muted-foreground mt-5 max-w-2xl text-base leading-7 sm:text-lg">
             {articlesDescription}
@@ -94,7 +94,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
                 id="featured-story-heading"
                 className="text-foreground font-serif text-2xl font-semibold"
               >
-                Featured story
+                Featured guide
               </h2>
             </div>
             <StoryCard article={featuredArticle} variant="lead" />
@@ -110,7 +110,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
               id="article-library-heading"
               className="text-foreground font-serif text-3xl font-semibold sm:text-4xl"
             >
-              {isBrowsingResults ? `${filteredArticles.length} stories` : 'Latest stories'}
+              {isBrowsingResults ? `${filteredArticles.length} guides` : 'Latest guides'}
             </h2>
           </div>
 
@@ -127,10 +127,10 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           {filteredArticles.length === 0 ? (
             <section className="border-border/70 mt-8 rounded-2xl border border-dashed p-8 text-center sm:p-12">
               <h3 className="text-foreground font-serif text-2xl font-semibold">
-                No stories matched that search.
+                No guides matched that search.
               </h3>
               <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm leading-6">
-                Try a different phrase or return to the full journal.
+                Try a different phrase or return to all guides.
               </p>
               <Link
                 href="/articles"

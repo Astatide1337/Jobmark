@@ -50,7 +50,7 @@ describe('calendar date semantics', () => {
         customEndDate: start,
         timeZone: 'America/New_York',
       })
-    ).toThrow('must not be after');
+    ).toThrow('must be on or before the end date');
   });
 
   it('uses the user timezone across a daylight-saving transition', () => {

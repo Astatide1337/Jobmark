@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   createConsent: vi.fn(),
   getConsent: vi.fn(),
   resolveClientId: vi.fn(),
+  getComplianceStatus: vi.fn(),
 }));
 
 vi.mock('@/lib/auth', () => ({ auth: mocks.auth }));
@@ -24,6 +25,7 @@ vi.mock('@/lib/mcp/auth/rate-limit', () => ({
   createRateLimitHeaders: () => ({}),
   RATE_LIMITS: { authorize: { maxRequests: 10, windowMs: 60_000 } },
 }));
+vi.mock('@/lib/compliance', () => ({ getComplianceStatus: mocks.getComplianceStatus }));
 
 import { GET, POST } from './route';
 
@@ -48,6 +50,7 @@ async function createRequest(
     overrides.transaction ??
     (await createAuthorizationTransaction({
       clientId: requestClientId,
+      resource: 'https://jobmark.example.com/mcp',
       redirectUri: requestRedirectUri,
       responseType: 'code',
       scope: 'jobmark:read offline_access',
@@ -59,6 +62,7 @@ async function createRequest(
 
   const body = new URLSearchParams({
     client_id: requestClientId,
+    resource: 'https://jobmark.example.com/mcp',
     redirect_uri: requestRedirectUri,
     response_type: overrides.responseType ?? 'code',
     scope,
@@ -93,6 +97,7 @@ describe('MCP authorization consent callback', () => {
     });
     mocks.getConsent.mockResolvedValue('jobmark:read offline_access');
     mocks.createAuthorizationCode.mockResolvedValue({ code: 'authorization-code' });
+    mocks.getComplianceStatus.mockResolvedValue({ isComplete: true });
   });
 
   it('shows consent again when the client explicitly requests it', async () => {
@@ -104,6 +109,7 @@ describe('MCP authorization consent callback', () => {
       requestUrl.search = new URLSearchParams({
         response_type: 'code',
         client_id: clientId,
+        resource: 'https://jobmark-preview.example/mcp',
         redirect_uri: callbackUrl,
         scope: 'jobmark:read offline_access',
         state: 'test-state',
@@ -137,6 +143,7 @@ describe('MCP authorization consent callback', () => {
       requestUrl.search = new URLSearchParams({
         response_type: 'code',
         client_id: clientId,
+        resource: 'https://jobmark-preview.example/mcp',
         redirect_uri: callbackUrl,
         scope: 'jobmark:read offline_access',
         state: 'test-state',
@@ -169,6 +176,7 @@ describe('MCP authorization consent callback', () => {
       requestUrl.search = new URLSearchParams({
         response_type: 'token',
         client_id: clientId,
+        resource: 'https://jobmark.example/mcp',
         redirect_uri: callbackUrl,
         scope: 'jobmark:read offline_access',
         state: 'state with & separators',
@@ -234,6 +242,7 @@ describe('MCP authorization consent callback', () => {
         redirectUri: forgedRedirectUri,
         transaction: await createAuthorizationTransaction({
           clientId,
+          resource: 'https://jobmark.example.com/mcp',
           redirectUri: forgedRedirectUri,
           responseType: 'code',
           scope: 'jobmark:read offline_access',
@@ -253,6 +262,7 @@ describe('MCP authorization consent callback', () => {
   it('rejects a forged consent form before creating a code', async () => {
     const transaction = await createAuthorizationTransaction({
       clientId,
+      resource: 'https://jobmark.example.com/mcp',
       redirectUri: callbackUrl,
       responseType: 'code',
       scope: 'jobmark:read offline_access',
@@ -280,5 +290,24 @@ describe('MCP authorization consent callback', () => {
 
     expect(response.status).toBe(400);
     expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('requires the canonical MCP resource indicator', async () => {
+    const requestUrl = new URL('https://jobmark.example.com/api/auth/mcp/authorize');
+    requestUrl.search = new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      scope: 'jobmark:read offline_access',
+      state: 'test-state',
+      code_challenge: 'A'.repeat(43),
+      code_challenge_method: 'S256',
+      resource: 'https://other.example.com/mcp',
+    }).toString();
+
+    const response = await GET(new NextRequest(requestUrl));
+    const location = new URL(response.headers.get('location') ?? '');
+    expect(location.searchParams.get('error')).toBe('invalid_target');
+    expect(mocks.resolveClientId).not.toHaveBeenCalled();
   });
 });

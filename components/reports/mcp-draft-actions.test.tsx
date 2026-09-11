@@ -20,10 +20,10 @@ describe('McpDraftActions', () => {
       <McpDraftActions connectedMcpProviders={[]} onDraftWithProvider={vi.fn()} />
     );
 
-    expect(markup).toContain('Connect an AI app');
-    expect(markup).not.toContain('Draft with Claude');
-    expect(markup).not.toContain('Draft with ChatGPT');
-    expect(markup).not.toContain('Draft with Gemini');
+    expect(markup).toContain('Connect an assistant');
+    expect(markup).not.toContain('Edit with Claude');
+    expect(markup).not.toContain('Edit with ChatGPT');
+    expect(markup).not.toContain('Edit with Gemini');
   });
 
   it('renders only the connected providers', () => {
@@ -37,10 +37,10 @@ describe('McpDraftActions', () => {
       />
     );
 
-    expect(markup).toContain('Draft with Claude');
-    expect(markup).toContain('Draft with Gemini');
-    expect(markup).toContain('Gemini opens separately. Your instructions are copied');
-    expect(markup).not.toContain('Draft with ChatGPT');
+    expect(markup).toContain('Edit with Claude');
+    expect(markup).toContain('Edit with Gemini');
+    expect(markup).toContain('Gemini opens in a new tab. Copy the text and paste it there.');
+    expect(markup).not.toContain('Edit with ChatGPT');
     expect(markup).not.toContain('Connect an MCP');
   });
 
@@ -63,7 +63,7 @@ describe('McpDraftActions', () => {
 
     expect(singleMarkup).toContain('Open in Gemini');
     expect(singleMarkup).not.toContain('Open in...');
-    expect(multipleMarkup).toContain('Choose where to continue');
+    expect(multipleMarkup).toContain('Continue with');
     expect(getMcpProviderLaunchUrl('claude')).toBe('https://claude.ai/new');
     expect(getMcpProviderLaunchUrl('chatgpt')).toBe('https://chatgpt.com/');
     expect(getMcpProviderLaunchUrl('gemini')).toBe('https://gemini.google.com/app');

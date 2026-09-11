@@ -5,50 +5,48 @@
  * and pricing. It provides definitive answers in a clean,
  * collapsible format to avoid information overload.
  *
- * Logic: Uses an accordion pattern with `AnimatePresence` to handle
- * height-based entry/exit animations smoothly.
+ * Logic: Keeps answers mounted and animates only the surrounding grid row so
+ * changing an item does not fade or remount the text.
  */
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
 const faqs = [
   {
     id: 'what-is',
-    question: 'What is Jobmark exactly?',
+    question: 'What is Jobmark?',
     answer:
-      'Jobmark helps you keep a clear record of your work and turn it into useful updates, reviews, and next steps.',
+      'Jobmark helps you record your work and turn it into reviews, updates, and a clearer view of your progress.',
   },
   {
     id: 'different',
-    question: 'Is this just a notes app?',
+    question: 'Is Jobmark just a notes app?',
     answer:
-      'Notes capture raw thoughts, but they do not organize evidence or turn it into career-ready output. Jobmark is structured for impact, not just storage.',
+      'It gives your work a home. You can group entries by project, make review drafts, and connect an assistant.',
   },
   {
     id: 'notion',
-    question: 'Why not just use Notion or Docs?',
-    answer:
-      'Generic tools are flexible, but they do not build a career record for you. Jobmark is built around evidence, timelines, and review-ready output from the start.',
+    question: 'Why not use Notion or Docs?',
+    answer: 'You can. Jobmark is built around the entries and summaries you need for work reviews.',
   },
   {
     id: 'ai-work',
-    question: 'How do connections to AI apps work?',
+    question: 'Can I connect an assistant?',
     answer:
-      'Jobmark first turns your record into a factual draft. If you connect Claude, ChatGPT, or Gemini, you can ask for a richer rewrite while keeping the underlying record in Jobmark.',
+      'Yes. Connect Claude, ChatGPT, or Gemini when you want help editing a draft. You decide what to share.',
   },
   {
     id: 'export',
-    question: 'Can I export everything?',
-    answer: 'Yes. Your work record should remain portable so you can reuse it wherever you need.',
+    question: 'Can I download what I add here?',
+    answer: 'Yes. Export your record whenever you want and use it somewhere else.',
   },
   {
     id: 'who',
-    question: 'Who is this for?',
+    question: 'Who is Jobmark for?',
     answer:
-      'People who want stronger reviews, clearer promotion cases, and better weekly visibility without keeping a separate system of record.',
+      'Anyone who wants a better way to explain what they have done and where they are headed.',
   },
 ];
 
@@ -56,7 +54,7 @@ export function FAQ() {
   const [openId, setOpenId] = useState<string | null>('what-is');
 
   const toggleItem = (id: string) => {
-    setOpenId(openId === id ? null : id);
+    setOpenId(currentId => (currentId === id ? null : id));
   };
 
   return (
@@ -67,73 +65,39 @@ export function FAQ() {
       <div className="relative mx-auto max-w-3xl px-6">
         {/* Section Header */}
         <div className="mb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-6 flex items-center justify-center gap-3"
-          >
+          <div className="mb-6 flex items-center justify-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">FAQ</span>
             <div className="bg-primary/50 h-px w-12" />
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 font-serif text-4xl font-bold md:text-5xl"
-          >
-            Questions & Answers
-          </motion.h2>
+          <h2 className="mb-4 font-serif text-4xl font-bold md:text-5xl">Common questions</h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground text-lg"
-          >
-            Everything you might want to know.
-          </motion.p>
+          <p className="text-muted-foreground text-lg">Answers to common questions.</p>
         </div>
 
         {/* FAQ Accordion */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="space-y-2"
-        >
-          {faqs.map((faq, index) => (
+        <div className="space-y-2">
+          {faqs.map(faq => (
             <FAQItem
               key={faq.id}
               faq={faq}
               isOpen={openId === faq.id}
               onToggle={() => toggleItem(faq.id)}
-              index={index}
             />
           ))}
-        </motion.div>
+        </div>
 
         {/* Contact prompt */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="text-muted-foreground mt-12 text-center"
-        >
-          Have another question?{' '}
+        <p className="text-muted-foreground mt-12 text-center">
+          Have a question?{' '}
           <a
             href="mailto:hello@jobmark.app"
             className="text-primary underline-offset-4 hover:underline"
           >
             Get in touch
           </a>
-        </motion.p>
+        </p>
       </div>
     </section>
   );
@@ -143,20 +107,14 @@ function FAQItem({
   faq,
   isOpen,
   onToggle,
-  index,
 }: {
   faq: (typeof faqs)[0];
   isOpen: boolean;
   onToggle: () => void;
-  index: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
-      className={`relative rounded-xl border transition-all duration-300 ${
+    <div
+      className={`relative rounded-xl border transition-[border-color,background-color,box-shadow] duration-300 ${
         isOpen
           ? 'border-border/40 bg-card/50'
           : 'border-border/20 bg-card/20 hover:border-border/30 hover:bg-card/30'
@@ -164,7 +122,10 @@ function FAQItem({
     >
       {/* Question - Always visible */}
       <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`faq-${faq.id}-content`}
         className="group flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left"
       >
         <span
@@ -175,35 +136,28 @@ function FAQItem({
           {faq.question}
         </span>
 
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="text-muted-foreground flex-shrink-0"
-        >
-          <ChevronDown className="h-5 w-5" />
-        </motion.div>
+        <ChevronDown
+          className={`text-muted-foreground h-5 w-5 flex-shrink-0 transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
-      {/* Answer - Expandable */}
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              height: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
-              opacity: { duration: 0.25 },
-            }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-5">
-              <div className="bg-border/20 mb-4 h-px" />
-              <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {/* Keep the answer mounted; only the row height changes. */}
+      <div
+        id={`faq-${faq.id}-content`}
+        aria-hidden={!isOpen}
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${
+          isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="px-5 pb-5">
+            <div className="bg-border/20 mb-4 h-px" />
+            <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

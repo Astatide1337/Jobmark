@@ -8,7 +8,7 @@ import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 export const metadata: Metadata = {
-  title: 'MCP Connector - Jobmark',
+  title: 'Connect AI - Jobmark',
   description: 'Connect Jobmark to Claude, ChatGPT, or Gemini.',
 };
 
@@ -41,14 +41,14 @@ export default async function ConnectionsPage() {
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="MCP Connector"
+          title="Connect AI"
         />
       }
     >
       <div className="mx-auto w-full max-w-(--container-content)">
         <McpConnectionPage
+          key={connections.map(connection => connection.id).join('|')}
           baseUrl={mcpBaseUrl}
-          user={{ id: session.user.id, name: session.user.name, email: session.user.email }}
           connections={connections.map(c => ({
             id: c.id,
             oauthClientId: c.oauthClientId,

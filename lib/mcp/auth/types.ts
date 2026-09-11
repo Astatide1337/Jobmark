@@ -9,10 +9,6 @@ export const OAuthScopes = [
 
 export type OAuthScope = (typeof OAuthScopes)[number];
 
-export const OAuthScopeSchema = z.enum(OAuthScopes);
-
-export const OAuthScopesSchema = z.array(OAuthScopeSchema);
-
 export const ClientSchema = z.object({
   client_id: z.string(),
   client_secret: z.string().optional(),
@@ -20,7 +16,9 @@ export const ClientSchema = z.object({
   grant_types: z.array(z.enum(['authorization_code', 'refresh_token'])),
   response_types: z.array(z.enum(['code'])),
   scope: z.string(),
-  token_endpoint_auth_method: z.enum(['client_secret_post', 'client_secret_basic', 'none']).default('client_secret_post'),
+  token_endpoint_auth_method: z
+    .enum(['client_secret_post', 'client_secret_basic', 'none'])
+    .default('client_secret_post'),
   jwks_uri: z.string().url().optional(),
   client_name: z.string().optional(),
   client_uri: z.string().url().optional(),
@@ -67,39 +65,6 @@ export const RefreshTokenSchema = z.object({
 });
 
 export type RefreshToken = z.infer<typeof RefreshTokenSchema>;
-
-export const TokenResponseSchema = z.object({
-  access_token: z.string(),
-  token_type: z.literal('Bearer'),
-  expires_in: z.number(),
-  refresh_token: z.string().optional(),
-  scope: z.string(),
-});
-
-export type TokenResponse = z.infer<typeof TokenResponseSchema>;
-
-export const IntrospectionResponseSchema = z.object({
-  active: z.boolean(),
-  scope: z.string().optional(),
-  client_id: z.string().optional(),
-  username: z.string().optional(),
-  token_type: z.string().optional(),
-  exp: z.number().optional(),
-  iat: z.number().optional(),
-  sub: z.string().optional(),
-  aud: z.string().optional(),
-});
-
-export type IntrospectionResponse = z.infer<typeof IntrospectionResponseSchema>;
-
-export const RevocationRequestSchema = z.object({
-  token: z.string(),
-  token_type_hint: z.enum(['access_token', 'refresh_token']).optional(),
-  client_id: z.string(),
-  client_secret: z.string().optional(),
-});
-
-export type RevocationRequest = z.infer<typeof RevocationRequestSchema>;
 
 export const JWKSSchema = z.object({
   keys: z.array(

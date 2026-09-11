@@ -111,23 +111,6 @@ function getUTCYMD(date: Date | string): string {
 }
 
 /**
- * Get a relative time string (e.g., "2 days ago", "in 3 days")
- */
-export function getRelativeTime(date: Date | string | null | undefined): string {
-  if (!date) return '';
-  const now = new Date();
-  const d = new Date(date);
-  const diffMs = d.getTime() - now.getTime();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'tomorrow';
-  if (diffDays === -1) return 'yesterday';
-  if (diffDays > 0) return `in ${diffDays} days`;
-  return `${Math.abs(diffDays)} days ago`;
-}
-
-/**
  * Get a relative day label for date-only fields (e.g., follow-up dates).
  * Uses UTC date parts for the stored value (to preserve intended calendar day)
  * and compares against the user's local "today".
@@ -183,11 +166,11 @@ function dateDistance(startDate: string, endDate: string): number {
  */
 export const CHANNEL_OPTIONS = [
   { value: 'email', label: 'Email' },
-  { value: 'call', label: 'Phone Call' },
-  { value: 'text', label: 'Text Message' },
-  { value: 'in-person', label: 'In Person' },
+  { value: 'call', label: 'Phone call' },
+  { value: 'text', label: 'Text message' },
+  { value: 'in-person', label: 'In person' },
   { value: 'linkedin', label: 'LinkedIn' },
-  { value: 'video', label: 'Video Call' },
+  { value: 'video', label: 'Video call' },
   { value: 'other', label: 'Other' },
 ] as const;
 
@@ -202,22 +185,22 @@ export function getChannelLabel(channel: string): string {
  * Outreach objective options
  */
 export const OUTREACH_OBJECTIVES = [
-  { value: 'referral', label: 'Ask for Referral' },
-  { value: 'catch-up', label: 'Catch Up' },
-  { value: 'thank-you', label: 'Say Thank You' },
+  { value: 'referral', label: 'Ask for a referral' },
+  { value: 'catch-up', label: 'Catch up' },
+  { value: 'thank-you', label: 'Say thank you' },
   { value: 'reconnect', label: 'Reconnect' },
-  { value: 'introduction', label: 'Request Introduction' },
+  { value: 'introduction', label: 'Request an introduction' },
   { value: 'congratulate', label: 'Congratulate' },
 ] as const;
 
 export const OUTREACH_TONES = [
-  { value: 'warm', label: 'Warm & Friendly' },
-  { value: 'professional', label: 'Professional' },
-  { value: 'concise', label: 'Short & Concise' },
+  { value: 'warm', label: 'Warm and friendly' },
+  { value: 'professional', label: 'Formal' },
+  { value: 'concise', label: 'Short and clear' },
 ] as const;
 
 export const OUTREACH_CHANNELS = [
   { value: 'email', label: 'Email' },
-  { value: 'linkedin', label: 'LinkedIn Message' },
-  { value: 'text', label: 'Text Message' },
+  { value: 'linkedin', label: 'LinkedIn message' },
+  { value: 'text', label: 'Text message' },
 ] as const;

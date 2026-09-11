@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { getProjectDetails } from '@/app/actions/projects';
+import { getUserSettings } from '@/app/actions/settings';
+import { DEFAULT_TIME_ZONE, getCalendarDate, isValidTimeZone } from '@/lib/date-semantics';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { redirect } from 'next/navigation';
@@ -19,12 +21,21 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
   }
 
   const { projectId } = await params;
-  const project = await getProjectDetails(projectId, 20);
+  const [project, settings] = await Promise.all([
+    getProjectDetails(projectId, 20),
+    getUserSettings(),
+  ]);
 
   if (!project) {
     // Project not found or locked — redirect to projects list
     redirect('/projects');
   }
+
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const today = getCalendarDate(new Date(), timeZone);
 
   return (
     <DashboardShell
@@ -32,18 +43,18 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
         <DashboardHeader
           userName={session.user.name}
           userImage={session.user.image}
-          title="Project Details"
+          title="Project"
         />
       }
     >
-      <div className="mx-auto w-full max-w-7xl space-y-8 px-6 py-8 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-8 py-2">
         {/* Back navigation */}
         <Link
           href="/projects"
-          className="text-muted-foreground hover:text-primary group inline-flex items-center gap-2 text-sm transition-all active:scale-95"
+          className="text-muted-foreground hover:text-primary group inline-flex items-center gap-2 text-sm transition-colors"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Back to Projects
+          Back to projects
         </Link>
 
         {/* Header Card */}
@@ -59,7 +70,7 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
             <div className="flex-1">
               <h1 className="text-foreground mb-1 text-2xl font-bold">{project.name}</h1>
               <p className="text-muted-foreground max-w-2xl leading-relaxed">
-                {project.description || 'No description provided.'}
+                {project.description || 'No description added.'}
               </p>
 
               <div className="text-muted-foreground mt-4 flex items-center gap-4 text-sm">
@@ -68,12 +79,12 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
                   <span className="text-foreground font-medium">
                     {project._count.activities}
                   </span>{' '}
-                  entries
+                  {project._count.activities === 1 ? 'note' : 'notes'}
                 </div>
                 {project.activities[0] && (
                   <div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2 py-1">
                     <Clock className="h-3.5 w-3.5" />
-                    Updated {formatDistanceToNow(project.activities[0].createdAt)} ago
+                    Last note {formatDistanceToNow(project.activities[0].createdAt)} ago
                   </div>
                 )}
               </div>
@@ -81,13 +92,15 @@ export default async function ProjectDetailsPage({ params }: ProjectDetailsPageP
           </div>
         </div>
 
-        {/* Activity Feed */}
+        {/* Notes */}
         <div>
-          <h2 className="mb-4 px-1 text-lg font-semibold">Activity Timeline</h2>
+          <h2 className="mb-4 px-1 text-lg font-semibold">Notes in this project</h2>
           <ProjectActivityTimeline
             projectId={projectId}
             initialActivities={project.activities}
             totalCount={project._count.activities}
+            timeZone={timeZone}
+            today={today}
           />
         </div>
       </div>

@@ -5,23 +5,21 @@
  * This accordion component allows users to explore the "Why" behind the
  * features, building trust through transparency.
  *
- * Design: Features a custom warm-amber gradient on active items to maintain
+ * Design: Features a warm-amber gradient on active items to maintain
  * the "Café" brand identity.
  */
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
 // All icons use warm cafe colors - variations of amber/brown
 const values = [
   {
     id: 'private',
-    title: 'Evidence Over Memory',
-    subtitle: 'Build a durable record',
-    description:
-      'Work fades fast. Jobmark helps you capture what you did while it is still fresh so you can use it later with confidence.',
+    title: 'Save what happened',
+    subtitle: 'Do not rely on memory',
+    description: 'A short entry today gives you a clear starting point later.',
     // Custom SVG for lock - warm amber
     icon: (
       <svg
@@ -41,10 +39,9 @@ const values = [
   },
   {
     id: 'no-pressure',
-    title: 'Ownership by Default',
-    subtitle: 'Your record stays portable',
-    description:
-      'Your work record should be yours. Export it, reuse it, and keep control of your evidence over time.',
+    title: 'Take it with you',
+    subtitle: 'Your work stays yours',
+    description: 'Download your record whenever you want and use it somewhere else.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -63,10 +60,10 @@ const values = [
   },
   {
     id: 'ai-ready',
-    title: 'Ready for the AI apps you use',
-    subtitle: 'You lead, your AI app refines',
+    title: 'Bring help when you need it',
+    subtitle: 'The assistant is optional',
     description:
-      'Jobmark keeps the evidence and structure in your hands. When you connect an AI app, it can refine the story without replacing your voice.',
+      'Connect Claude, ChatGPT, or Gemini when you want another pair of eyes on a draft.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -85,10 +82,10 @@ const values = [
   },
   {
     id: 'real-people',
-    title: 'Career Clarity Over Time',
-    subtitle: 'A system, not a sprint',
+    title: 'Build a record over time',
+    subtitle: 'Small entries add up',
     description:
-      'Jobmark is designed for the long game: consistent visibility, better reviews, and a clearer path forward.',
+      'You do not need a perfect routine. A few entries each week give you more to work with when review time comes.',
     icon: (
       <svg
         className="h-5 w-5"
@@ -111,7 +108,7 @@ export function ProductValues() {
   const [openId, setOpenId] = useState<string | null>('private');
 
   const toggleItem = (id: string) => {
-    setOpenId(openId === id ? null : id);
+    setOpenId(currentId => (currentId === id ? null : id));
   };
 
   return (
@@ -119,58 +116,34 @@ export function ProductValues() {
       <div className="mx-auto max-w-4xl px-6">
         {/* Section Header */}
         <div className="mb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-6 flex items-center justify-center gap-3"
-          >
+          <div className="mb-6 flex items-center justify-center gap-3">
             <div className="bg-primary/50 h-px w-12" />
             <span className="text-primary font-mono text-sm tracking-wide uppercase">
-              Our Values
+              How it works
             </span>
             <div className="bg-primary/50 h-px w-12" />
-          </motion.div>
+          </div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 font-serif text-4xl font-bold md:text-5xl"
-          >
-            What we believe
-          </motion.h2>
+          <h2 className="mb-4 font-serif text-4xl font-bold md:text-5xl">
+            A simple habit for better reviews.
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground mx-auto max-w-2xl text-lg"
-          >
-            The principles that guide every decision we make.
-          </motion.p>
+          <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
+            Start small. Build something useful over time.
+          </p>
         </div>
 
         {/* Accordion */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="space-y-3"
-        >
-          {values.map((value, index) => (
+        <div className="space-y-3">
+          {values.map(value => (
             <AccordionItem
               key={value.id}
               value={value}
               isOpen={openId === value.id}
               onToggle={() => toggleItem(value.id)}
-              index={index}
             />
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -180,36 +153,23 @@ function AccordionItem({
   value,
   isOpen,
   onToggle,
-  index,
 }: {
   value: (typeof values)[0];
   isOpen: boolean;
   onToggle: () => void;
-  index: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.1 }}
-      className="relative"
-    >
-      {/* Background gradient when open - warm amber tones */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="from-primary/10 via-primary/5 absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r to-transparent"
-          />
-        )}
-      </AnimatePresence>
+    <div className="relative">
+      {/* Keep the background node mounted so opening an item does not remount nearby content. */}
+      <div
+        aria-hidden="true"
+        className={`from-primary/10 via-primary/5 pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-gradient-to-r to-transparent transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
 
       <div
-        className={`relative rounded-2xl border transition-all duration-300 ${
+        className={`relative rounded-2xl border transition-[border-color,background-color,box-shadow] duration-300 ${
           isOpen
             ? 'border-primary/30 bg-card/60 backdrop-blur-sm'
             : 'border-border/20 bg-card/30 hover:border-border/30 hover:bg-card/40'
@@ -217,13 +177,16 @@ function AccordionItem({
       >
         {/* Header - Always visible */}
         <button
+          type="button"
           onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-controls={`value-${value.id}-content`}
           className="group flex w-full cursor-pointer items-center gap-4 p-6 text-left"
         >
           {/* Icon - all use warm primary color */}
           <div
-            className={`bg-primary/10 border-primary/20 text-primary flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border transition-all duration-300 ${
-              isOpen ? 'scale-110' : 'group-hover:scale-105'
+            className={`bg-primary/10 border-primary/20 text-primary flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border transition-[background-color,box-shadow] duration-300 ${
+              isOpen ? 'shadow-sm' : 'group-hover:shadow-sm'
             }`}
           >
             {value.icon}
@@ -236,39 +199,29 @@ function AccordionItem({
           </div>
 
           {/* Chevron */}
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="text-muted-foreground flex-shrink-0"
-          >
-            <ChevronDown className="h-5 w-5" />
-          </motion.div>
+          <ChevronDown
+            className={`text-muted-foreground h-5 w-5 flex-shrink-0 transition-transform duration-300 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
         </button>
 
-        {/* Content - Expandable */}
-        <AnimatePresence initial={false}>
-          {isOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{
-                height: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
-                opacity: { duration: 0.3 },
-              }}
-              className="overflow-hidden"
-            >
-              <div className="px-6 pb-6">
-                {/* Divider */}
-                <div className="bg-primary/10 mb-4 h-px" />
-
-                {/* Description */}
-                <p className="text-muted-foreground pl-16 leading-relaxed">{value.description}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Keep the answer mounted. Only the outer grid row changes size, so its text never fades. */}
+        <div
+          id={`value-${value.id}-content`}
+          aria-hidden={!isOpen}
+          className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${
+            isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="px-6 pb-6">
+              <div className="bg-primary/10 mb-4 h-px" />
+              <p className="text-muted-foreground pl-16 leading-relaxed">{value.description}</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

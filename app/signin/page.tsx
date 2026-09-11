@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, PenLine } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoogleIcon } from '@/components/auth/google-icon';
 import { signInWithDevUser, signInWithGoogle } from '@/app/actions/auth';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 export const metadata: Metadata = {
   title: 'Sign in | Jobmark',
-  description: 'Sign in to your Jobmark career record.',
+  description: 'Sign in to your Jobmark notes.',
 };
 
 type SignInPageProps = {
@@ -18,17 +19,20 @@ type SignInPageProps = {
 };
 
 const errorMessages: Record<string, string> = {
-  Configuration: 'Sign-in is temporarily unavailable. Please try again in a moment.',
-  AccessDenied: 'Sign-in was cancelled. You can try again whenever you’re ready.',
-  OAuthSignin: 'Google sign-in could not be started. Please try again.',
-  OAuthCallback: 'Google could not finish signing you in. Please try again.',
+  Configuration: 'Sign-in is not available right now. Try again in a moment.',
+  AccessDenied: 'Sign-in was cancelled. You can try again later.',
+  OAuthSignin: 'Google sign-in could not start. Try again.',
+  OAuthCallback: 'Google could not finish signing you in. Try again.',
   OAuthAccountNotLinked: 'That Google account is already linked to another sign-in method.',
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;
   const callbackUrl = typeof params.callbackUrl === 'string' ? params.callbackUrl : '/dashboard';
-  const error = typeof params.error === 'string' ? errorMessages[params.error] : undefined;
+  const error =
+    typeof params.error === 'string'
+      ? (errorMessages[params.error] ?? 'Sign-in could not be completed. Try again.')
+      : undefined;
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-12 sm:px-8">
@@ -51,15 +55,15 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </Link>
 
         <div className="mb-8 text-center">
-          <div className="bg-primary/15 border-primary/25 shadow-primary/10 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-lg">
-            <PenLine className="text-primary h-6 w-6" aria-hidden="true" />
+          <div className="bg-primary shadow-primary/10 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg">
+            <JobmarkMark className="h-8 w-8" sizes="32px" />
           </div>
           <p className="text-primary mb-3 text-xs font-semibold tracking-[0.24em] uppercase">
             Jobmark
           </p>
           <h1 className="editorial-heading text-3xl sm:text-4xl">Welcome back</h1>
           <p className="text-muted-foreground mt-3 text-sm leading-6">
-            Keep your work, progress, and impact in one place.
+            Keep your work notes in one place.
           </p>
         </div>
 

@@ -58,7 +58,7 @@ export function AffirmationPhase({ texts, totalDuration, onComplete }: Affirmati
           {texts.map((_, i) => (
             <div
               key={i}
-              className={`h-1 rounded-full transition-all duration-700 ${getProgressClass(i, textIndex)}`}
+              className={`h-1 rounded-full transition-[width,background-color] duration-700 ${getProgressClass(i, textIndex)}`}
             />
           ))}
         </div>

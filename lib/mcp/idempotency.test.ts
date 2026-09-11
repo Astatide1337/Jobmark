@@ -27,7 +27,11 @@ describe('MCP idempotency claims', () => {
   it('returns the completed result after a concurrent request wins the claim', async () => {
     mocks.create.mockRejectedValue({ code: 'P2002' });
     mocks.findUnique
-      .mockResolvedValueOnce({ status: 'pending', resultJson: null, expiresAt: new Date(Date.now() + 60_000) })
+      .mockResolvedValueOnce({
+        status: 'pending',
+        resultJson: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      })
       .mockResolvedValueOnce({
         status: 'completed',
         resultJson: { content: [{ type: 'text', text: 'created' }] },

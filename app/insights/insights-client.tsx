@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { InsightsData } from '@/app/actions/insights';
+import { shiftCalendarDate } from '@/lib/date-semantics';
+import { buildHeatmapGrid } from '@/lib/insights-grid';
 
 type DateRange = '7d' | '30d' | '90d' | '365d' | 'all';
 
@@ -37,30 +39,37 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
   const [dateRange, setDateRange] = useState<DateRange>('all');
 
   const filteredData = useMemo(() => {
-    const rangeStart = getDateRangeStart(dateRange);
+    const rangeStart = getDateRangeStart(dateRange, initialData.today);
 
     if (!rangeStart) {
       return initialData;
     }
 
     // Filter heatmap data
-    const filteredHeatmap = initialData.heatmapData.filter(d => {
-      const date = new Date(d.date);
-      return date >= rangeStart;
-    });
+    const rangeStartKey = rangeStart;
+    const latestDateKey = initialData.today;
+    const filteredHeatmap = initialData.heatmapData.filter(
+      d => d.date >= rangeStartKey && d.date <= latestDateKey
+    );
 
     // Calculate filtered stats
     const filteredActivities = filteredHeatmap.reduce((sum, d) => sum + d.count, 0);
     const filteredActiveDays = filteredHeatmap.filter(d => d.count > 0).length;
 
     // Recalculate best day for filtered period
-    let bestDay = initialData.bestDay;
+    let bestDay: InsightsData['bestDay'] = null;
     if (filteredHeatmap.length > 0) {
       const best = filteredHeatmap.reduce((a, b) => (a.count > b.count ? a : b));
       if (best.count > 0) {
         bestDay = { date: best.date, count: best.count };
       }
     }
+
+    const { heatmapGrid, monthLabels } = buildHeatmapGrid(
+      filteredHeatmap,
+      rangeStartKey,
+      latestDateKey
+    );
 
     // Filter weekly trend based on range
     let weeklyTrend = initialData.weeklyTrend;
@@ -78,6 +87,8 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       activeDaysThisMonth:
         dateRange === 'all' ? initialData.activeDaysThisMonth : filteredActiveDays,
       heatmapData: filteredHeatmap,
+      heatmapGrid,
+      monthLabels,
       weeklyTrend,
       bestDay,
     };
@@ -88,22 +99,29 @@ export function InsightsClient({ initialData }: InsightsClientProps) {
       {/* Header with filter */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-foreground text-lg font-semibold">Record Health</h2>
+          <h2 className="text-foreground text-lg font-semibold">Your notes</h2>
           <p className="text-muted-foreground text-sm">
-            See how complete, reusable, and balanced your work record is.
+            See how often you add notes and which projects they cover.
           </p>
         </div>
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Summary Cards */}
-      <InsightsSummary data={filteredData} />
+      <InsightsSummary
+        data={filteredData}
+        rangeLabel={dateRange === 'all' ? 'this month' : 'selected range'}
+      />
 
       {/* AI Insights */}
       <AiInsights data={filteredData} />
 
       {/* Contribution Heatmap */}
-      <ContributionHeatmap weeks={initialData.heatmapGrid} monthLabels={initialData.monthLabels} />
+      <ContributionHeatmap
+        weeks={filteredData.heatmapGrid}
+        monthLabels={filteredData.monthLabels}
+        today={filteredData.today}
+      />
 
       {/* Charts Section */}
       <ActivityCharts
@@ -131,19 +149,15 @@ function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   );
 }
 
-function getDateRangeStart(range: DateRange): Date | null {
+function getDateRangeStart(range: DateRange, today: string): string | null {
   if (range === 'all') return null;
 
-  const now = new Date();
   const daysMap: Record<Exclude<DateRange, 'all'>, number> = {
-    '7d': 7,
-    '30d': 30,
-    '90d': 90,
-    '365d': 365,
+    '7d': 6,
+    '30d': 29,
+    '90d': 89,
+    '365d': 364,
   };
 
-  const start = new Date();
-  start.setDate(now.getDate() - daysMap[range]);
-  start.setHours(0, 0, 0, 0);
-  return start;
+  return shiftCalendarDate(today, -daysMap[range]);
 }

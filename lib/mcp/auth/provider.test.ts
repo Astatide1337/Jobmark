@@ -59,6 +59,7 @@ import {
   consumeAuthorizationCode,
   ensureMcpConnection,
   hashPKCE,
+  hashClientSecret,
   hashToken,
   resolveClientId,
   validateAccessToken,
@@ -282,11 +283,11 @@ describe('MCP OAuth token persistence', () => {
 });
 
 describe('MCP OAuth client authentication', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mocks.clientFindUnique.mockResolvedValue({
       clientId: 'confidential-client',
-      clientSecretHash: hashToken('correct-secret'),
+      clientSecretHash: await hashClientSecret('correct-secret'),
       redirectUris: ['https://client.example.com/callback'],
       grantTypes: ['authorization_code'],
       responseTypes: ['code'],
@@ -305,6 +306,23 @@ describe('MCP OAuth client authentication', () => {
     await expect(validateClient('confidential-client', 'correct-secret')).resolves.toMatchObject({
       client_id: 'confidential-client',
       token_endpoint_auth_method: 'client_secret_post',
+    });
+  });
+
+  it('continues to accept a legacy randomly generated client secret hash', async () => {
+    mocks.clientFindUnique.mockResolvedValue({
+      clientId: 'confidential-client',
+      clientSecretHash: hashToken('correct-secret'),
+      redirectUris: ['https://client.example.com/callback'],
+      grantTypes: ['authorization_code'],
+      responseTypes: ['code'],
+      scope: 'jobmark:read',
+      tokenEndpointAuthMethod: 'client_secret_post',
+      clientName: 'Confidential client',
+    });
+
+    await expect(validateClient('confidential-client', 'correct-secret')).resolves.toMatchObject({
+      client_id: 'confidential-client',
     });
   });
 });
@@ -348,6 +366,7 @@ describe('MCP OAuth authorization-code PKCE', () => {
 describe('CIDDD client metadata SSRF and response limits', () => {
   const claudeMetadataUrl = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
   const metadata = {
+    client_id: claudeMetadataUrl,
     redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
     client_name: 'Claude',
     grant_types: ['authorization_code', 'refresh_token'],
@@ -449,6 +468,14 @@ describe('CIDDD client metadata SSRF and response limits', () => {
       expect.objectContaining({ agent: false, method: 'GET', lookup: expect.any(Function) }),
       expect.any(Function)
     );
+  });
+
+  it('requires CIDDD documents to self-identify the exact client ID', async () => {
+    responseQueue.length = 0;
+    const { client_id: _clientId, ...withoutClientId } = metadata;
+    queueResponse({ body: JSON.stringify(withoutClientId) });
+
+    await expect(resolveClientId(claudeMetadataUrl)).resolves.toBeNull();
   });
 
   it('rejects CIDDD metadata that weakens the callback or changes its client ID', async () => {

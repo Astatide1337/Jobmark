@@ -31,7 +31,7 @@ function clean(value: string | null | undefined, maxLength = 500): string | null
 
 function formatInteractionDate(value: Date | string): string {
   const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? 'date not recorded' : format(date, 'MMM d, yyyy');
+  return Number.isNaN(date.getTime()) ? 'No date' : format(date, 'MMM d, yyyy');
 }
 
 type OutreachPurpose =
@@ -67,6 +67,16 @@ function toSentence(value: string): string {
   return `${normalized}.`;
 }
 
+function getToneLabel(value: string | null | undefined): string {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'professional') return 'Formal';
+  if (normalized === 'casual') return 'Casual';
+  if (normalized === 'bullet-points') return 'Bullet points';
+  if (normalized === 'concise') return 'Short and clear';
+  if (normalized === 'warm') return 'Warm and friendly';
+  return clean(value) ?? 'Formal';
+}
+
 /**
  * Turn a short user-supplied context note into a readable sentence without
  * rewriting its meaning. The small verb-prefix allowlist handles common notes
@@ -83,15 +93,15 @@ function formatExtraContext(value: string | null): string {
 function getSubject(purpose: OutreachPurpose): string {
   switch (purpose) {
     case 'referral':
-      return 'A quick referral question';
+      return 'Question about a referral';
     case 'catch-up':
-      return 'Would you be up for a catch-up?';
+      return 'Can we catch up?';
     case 'thank-you':
       return 'Thank you';
     case 'reconnect':
       return 'Checking in';
     case 'introduction':
-      return 'A quick introduction question';
+      return 'Could you introduce me?';
     case 'congratulate':
       return 'Congratulations';
     case 'follow-up':
@@ -114,14 +124,14 @@ function getMessageParts(
     case 'referral':
       return {
         opening: isConcise
-          ? 'I’m exploring a next step and would value your perspective.'
-          : 'I’m reaching out because I’m exploring a next step and would value your perspective.',
-        ask: 'Would you be open to a short conversation about whether a referral might make sense? No pressure if the timing isn’t right.',
+          ? 'I’m looking at my next step and would like your advice.'
+          : 'I’m looking at my next step and would like your advice.',
+        ask: 'Would you be open to a short call about a referral? No problem if not.',
       };
     case 'catch-up':
       return {
-        opening: 'I’d love to catch up and hear what you’ve been working on.',
-        ask: 'Would you be open to finding a little time to talk?',
+        opening: 'I’d like to catch up and hear what you are working on.',
+        ask: 'Would you have time for a short call?',
       };
     case 'thank-you':
       return {
@@ -131,17 +141,17 @@ function getMessageParts(
       };
     case 'reconnect':
       return {
-        opening: 'I wanted to reach out and reconnect.',
-        ask: 'If you’re open to it, would you like to catch up sometime soon?',
+        opening: 'I wanted to check in.',
+        ask: 'Would you like to catch up soon?',
       };
     case 'introduction':
       return {
-        opening: 'I’m hoping to make a useful connection as I think through my next step.',
-        ask: 'Would you be comfortable making an introduction if someone comes to mind? No pressure if not.',
+        opening: 'I am thinking about my next step and would like your advice.',
+        ask: 'Would you be comfortable introducing me to someone who may help? No problem if not.',
       };
     case 'congratulate':
       return {
-        opening: 'I wanted to send a quick congratulations.',
+        opening: 'I wanted to congratulate you.',
       };
     case 'follow-up':
       return {
@@ -152,16 +162,16 @@ function getMessageParts(
       };
     default:
       return {
-        opening: 'I wanted to reach out and see if you’d be open to connecting.',
-        ask: 'Would you be open to a quick conversation?',
+        opening: 'I wanted to check in.',
+        ask: 'Would you be open to a short conversation?',
       };
   }
 }
 
 /**
- * Build an actual, editable outreach message from the contact record.
+ * Build an actual, editable message from the contact record.
  *
- * This stays deterministic and evidence-safe: it uses a small set of
+ * This stays predictable and fact-based: it uses a small set of
  * purpose-specific templates, the user's own context, and at most one recent
  * interaction. It never invents a role, company, accomplishment, date, or
  * relationship detail. Missing specifics result in a pleasantly general
@@ -181,7 +191,7 @@ export function buildOutreachDraft(contact: DraftContact, options: OutreachDraft
     !formattedContext &&
     relationship &&
     /teammate|collaborat|colleague|mentor|manager|client|friend/i.test(relationship)
-      ? 'I’ve appreciated working with you.'
+      ? 'I have enjoyed working with you.'
       : '';
   const { opening, ask } = getMessageParts(purpose, tone, formattedContext, latestInteraction);
   const greeting = tone.toLowerCase().includes('professional')
@@ -224,9 +234,8 @@ export type ReviewBriefOptions = {
 };
 
 /**
- * Build a manager-ready review brief without making claims that are not in the
- * user's record. It gives a connected AI app a strong, structured starting
- * point while remaining useful on its own.
+ * Build a review draft without making claims that are not in the user's notes.
+ * It gives a connected assistant a clear starting point.
  */
 export function buildReviewBrief(options: ReviewBriefOptions): string {
   const activities = options.activities;
@@ -235,51 +244,48 @@ export function buildReviewBrief(options: ReviewBriefOptions): string {
   ) as string[];
   const notes = clean(options.notes, 1_000);
   const lines = [
-    'REVIEW BRIEF',
+    'Review draft',
     '',
-    `Period: ${options.startDate} through ${options.endDate}`,
-    `Documented contributions: ${activities.length}`,
-    `Projects represented: ${projectNames.length > 0 ? projectNames.join(', ') : 'Unassigned work'}`,
-    `Requested tone: ${options.tone}`,
+    `Dates: ${options.startDate} through ${options.endDate}`,
+    `Notes: ${activities.length}`,
+    `Projects: ${projectNames.length > 0 ? projectNames.join(', ') : 'No project'}`,
+    `Style: ${getToneLabel(options.tone)}`,
     '',
-    'EXECUTIVE SUMMARY',
-    `This record contains ${activities.length} documented contribution${activities.length === 1 ? '' : 's'} from ${options.startDate} through ${options.endDate}. The entries below are the evidence available for a review, manager update, or promotion conversation. Add measurable outcomes where the record does not yet include them.`,
+    'Summary',
+    `These notes cover ${options.startDate} through ${options.endDate}. Add any missing results before you share this.`,
     '',
-    'KEY CONTRIBUTIONS',
+    'Notes',
   ];
 
   if (activities.length === 0) {
-    lines.push('- No contributions were recorded for this period.');
+    lines.push('- No notes were saved for this period.');
   } else {
     let currentProject: string | null = null;
     for (const activity of activities) {
-      const project = clean(activity.projectName) ?? 'Unassigned work';
+      const project = clean(activity.projectName) ?? 'No project';
       if (project !== currentProject) {
         lines.push(`### ${project}`);
         currentProject = project;
       }
-      const content = clean(activity.content, 700) ?? 'No description recorded.';
+      const content = clean(activity.content, 700) ?? 'No note.';
       lines.push(`- ${formatInteractionDate(activity.logDate)}: ${content}`);
     }
   }
 
   lines.push(
     '',
-    'IMPACT TO ADD BEFORE SHARING',
-    '- What changed because of this work?',
-    '- Who benefited, and how can that benefit be measured?',
-    '- What risk, cost, time, or quality improvement can be stated with evidence?',
-    '- Which contribution best supports the requested review or promotion conversation?'
+    'Check before sharing',
+    '- What changed?',
+    '- Who did this help?',
+    '- Is there a number or other clear result?',
+    '- Which note best supports this draft?'
   );
 
   if (notes) {
-    lines.push('', 'FOCUS NOTES', `- ${notes}`);
+    lines.push('', 'Your notes', `- ${notes}`);
   }
 
-  lines.push(
-    '',
-    'Keep the message grounded in what you actually know. Review the result before sharing it.'
-  );
+  lines.push('', 'Use only saved facts. Check the draft before you share it.');
 
   return lines.join('\n');
 }

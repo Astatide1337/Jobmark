@@ -18,6 +18,7 @@ import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
 import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
 import { buildReviewBrief } from '@/lib/deterministic-drafts';
+import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
 
 export type ReportConfig = {
   dateRange: '7d' | '30d' | 'month' | 'custom';
@@ -45,7 +46,7 @@ const reportConfigSchema = z.object({
 
 function validateReportConfig(config: ReportConfig): ReportConfig {
   const parsed = reportConfigSchema.safeParse(config);
-  if (!parsed.success) throw new Error('Invalid report configuration');
+  if (!parsed.success) throw new Error('Check the review settings and try again.');
   return parsed.data;
 }
 
@@ -78,7 +79,7 @@ export async function streamReport(config: ReportConfig) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    throw new Error('Unauthorized');
+    throw new Error('Sign in to make a review draft.');
   }
   config = validateReportConfig(config);
 
@@ -90,12 +91,12 @@ export async function streamReport(config: ReportConfig) {
 
   if (config.projectId) {
     const project = await getOwnedProject(session.user.id, config.projectId);
-    if (!project) throw new Error('Invalid report project');
+    if (!project) throw new Error('That project is no longer available.');
   }
 
   // If specific project is locked and vault is closed, block
   if (config.projectId && lockedIds.includes(config.projectId)) {
-    throw new Error('This project is locked.');
+    throw new Error('Open private projects before using this project.');
   }
 
   // 2b. Fetch activities
@@ -119,12 +120,10 @@ export async function streamReport(config: ReportConfig) {
   });
 
   if (activities.length > 500) {
-    throw new Error(
-      'This report period contains too many activities. Narrow the date range or project filter.'
-    );
+    throw new Error('There are too many notes. Choose a shorter date range or one project.');
   }
   if (activities.length === 0) {
-    throw new Error('No activities found for this period.');
+    throw new Error('No notes for this period.');
   }
 
   const content = buildReviewBrief({
@@ -134,7 +133,7 @@ export async function streamReport(config: ReportConfig) {
     notes: config.notes,
     activities: activities.map(activity => ({
       logDate: activity.logDate,
-      content: activity.content,
+      content: getActivityDisplayContent(activity.content),
       projectName: activity.project?.name ?? null,
     })),
   });
@@ -156,7 +155,7 @@ export async function checkActivityCount(config: ReportConfig) {
 
   if (config.projectId) {
     const project = await getOwnedProject(session.user.id, config.projectId);
-    if (!project) throw new Error('Invalid report project');
+    if (!project) throw new Error('That project is no longer available.');
   }
 
   // If specific project is locked, return 0
@@ -182,17 +181,19 @@ export async function checkActivityCount(config: ReportConfig) {
 // Save to History
 export async function saveReportToHistory(content: string, config: ReportConfig) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
-  if (!content.trim() || content.length > 100_000) throw new Error('Invalid report content');
+  if (!session?.user?.id) throw new Error('Sign in to save this review draft.');
+  if (!content.trim() || content.length > 100_000) {
+    throw new Error('This review draft is empty or too long.');
+  }
   config = validateReportConfig(config);
 
   if (config.projectId && !(await getOwnedProject(session.user.id, config.projectId))) {
-    throw new Error('Invalid report project');
+    throw new Error('That project is no longer available.');
   }
 
   // Generate a friendly title
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const title = `Report - ${dateStr}`;
+  const title = `Review draft - ${dateStr}`;
 
   await prisma.report.create({
     data: {
@@ -231,7 +232,7 @@ export async function getReports() {
 // Delete a report
 export async function deleteReport(reportId: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
+  if (!session?.user?.id) throw new Error('Sign in to delete this review draft.');
 
   await prisma.report.delete({
     where: {
@@ -246,7 +247,7 @@ export async function deleteReport(reportId: string) {
 // Update a saved report
 export async function updateReport(reportId: string, content: string, title?: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
+  if (!session?.user?.id) throw new Error('Sign in to edit this review draft.');
 
   const updateData: { content: string; title?: string } = {
     content,

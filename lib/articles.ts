@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const contentDirectory = path.join(process.cwd(), 'content', 'articles');
 
-export const articleCategorySchema = z.enum(['help', 'career-development']);
+const articleCategorySchema = z.enum(['help', 'career-development']);
 const articleDifficultySchema = z.enum(['starter', 'intermediate', 'advanced']);
 
 const articleFrontmatterSchema = z.object({
@@ -27,8 +27,6 @@ const articleFrontmatterSchema = z.object({
   bestFor: z.string().min(1).optional(),
   primaryAction: z.string().min(1).optional(),
   primaryHref: z.string().min(1).optional(),
-  secondaryAction: z.string().min(1).optional(),
-  secondaryHref: z.string().min(1).optional(),
 });
 
 export type ArticleCategory = z.infer<typeof articleCategorySchema>;
@@ -53,8 +51,6 @@ export interface ArticleSummary {
   bestFor?: string;
   primaryAction?: string;
   primaryHref?: string;
-  secondaryAction?: string;
-  secondaryHref?: string;
   readingTimeMinutes: number;
 }
 

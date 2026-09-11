@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 const navItems = [
   { href: '/dashboard', icon: Pen, label: 'Capture', demoId: 'journal' },
@@ -25,8 +26,13 @@ const navItems = [
   { href: '/insights', icon: BarChart3, label: 'Insights', demoId: 'feature-insights' },
   { href: '/focus', icon: Coffee, label: 'Focus', demoId: 'feature-focus' },
   { href: '/network', icon: Users, label: 'Network', demoId: 'feature-network' },
-  { href: '/chat', icon: LinkIcon, label: 'MCP Connector', demoId: 'feature-mentor' },
-  { href: '/articles', icon: Newspaper, label: 'Articles', demoId: 'feature-articles' },
+  {
+    href: '/settings/connections',
+    icon: LinkIcon,
+    label: 'Connect AI',
+    demoId: 'feature-mentor',
+  },
+  { href: '/articles', icon: Newspaper, label: 'Guides', demoId: 'feature-articles' },
 ];
 
 const settingsItem = { href: '/settings', icon: Settings, label: 'Settings', demoId: 'settings' };
@@ -89,7 +95,7 @@ export function Sidebar({
             : 'sm:static sm:flex sm:h-full sm:w-64 sm:translate-x-0'
         )}
       >
-        <div className="relative p-6">
+        <div className={cn('relative', mode === 'demo' ? 'p-4' : 'p-6')}>
           {isMobileOpen && (
             <Button
               variant="ghost"
@@ -103,22 +109,27 @@ export function Sidebar({
           )}
           {mode === 'app' ? (
             <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Pen className="text-primary h-4 w-4" />
+              <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground text-lg font-semibold">Jobmark</span>
             </Link>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-9 w-9 items-center justify-center rounded-xl">
-                <Pen className="text-primary h-4 w-4" />
+              <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground text-lg font-semibold">Jobmark</span>
             </div>
           )}
         </div>
 
-        <nav className="min-h-0 flex-1 px-3">
+        <nav
+          className={cn(
+            'scrollbar-none min-h-0 flex-1 overflow-y-auto px-3',
+            mode === 'demo' && 'px-2'
+          )}
+        >
           {navItems.map(item => (
             <NavItem
               key={item.href}
@@ -136,7 +147,7 @@ export function Sidebar({
             />
           ))}
         </nav>
-        <div className="border-border/50 border-t p-3">
+        <div className={cn('border-border/50 shrink-0 border-t p-3', mode === 'demo' && 'p-2')}>
           <NavItem
             mode={mode}
             href={settingsItem.href}
@@ -179,8 +190,8 @@ function NavItem({
         />
       )}
 
-      <Icon className="relative z-10 h-4 w-4 transition-colors" />
-      <span className="relative z-10 transition-colors">{label}</span>
+      <Icon className="relative z-10 h-4 w-4 shrink-0 transition-colors" />
+      <span className="relative z-10 whitespace-nowrap transition-colors">{label}</span>
     </>
   );
 
@@ -189,7 +200,8 @@ function NavItem({
       <button
         type="button"
         className={cn(
-          'group relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+          'group relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow]',
+          mode === 'demo' && 'gap-2 rounded-lg px-2 py-2 text-xs',
           isActive
             ? 'text-sidebar-accent-foreground'
             : 'text-muted-foreground hover:text-foreground'
@@ -207,7 +219,7 @@ function NavItem({
       href={href}
       onClick={onClick}
       className={cn(
-        'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+        'group relative z-10 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow]',
         isActive
           ? 'text-sidebar-accent-foreground'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
