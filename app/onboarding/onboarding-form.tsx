@@ -1,27 +1,34 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { acceptCurrentCompliance } from '@/app/actions/compliance';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { COMPLIANCE_MINIMUM_AGE, type ComplianceStatus } from '@/lib/compliance-policy';
 
 interface OnboardingFormProps {
   status: ComplianceStatus;
-  userName: string | null | undefined;
   continueTo: string;
 }
 
-export function OnboardingForm({ status, userName, continueTo }: OnboardingFormProps) {
+export function OnboardingForm({ status, continueTo }: OnboardingFormProps) {
   const [termsAccepted, setTermsAccepted] = useState(Boolean(status.terms.acceptedAt));
   const [privacyAccepted, setPrivacyAccepted] = useState(Boolean(status.privacy.acceptedAt));
   const [age16Confirmed, setAge16Confirmed] = useState(Boolean(status.age16ConfirmedAt));
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isComplete, setIsComplete] = useState(status.isComplete);
+  const router = useRouter();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
+
+    if (!termsAccepted || !privacyAccepted || !age16Confirmed) {
+      setMessage('Confirm the age requirement and accept both current documents to continue.');
+      return;
+    }
 
     startTransition(async () => {
       const result = await acceptCurrentCompliance({
@@ -35,32 +42,8 @@ export function OnboardingForm({ status, userName, continueTo }: OnboardingFormP
         return;
       }
 
-      setIsComplete(result.status.isComplete);
-      setMessage('Your account setup is complete.');
+      router.replace(continueTo);
     });
-  }
-
-  if (isComplete) {
-    return (
-      <main className="bg-background flex min-h-screen items-center justify-center px-6 py-16">
-        <section className="border-border bg-card w-full max-w-xl rounded-2xl border p-8 shadow-sm sm:p-10">
-          <p className="text-primary mb-3 text-xs font-semibold tracking-widest uppercase">
-            Account setup
-          </p>
-          <h1 className="text-foreground font-serif text-3xl font-semibold">You’re all set</h1>
-          <p className="text-muted-foreground mt-4 leading-7">
-            {userName ? `Thanks, ${userName}. ` : ''}Your eligibility confirmation and current Terms
-            and Privacy acceptances are on file.
-          </p>
-          <Link
-            href={`/api/compliance/continue?callbackUrl=${encodeURIComponent(continueTo)}`}
-            className="bg-primary text-primary-foreground mt-8 inline-flex rounded-lg px-5 py-3 text-sm font-medium transition-opacity hover:opacity-90"
-          >
-            Continue to Jobmark
-          </Link>
-        </section>
-      </main>
-    );
   }
 
   return (
@@ -79,50 +62,89 @@ export function OnboardingForm({ status, userName, continueTo }: OnboardingFormP
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <label className="text-foreground flex gap-3 text-sm leading-6">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={event => setTermsAccepted(event.target.checked)}
-              required
-              className="accent-primary mt-1 h-4 w-4 shrink-0"
-            />
-            <span>
-              I have read and agree to the{' '}
-              <Link href="/terms" target="_blank" className="text-primary underline">
-                Terms of Service
-              </Link>{' '}
-              (version {status.terms.version}).
-            </span>
-          </label>
+          <fieldset className="space-y-3">
+            <legend className="text-foreground mb-3 text-sm font-semibold">
+              Review and confirm
+            </legend>
 
-          <label className="text-foreground flex gap-3 text-sm leading-6">
-            <input
-              type="checkbox"
-              checked={privacyAccepted}
-              onChange={event => setPrivacyAccepted(event.target.checked)}
-              required
-              className="accent-primary mt-1 h-4 w-4 shrink-0"
-            />
-            <span>
-              I have read and acknowledge the{' '}
-              <Link href="/privacy" target="_blank" className="text-primary underline">
-                Privacy Policy
-              </Link>{' '}
-              (version {status.privacy.version}).
-            </span>
-          </label>
+            <div className="border-border/60 bg-muted/20 hover:border-primary/40 rounded-2xl border text-sm transition-colors">
+              <div className="flex items-start gap-3 p-4">
+                <Checkbox
+                  id="terms-accepted"
+                  checked={termsAccepted}
+                  onCheckedChange={checked => setTermsAccepted(checked === true)}
+                  required
+                  aria-labelledby="terms-accepted-label"
+                  className="mt-1 size-5"
+                />
+                <label
+                  id="terms-accepted-label"
+                  htmlFor="terms-accepted"
+                  className="text-foreground min-w-0 cursor-pointer leading-6"
+                >
+                  I have read and agree to the{' '}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline"
+                  >
+                    Terms of Service
+                  </Link>{' '}
+                  (version {status.terms.version}).
+                </label>
+              </div>
+            </div>
 
-          <label className="text-foreground flex gap-3 text-sm leading-6">
-            <input
-              type="checkbox"
-              checked={age16Confirmed}
-              onChange={event => setAge16Confirmed(event.target.checked)}
-              required
-              className="accent-primary mt-1 h-4 w-4 shrink-0"
-            />
-            <span>I confirm that I am at least {COMPLIANCE_MINIMUM_AGE} years old.</span>
-          </label>
+            <div className="border-border/60 bg-muted/20 hover:border-primary/40 rounded-2xl border text-sm transition-colors">
+              <div className="flex items-start gap-3 p-4">
+                <Checkbox
+                  id="privacy-accepted"
+                  checked={privacyAccepted}
+                  onCheckedChange={checked => setPrivacyAccepted(checked === true)}
+                  required
+                  aria-labelledby="privacy-accepted-label"
+                  className="mt-1 size-5"
+                />
+                <label
+                  id="privacy-accepted-label"
+                  htmlFor="privacy-accepted"
+                  className="text-foreground min-w-0 cursor-pointer leading-6"
+                >
+                  I have read and acknowledge the{' '}
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline"
+                  >
+                    Privacy Policy
+                  </Link>{' '}
+                  (version {status.privacy.version}).
+                </label>
+              </div>
+            </div>
+
+            <div className="border-border/60 bg-muted/20 hover:border-primary/40 rounded-2xl border text-sm transition-colors">
+              <div className="flex items-start gap-3 p-4">
+                <Checkbox
+                  id="age-confirmed"
+                  checked={age16Confirmed}
+                  onCheckedChange={checked => setAge16Confirmed(checked === true)}
+                  required
+                  aria-labelledby="age-confirmed-label"
+                  className="mt-1 size-5"
+                />
+                <label
+                  id="age-confirmed-label"
+                  htmlFor="age-confirmed"
+                  className="text-foreground min-w-0 cursor-pointer leading-6"
+                >
+                  I confirm that I am at least {COMPLIANCE_MINIMUM_AGE} years old.
+                </label>
+              </div>
+            </div>
+          </fieldset>
 
           {message && (
             <p role="status" className="text-muted-foreground rounded-lg border p-3 text-sm">
@@ -130,13 +152,15 @@ export function OnboardingForm({ status, userName, continueTo }: OnboardingFormP
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={isPending}
-            className="bg-primary text-primary-foreground w-full rounded-lg px-5 py-3 text-sm font-medium transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-busy={isPending}
+            size="lg"
+            className="w-full"
           >
             {isPending ? 'Saving…' : 'Confirm and continue'}
-          </button>
+          </Button>
         </form>
       </section>
     </main>

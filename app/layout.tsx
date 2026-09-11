@@ -17,6 +17,7 @@
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import { Inter, Geist_Mono, Playfair_Display } from 'next/font/google';
+import { PageTransition } from '@/components/layout/page-transition';
 import { SettingsProvider } from '@/components/providers/settings-provider';
 import { getUserSettings, type UserSettingsData } from '@/app/actions/settings';
 import { auth } from '@/lib/auth';
@@ -175,10 +176,10 @@ function AppDocument({
       >
         {isAuthenticated ? (
           <SettingsProvider initialSettings={initialSettings} isAuthenticated>
-            {children}
+            <PageTransition>{children}</PageTransition>
           </SettingsProvider>
         ) : (
-          children
+          <PageTransition>{children}</PageTransition>
         )}
         <GrainOverlay />
       </body>
