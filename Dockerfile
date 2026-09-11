@@ -27,6 +27,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Refresh the OpenSSL runtime libraries so the shipped image contains the
+# latest security fixes available for the Alpine release in the Node image.
+RUN apk upgrade --no-cache libcrypto3 libssl3
+
 # The runtime starts Node directly and runs Prisma through its copied CLI.
 # npm/npx are build-time tooling and their bundled dependency tree needlessly
 # expands the production attack surface, so keep them out of the final image.
