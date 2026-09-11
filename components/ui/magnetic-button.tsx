@@ -1,18 +1,9 @@
-/**
- * Magnetic Button (Framer Motion)
- *
- * Why: Adds a "Playful & Premium" micro-interaction. The button
- * subtley follows the user's cursor within a certain radius, creating
- * a magnetic attraction effect.
- *
- * Physics: Uses a high-stiffness spring transition to ensure the
- * movement feels snappy and responsive without being sluggish.
- */
 'use client';
 
-import { useRef, useState, ReactNode, MouseEvent } from 'react';
-import { motion } from 'framer-motion';
+import { useRef, type MouseEvent, type ReactNode } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useMotionPreference } from '@/components/landing/use-motion-preference';
 
 interface MagneticButtonProps {
   children: ReactNode;
@@ -22,44 +13,48 @@ interface MagneticButtonProps {
   as?: 'button' | 'div';
 }
 
+/**
+ * Pointer-follow micro-interaction for a small number of high-value landing CTAs.
+ * Motion values avoid a React render on every pointer move, and reduced-motion
+ * users get an ordinary control with identical semantics.
+ */
 export function MagneticButton({
   children,
   className,
-  strength = 0.3,
+  strength = 0.18,
   onClick,
   as = 'button',
 }: MagneticButtonProps) {
   const ref = useRef<HTMLButtonElement | HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const prefersReducedMotion = useMotionPreference();
+  const xTarget = useMotionValue(0);
+  const yTarget = useMotionValue(0);
+  const x = useSpring(xTarget, { stiffness: 360, damping: 24, mass: 0.45 });
+  const y = useSpring(yTarget, { stiffness: 360, damping: 24, mass: 0.45 });
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!ref.current) return;
-
+  const handlePointerMove = (event: MouseEvent) => {
+    if (prefersReducedMotion || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const distanceX = (e.clientX - centerX) * strength;
-    const distanceY = (e.clientY - centerY) * strength;
-
-    setPosition({ x: distanceX, y: distanceY });
+    xTarget.set((event.clientX - (rect.left + rect.width / 2)) * strength);
+    yTarget.set((event.clientY - (rect.top + rect.height / 2)) * strength);
   };
 
-  const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 });
+  const reset = () => {
+    xTarget.set(0);
+    yTarget.set(0);
   };
 
-  const Component = motion[as] as typeof motion.button;
+  const Component = as === 'div' ? motion.div : motion.button;
 
   return (
     <Component
-      ref={ref as React.RefObject<HTMLButtonElement>}
+      ref={ref as never}
       className={cn('relative', className)}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={handlePointerMove}
+      onMouseLeave={reset}
+      onBlur={reset}
       onClick={onClick}
-      animate={{ x: position.x, y: position.y }}
-      transition={{ type: 'spring', stiffness: 350, damping: 15, mass: 0.5 }}
+      style={prefersReducedMotion ? undefined : { x, y }}
     >
       {children}
     </Component>

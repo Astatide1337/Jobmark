@@ -11,7 +11,7 @@
  */
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { cn } from '@/lib/utils';
@@ -34,8 +34,8 @@ function titleForPath(path: string): string | undefined {
     '/insights': 'Insights',
     '/focus': 'Focus',
     '/network': 'Network',
-    '/chat': 'MCP Connector',
-    '/articles': 'Articles',
+    '/settings/connections': 'Connect AI',
+    '/articles': 'Guides',
     '/settings': 'Settings',
   };
   return titles[path] ?? 'Jobmark';
@@ -56,10 +56,6 @@ export function DashboardFrame({
 }: DashboardFrameProps) {
   const [currentPath, setCurrentPath] = useState(activePath);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  useEffect(() => {
-    setCurrentPath(activePath);
-  }, [activePath]);
 
   return (
     <div
@@ -82,6 +78,7 @@ export function DashboardFrame({
           userName="Demo User"
           title={titleForPath(currentPath)}
           showDate={currentPath === '/dashboard'}
+          dateLabel={currentPath === '/dashboard' ? 'Friday, August 14' : undefined}
           demoMode
           onMenuClick={() => setIsMobileOpen(true)}
         />

@@ -103,7 +103,10 @@ export async function getSettings(actor: JobmarkActor): Promise<SettingsDTO> {
   };
 }
 
-export async function updateSettings(actor: JobmarkActor, input: SettingsInput): Promise<SettingsDTO> {
+export async function updateSettings(
+  actor: JobmarkActor,
+  input: SettingsInput
+): Promise<SettingsDTO> {
   assertActor(actor);
 
   const result = settingsUpdateSchema.safeParse(input);

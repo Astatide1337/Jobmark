@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import {
   listInteractions,
@@ -8,10 +7,7 @@ import {
   getNetworkStats,
 } from '@/lib/jobmark/interactions';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-  McpNotFoundError,
-} from '../errors';
+import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
@@ -46,8 +42,9 @@ const interactionDeleteSchema = z.object({ interactionId: z.string() });
 export const interactionsListTool = {
   definition: {
     name: 'interactions_list',
-    title: 'List Interactions',
-    description: 'List contact interactions with pagination and optional contact filter. Requires jobmark:read scope.',
+    title: 'List conversations',
+    description:
+      'List contact conversations with pagination and an optional contact filter. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -101,15 +98,15 @@ export const interactionsListTool = {
       cursor: result.data.cursor,
       contactId: result.data.contactId,
     });
-    return createStructuredResult(data, `Found ${data.interactions.length} interactions`);
+    return createStructuredResult(data, `Found ${data.interactions.length} conversations`);
   },
 };
 
 export const interactionsCreateTool = {
   definition: {
     name: 'interactions_create',
-    title: 'Create Interaction',
-    description: 'Log a new interaction with a contact. Requires jobmark:write scope.',
+    title: 'Add conversation',
+    description: 'Save a new conversation with a contact. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -135,7 +132,12 @@ export const interactionsCreateTool = {
         createdAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -145,15 +147,15 @@ export const interactionsCreateTool = {
     }
 
     const interaction = await createInteraction(actor, result.data);
-    return createStructuredResult(interaction, `Logged ${result.data.channel} interaction with contact`);
+    return createStructuredResult(interaction, `Saved a ${result.data.channel} conversation`);
   },
 };
 
 export const interactionsUpdateTool = {
   definition: {
     name: 'interactions_update',
-    title: 'Update Interaction',
-    description: 'Update an existing interaction. Requires jobmark:write scope.',
+    title: 'Update conversation',
+    description: 'Update a conversation. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -177,7 +179,11 @@ export const interactionsUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -188,15 +194,15 @@ export const interactionsUpdateTool = {
 
     const { interactionId, ...data } = result.data;
     const interaction = await updateInteraction(actor, interactionId, data);
-    return createStructuredResult(interaction, 'Interaction updated');
+    return createStructuredResult(interaction, 'Conversation updated');
   },
 };
 
 export const interactionsDeleteTool = {
   definition: {
     name: 'interactions_delete',
-    title: 'Delete Interaction',
-    description: 'Delete an interaction. Requires jobmark:destructive scope.',
+    title: 'Delete conversation',
+    description: 'Delete a conversation. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -211,7 +217,11 @@ export const interactionsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -221,15 +231,16 @@ export const interactionsDeleteTool = {
     }
 
     await deleteInteraction(actor, result.data.interactionId);
-    return createStructuredResult({ success: true }, 'Interaction deleted');
+    return createStructuredResult({ success: true }, 'Conversation deleted');
   },
 };
 
 export const networkStatsTool = {
   definition: {
     name: 'network_stats',
-    title: 'Network Statistics',
-    description: 'Get network statistics and relationship insights. Requires jobmark:read scope.',
+    title: 'Network overview',
+    description:
+      'Get a summary of your contacts and conversations. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -249,6 +260,6 @@ export const networkStatsTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const data = await getNetworkStats(actor);
-    return createStructuredResult(data, 'Network stats retrieved');
+    return createStructuredResult(data, 'Network summary ready');
   },
 };

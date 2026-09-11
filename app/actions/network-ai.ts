@@ -45,7 +45,7 @@ export async function generateOutreachDraft({
 }) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error('Unauthorized');
+    throw new Error('Sign in to make a message draft.');
   }
   if (
     !objective.trim() ||
@@ -54,7 +54,7 @@ export async function generateOutreachDraft({
     channel.length > 100 ||
     (extraContext?.length ?? 0) > 4_000
   ) {
-    throw new Error('Outreach request is invalid');
+    throw new Error('Check the message and try again.');
   }
 
   // Fetch contact + recent interactions for context
@@ -69,7 +69,7 @@ export async function generateOutreachDraft({
   });
 
   if (!contact) {
-    throw new Error('Contact not found');
+    throw new Error('That contact is no longer available.');
   }
 
   const content = buildOutreachDraft(
@@ -100,15 +100,15 @@ export async function saveOutreachDraftToHistory(
   config: OutreachDraftConfig
 ): Promise<{ success: true }> {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
+  if (!session?.user?.id) throw new Error('Sign in to save this message draft.');
 
   const contact = await prisma.contact.findUnique({
     where: { id: config.contactId, userId: session.user.id },
     select: { fullName: true },
   });
-  if (!contact) throw new Error('Contact not found');
+  if (!contact) throw new Error('That contact is no longer available.');
 
-  const title = `${contact.fullName} – ${format(new Date(), 'MMM d')}`;
+  const title = `Message for ${contact.fullName} - ${format(new Date(), 'MMM d')}`;
 
   await prisma.outreachDraft.create({
     data: {
@@ -134,7 +134,7 @@ export async function getOutreachDraftsByContact(contactId: string) {
 
 export async function deleteOutreachDraft(draftId: string): Promise<{ success: true }> {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
+  if (!session?.user?.id) throw new Error('Sign in to delete this message draft.');
 
   await prisma.outreachDraft.delete({
     where: { id: draftId, userId: session.user.id },
@@ -149,7 +149,7 @@ export async function updateOutreachDraft(
   title?: string
 ): Promise<{ success: true }> {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('Unauthorized');
+  if (!session?.user?.id) throw new Error('Sign in to edit this message draft.');
 
   await prisma.outreachDraft.update({
     where: { id: draftId, userId: session.user.id },

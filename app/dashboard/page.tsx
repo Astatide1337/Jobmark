@@ -9,8 +9,8 @@
  *   session rather than trusting a caller-supplied user ID.
  * - Dynamic Greeting: Calculates a time-of-day greeting (Morning/Afternoon/Evening)
  *   server-side to ensure it's correct on first paint.
- * - Hydration Safety: Passes `serverDate` to the `StatsCards` to prevent
- *   mismatches between server-rendered and client-calculated streaks.
+ * - Hydration Safety: Passes the server's calendar date to `StatsCards` so
+ *   streaks do not change when a browser uses a different timezone.
  */
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -18,7 +18,8 @@ import { redirect } from 'next/navigation';
 import { getActivities, getActivityStats } from '@/app/actions/activities';
 import { getProjects } from '@/app/actions/projects';
 import { getUserSettings } from '@/app/actions/settings';
-import { QuickCapture, ActivityTimeline } from './dashboard-client';
+import { QuickCapture } from './dashboard-client';
+import { ActivityTimeline } from '@/components/dashboard/activity-timeline';
 import {
   GoalMotivator,
   NextBestAction,
@@ -27,7 +28,7 @@ import {
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
+import { DEFAULT_TIME_ZONE, getCalendarDate, isValidTimeZone } from '@/lib/date-semantics';
 
 import { getGoals } from '@/app/actions/goals';
 import { getLockedProjectIds } from '@/lib/project-lock';
@@ -69,9 +70,17 @@ export default async function DashboardPage() {
     settings?.timeZone && isValidTimeZone(settings.timeZone)
       ? settings.timeZone
       : DEFAULT_TIME_ZONE;
+  const now = new Date();
   const hour = Number(
-    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format()
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format(now)
   );
+  const dateLabel = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone,
+  }).format(now);
+  const today = getCalendarDate(now, timeZone);
   let greeting = 'Good evening';
   if (hour < 12) greeting = 'Good morning';
   else if (hour < 18) greeting = 'Good afternoon';
@@ -79,7 +88,12 @@ export default async function DashboardPage() {
   return (
     <DashboardShell
       header={
-        <DashboardHeader userName={session.user.name} userImage={session.user.image} showDate />
+        <DashboardHeader
+          userName={session.user.name}
+          userImage={session.user.image}
+          showDate
+          dateLabel={dateLabel}
+        />
       }
     >
       <div className="mx-auto w-full max-w-(--container-content)">
@@ -88,9 +102,7 @@ export default async function DashboardPage() {
           <h1 className="text-foreground mb-1 text-2xl font-bold">
             {greeting}, {session.user.name?.split(' ')[0]}.
           </h1>
-          <p className="text-muted-foreground">
-            Document today&apos;s work while it is still fresh.
-          </p>
+          <p className="text-muted-foreground">Write down what you did today while it is fresh.</p>
         </div>
 
         {stats.totalCount < 5 && (
@@ -102,7 +114,7 @@ export default async function DashboardPage() {
         )}
 
         {/* Goal Motivator (Carousel) */}
-        <GoalMotivator goals={goals} settings={settings} />
+        <GoalMotivator goals={goals} settings={settings} today={today} timeZone={timeZone} />
 
         {/* Quick Capture */}
         <div className="mb-8">
@@ -115,8 +127,10 @@ export default async function DashboardPage() {
                 archived: p.archived,
               })
             )}
-            todayCount={stats.today}
+            todayCount={stats.todayCount}
             dailyGoal={stats.dailyGoal}
+            initialDate={today}
+            initialTimeZone={timeZone}
           />
         </div>
 
@@ -128,7 +142,7 @@ export default async function DashboardPage() {
             projects={stats.projects}
             monthlyGoal={stats.monthlyGoal}
             summaries={reports}
-            serverDate={new Date().toISOString()}
+            today={stats.today}
           />
         </div>
 
@@ -144,18 +158,21 @@ export default async function DashboardPage() {
         {/* Activity Timeline */}
         <div className="mb-8">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-foreground text-lg font-semibold">Recent Activity</h2>
+            <h2 className="text-foreground text-lg font-semibold">Recent notes</h2>
             <span className="text-muted-foreground text-sm">
-              Evidence captured this week:{' '}
+              Notes this week:{' '}
               <span className="text-foreground font-medium">
                 {stats.thisWeek}/{stats.weeklyGoal}
               </span>
             </span>
           </div>
           <ActivityTimeline
+            key={activities.map(activity => activity.id).join('|') || `empty-${totalCount}`}
             activities={activities}
             totalCount={totalCount}
             initialTimeZone={timeZone}
+            initialToday={today}
+            initialNow={now.toISOString()}
           />
         </div>
       </div>

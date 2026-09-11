@@ -1,62 +1,47 @@
-/**
- * Final Call-to-Action (CTA) Section
- *
- * Why: The "closing argument" of the landing page. It provides
- * one last high-impact invitation to start a journal.
- *
- * Components: Uses the `MagneticButton` for a playful interaction
- * that increases the click-through rate.
- */
 'use client';
 
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { MagneticButton } from '@/components/ui/magnetic-button';
 import { useAuthModal } from '@/components/auth';
+import { MagneticButton } from '@/components/ui/magnetic-button';
+import { useMotionPreference } from './use-motion-preference';
 
 export function FinalCTA() {
   const { openAuthModal } = useAuthModal();
+  const prefersReducedMotion = useMotionPreference();
 
   return (
     <section className="relative overflow-hidden py-32 md:py-48">
-      {/* Background gradient */}
-      <div className="from-primary/10 absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
+      <motion.div
+        aria-hidden="true"
+        className="from-primary/10 pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent to-transparent"
+        animate={prefersReducedMotion ? undefined : { opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+      />
 
-      <div className="relative mx-auto max-w-4xl px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="space-y-8"
-        >
-          {/* Headline */}
-          <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl md:text-6xl">
-            Start building your
-            <span className="text-primary block">career.</span>
-          </h2>
+      <motion.div
+        initial={false}
+        whileInView={{ y: 0 }}
+        viewport={{ once: true, amount: 0.45 }}
+        transition={{ duration: prefersReducedMotion ? 0 : 0.65, ease: [0.16, 1, 0.3, 1] }}
+        className="relative mx-auto max-w-4xl space-y-8 px-6 text-center"
+      >
+        <h2 className="font-serif text-4xl leading-tight font-bold sm:text-5xl md:text-6xl">
+          Leave yourself a better starting point.
+        </h2>
+        <p className="text-muted-foreground mx-auto max-w-xl text-xl">
+          Start with one short entry. Build from there.
+        </p>
 
-          {/* Subtext */}
-          <p className="text-muted-foreground mx-auto max-w-xl text-xl">
-            Capture evidence now and use it when it matters.
-          </p>
-
-          {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="pt-4"
-          >
-            <MagneticButton strength={0.15} onClick={openAuthModal}>
-              <span className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 focus-visible:ring-primary inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-medium transition-all hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none">
-                Let&apos;s build
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </span>
-            </MagneticButton>
-          </motion.div>
-        </motion.div>
-      </div>
+        <div className="pt-4">
+          <MagneticButton strength={0.13} onClick={openAuthModal}>
+            <span className="group bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 focus-visible:ring-primary inline-flex items-center gap-3 rounded-full px-10 py-5 text-lg font-medium transition-[background-color,box-shadow] hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none">
+              Add a note
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </span>
+          </MagneticButton>
+        </div>
+      </motion.div>
     </section>
   );
 }

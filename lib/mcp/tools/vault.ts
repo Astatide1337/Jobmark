@@ -10,17 +10,15 @@ import {
 } from '@/lib/jobmark/vault';
 import { UserActionRequiredError, ValidationError } from '@/lib/jobmark/errors';
 import { McpActor, assertMcpActor } from '../actor';
-import {
-  McpValidationError,
-  McpVaultLockedError,
-} from '../errors';
+import { McpValidationError, McpVaultLockedError } from '../errors';
 import { createStructuredResult } from '../results';
 
 export const vaultStatusTool = {
   definition: {
     name: 'vault_status',
-    title: 'Vault Status',
-    description: 'Get vault lock status and configuration. Requires jobmark:write scope.',
+    title: 'Private project status',
+    description:
+      'Check whether private projects are set up and open. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -40,20 +38,21 @@ export const vaultStatusTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     const status = await getVaultStatus(actor);
-    let state = 'not configured';
+    let state = 'not set up';
     if (status.configured) {
       state = 'locked';
-      if (status.unlocked) state = 'unlocked';
+      if (status.unlocked) state = 'open';
     }
-    return createStructuredResult(status, `Vault: ${state}`);
+    return createStructuredResult(status, `Private projects: ${state}`);
   },
 };
 
 export const vaultListProjectsTool = {
   definition: {
     name: 'vault_list_projects',
-    title: 'List Vault Projects',
-    description: 'List projects locked in the vault. Requires jobmark:write scope.',
+    title: 'List private projects',
+    description:
+      'List projects hidden by the private project password. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -81,10 +80,10 @@ export const vaultListProjectsTool = {
     assertMcpActor(actor);
     try {
       const data = await listLockedProjects(actor);
-      return createStructuredResult(data, `Found ${data.projects.length} locked projects`);
+      return createStructuredResult(data, `Found ${data.projects.length} private projects`);
     } catch (error: unknown) {
       if (error instanceof ValidationError && error.message.includes('not configured')) {
-        throw new McpVaultLockedError('Vault is not configured');
+        throw new McpVaultLockedError('Private projects are not set up yet.');
       }
       throw error;
     }
@@ -94,8 +93,9 @@ export const vaultListProjectsTool = {
 export const vaultBeginSetupTool = {
   definition: {
     name: 'vault_begin_setup',
-    title: 'Begin Vault Setup',
-    description: 'Start vault password setup via secure one-time browser URL. Requires jobmark:write scope.',
+    title: 'Set up private projects',
+    description:
+      'Open a one-time link to set up the private project password. The link expires in 5 minutes. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -118,20 +118,21 @@ export const vaultBeginSetupTool = {
       if (error instanceof UserActionRequiredError) {
         return createStructuredResult(
           { actionUrl: error.actionUrl, expiresAt: error.expiresAt },
-          `Open this URL to set up your vault password (expires in 5 minutes): ${error.actionUrl}`
+          `Open this link to set up your private project password. It expires in 5 minutes: ${error.actionUrl}`
         );
       }
       throw error;
     }
-    throw new McpVaultLockedError('Unexpected: vault setup did not return action URL');
+    throw new McpVaultLockedError('Could not create the setup link.');
   },
 };
 
 export const vaultBeginChangePasswordTool = {
   definition: {
     name: 'vault_begin_change_password',
-    title: 'Begin Vault Password Change',
-    description: 'Start vault password change via secure one-time browser URL. Requires jobmark:write scope.',
+    title: 'Change the private project password',
+    description:
+      'Open a one-time link to change the private project password. The link expires in 5 minutes. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -154,20 +155,21 @@ export const vaultBeginChangePasswordTool = {
       if (error instanceof UserActionRequiredError) {
         return createStructuredResult(
           { actionUrl: error.actionUrl, expiresAt: error.expiresAt },
-          `Open this URL to change your vault password (expires in 5 minutes): ${error.actionUrl}`
+          `Open this link to change your private project password. It expires in 5 minutes: ${error.actionUrl}`
         );
       }
       throw error;
     }
-    throw new McpVaultLockedError('Unexpected: password change did not return action URL');
+    throw new McpVaultLockedError('Could not create the password-change link.');
   },
 };
 
 export const vaultBeginUnlockTool = {
   definition: {
     name: 'vault_begin_unlock',
-    title: 'Begin Vault Unlock',
-    description: 'Start vault unlock flow via secure one-time browser URL (5 min TTL). Requires jobmark:write scope.',
+    title: 'Open private projects',
+    description:
+      'Open a one-time link to open private projects. The link expires in 5 minutes. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -190,20 +192,20 @@ export const vaultBeginUnlockTool = {
       if (error instanceof UserActionRequiredError) {
         return createStructuredResult(
           { actionUrl: error.actionUrl, expiresAt: error.expiresAt },
-          `Open this URL to unlock your vault (expires in 5 minutes): ${error.actionUrl}`
+          `Open this link to open your private projects. It expires in 5 minutes: ${error.actionUrl}`
         );
       }
       throw error;
     }
-    throw new McpVaultLockedError('Unexpected: vault unlock did not return action URL');
+    throw new McpVaultLockedError('Could not create the link to open private projects.');
   },
 };
 
 export const vaultLockTool = {
   definition: {
     name: 'vault_lock',
-    title: 'Lock Vault',
-    description: 'Lock the vault immediately. Requires jobmark:write scope.',
+    title: 'Close private projects',
+    description: 'Close private projects now. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -220,15 +222,16 @@ export const vaultLockTool = {
   execute: async (actor: McpActor) => {
     assertMcpActor(actor);
     await lockVault(actor);
-    return createStructuredResult({ locked: true }, 'Vault locked');
+    return createStructuredResult({ locked: true }, 'Private projects closed');
   },
 };
 
 export const vaultSetProjectLockedTool = {
   definition: {
     name: 'vault_set_project_locked',
-    title: 'Set Project Vault Lock',
-    description: 'Lock or unlock a specific project in the vault. Requires jobmark:write scope.',
+    title: 'Set project privacy',
+    description:
+      'Hide or show one project with the private project password. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -257,7 +260,7 @@ export const vaultSetProjectLockedTool = {
     const updated = await setProjectLocked(actor, parsed.data.projectId, parsed.data.locked);
     return createStructuredResult(
       { projectId: parsed.data.projectId, locked: parsed.data.locked },
-      `Project ${parsed.data.locked ? 'locked' : 'unlocked'} in vault`
+      `Project ${parsed.data.locked ? 'hidden' : 'shown'}`
     );
   },
 };

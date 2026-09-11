@@ -1,9 +1,8 @@
 /**
  * jobmark Public Landing Page
  *
- * Why: This is the high-conversion entrance for the product. It uses
- * a "Scrollytelling" approach with editorial-style layouts to
- * communicate the value proposition.
+ * Why: This is the public entrance for the product. It uses an editorial
+ * layout with a small number of direct, purposeful interactions.
  *
  * Pattern: Purely aesthetic Server Component that wraps everything in
  * the `AuthModalProvider` to allow "Sign In" triggers from any CTA
@@ -11,7 +10,6 @@
  */
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Pen } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { AuthModalProvider } from '@/components/auth';
 import { FloatingNav } from '@/components/landing/floating-nav';
@@ -20,11 +18,12 @@ import { ProblemStatement } from '@/components/landing/problem-statement';
 import { PersonaTabs } from '@/components/landing/persona-tabs';
 import { ProductTour } from '@/components/landing/product-tour';
 import { VideoSection } from '@/components/landing/video-section';
-import { AccessSection } from '@/components/landing/pricing-section';
+import { AccessSection } from '@/components/landing/access-section';
 import { ProductValues } from '@/components/landing/product-values';
 import { FAQ } from '@/components/landing/faq';
 import { FinalCTA } from '@/components/landing/final-cta';
 import { SectionDivider } from '@/components/landing/section-divider';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 export default async function Home() {
   // Redirect logged-in users to dashboard
@@ -57,7 +56,7 @@ export default async function Home() {
         {/* Divider */}
         <SectionDivider delay={0.1} />
 
-        {/* Product Tour - Scrollytelling Feature Showcase */}
+        {/* Product tour - one active preview at a time */}
         <ProductTour />
 
         {/* Divider */}
@@ -67,7 +66,7 @@ export default async function Home() {
         <VideoSection />
 
         {/* Divider */}
-        <SectionDivider delay={0.1} />
+        <SectionDivider delay={0.1} className="py-4 md:py-6" />
 
         {/* Access Section */}
         <AccessSection />
@@ -94,8 +93,8 @@ export default async function Home() {
         <footer className="border-border/20 bg-card/30 relative z-10 border-t py-12">
           <div className="text-muted-foreground mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 text-sm md:flex-row">
             <div className="flex items-center gap-3">
-              <div className="bg-primary/10 border-primary/20 flex h-7 w-7 items-center justify-center rounded-md border">
-                <Pen className="text-primary h-3.5 w-3.5" />
+              <div className="bg-primary flex h-7 w-7 items-center justify-center rounded-md">
+                <JobmarkMark className="h-5 w-5" sizes="20px" />
               </div>
               <span className="text-foreground font-serif">Jobmark</span>
               <span className="text-border">|</span>

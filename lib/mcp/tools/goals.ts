@@ -2,13 +2,7 @@
  * Goals MCP Tools
  */
 import { z } from 'zod';
-import {
-  listGoals,
-  getGoal,
-  createGoal,
-  updateGoal,
-  deleteGoal,
-} from '@/lib/jobmark/goals';
+import { listGoals, getGoal, createGoal, updateGoal, deleteGoal } from '@/lib/jobmark/goals';
 import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
@@ -33,8 +27,8 @@ const goalGetDeleteSchema = z.object({
 export const goalsListTool = {
   definition: {
     name: 'goals_list',
-    title: 'List Goals',
-    description: 'List all goals for the current user. Requires jobmark:read scope.',
+    title: 'List goals',
+    description: 'List your goals. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -67,7 +61,12 @@ export const goalsListTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({ limit: z.number().int().min(1).max(100).default(100), cursor: z.string().optional() }).safeParse(input);
+    const result = z
+      .object({
+        limit: z.number().int().min(1).max(100).default(100),
+        cursor: z.string().optional(),
+      })
+      .safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
@@ -80,8 +79,8 @@ export const goalsListTool = {
 export const goalsGetTool = {
   definition: {
     name: 'goals_get',
-    title: 'Get Goal',
-    description: 'Get a specific goal by ID. Requires jobmark:read scope.',
+    title: 'Get goal',
+    description: 'Get one goal by ID. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -118,8 +117,8 @@ export const goalsGetTool = {
 export const goalsCreateTool = {
   definition: {
     name: 'goals_create',
-    title: 'Create Goal',
-    description: 'Create a new goal. Requires jobmark:write scope.',
+    title: 'Create goal',
+    description: 'Create a new goal. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -141,7 +140,12 @@ export const goalsCreateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: false, openWorldHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -158,8 +162,8 @@ export const goalsCreateTool = {
 export const goalsUpdateTool = {
   definition: {
     name: 'goals_update',
-    title: 'Update Goal',
-    description: 'Update an existing goal. Requires jobmark:write scope.',
+    title: 'Update goal',
+    description: 'Update a goal. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -182,7 +186,11 @@ export const goalsUpdateTool = {
         updatedAt: { type: 'string' },
       },
     },
-    annotations: { destructiveHint: false, idempotentHint: true, requiredScopes: ['jobmark:write'] },
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:write'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
@@ -200,8 +208,8 @@ export const goalsUpdateTool = {
 export const goalsDeleteTool = {
   definition: {
     name: 'goals_delete',
-    title: 'Delete Goal',
-    description: 'Delete a goal. Requires jobmark:destructive scope.',
+    title: 'Delete goal',
+    description: 'Delete a goal. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -216,7 +224,11 @@ export const goalsDeleteTool = {
         success: { type: 'boolean' },
       },
     },
-    annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:destructive'] },
+    annotations: {
+      destructiveHint: true,
+      idempotentHint: true,
+      requiredScopes: ['jobmark:destructive'],
+    },
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);

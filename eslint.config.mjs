@@ -29,9 +29,9 @@ const eslintConfig = defineConfig([
       // Prevent nested ternary operators for readability - warn only in development
       'no-nested-ternary': 'warn',
 
-      // Prevent unused variables (allows _ prefix for intentional unused)
+      // Unused code makes large client components harder to reason about.
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         {
           argsIgnorePattern: '^_*',
           varsIgnorePattern: '^_*',
@@ -39,26 +39,38 @@ const eslintConfig = defineConfig([
         },
       ],
 
-      // Allow any type in development
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Keep the domain and UI layers explicitly typed.
+      '@typescript-eslint/no-explicit-any': 'error',
 
-      // Allow setState in effects for development (common pattern)
-      'react-hooks/set-state-in-effect': 'warn',
+      // State synchronization belongs to explicit events or keyed editable
+      // drafts. Keeping this as an error prevents hydration flicker from
+      // returning when a new client component is added.
+      'react-hooks/set-state-in-effect': 'error',
 
-      // Allow unescaped entities in JSX (common for quotes)
-      'react/no-unescaped-entities': 'warn',
+      'react/no-unescaped-entities': 'error',
 
-      // Allow impure functions in development
-      'react-hooks/purity': 'warn',
+      // Render functions must remain pure; state changes belong to events/effects.
+      'react-hooks/purity': 'error',
 
-      // Allow reassign variables in development
-      'react-hooks/immutability': 'warn',
+      'react-hooks/immutability': 'error',
 
-      // Prefer const - warn only
-      '@typescript-eslint/prefer-as-const': 'warn',
+      '@typescript-eslint/prefer-as-const': 'error',
 
-      // Empty object type - warn
-      '@typescript-eslint/no-empty-object-type': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'error',
+
+      // Keep keyboard and screen-reader paths covered by CI. Next's preset
+      // registers these rules as warnings; product interactions must be errors.
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/aria-props': 'error',
+      'jsx-a11y/aria-proptypes': 'error',
+      'jsx-a11y/aria-unsupported-elements': 'error',
+      'jsx-a11y/interactive-supports-focus': 'error',
+      'jsx-a11y/label-has-associated-control': 'error',
+      'jsx-a11y/mouse-events-have-key-events': 'error',
+      'jsx-a11y/no-noninteractive-element-interactions': 'error',
+      'jsx-a11y/no-static-element-interactions': 'error',
+      'jsx-a11y/role-has-required-aria-props': 'error',
+      'jsx-a11y/role-supports-aria-props': 'error',
     },
   },
   globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', '.worktrees/**', '*.config.*']),

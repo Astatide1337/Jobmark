@@ -50,8 +50,9 @@ const activityDeleteSchema = z.object({ activityId: z.string() });
 export const activitiesListTool = {
   definition: {
     name: 'activities_list',
-    title: 'List Activities',
-    description: 'List work activities with pagination and filters. Requires jobmark:read scope.',
+    title: 'List notes',
+    description:
+      'List saved work notes with pagination and filters. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -109,15 +110,15 @@ export const activitiesListTool = {
       dateTo: result.data.dateTo,
       search: result.data.search,
     });
-    return createStructuredResult(data, `Found ${data.activities.length} activities`);
+    return createStructuredResult(data, `Found ${data.activities.length} notes`);
   },
 };
 
 export const activitiesGetTool = {
   definition: {
     name: 'activities_get',
-    title: 'Get Activity',
-    description: 'Get a single activity by ID. Requires jobmark:read scope.',
+    title: 'Get note',
+    description: 'Get one saved note by ID. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -156,17 +157,17 @@ export const activitiesGetTool = {
 
     const activity = await getActivity(actor, result.data.activityId);
     if (!activity) {
-      throw new McpNotFoundError('Activity not found');
+      throw new McpNotFoundError('Note');
     }
-    return createStructuredResult(activity, `Activity: ${activity.content.slice(0, 80)}...`);
+    return createStructuredResult(activity, `Note: ${activity.content.slice(0, 80)}...`);
   },
 };
 
 export const activitiesCreateTool = {
   definition: {
     name: 'activities_create',
-    title: 'Create Activity',
-    description: 'Log a new work activity. Requires jobmark:write scope.',
+    title: 'Create note',
+    description: 'Save a new work note. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -203,10 +204,10 @@ export const activitiesCreateTool = {
 
     try {
       const activity = await createActivity(actor, result.data);
-      return createStructuredResult(activity, `Logged activity for ${result.data.logDate}`);
+      return createStructuredResult(activity, `Saved note for ${result.data.logDate}`);
     } catch (error) {
       if (error instanceof McpVaultLockedError) {
-        throw new McpVaultLockedError('Project is vault-locked');
+        throw new McpVaultLockedError('This project is private. Open it before editing the note.');
       }
       throw error;
     }
@@ -216,8 +217,8 @@ export const activitiesCreateTool = {
 export const activitiesUpdateTool = {
   definition: {
     name: 'activities_update',
-    title: 'Update Activity',
-    description: 'Update an existing activity. Requires jobmark:write scope.',
+    title: 'Update note',
+    description: 'Update a saved note. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -255,10 +256,10 @@ export const activitiesUpdateTool = {
     const { activityId, ...data } = result.data;
     try {
       const activity = await updateActivity(actor, activityId, data);
-      return createStructuredResult(activity, 'Activity updated');
+      return createStructuredResult(activity, 'Note updated');
     } catch (error) {
       if (error instanceof McpVaultLockedError) {
-        throw new McpVaultLockedError('Project is vault-locked');
+        throw new McpVaultLockedError('This project is private. Open it before editing the note.');
       }
       throw error;
     }
@@ -268,8 +269,8 @@ export const activitiesUpdateTool = {
 export const activitiesDeleteTool = {
   definition: {
     name: 'activities_delete',
-    title: 'Delete Activity',
-    description: 'Delete an activity. Requires jobmark:destructive scope.',
+    title: 'Delete note',
+    description: 'Delete a saved note. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -298,6 +299,6 @@ export const activitiesDeleteTool = {
     }
 
     await deleteActivity(actor, result.data.activityId);
-    return createStructuredResult({ success: true }, 'Activity deleted');
+    return createStructuredResult({ success: true }, 'Note deleted');
   },
 };

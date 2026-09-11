@@ -1,6 +1,6 @@
 ---
-title: The value-creation loop
-description: How to make your work more useful through consistent value delivery, not just checking boxes.
+title: Show what your work changed
+description: How to show what got better because of your work, not only what you finished.
 slug: the-value-creation-loop
 publishedAt: 2026-03-07
 updatedAt: 2026-03-07
@@ -15,74 +15,74 @@ featured: true
 ctaVariant: default
 ---
 
-Most people think value means output. More features shipped. More tasks done. More hours logged.
+Many people count features, tasks, and hours.
 
-That's not value. That's activity.
+Those show what you did, not what got better.
 
-Real value is about solving problems that matter. Consistently. Over time.
+Good work solves a real problem or makes something better.
 
-## What value actually means
+## What good work changes
 
-Value is whatever moves the business forward in a way that:
+Good work can:
 
-- Saves money
-- Makes money
-- Reduces risk
-- Creates capability
+- Save money
+- Make money
+- Reduce risk
+- Help the team do more
 
-Your job is to find where those things intersect with your role. Then own that space.
+Find one of these problems in your own work. Then work on it.
 
-## The loop
+## A simple process
 
 Here's the cycle:
 
-1. **Identify** a problem or opportunity
-2. **Propose** a solution (even if it's not your idea)
-3. **Execute** with measurable outcomes
-4. **Document** what changed
-5. **Repeat**
+1. **Find** a problem or chance to help
+2. **Suggest** a solution
+3. **Do the work** and check the result
+4. **Write down** what changed
+5. **Do it again**
 
-Most people skip step 4. That's why they feel invisible.
+Many people skip step 4. Then the work is easy to forget.
 
-## Finding your value zones
+## Find a problem to solve
 
 Ask yourself:
 
-- What do stakeholders consistently complain about?
-- What process is everybody tolerating but nobody fixing?
+- What do people you work with complain about often?
+- What process is everybody putting up with but nobody fixing?
 - What would make your team's life easier?
 - What metric is nobody tracking but everyone wishes they had?
 
-Those gaps are value zones.
+Those are good places to start.
 
 ## The first move
 
-You don't need permission to create value. You need observation.
+You do not need a special title to fix a problem. Start by paying attention.
 
-Spend one week just watching. Where are the friction points? What gets mentioned in meetings as "we should fix that"? What's the thing everybody works around but nobody addresses?
+Spend one week paying attention. What part of the work is hard? What do people say should be fixed? What does everybody work around?
 
 Then pick one. Fix it. Show the result.
 
-## Compound effect
+## What happens over time
 
-One good fix gets noticed. Two gets you a reputation. Three makes you the person people go to.
+One good fix gets noticed. After a few, people may come to you for help.
 
-The key is consistency. Not heroism. Not one big project that saves the day. Small, continuous value compounds.
+The key is consistency. You do not need one big project. Small improvements add up.
 
-A person who delivers one solid improvement every month will outpace the person who does one big push every quarter.
+One solid improvement each month is often better than one large effort each quarter.
 
 ## The trap
 
 Don't confuse busy with valuable.
 
-If you're working late but can't explain what specific business outcome you're driving, you're busy. Not valuable.
+If you are working late but cannot explain what got better, you are busy, not helpful.
 
-Every week, ask: "What's the one thing I did this week that made something better for someone else?"
+Every week, ask: "What is one thing I did that made something better for someone else?"
 
-If you cannot answer that, the next step is to clarify the result you want the work to create.
+If you cannot answer, decide what you want the work to change.
 
 ## Quick test
 
-Ask a teammate or stakeholder: "What's one thing I could do that would help you most?"
+Ask a teammate: "What is one thing I could do that would help you most?"
 
-Then do that thing. That's value. Everything else is admin.
+Then do it. That is helpful work. The rest may be busywork.

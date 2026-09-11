@@ -9,10 +9,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pen } from 'lucide-react';
 import Link from 'next/link';
 import { signInWithDevUser, signInWithGoogle } from '@/app/actions/auth';
 import { GoogleIcon } from '@/components/auth/google-icon';
+import { JobmarkMark } from '@/components/brand/jobmark-mark';
 
 interface AuthModalContextType {
   openAuthModal: () => void;
@@ -43,28 +43,24 @@ export function AuthModalProvider({ children }: AuthModalProviderProps) {
   return (
     <AuthModalContext.Provider value={{ openAuthModal, closeAuthModal, isOpen }}>
       {children}
-      <AuthModal open={isOpen} />
+      <AuthModal open={isOpen} onClose={closeAuthModal} />
     </AuthModalContext.Provider>
   );
 }
 
 interface AuthModalProps {
   open: boolean;
+  onClose: () => void;
 }
 
-function AuthModal({ open }: AuthModalProps) {
+function AuthModal({ open, onClose }: AuthModalProps) {
   return (
-    <Dialog open={open}>
-      <DialogContent
-        showCloseButton={false}
-        onPointerDownOutside={e => e.preventDefault()}
-        onEscapeKeyDown={e => e.preventDefault()}
-        className="bg-card border-border/50 max-w-md"
-      >
+    <Dialog open={open} onOpenChange={nextOpen => !nextOpen && onClose()}>
+      <DialogContent showCloseButton className="bg-card border-border/50 max-w-md">
         <div className="mb-2 flex justify-center">
           <div className="flex items-center gap-3">
-            <div className="bg-primary/20 border-primary/30 flex h-11 w-11 items-center justify-center rounded-xl border">
-              <Pen className="text-primary h-5 w-5" />
+            <div className="bg-primary flex h-11 w-11 items-center justify-center rounded-xl">
+              <JobmarkMark className="h-6 w-6" sizes="24px" />
             </div>
           </div>
         </div>
@@ -72,7 +68,7 @@ function AuthModal({ open }: AuthModalProps) {
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="font-serif text-2xl font-bold">Welcome to Jobmark</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Sign in to start building your career record
+            Sign in to keep your work notes
           </DialogDescription>
         </DialogHeader>
 

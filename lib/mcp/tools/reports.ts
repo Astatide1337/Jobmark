@@ -29,8 +29,8 @@ const reportImproveSchema = z.object({
 export const reportsListTool = {
   definition: {
     name: 'reports_list',
-    title: 'List Reports',
-    description: 'List user reports with pagination. Requires jobmark:read scope.',
+    title: 'List review drafts',
+    description: 'List saved review drafts with pagination. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -79,7 +79,7 @@ export const reportsListTool = {
     const data = await listReports(actor, result.data);
     return createStructuredResult(
       data,
-      `Found ${data.reports.length} reports${data.nextCursor ? ' (more available)' : ''}`
+      `Found ${data.reports.length} review drafts${data.nextCursor ? ' (more available)' : ''}`
     );
   },
 };
@@ -87,8 +87,8 @@ export const reportsListTool = {
 export const reportsGetTool = {
   definition: {
     name: 'reports_get',
-    title: 'Get Report',
-    description: 'Get full report content by ID. Requires jobmark:read scope.',
+    title: 'Get review draft',
+    description: 'Get the full review draft by ID. Requires the jobmark:read permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -127,18 +127,18 @@ export const reportsGetTool = {
 
     const report = await getReport(actor, result.data.reportId);
     if (!report) {
-      throw new McpNotFoundError('Report not found');
+      throw new McpNotFoundError('Review draft');
     }
-    return createStructuredResult(report, `Report: ${report.title}`);
+    return createStructuredResult(report, `Review draft: ${report.title}`);
   },
 };
 
 export const reportsGenerateTool = {
   definition: {
     name: 'reports_generate',
-    title: 'Generate Report',
+    title: 'Make review draft',
     description:
-      'Build and save a deterministic review brief from the activity record. Requires jobmark:write scope.',
+      'Make and save a review draft from your notes. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -185,16 +185,16 @@ export const reportsGenerateTool = {
       result.data.projectId ?? null,
       result.data.customInstructions
     );
-    return createStructuredResult(report, `Generated report: ${report.title}`);
+    return createStructuredResult(report, `Created review draft: ${report.title}`);
   },
 };
 
 export const reportsRegenerateTool = {
   definition: {
     name: 'reports_regenerate',
-    title: 'Regenerate Report',
+    title: 'Make a new review draft',
     description:
-      'Regenerate a saved report brief from the current activity record. Requires jobmark:write scope.',
+      'Make a new version of a saved review draft from your current notes. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -237,16 +237,16 @@ export const reportsRegenerateTool = {
     }
 
     const report = await regenerateReport(actor, result.data.reportId);
-    return createStructuredResult(report, `Regenerated report: ${report.title}`);
+    return createStructuredResult(report, `Created a new review draft: ${report.title}`);
   },
 };
 
 export const reportsImproveTextTool = {
   definition: {
     name: 'reports_improve_text',
-    title: 'Improve Report Text',
+    title: 'Edit review draft',
     description:
-      'Apply a predictable edit to a saved report. For richer writing, use a connected AI app with Jobmark. Requires jobmark:write scope.',
+      'Make a small edit to a saved review draft. For a larger rewrite, open the draft in a connected assistant. Requires the jobmark:write permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -280,15 +280,15 @@ export const reportsImproveTextTool = {
       reportId: result.data.reportId,
       instructions: result.data.instruction,
     });
-    return createStructuredResult(improved, 'Improved text generated');
+    return createStructuredResult(improved, 'Draft text updated');
   },
 };
 
 export const reportsDeleteTool = {
   definition: {
     name: 'reports_delete',
-    title: 'Delete Report',
-    description: 'Delete a report. Requires jobmark:destructive scope.',
+    title: 'Delete review draft',
+    description: 'Delete a review draft. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -317,6 +317,6 @@ export const reportsDeleteTool = {
     }
 
     await deleteReport(actor, result.data.reportId);
-    return createStructuredResult({ success: true }, 'Report deleted');
+    return createStructuredResult({ success: true }, 'Review draft deleted');
   },
 };

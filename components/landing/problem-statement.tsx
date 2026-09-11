@@ -1,57 +1,53 @@
-/**
- * Landing Page Problem Statement
- *
- * Why: Before presenting the solution, we must empathize with the user's pain.
- * This section uses high-contrast typography and scroll-triggered animations
- * to highlight the friction of "Performance Review Scrambling."
- */
 'use client';
 
-import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
+import { useMotionPreference } from './use-motion-preference';
 
+/** Editorial copy stays readable on first paint; scroll adds subtle depth only. */
 export function ProblemStatement() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start'],
-  });
-
-  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
-  const y = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [50, 0, 0, -50]);
+  const ref = useRef<HTMLElement>(null);
+  const prefersReducedMotion = useMotionPreference();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const y = useTransform(
+    scrollYProgress,
+    [0, 0.35, 0.7, 1],
+    prefersReducedMotion ? [0, 0, 0, 0] : [26, 0, 0, -22]
+  );
 
   return (
-    <section ref={containerRef} className="relative overflow-hidden py-20 md:py-28">
-      {/* Subtle background texture */}
-      <div className="via-primary/[0.02] absolute inset-0 bg-gradient-to-b from-transparent to-transparent" />
+    <section ref={ref} className="relative overflow-hidden py-20 md:py-28">
+      <div className="via-primary/[0.02] pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-transparent" />
 
-      <motion.div style={{ opacity, y }} className="mx-auto max-w-4xl px-6 text-center">
+      <motion.div style={{ y }} className="relative mx-auto max-w-4xl px-6 text-center">
         <p className="text-foreground/90 font-serif text-2xl leading-[1.3] sm:text-3xl md:text-4xl lg:text-5xl">
-          <span className="text-muted-foreground">You do real work every week, but </span>
-          <span className="text-foreground">the evidence fades fast.</span>
+          <span className="text-muted-foreground">Work is easy to forget. </span>
+          <span className="text-foreground">The useful parts disappear first.</span>
           <span className="text-muted-foreground">
             {' '}
-            Wins get buried in Slack. Self-assessments become vague. Promotion cases feel thin.
+            A fix in Slack, a decision in a meeting, or a launch that took a month can be hard to
+            remember by review time.
           </span>
-          <span className="text-primary"> Visibility drops.</span>
+          <br />
+          <span className="text-primary">Put it somewhere you can use it again.</span>
         </p>
 
         <motion.div
-          initial={{ scaleX: 0 }}
+          className="bg-primary/50 mx-auto mt-12 h-px w-24 origin-center"
+          initial={false}
           whileInView={{ scaleX: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="bg-primary/50 mx-auto mt-12 h-px w-24 origin-left"
+          viewport={{ once: true, amount: 0.7 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.65, ease: [0.16, 1, 0.3, 1] }}
         />
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={false}
+          whileInView={{ y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.5, delay: 0.08 }}
           className="text-muted-foreground mt-8 text-lg"
         >
-          Jobmark turns daily work into a career-ready record.
+          Jobmark brings those pieces together.
         </motion.p>
       </motion.div>
     </section>

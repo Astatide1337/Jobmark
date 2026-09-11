@@ -17,10 +17,12 @@ export function BreathingPhase({ pattern, cycles, onComplete }: BreathingPhasePr
 
   const [cycleIndex, setCycleIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
   const phaseKey = `${cycleIndex}-${stepIndex}`;
   const [previousPhaseKey, setPreviousPhaseKey] = useState(phaseKey);
+  const [visible, setVisible] = useState(true);
 
+  // Why: Reset visibility in the same render as the new phase so the next
+  // cue can enter with its blur-fade instead of appearing one frame late.
   if (phaseKey !== previousPhaseKey) {
     setPreviousPhaseKey(phaseKey);
     setVisible(true);

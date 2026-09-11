@@ -10,21 +10,23 @@
  *   Playfair Display (serif) to achieve the "Premium Editorial" look.
  * - Grain Overlay: Adds a subtle SVG noise texture to the background
  *   to give the dark UI a physical, high-quality "paper" feel.
- * - Global Shortcuts: Hosts the `CommandPalette` to ensure search
- *   is available from every page.
+ * - Theme setup is resolved on the server for every route, while the
+ *   settings context is mounted only for authenticated application pages.
+ *   Authenticated-only tools are mounted inside the app shell.
  */
 import type { Metadata } from 'next';
+import type { CSSProperties } from 'react';
 import { Inter, Geist_Mono, Playfair_Display } from 'next/font/google';
-import { Toaster } from '@/components/ui/sonner';
-import { CommandPalette } from '@/components/ui/command-palette';
+import { PageTransition } from '@/components/layout/page-transition';
 import { SettingsProvider } from '@/components/providers/settings-provider';
-import { UIProvider, SmoothScrollProvider } from '@/components/providers/ui-provider';
+import { getUserSettings, type UserSettingsData } from '@/app/actions/settings';
 import { auth } from '@/lib/auth';
+import { getThemePreset, getThemeSurfacePalette } from '@/lib/themes';
 import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jobmark.astatide.com';
 const productDescription =
-  'Jobmark helps you keep a clear record of your work, then turn it into useful updates, reviews, and next steps.';
+  'Jobmark gives you a simple place to write down your work while it is fresh, then find it when reviews, updates, and next steps matter.';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -45,18 +47,14 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'Jobmark - Build Your Career Record',
+  title: 'Jobmark - Keep your work notes',
   description: productDescription,
-  keywords: [
-    'career record',
-    'work evidence',
-    'performance review',
-    'promotion prep',
-    'work log',
-    'impact tracking',
-  ],
+  icons: {
+    icon: '/brand/jobmark-logo.svg',
+  },
+  keywords: ['work notes', 'reviews', 'updates', 'projects', 'goals', 'review notes'],
   openGraph: {
-    title: 'Jobmark - Build Your Career Record',
+    title: 'Jobmark - Keep your work notes',
     description: productDescription,
     url: siteUrl,
     siteName: 'Jobmark',
@@ -66,13 +64,13 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'Jobmark – Your Career, On Record',
+        alt: 'Jobmark: Keep your work notes',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jobmark - Build Your Career Record',
+    title: 'Jobmark - Keep your work notes',
     description: productDescription,
     images: ['/opengraph-image.png'],
   },
@@ -84,22 +82,107 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
+  const isAuthenticated = Boolean(session?.user?.id);
+  const initialSettings = isAuthenticated ? await getUserSettings() : null;
 
   return (
-    <html lang="en" className="dark overflow-x-clip" suppressHydrationWarning>
+    <AppDocument
+      initialSettings={initialSettings}
+      isAuthenticated={isAuthenticated}
+      theme={getInitialTheme(initialSettings)}
+    >
+      {children}
+    </AppDocument>
+  );
+}
+
+interface InitialTheme {
+  mode: string;
+  className: 'light' | 'dark';
+  style: CSSProperties;
+}
+
+function getInitialTheme(settings: UserSettingsData | null): InitialTheme {
+  const preset = getThemePreset(settings?.themePreset ?? 'cafe') ?? getThemePreset('cafe');
+  if (!preset) throw new Error('The default theme preset is missing.');
+  const surfaces = getThemeSurfacePalette(preset.id);
+
+  const mode = settings?.themeMode ?? 'dark';
+  return {
+    mode,
+    className: mode === 'light' ? 'light' : 'dark',
+    style: {
+      ...surfaceVariables(surfaces.dark, 'dark'),
+      ...surfaceVariables(surfaces.light, 'light'),
+      '--primary': preset.colors.primary,
+      '--primary-foreground': preset.colors.primaryForeground,
+      '--accent': preset.colors.accent,
+      '--accent-warm': preset.colors.accentWarm,
+      '--accent-warm-hover': preset.colors.accentWarmHover,
+      '--ring': preset.colors.ring,
+      '--sidebar-primary': preset.colors.sidebarPrimary,
+      '--sidebar-ring': preset.colors.sidebarRing,
+      '--chart-1': preset.colors.chart1,
+      '--chart-2': preset.colors.chart2,
+      '--chart-3': preset.colors.chart3,
+      '--chart-4': preset.colors.chart4,
+      '--chart-5': preset.colors.chart5,
+      '--success': preset.colors.success,
+      '--warning': preset.colors.warning,
+      '--info': preset.colors.info,
+    } as CSSProperties,
+  };
+}
+
+function surfaceVariables(
+  surface: ReturnType<typeof getThemeSurfacePalette>['dark'],
+  mode: 'dark' | 'light'
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(surface).map(([name, value]) => [
+      `--theme-${mode}-${name.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`,
+      value,
+    ])
+  );
+}
+
+function AppDocument({
+  children,
+  initialSettings,
+  isAuthenticated,
+  theme,
+}: {
+  children: React.ReactNode;
+  initialSettings: UserSettingsData | null;
+  isAuthenticated: boolean;
+  theme: InitialTheme;
+}) {
+  return (
+    <html
+      lang="en"
+      className={`${theme.className} overflow-x-clip`}
+      data-theme-mode={theme.mode}
+      style={theme.style}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var root=document.documentElement;var mode=root.dataset.themeMode;var dark=mode==='dark'||(mode==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.classList.toggle('dark',dark);root.classList.toggle('light',!dark);})();`,
+          }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${geistMono.variable} ${playfair.variable} overflow-x-clip font-sans antialiased`}
       >
-        <SettingsProvider isAuthenticated={Boolean(session?.user?.id)}>
-          <UIProvider>
-            <SmoothScrollProvider>
-              {children}
-              <CommandPalette />
-              <Toaster position="bottom-right" richColors />
-              <GrainOverlay />
-            </SmoothScrollProvider>
-          </UIProvider>
-        </SettingsProvider>
+        {isAuthenticated ? (
+          <SettingsProvider initialSettings={initialSettings} isAuthenticated>
+            <PageTransition>{children}</PageTransition>
+          </SettingsProvider>
+        ) : (
+          <PageTransition>{children}</PageTransition>
+        )}
+        <GrainOverlay />
       </body>
     </html>
   );

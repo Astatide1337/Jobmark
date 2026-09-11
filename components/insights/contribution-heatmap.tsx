@@ -1,15 +1,9 @@
 /**
- * Contribution Heatmap (GitHub Style)
+ * Accessible contribution calendar.
  *
- * Why: Provides a "proof of work" visual that encourages daily logging.
- * It transforms 365 days of activity into a familiar density grid.
- *
- * Performance Strategy:
- * - Calculation Offloading: The grid calculation (weeks/days/labels) has
- *   been moved to the **Server Action** (`insights.ts`). This component
- *   is now a "Dumb Component" that purely handles high-contrast rendering.
- * - Fluid Grid: Uses a combination of `flex-1` and `aspect-square` to ensure
- *   the heatmap looks great on everything from mobile to wide desktops.
+ * Why: Month labels, weekday labels, and cells must share one coordinate
+ * system. A CSS grid keeps them aligned at every date range and makes each
+ * real day keyboard-focusable instead of relying on hover-only divs.
  */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,15 +13,17 @@ import type { HeatmapDay, MonthLabel } from '@/app/actions/insights';
 interface ContributionHeatmapProps {
   weeks: HeatmapDay[][];
   monthLabels: MonthLabel[];
+  today: string;
 }
 
-// Consistent card styling
 const CARD_STYLES = 'rounded-2xl border border-border/40 bg-card/60 shadow-sm';
 
-export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapProps) {
-  const todayStr = new Date().toISOString().split('T')[0];
+export function ContributionHeatmap({ weeks, monthLabels, today }: ContributionHeatmapProps) {
+  // Why: The all-time view can contain 52+ weeks. Fractional tracks let the
+  // calendar use the card width instead of forcing a second horizontal scroll.
+  const columns = `2.75rem repeat(${weeks.length}, minmax(0, 1fr))`;
+  const rows = '1.25rem repeat(7, auto)';
 
-  // Color scale - HIGH CONTRAST
   const getColorClass = (count: number): string => {
     if (count === 0) return 'bg-foreground/[0.08]';
     if (count <= 2) return 'bg-primary/40';
@@ -38,84 +34,93 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
 
   return (
     <Card className={CARD_STYLES}>
-      <CardHeader className="px-6 pt-6 pb-4">
-        <CardTitle className="text-base font-semibold">Contribution Activity</CardTitle>
+      <CardHeader>
+        <CardTitle className="text-base font-semibold">Note pattern</CardTitle>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      <CardContent>
         <TooltipProvider delayDuration={50}>
-          {/* Full width container */}
-          <div className="w-full">
-            {/* Month labels row */}
-            <div className="mb-3 flex pl-10">
-              {weeks.map((_, weekIndex) => {
-                const label = monthLabels.find(l => l.weekIndex === weekIndex);
-                return (
-                  <div
-                    key={weekIndex}
-                    className="text-foreground/70 min-w-0 flex-1 text-sm font-medium"
-                  >
-                    {label?.month || ''}
-                  </div>
-                );
-              })}
-            </div>
+          <div className="w-full overflow-visible px-1 pb-1">
+            <div
+              className="grid w-full min-w-0 items-center gap-[clamp(1px,0.35vw,6px)]"
+              style={{ gridTemplateColumns: columns, gridTemplateRows: rows }}
+            >
+              <span aria-hidden="true" style={{ gridColumn: 1, gridRow: 1 }} />
+              {monthLabels.map(monthLabel => (
+                <span
+                  key={`month-${monthLabel.weekIndex}`}
+                  className="text-foreground/70 h-5 overflow-visible text-center text-xs font-medium whitespace-nowrap"
+                  style={{ gridColumn: monthLabel.weekIndex + 2, gridRow: 1 }}
+                >
+                  {monthLabel.month}
+                </span>
+              ))}
 
-            {/* Grid - full width */}
-            <div className="flex gap-1">
-              {/* Day labels */}
-              <div className="text-foreground/60 flex w-10 shrink-0 flex-col justify-between pr-2 text-sm font-medium">
-                <span>Mon</span>
-                <span></span>
-                <span>Wed</span>
-                <span></span>
-                <span className="pb-10">Fri</span>
-                <span></span>
-              </div>
+              {['', 'Mon', '', 'Wed', '', 'Fri', ''].map((label, dayIndex) => (
+                <span
+                  key={`weekday-${dayIndex}`}
+                  aria-hidden={label === ''}
+                  className="text-foreground/60 pr-2 text-xs font-medium"
+                  style={{ gridColumn: 1, gridRow: dayIndex + 2 }}
+                >
+                  {label}
+                </span>
+              ))}
 
-              {/* Heatmap cells - each column expands to fill */}
-              <div className="flex flex-1 gap-1.5">
-                {weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex flex-1 flex-col gap-1.5">
-                    {week.map((day, dayIndex) => (
-                      <Tooltip key={`${weekIndex}-${dayIndex}`}>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn(
-                              'aspect-square rounded transition-all',
-                              day.count === -1 ? 'bg-transparent' : getColorClass(day.count),
-                              day.date === todayStr &&
-                                'ring-primary ring-offset-background ring-2 ring-offset-1',
-                              day.count >= 0 &&
-                                'hover:ring-foreground/30 cursor-pointer hover:scale-110 hover:ring-1'
-                            )}
-                          />
-                        </TooltipTrigger>
-                        {day.count >= 0 && (
-                          <TooltipContent side="top">
-                            <p className="font-semibold">
-                              {day.count === 0
-                                ? 'No activities'
-                                : `${day.count} ${day.count === 1 ? 'activity' : 'activities'}`}
-                            </p>
-                            <p className="text-muted-foreground text-xs">{formatDate(day.date)}</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    ))}
-                  </div>
-                ))}
-              </div>
+              {weeks.flatMap((week, weekIndex) =>
+                week.map((day, dayIndex) => {
+                  const cellStyle = { gridColumn: weekIndex + 2, gridRow: dayIndex + 2 };
+
+                  if (day.count < 0 || !day.date) {
+                    return (
+                      <span
+                        key={`empty-${weekIndex}-${dayIndex}`}
+                        aria-hidden="true"
+                        className="aspect-square h-auto w-full max-w-5 min-w-0 justify-self-center"
+                        style={cellStyle}
+                      />
+                    );
+                  }
+
+                  const label = `${formatDate(day.date)}: ${day.count} ${day.count === 1 ? 'note' : 'notes'}`;
+                  return (
+                    <Tooltip key={day.date}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={label}
+                          title={label}
+                          style={cellStyle}
+                          className={cn(
+                            'focus-visible:ring-ring/70 aspect-square h-auto w-full max-w-5 min-w-0 justify-self-center rounded-sm transition-[background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+                            getColorClass(day.count),
+                            day.date === today &&
+                              'ring-primary ring-offset-background ring-2 ring-offset-1',
+                            'hover:ring-foreground/30 hover:ring-1'
+                          )}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="font-semibold">
+                          {day.count === 0
+                            ? 'No notes'
+                            : `${day.count} ${day.count === 1 ? 'note' : 'notes'}`}
+                        </p>
+                        <p className="text-muted-foreground text-xs">{formatDate(day.date)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          {/* Legend - HIGH CONTRAST */}
-          <div className="text-foreground/70 mt-5 flex items-center justify-end gap-2 text-sm font-medium">
+          <div className="text-foreground/70 mt-5 flex items-center justify-end gap-2 text-xs font-medium">
             <span>Less</span>
-            <div className="bg-foreground/[0.08] h-4 w-4 rounded" />
-            <div className="bg-primary/40 h-4 w-4 rounded" />
-            <div className="bg-primary/60 h-4 w-4 rounded" />
-            <div className="bg-primary/80 h-4 w-4 rounded" />
-            <div className="bg-primary h-4 w-4 rounded" />
+            <span aria-hidden="true" className="bg-foreground/[0.08] h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary/40 h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary/60 h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary/80 h-4 w-4 rounded-sm" />
+            <span aria-hidden="true" className="bg-primary h-4 w-4 rounded-sm" />
             <span>More</span>
           </div>
         </TooltipProvider>
@@ -125,11 +130,10 @@ export function ContributionHeatmap({ weeks, monthLabels }: ContributionHeatmapP
 }
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('en-US', {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  });
+  }).format(new Date(`${dateStr}T12:00:00Z`));
 }

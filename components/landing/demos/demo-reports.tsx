@@ -1,54 +1,74 @@
 /**
- * Interactive Reports Demo
+ * Lightweight review-draft preview for the landing page.
  *
- * Why: Showcases the end-result of using jobmark. It visualizes the
- * professional formatting and evidence-based structure of generated briefs.
- *
- * Implementation: Reuses the production `ReportHistory` component with
- * pre-written examples that demonstrate the "Note-to-Narrative"
- * transformation.
+ * Why: Marketing content should show the shape of a feature without mounting
+ * the authenticated report editor, its actions, or its animation tree.
  */
-'use client';
-
+import { ArrowUpRight, CheckCircle2, FileText } from 'lucide-react';
 import { DashboardFrame } from './dashboard-frame';
-import { ReportHistory } from '@/components/reports/report-history';
 
-// Keep demo content deterministic across SSR and hydration. Using `new Date()`
-// here makes the rendered timestamp differ by a minute when the browser takes
-// over, which triggers a hydration warning in the landing-page walkthrough.
-const DEMO_NOW = new Date('2026-08-09T21:59:00.000Z');
-
-const reports = [
-  {
-    id: '1',
-    title: 'Weekly Engineering Update',
-    content:
-      '## Summary\nSuccessfully deployed the new landing page infrastructure.\n\n### Key Wins\n- Implemented Bento Grid layout\n- Improved load time by 40%\n- Fixed responsive issues on mobile\n\n### Next Steps\n- Conduct A/B testing on headline copy\n- Optimize images for retina displays',
-    createdAt: DEMO_NOW,
-  },
-  {
-    id: '2',
-    title: 'Q1 Goals Review',
-    content:
-      '## Overview\nWe are currently 70% toward our Q1 target of launching the MVP.\n\n### Progress\n- Backend Auth: Complete\n- Database Schema: Finalized\n- Frontend UI: In Progress',
-    createdAt: new Date(DEMO_NOW.getTime() - 86400000 * 2),
-  },
+const highlights = [
+  'Shipped the new landing page',
+  'Cut load time by 40%',
+  'Fixed the mobile layout',
 ];
 
 export function DemoReports() {
   return (
     <DashboardFrame activePath="/reports">
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div>
-          <h2 className="mb-2 text-3xl font-bold tracking-tight">Review drafts</h2>
-          <p className="text-muted-foreground">Turn your record into review-ready drafts.</p>
+          <h2 className="text-xl font-semibold">Review drafts</h2>
+          <p className="text-muted-foreground mt-1 text-sm">Start with the notes you saved.</p>
         </div>
-        <ReportHistory
-          initialReports={reports}
-          onUpdate={async () => {}}
-          onDelete={async () => {}}
-          displayTimeZone="UTC"
-        />
+
+        <article className="border-border/60 bg-card/60 rounded-2xl border p-4">
+          <div className="text-muted-foreground mb-3 flex items-center gap-2 text-xs">
+            <FileText className="text-primary h-4 w-4" />
+            <span>Q4 review draft</span>
+            <span className="text-success ml-auto">Ready</span>
+          </div>
+          <h3 className="text-sm font-semibold">What changed</h3>
+          <ul className="mt-3 space-y-2">
+            {highlights.map(highlight => (
+              <li key={highlight} className="text-muted-foreground flex items-center gap-2 text-sm">
+                <CheckCircle2 className="text-success h-4 w-4 shrink-0" />
+                {highlight}
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="border-border/50 bg-card/60 rounded-xl border p-3">
+            <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+              Entries used
+            </p>
+            <p className="mt-1 text-2xl font-semibold">47</p>
+            <p className="text-muted-foreground mt-1 text-xs">from this quarter</p>
+          </div>
+          <div className="border-border/50 bg-card/60 rounded-xl border p-3">
+            <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
+              Projects covered
+            </p>
+            <p className="mt-1 text-2xl font-semibold">3</p>
+            <p className="text-muted-foreground mt-1 text-xs">with recent activity</p>
+          </div>
+        </div>
+
+        <div className="border-border/60 bg-primary/5 flex items-center justify-between gap-4 rounded-2xl border p-4">
+          <div className="min-w-0">
+            <p className="text-primary text-[10px] font-semibold tracking-wide uppercase">
+              Ready to share
+            </p>
+            <p className="text-foreground mt-1 text-sm font-medium">
+              Review, copy, or export the draft.
+            </p>
+          </div>
+          <span className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium">
+            Copy update <ArrowUpRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
       </div>
     </DashboardFrame>
   );

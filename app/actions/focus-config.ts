@@ -65,19 +65,19 @@ export async function saveFocusConfig(
   blocks: FocusBlock[]
 ): Promise<{ success: boolean; error?: string }> {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, error: 'Not authenticated' };
+  if (!session?.user?.id) return { success: false, error: 'Sign in to save your focus session.' };
 
   if (!Array.isArray(blocks) || blocks.length === 0) {
-    return { success: false, error: 'At least one block is required' };
+    return { success: false, error: 'Add at least one block to your focus session.' };
   }
 
   if (blocks.length > 30) {
-    return { success: false, error: 'Maximum 30 blocks allowed' };
+    return { success: false, error: 'Use 30 blocks or fewer.' };
   }
 
   for (const block of blocks) {
     if (!block.id || !block.type || !block.config) {
-      return { success: false, error: 'Invalid block structure' };
+      return { success: false, error: 'One focus block is not valid.' };
     }
   }
 

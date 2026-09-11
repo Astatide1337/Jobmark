@@ -47,14 +47,14 @@ export const BREATHING_PATTERNS: Record<BreathingPattern, BreathingPatternDef> =
   },
 };
 
-export const DEFAULT_RELEASE_TEXTS = [
+const DEFAULT_RELEASE_TEXTS = [
   "Bring to mind any tension you're carrying from today.",
   'Acknowledge it. You worked hard.',
   'Now, let it drop from your shoulders.',
   'Leave the work here. You can return to it later.',
 ];
 
-export const DEFAULT_AFFIRMATIONS = [
+const DEFAULT_AFFIRMATIONS = [
   'I am becoming the person I need to be to achieve my goals.',
   'Every challenge is an opportunity for growth.',
   'I have the skills and the discipline to succeed.',

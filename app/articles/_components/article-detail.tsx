@@ -8,7 +8,7 @@ import { dateUtils } from '@/lib/utils';
 
 function ArticleHeader({ article }: { article: Article }) {
   const categoryLabel = (category: Article['category']) =>
-    category === 'help' ? 'Help' : 'Career Development';
+    category === 'help' ? 'Help' : 'Career development';
   const publishedLabel = dateUtils.format(article.publishedAt);
   const updatedLabel = dateUtils.format(article.updatedAt ?? article.publishedAt);
   const hasUpdatedDate = updatedLabel !== publishedLabel;
@@ -88,16 +88,16 @@ function CareerSignalCallout({ article }: CareerSignalCalloutProps) {
     }
   > = {
     default: {
-      title: 'Apply this in Jobmark',
-      body: 'Turn this article into evidence by capturing one concrete example from your recent work.',
+      title: 'Use this in Jobmark',
+      body: 'Save one clear example from your recent work.',
       href: '/dashboard',
-      cta: 'Log a recent win',
+      cta: 'Add a recent note',
     },
     checklist: {
-      title: 'Apply this in Jobmark',
-      body: 'Capture this week while details are still fresh, then turn the strongest entries into a usable summary.',
+      title: 'Use this in Jobmark',
+      body: "Save this week's notes while they are fresh. Use them later to build a draft.",
       href: '/dashboard',
-      cta: "Log this week's wins",
+      cta: "Add this week's notes",
     },
   };
 
@@ -106,13 +106,13 @@ function CareerSignalCallout({ article }: CareerSignalCalloutProps) {
   const primaryAction = article.primaryAction ?? selected.cta;
   return (
     <section className="border-border/60 bg-card/40 my-10 rounded-2xl border p-5 sm:p-6">
-      <p className="text-primary text-[11px] tracking-[0.16em] uppercase">Try this in Jobmark</p>
+      <p className="text-primary text-[11px] tracking-[0.16em] uppercase">Use it in Jobmark</p>
       <h2 className="text-foreground mt-2 font-serif text-2xl font-semibold">{selected.title}</h2>
       <p className="text-muted-foreground mt-3 max-w-2xl text-sm sm:text-base">{selected.body}</p>
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <Link
           href={primaryHref}
-          className="border-primary/40 bg-primary/20 text-primary hover:bg-primary/25 inline-flex rounded-xl border px-4 py-2 text-sm font-medium transition"
+          className="border-primary/40 bg-primary/20 text-primary hover:bg-primary/25 inline-flex rounded-xl border px-4 py-2 text-sm font-medium transition-[background-color,border-color,color]"
         >
           {primaryAction}
         </Link>
@@ -126,7 +126,7 @@ interface RelatedStoriesProps {
   title?: string;
 }
 
-function RelatedStories({ articles, title = 'Continue building this skill' }: RelatedStoriesProps) {
+function RelatedStories({ articles, title = 'More guides' }: RelatedStoriesProps) {
   if (articles.length === 0) {
     return null;
   }
@@ -134,7 +134,7 @@ function RelatedStories({ articles, title = 'Continue building this skill' }: Re
   const cardTones = ['bg-primary/25', 'bg-accent/25', 'bg-secondary/80', 'bg-muted/80', 'bg-card'];
 
   const categoryLabel = (category: ArticleSummary['category']) =>
-    category === 'help' ? 'Help' : 'Career Development';
+    category === 'help' ? 'Help' : 'Career development';
 
   return (
     <section className="border-border/60 mt-14 border-t pt-8 sm:pt-10">
@@ -147,7 +147,7 @@ function RelatedStories({ articles, title = 'Continue building this skill' }: Re
           <Link
             key={article.slug}
             href={`/articles/${article.slug}`}
-            className="group border-border/60 bg-card/70 hover:border-primary/40 overflow-hidden rounded-2xl border transition"
+            className="group border-border/60 bg-card/70 hover:border-primary/40 overflow-hidden rounded-2xl border transition-[border-color]"
           >
             <div
               className={`${cardTones[index % cardTones.length]} border-border/60 h-40 border-b`}
