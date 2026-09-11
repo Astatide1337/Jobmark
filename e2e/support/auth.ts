@@ -15,22 +15,22 @@ export async function completeComplianceIfNeeded(page: Page) {
     name: 'A quick confirmation before you begin',
     exact: true,
   });
-  const completeHeading = page.getByRole('heading', { name: 'You’re all set', exact: true });
   const dashboardHeading = page.getByRole('heading', {
     name: /Good (morning|afternoon|evening)/i,
   });
 
-  await expect(onboardingHeading.or(completeHeading).or(dashboardHeading)).toBeVisible();
+  await expect(onboardingHeading.or(dashboardHeading)).toBeVisible();
   if (await dashboardHeading.count()) return;
 
   if (await onboardingHeading.count()) {
     for (const checkbox of await page.getByRole('checkbox').all()) {
-      await checkbox.check();
+      if ((await checkbox.getAttribute('aria-checked')) !== 'true') {
+        await checkbox.click();
+      }
     }
     await page.getByRole('button', { name: 'Confirm and continue', exact: true }).click();
   }
 
-  await page.getByRole('link', { name: 'Continue to Jobmark', exact: true }).click();
   await expect(dashboardHeading).toBeVisible();
 }
 

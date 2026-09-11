@@ -29,5 +29,10 @@ export default async function OnboardingPage({
   const params = await searchParams;
   const continueTo = safeAuthRedirect(params.callbackUrl);
 
-  return <OnboardingForm status={status} userName={session.user.name} continueTo={continueTo} />;
+  if (status.isComplete) {
+    const continueUrl = `/api/compliance/continue?callbackUrl=${encodeURIComponent(continueTo)}`;
+    redirect(continueUrl);
+  }
+
+  return <OnboardingForm status={status} continueTo={continueTo} />;
 }
