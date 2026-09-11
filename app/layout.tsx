@@ -161,13 +161,14 @@ function AppDocument({
     <html
       lang="en"
       className={`${theme.className} overflow-x-clip`}
+      data-theme-mode={theme.mode}
       style={theme.style}
       suppressHydrationWarning
     >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var root=document.documentElement;var mode=${JSON.stringify(theme.mode)};var dark=mode==='dark'||(mode==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.classList.toggle('dark',dark);root.classList.toggle('light',!dark);})();`,
+            __html: `(function(){var root=document.documentElement;var mode=root.dataset.themeMode;var dark=mode==='dark'||(mode==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.classList.toggle('dark',dark);root.classList.toggle('light',!dark);})();`,
           }}
         />
       </head>
