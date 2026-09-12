@@ -30,7 +30,7 @@ jobs:
         run: npm audit --audit-level=high
 
   verify:
-    name: Verify application
+    name: verify
     runs-on: ubuntu-latest
     services:
       postgres:
