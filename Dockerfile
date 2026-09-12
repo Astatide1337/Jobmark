@@ -81,9 +81,10 @@ COPY --from=builder /app/node_modules/pure-rand ./node_modules/pure-rand
 COPY --from=builder /app/node_modules/rc9 ./node_modules/rc9
 COPY --from=builder /app/node_modules/readdirp ./node_modules/readdirp
 COPY --from=builder /app/node_modules/tinyexec ./node_modules/tinyexec
+COPY --from=builder /app/scripts/run-prisma-migrations.mjs ./scripts/run-prisma-migrations.mjs
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/api/health/live || exit 1
 
 USER nextjs
 EXPOSE 3000

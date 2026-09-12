@@ -6,6 +6,8 @@ export type JobmarkActor = {
   source: 'web' | 'mcp';
   connectionId?: string;
   vaultUnlocked: boolean;
+  /** The verified MCP grant expiry, when the actor came from MCP. */
+  vaultUnlockedUntil?: Date | null;
   requestId: string;
 };
 

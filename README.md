@@ -9,7 +9,7 @@ Jobmark is a personal career management platform that lets you:
 - **Save work notes** — Quick capture of daily work, wins, and metrics
 - **Organize projects** — Group related work with colors, archives, and progress tracking
 - **Set goals** — Track progress against measurable career objectives
-- **Build review drafts** — Weekly, monthly, and quarterly drafts from your notes
+- **Build review drafts** — Seven-day, 30-day, calendar-month, and custom drafts from your notes
 - **Manage your network** — CRM-lite for professional contacts and interactions
 - **Draft outreach** — Editable messages built from your saved conversations
 - **Focus & decompress** — Guided breathing, intention-setting, and affirmations
@@ -31,9 +31,9 @@ Jobmark no longer operates an internal chat product. Instead, it exposes every c
 
 **Scopes**: `jobmark:read`, `jobmark:write`, `jobmark:destructive`, `offline_access`
 
-**Vault**: Per-connection locking; unlock via short-lived one-time browser flow (`/mcp/vault/unlock?token=...`)
+**Vault**: Per-connection locking; unlock via a short-lived one-time browser flow (`/vault/unlock?nonce=...`)
 
-**Idempotency**: `Idempotency-Key` header on mutating calls (24h TTL)
+**Idempotency**: `Idempotency-Key` on mutating calls (24h TTL), bound to the exact tool arguments; reuse with different arguments is rejected
 
 **Rate Limits**: 120 req/min per connection (burst 20); OAuth endpoints limited per IP
 
@@ -126,6 +126,9 @@ conversations, outreach drafts, Focus, settings, and private projects.
 
 Export and account deletion remain browser-only Settings → Data flows. The MCP
 connection can clear notes only after explicit confirmation.
+
+Deleting a project only removes the project grouping; its notes and saved review
+drafts remain in your account as unassigned records.
 
 ## Assistant handoffs and privacy
 

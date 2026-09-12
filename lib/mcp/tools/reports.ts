@@ -10,21 +10,70 @@ import {
 import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
+import { isValidCalendarDate } from '@/lib/date-semantics';
 
-const reportListSchema = z.object({
-  limit: z.number().int().min(1).max(50).optional(),
-  cursor: z.string().optional(),
-});
+const reportIdSchema = z.string().min(1).max(100);
+const calendarDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(isValidCalendarDate, 'Invalid calendar date.');
 
-const reportGenerateSchema = z.object({
-  projectId: z.string().optional(),
-  customInstructions: z.string().max(2000).optional(),
-});
+const reportListSchema = z
+  .object({
+    limit: z.number().int().min(1).max(50).optional(),
+    cursor: z.string().min(1).max(100).optional(),
+  })
+  .strict();
 
-const reportImproveSchema = z.object({
-  reportId: z.string(),
-  instruction: z.string().min(1).max(500),
-});
+const reportGenerateSchema = z
+  .object({
+    projectId: z.string().min(1).max(100).optional(),
+    scope: z.enum(['all', 'unassigned']).optional(),
+    dateRange: z.enum(['7d', '30d', 'month', 'custom']).default('30d'),
+    customStartDate: calendarDateSchema.optional(),
+    customEndDate: calendarDateSchema.optional(),
+    tone: z.enum(['professional', 'casual', 'bullet-points']).default('professional'),
+    customInstructions: z.string().max(2_000).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.projectId && value.scope) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['scope'],
+        message: 'Scope is only used when no project is selected.',
+      });
+    }
+    if (value.dateRange === 'custom' && (!value.customStartDate || !value.customEndDate)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Custom review dates are required.',
+      });
+    }
+    if (value.dateRange !== 'custom' && (value.customStartDate || value.customEndDate)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Custom dates require dateRange=custom.',
+      });
+    }
+    if (
+      value.customStartDate &&
+      value.customEndDate &&
+      value.customStartDate > value.customEndDate
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'The start date must be on or before the end date.',
+      });
+    }
+  });
+
+const reportImproveSchema = z
+  .object({
+    reportId: reportIdSchema,
+    instruction: z.string().min(1).max(500),
+  })
+  .strict();
 
 export const reportsListTool = {
   definition: {
@@ -35,7 +84,7 @@ export const reportsListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 50 },
-        cursor: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
       },
       additionalProperties: false,
     },
@@ -92,7 +141,7 @@ export const reportsGetTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        reportId: { type: 'string' },
+        reportId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['reportId'],
       additionalProperties: false,
@@ -120,7 +169,7 @@ export const reportsGetTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({ reportId: z.string() }).safeParse(input);
+    const result = z.object({ reportId: reportIdSchema }).strict().safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
@@ -142,7 +191,12 @@ export const reportsGenerateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string' },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
+        scope: { type: 'string', enum: ['all', 'unassigned'] },
+        dateRange: { type: 'string', enum: ['7d', '30d', 'month', 'custom'] },
+        customStartDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        customEndDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        tone: { type: 'string', enum: ['professional', 'casual', 'bullet-points'] },
         customInstructions: { type: 'string', maxLength: 2000 },
       },
       additionalProperties: false,
@@ -183,7 +237,14 @@ export const reportsGenerateTool = {
     const report = await generateReport(
       actor,
       result.data.projectId ?? null,
-      result.data.customInstructions
+      result.data.customInstructions,
+      {
+        scope: result.data.projectId ? undefined : result.data.scope,
+        dateRange: result.data.dateRange,
+        customStartDate: result.data.customStartDate,
+        customEndDate: result.data.customEndDate,
+        tone: result.data.tone,
+      }
     );
     return createStructuredResult(report, `Created review draft: ${report.title}`);
   },
@@ -198,7 +259,7 @@ export const reportsRegenerateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        reportId: { type: 'string' },
+        reportId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['reportId'],
       additionalProperties: false,
@@ -231,7 +292,7 @@ export const reportsRegenerateTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({ reportId: z.string() }).safeParse(input);
+    const result = z.object({ reportId: reportIdSchema }).strict().safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
@@ -250,7 +311,7 @@ export const reportsImproveTextTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        reportId: { type: 'string' },
+        reportId: { type: 'string', minLength: 1, maxLength: 100 },
         instruction: { type: 'string', minLength: 1, maxLength: 500 },
       },
       required: ['reportId', 'instruction'],
@@ -292,7 +353,7 @@ export const reportsDeleteTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        reportId: { type: 'string' },
+        reportId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['reportId'],
       additionalProperties: false,
@@ -311,7 +372,7 @@ export const reportsDeleteTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({ reportId: z.string() }).safeParse(input);
+    const result = z.object({ reportId: reportIdSchema }).strict().safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }

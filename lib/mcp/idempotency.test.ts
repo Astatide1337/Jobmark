@@ -11,7 +11,12 @@ vi.mock('@/lib/db', () => ({ prisma: { mcpIdempotency: mocks } }));
 
 import { claimIdempotency, completeIdempotency, releaseIdempotency } from './idempotency';
 
-const key = { connectionId: 'connection-1', toolName: 'activity_create', requestKey: 'request-1' };
+const key = {
+  connectionId: 'connection-1',
+  toolName: 'activity_create',
+  requestKey: 'request-1',
+  requestHash: 'hash-1',
+};
 
 describe('MCP idempotency claims', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -29,11 +34,13 @@ describe('MCP idempotency claims', () => {
     mocks.findUnique
       .mockResolvedValueOnce({
         status: 'pending',
+        requestHash: key.requestHash,
         resultJson: null,
         expiresAt: new Date(Date.now() + 60_000),
       })
       .mockResolvedValueOnce({
         status: 'completed',
+        requestHash: key.requestHash,
         resultJson: { content: [{ type: 'text', text: 'created' }] },
         expiresAt: new Date(Date.now() + 60_000),
       });
@@ -51,9 +58,46 @@ describe('MCP idempotency claims', () => {
     await completeIdempotency(key, { ok: true });
     await releaseIdempotency(key);
     expect(mocks.update).toHaveBeenCalledWith({
-      where: { connectionId_toolName_requestKey: key },
+      where: {
+        connectionId_toolName_requestKey: {
+          connectionId: key.connectionId,
+          toolName: key.toolName,
+          requestKey: key.requestKey,
+        },
+      },
       data: { status: 'completed', resultJson: { ok: true } },
     });
-    expect(mocks.deleteMany).toHaveBeenCalledWith({ where: { ...key, status: 'pending' } });
+    expect(mocks.deleteMany).toHaveBeenCalledWith({
+      where: {
+        connectionId: key.connectionId,
+        toolName: key.toolName,
+        requestKey: key.requestKey,
+        status: 'pending',
+      },
+    });
+  });
+
+  it('rejects reuse of a key with different arguments', async () => {
+    mocks.create.mockRejectedValue({ code: 'P2002' });
+    mocks.findUnique.mockResolvedValue({
+      status: 'completed',
+      requestHash: 'different-hash',
+      resultJson: { ok: true },
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    await expect(claimIdempotency(key)).resolves.toEqual({ kind: 'conflict' });
+  });
+
+  it('does not replay legacy claims that were not bound to arguments', async () => {
+    mocks.create.mockRejectedValue({ code: 'P2002' });
+    mocks.findUnique.mockResolvedValue({
+      status: 'completed',
+      requestHash: null,
+      resultJson: { ok: true },
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    await expect(claimIdempotency(key)).resolves.toEqual({ kind: 'conflict' });
   });
 });

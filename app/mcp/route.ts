@@ -4,15 +4,52 @@ import { validateAccessToken } from '@/lib/mcp/auth/provider';
 import { checkMcpRateLimit, createRateLimitHeaders, RATE_LIMITS } from '@/lib/mcp/auth/rate-limit';
 import { allTools, toolDefinitions } from '@/lib/mcp/tools';
 import { McpValidationError } from '@/lib/mcp/errors';
-import { createStructuredResult, McpToolResult } from '@/lib/mcp/results';
-import { claimIdempotency, completeIdempotency, releaseIdempotency } from '@/lib/mcp/idempotency';
+import { createStructuredResult, type McpTool, type McpToolResult } from '@/lib/mcp/results';
+import {
+  claimIdempotency,
+  completeIdempotency,
+  releaseIdempotency,
+  type IdempotencyKey,
+} from '@/lib/mcp/idempotency';
 import { getMcpPublicBaseUrl, isAllowedMcpOrigin } from '@/lib/mcp/auth/public-origin';
+import { hashMcpArguments } from '@/lib/mcp/request-hash';
+import { readBoundedJsonBody } from '@/lib/request-body';
+import { z } from 'zod';
 
-interface JsonRpcRequest {
-  jsonrpc: '2.0';
-  id: string | number | null;
-  method: string;
-  params?: Record<string, unknown>;
+const jsonRpcRequestSchema = z
+  .object({
+    jsonrpc: z.literal('2.0'),
+    id: z.union([z.string().max(200), z.number().finite(), z.null()]).optional(),
+    method: z.string().min(1).max(100),
+    params: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+type JsonRpcRequest = z.infer<typeof jsonRpcRequestSchema>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getRequiredScopes(definition: unknown): string[] | undefined {
+  if (!isRecord(definition) || !isRecord(definition.annotations)) return undefined;
+  const scopes = definition.annotations.requiredScopes;
+  return Array.isArray(scopes) && scopes.every(scope => typeof scope === 'string')
+    ? scopes
+    : undefined;
+}
+
+function isMcpToolResult(value: unknown): value is McpToolResult {
+  if (!isRecord(value) || !Array.isArray(value.content)) return false;
+  if (
+    !value.content.every(
+      item => isRecord(item) && item.type === 'text' && typeof item.text === 'string'
+    )
+  ) {
+    return false;
+  }
+  if (value.isError !== undefined && typeof value.isError !== 'boolean') return false;
+  return value.structuredContent === undefined || isRecord(value.structuredContent);
 }
 
 interface JsonRpcResponse {
@@ -78,7 +115,7 @@ function normalizeJsonRpcError(error: unknown): {
   message: string;
   data?: unknown;
 } {
-  const candidate = error as { code?: unknown; message?: unknown; data?: unknown };
+  const candidate = isRecord(error) ? error : {};
   if (typeof candidate.code === 'number' && typeof candidate.message === 'string') {
     return { code: candidate.code, message: candidate.message, data: candidate.data };
   }
@@ -92,10 +129,9 @@ function normalizeJsonRpcError(error: unknown): {
     isKnownDomainError && typeof candidate.message === 'string'
       ? candidate.message
       : 'Internal server error';
-  const data =
-    candidate.data && typeof candidate.data === 'object'
-      ? { ...(candidate.data as Record<string, unknown>), code: domainCode }
-      : { code: domainCode };
+  const data = isRecord(candidate.data)
+    ? { ...candidate.data, code: domainCode }
+    : { code: domainCode };
   return { code: DOMAIN_ERROR_CODES[domainCode] ?? -32603, message, data };
 }
 
@@ -103,7 +139,7 @@ function getRequestedProtocolVersion(
   request: NextRequest,
   params?: Record<string, unknown>
 ): string | null {
-  const metadata = (params?._meta as Record<string, unknown> | undefined) ?? {};
+  const metadata = isRecord(params?._meta) ? params._meta : {};
   const metadataVersion = metadata['io.modelcontextprotocol/protocolVersion'];
   if (typeof metadataVersion === 'string') return metadataVersion;
   return request.headers.get('mcp-protocol-version');
@@ -132,10 +168,7 @@ function validateModernTransportHeaders(
   jsonRpcRequest: JsonRpcRequest
 ): { code: number; message: string; data?: unknown } | null {
   const params = jsonRpcRequest.params ?? {};
-  const metadata =
-    params._meta && typeof params._meta === 'object'
-      ? (params._meta as Record<string, unknown>)
-      : undefined;
+  const metadata = isRecord(params._meta) ? params._meta : undefined;
   const bodyVersion = metadata?.['io.modelcontextprotocol/protocolVersion'];
   const headerVersion = request.headers.get('mcp-protocol-version');
 
@@ -203,7 +236,7 @@ function validateModernTransportHeaders(
 function addModernResultMetadata(result: unknown): unknown {
   if (!result || typeof result !== 'object' || Array.isArray(result)) return result;
   const current = result as Record<string, unknown>;
-  const metadata = (current._meta as Record<string, unknown> | undefined) ?? {};
+  const metadata = isRecord(current._meta) ? current._meta : {};
   return {
     resultType: current.resultType ?? 'complete',
     ...current,
@@ -308,7 +341,7 @@ function hasScope(scopes: string[], required: string): boolean {
 }
 
 function toPublicToolDefinition(definition: (typeof toolDefinitions)[number]) {
-  const annotations = (definition.annotations as Record<string, unknown> | undefined) ?? {};
+  const annotations = isRecord(definition.annotations) ? definition.annotations : {};
   return {
     ...definition,
     annotations: {
@@ -318,6 +351,91 @@ function toPublicToolDefinition(definition: (typeof toolDefinitions)[number]) {
       idempotentHint: annotations.idempotentHint,
       openWorldHint: annotations.openWorldHint,
     },
+  };
+}
+
+function assertRequiredToolScopes(tool: McpTool, scopes: string[]): void {
+  for (const scope of getRequiredScopes(tool.definition) ?? []) {
+    if (!hasScope(scopes, scope)) {
+      throw {
+        code: -32603,
+        message: `Insufficient scope: requires ${scope}`,
+        data: { code: 'INSUFFICIENT_SCOPE', required: scope },
+      };
+    }
+  }
+}
+
+function assertVaultToolAccess(toolName: string, vaultUnlockedUntil: Date | null): void {
+  if (!toolName.startsWith('vault_')) return;
+
+  const isUnlocked = vaultUnlockedUntil != null && vaultUnlockedUntil > new Date();
+  const isVaultStatusCall = toolName === 'vault_status';
+  const isVaultBeginCall = toolName.startsWith('vault_begin_');
+  const isVaultLockCall = toolName === 'vault_lock';
+  if (isVaultStatusCall || isVaultBeginCall || isVaultLockCall || isUnlocked) return;
+
+  throw {
+    code: -32603,
+    message: 'Private projects are closed. Open them from the connection link before continuing.',
+    data: { code: 'VAULT_LOCKED' },
+  };
+}
+
+function getToolIdempotencyKey(
+  tool: McpTool,
+  connectionId: string,
+  method: string,
+  params: Record<string, unknown>,
+  requestKey?: string
+): IdempotencyKey | null {
+  if (!requestKey || tool.definition.annotations?.readOnlyHint === true) return null;
+  if (tool.definition.name.startsWith('vault_begin_')) return null;
+
+  return {
+    connectionId,
+    toolName: method,
+    requestKey,
+    requestHash: hashMcpArguments(params),
+  };
+}
+
+async function getIdempotencyReplay(
+  key: IdempotencyKey,
+  method: string,
+  vaultUnlockedUntil: Date | null
+): Promise<McpToolResult | null> {
+  const claim = await claimIdempotency(key);
+  if (claim.kind === 'owner') return null;
+
+  if (claim.kind === 'cached') {
+    const grantStillActive = vaultUnlockedUntil != null && vaultUnlockedUntil > new Date();
+    const safeToReplayAfterLock = method === 'vault_lock';
+    if (!grantStillActive && !safeToReplayAfterLock) {
+      throw {
+        code: -32003,
+        message: 'The private-project grant is no longer active for this retry.',
+        data: { code: 'VAULT_LOCKED' },
+      };
+    }
+    if (!isMcpToolResult(claim.result)) {
+      throw { code: -32603, message: 'Invalid cached result', data: { code: 'INTERNAL_ERROR' } };
+    }
+    return claim.result;
+  }
+
+  if (claim.kind === 'conflict') {
+    throw {
+      code: -32009,
+      message: 'This idempotency key was already used for different arguments.',
+      data: { code: 'IDEMPOTENCY_KEY_REUSED' },
+    };
+  }
+
+  throw {
+    code: -32001,
+    message: 'A request with this idempotency key is still in progress',
+    data: { code: 'IDEMPOTENCY_IN_PROGRESS' },
   };
 }
 
@@ -336,50 +454,14 @@ async function executeTool(
     throw { code: -32601, message: 'Method not found', data: { code: 'METHOD_NOT_FOUND' } };
   }
 
-  const requiredScopes = (tool.definition.annotations as Record<string, unknown>)
-    ?.requiredScopes as string[] | undefined;
-  if (requiredScopes) {
-    for (const scope of requiredScopes) {
-      if (!hasScope(scopes, scope)) {
-        throw {
-          code: -32603,
-          message: `Insufficient scope: requires ${scope}`,
-          data: { code: 'INSUFFICIENT_SCOPE', required: scope },
-        };
-      }
-    }
-  }
+  assertRequiredToolScopes(tool, scopes);
+  assertVaultToolAccess(tool.definition.name, vaultUnlockedUntil);
 
-  if (tool.definition.name.startsWith('vault_')) {
-    const isUnlocked = vaultUnlockedUntil && vaultUnlockedUntil > new Date();
-    const isVaultStatusCall = tool.definition.name === 'vault_status';
-    const isVaultBeginCall = tool.definition.name.startsWith('vault_begin_');
-
-    if (!isVaultStatusCall && !isVaultBeginCall && !isUnlocked) {
-      throw {
-        code: -32603,
-        message:
-          'Private projects are closed. Open them from the connection link before continuing.',
-        data: { code: 'VAULT_LOCKED' },
-      };
-    }
-  }
-
-  const idempotency =
-    tool.definition.annotations?.idempotentHint && idempotencyKey
-      ? { connectionId, toolName: method, requestKey: idempotencyKey }
-      : null;
-  if (idempotency) {
-    const claim = await claimIdempotency(idempotency);
-    if (claim.kind === 'cached') return claim.result as McpToolResult;
-    if (claim.kind === 'pending') {
-      throw {
-        code: -32001,
-        message: 'A request with this idempotency key is still in progress',
-        data: { code: 'IDEMPOTENCY_IN_PROGRESS' },
-      };
-    }
-  }
+  const idempotency = getToolIdempotencyKey(tool, connectionId, method, params, idempotencyKey);
+  const replay = idempotency
+    ? await getIdempotencyReplay(idempotency, method, vaultUnlockedUntil)
+    : null;
+  if (replay) return replay;
 
   const isVaultUnlocked = vaultUnlockedUntil != null && vaultUnlockedUntil > new Date();
   const actor = {
@@ -389,6 +471,7 @@ async function executeTool(
     clientId,
     scopes,
     vaultUnlocked: isVaultUnlocked,
+    vaultUnlockedUntil,
     requestId: crypto.randomUUID(),
   };
 
@@ -408,7 +491,14 @@ async function executeTool(
     }
   }
 
-  if (idempotency) await completeIdempotency(idempotency, result);
+  if (idempotency) {
+    // The domain mutation and idempotency completion are separate writes. If
+    // completion fails, keep the pending claim rather than releasing it and
+    // making an automatic retry capable of duplicating an already-applied
+    // mutation. The claim expires and the client receives an explicit error;
+    // this does not promise unsupported exactly-once delivery.
+    await completeIdempotency(idempotency, result);
+  }
 
   await prisma.mcpConnection.update({
     where: { id: connectionId },
@@ -416,6 +506,84 @@ async function executeTool(
   });
 
   return result;
+}
+
+type McpMethodContext = {
+  method: string;
+  params?: Record<string, unknown>;
+  request: NextRequest;
+  connectionId: string;
+  userId: string;
+  clientId: string;
+  scopes: string[];
+  vaultUnlockedUntil: Date | null;
+};
+
+function listMcpTools(params: Record<string, unknown> | undefined, scopes: string[]) {
+  const cursor = params?.cursor;
+  const requestedLimit = params?.limit;
+  if (cursor !== undefined && (typeof cursor !== 'string' || cursor.length > 200)) {
+    throw { code: -32602, message: 'Invalid tools/list cursor' };
+  }
+
+  let limit = 50;
+  if (requestedLimit !== undefined) {
+    if (
+      typeof requestedLimit !== 'number' ||
+      !Number.isInteger(requestedLimit) ||
+      requestedLimit < 1 ||
+      requestedLimit > 100
+    ) {
+      throw { code: -32602, message: 'Invalid tools/list limit' };
+    }
+    limit = requestedLimit;
+  }
+
+  let tools = toolDefinitions
+    .filter(definition => {
+      const requiredScopes = getRequiredScopes(definition);
+      return !requiredScopes || requiredScopes.every(scope => hasScope(scopes, scope));
+    })
+    .map(toPublicToolDefinition);
+  if (cursor) {
+    const index = tools.findIndex(tool => tool.name === cursor);
+    tools = tools.slice(index + 1);
+  }
+  const page = tools.slice(0, limit);
+  return {
+    tools: page,
+    nextCursor: page.length === limit ? page[page.length - 1].name : undefined,
+    ttlMs: 300_000,
+    cacheScope: 'private',
+  };
+}
+
+async function callMcpTool(context: McpMethodContext): Promise<McpToolResult> {
+  const params = context.params ?? {};
+  const toolName = params.name;
+  const rawArguments = params.arguments;
+  if (typeof toolName !== 'string' || toolName.length === 0 || toolName.length > 200) {
+    throw { code: -32602, message: 'Invalid tool name' };
+  }
+  if (rawArguments !== undefined && !isRecord(rawArguments)) {
+    throw { code: -32602, message: 'Tool arguments must be an object' };
+  }
+
+  const idempotencyKey = context.request.headers.get('idempotency-key');
+  if (idempotencyKey !== null && (idempotencyKey.length === 0 || idempotencyKey.length > 200)) {
+    throw { code: -32602, message: 'Invalid Idempotency-Key' };
+  }
+
+  return executeTool(
+    context.connectionId,
+    context.userId,
+    context.clientId,
+    context.scopes,
+    toolName,
+    isRecord(rawArguments) ? rawArguments : {},
+    context.vaultUnlockedUntil,
+    idempotencyKey ?? undefined
+  );
 }
 
 async function executeMcpMethod({
@@ -427,16 +595,7 @@ async function executeMcpMethod({
   clientId,
   scopes,
   vaultUnlockedUntil,
-}: {
-  method: string;
-  params?: Record<string, unknown>;
-  request: NextRequest;
-  connectionId: string;
-  userId: string;
-  clientId: string;
-  scopes: string[];
-  vaultUnlockedUntil: Date | null;
-}): Promise<unknown> {
+}: McpMethodContext): Promise<unknown> {
   switch (method) {
     case 'server/discover':
       return {
@@ -449,7 +608,8 @@ async function executeMcpMethod({
       };
     case 'initialize':
       return {
-        protocolVersion: params?.protocolVersion ?? '2024-11-05',
+        protocolVersion:
+          typeof params?.protocolVersion === 'string' ? params.protocolVersion : '2024-11-05',
         capabilities: SERVER_CAPABILITIES,
         serverInfo: SERVER_INFO,
         instructions: SERVER_INSTRUCTIONS,
@@ -457,42 +617,19 @@ async function executeMcpMethod({
     case 'notifications/initialized':
     case 'ping':
       return {};
-    case 'tools/list': {
-      const cursor = params?.cursor as string | undefined;
-      const limit = Math.min((params?.limit as number) ?? 50, 100);
-      let tools = toolDefinitions
-        .filter(definition => {
-          const requiredScopes = (definition.annotations as Record<string, unknown> | undefined)
-            ?.requiredScopes as string[] | undefined;
-          return !requiredScopes || requiredScopes.every(scope => hasScope(scopes, scope));
-        })
-        .map(toPublicToolDefinition);
-      if (cursor) {
-        const index = tools.findIndex(tool => tool.name === cursor);
-        tools = tools.slice(index + 1);
-      }
-      const page = tools.slice(0, limit);
-      return {
-        tools: page,
-        nextCursor: page.length === limit ? page[page.length - 1].name : undefined,
-        ttlMs: 300_000,
-        cacheScope: 'private',
-      };
-    }
-    case 'tools/call': {
-      const toolName = params?.name as string;
-      const toolParams = (params?.arguments as Record<string, unknown>) ?? {};
-      return executeTool(
+    case 'tools/list':
+      return listMcpTools(params, scopes);
+    case 'tools/call':
+      return callMcpTool({
+        method,
+        params,
+        request,
         connectionId,
         userId,
         clientId,
         scopes,
-        toolName,
-        toolParams,
         vaultUnlockedUntil,
-        request.headers.get('idempotency-key') ?? undefined
-      );
-    }
+      });
     case 'resources/list':
       return {
         resources: [],
@@ -544,20 +681,20 @@ export async function POST(request: NextRequest) {
 
   let jsonRpcRequest: JsonRpcRequest;
   try {
-    const body: unknown = await request.json();
-    jsonRpcRequest = body as JsonRpcRequest;
+    const body = await readBoundedJsonBody(request);
+    if (body.kind === 'too_large') {
+      return NextResponse.json(
+        createErrorResponse(null, -32600, 'Request is too large', { code: 'REQUEST_TOO_LARGE' }),
+        { status: 413, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp) }
+      );
+    }
+    if (body.kind !== 'ok') throw new Error('PARSE_ERROR');
+    const parsed = jsonRpcRequestSchema.safeParse(body.value);
+    if (!parsed.success) throw new Error('INVALID_REQUEST');
+    jsonRpcRequest = parsed.data;
   } catch {
     return NextResponse.json(
-      createErrorResponse(null, -32700, 'Parse error', { code: 'PARSE_ERROR' }),
-      { status: 400, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp) }
-    );
-  }
-
-  if (jsonRpcRequest.jsonrpc !== '2.0') {
-    return NextResponse.json(
-      createErrorResponse(jsonRpcRequest.id ?? null, -32600, 'Invalid Request', {
-        code: 'INVALID_REQUEST',
-      }),
+      createErrorResponse(null, -32600, 'Invalid Request', { code: 'INVALID_REQUEST' }),
       { status: 400, headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.mcp) }
     );
   }

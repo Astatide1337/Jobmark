@@ -17,11 +17,14 @@ import { isVaultUnlocked, setVaultUnlocked, getLockedProjectIds } from '@/lib/pr
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { assertSharedRateLimitAllowed } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 const BCRYPT_COST = 12;
 const VAULT_PASSWORD_MIN_LENGTH = 12;
+const VAULT_PASSWORD_MAX_LENGTH = 128;
 const MAX_UNLOCK_ATTEMPTS = 5;
-const unlockScope = 'vault-unlock';
+const unlockScope = 'vault-action';
+const projectIdSchema = z.string().min(1).max(100);
 
 async function checkUnlockRateLimit(userId: string) {
   try {
@@ -46,10 +49,16 @@ export async function setVaultPassword(password: string, confirmPassword: string
     return { success: false, message: 'Sign in to set up private projects.' };
   }
 
-  if (!password || password.length < VAULT_PASSWORD_MIN_LENGTH) {
+  if (
+    typeof password !== 'string' ||
+    typeof confirmPassword !== 'string' ||
+    !password ||
+    password.length < VAULT_PASSWORD_MIN_LENGTH ||
+    password.length > VAULT_PASSWORD_MAX_LENGTH
+  ) {
     return {
       success: false,
-      message: `Use at least ${VAULT_PASSWORD_MIN_LENGTH} characters.`,
+      message: `Use ${VAULT_PASSWORD_MIN_LENGTH} to ${VAULT_PASSWORD_MAX_LENGTH} characters.`,
     };
   }
 
@@ -72,11 +81,16 @@ export async function setVaultPassword(password: string, confirmPassword: string
 
   const hash = await bcrypt.hash(password, BCRYPT_COST);
 
-  await prisma.userSettings.upsert({
-    where: { userId: session.user.id },
-    update: { vaultPasswordHash: hash },
-    create: { userId: session.user.id, vaultPasswordHash: hash },
-  });
+  if (existing) {
+    await prisma.userSettings.update({
+      where: { userId: session.user.id },
+      data: { vaultPasswordHash: hash, vaultVersion: { increment: 1 } },
+    });
+  } else {
+    await prisma.userSettings.create({
+      data: { userId: session.user.id, vaultPasswordHash: hash },
+    });
+  }
 
   // Auto-unlock after setting password
   await setVaultUnlocked(true, session.user.id);
@@ -93,6 +107,9 @@ export async function unlockVault(password: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to open private projects.' };
+  }
+  if (typeof password !== 'string' || password.length > VAULT_PASSWORD_MAX_LENGTH) {
+    return { success: false, message: 'That password is not correct.' };
   }
 
   const settings = await prisma.userSettings.findUnique({
@@ -146,6 +163,9 @@ export async function moveProjectToVault(projectId: string) {
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to hide a project.' };
   }
+  if (!projectIdSchema.safeParse(projectId).success) {
+    return { success: false, message: 'That project is no longer available.' };
+  }
 
   // Ensure vault password is set
   const settings = await prisma.userSettings.findUnique({
@@ -182,6 +202,9 @@ export async function moveProjectFromVault(projectId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to make this project active.' };
+  }
+  if (!projectIdSchema.safeParse(projectId).success) {
+    return { success: false, message: 'That project is no longer available.' };
   }
 
   const unlocked = await isVaultUnlocked(session.user.id);
@@ -224,9 +247,10 @@ export async function getVaultProjects() {
     orderBy: { name: 'asc' },
     include: {
       _count: {
-        select: { activities: true },
+        select: { activities: { where: { userId: targetUserId } } },
       },
       activities: {
+        where: { userId: targetUserId },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: {

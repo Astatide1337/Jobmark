@@ -4,9 +4,11 @@ import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 
-const accountClearActivitiesSchema = z.object({
-  confirmation: z.literal('DELETE ALL MY NOTES'),
-});
+const accountClearActivitiesSchema = z
+  .object({
+    confirmation: z.literal('DELETE ALL MY NOTES'),
+  })
+  .strict();
 
 export const accountClearActivitiesTool = {
   definition: {

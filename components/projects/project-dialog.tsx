@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { createProject, updateProject } from '@/app/actions/projects';
 import { projectColors } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export interface ProjectDialogProps {
   open: boolean;
@@ -64,14 +65,17 @@ export function ProjectDialog({ open, onOpenChange, project, onSubmit }: Project
       }
 
       if (result.success) {
+        toast.success(result.message);
         onOpenChange(false);
       } else if (result.errors?.name) {
         setErrors({ name: result.errors.name[0] });
+        toast.error(result.message);
       } else {
-        console.error(result.message);
+        toast.error(result.message);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Saving project failed:', error);
+      toast.error('The project was not saved. Try again.');
     } finally {
       setIsLoading(false);
     }

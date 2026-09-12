@@ -17,7 +17,9 @@ export async function polishDictation(text: string) {
   if (!session?.user?.id) {
     throw new Error('Sign in to use voice typing.');
   }
-  if (!text || text.trim().length === 0) return '';
+  if (typeof text !== 'string' || text.length > 20_000 || !text || text.trim().length === 0) {
+    return '';
+  }
   const normalized = text.slice(0, 20_000).replace(/\s+/g, ' ').trim();
   if (!normalized) return '';
 

@@ -235,7 +235,7 @@ export const vaultSetProjectLockedTool = {
     inputSchema: {
       type: 'object' as const,
       properties: {
-        projectId: { type: 'string' as const },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
         locked: { type: 'boolean' as const },
       },
       required: ['projectId', 'locked'],
@@ -252,7 +252,10 @@ export const vaultSetProjectLockedTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const parsed = z.object({ projectId: z.string(), locked: z.boolean() }).safeParse(input);
+    const parsed = z
+      .object({ projectId: z.string().min(1).max(100), locked: z.boolean() })
+      .strict()
+      .safeParse(input);
     if (!parsed.success) {
       throw new McpValidationError('Invalid input', parsed.error.flatten().fieldErrors);
     }
