@@ -6,10 +6,12 @@ import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
-const searchGlobalSchema = z.object({
-  query: z.string().min(1).max(200),
-  limit: z.number().int().min(1).max(50).optional(),
-});
+const searchGlobalSchema = z
+  .object({
+    query: z.string().min(1).max(200),
+    limit: z.number().int().min(1).max(50).optional(),
+  })
+  .strict();
 
 export const searchGlobalTool = {
   definition: {
@@ -203,7 +205,7 @@ export const insightsGetTool = {
   },
   execute: async (actor: McpActor, input: unknown) => {
     assertMcpActor(actor);
-    const result = z.object({}).safeParse(input);
+    const result = z.object({}).strict().safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input');
     }

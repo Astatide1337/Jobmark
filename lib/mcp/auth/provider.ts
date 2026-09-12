@@ -31,6 +31,8 @@ const AUTH_CODE_TTL = 10 * 60 * 1000; // 10 minutes
 const CLIENT_SECRET_HASH_PREFIX = 'bcrypt$';
 const CLIENT_SECRET_BCRYPT_ROUNDS = 12;
 
+type OAuthTokenStore = Pick<Prisma.TransactionClient, 'oAuthAccessToken' | 'oAuthRefreshToken'>;
+
 /** Store confidential-client secrets with a deliberately expensive password hash. */
 export async function hashClientSecret(secret: string): Promise<string> {
   return `${CLIENT_SECRET_HASH_PREFIX}${await bcrypt.hash(secret, CLIENT_SECRET_BCRYPT_ROUNDS)}`;
@@ -260,12 +262,13 @@ export async function consumeAuthorizationCode(
 export async function createAccessToken(
   clientId: string,
   userId: string,
-  scope: string
+  scope: string,
+  store: OAuthTokenStore = prisma
 ): Promise<AccessToken> {
   const token = generateToken();
   const expiresAt = Date.now() + ACCESS_TOKEN_TTL;
 
-  await prisma.oAuthAccessToken.create({
+  await store.oAuthAccessToken.create({
     data: {
       // Access tokens are intentionally opaque. The DB hash is the source of
       // truth, so tokens remain valid across independent application instances.
@@ -292,13 +295,14 @@ export async function createRefreshToken(
   userId: string,
   scope: string,
   pkceCodeVerifier?: string,
-  familyId?: string
+  familyId?: string,
+  store: OAuthTokenStore = prisma
 ): Promise<RefreshToken> {
   const token = generateToken();
   const expiresAt = Date.now() + REFRESH_TOKEN_TTL;
   const tokenFamilyId = familyId ?? randomUUID();
 
-  await prisma.oAuthRefreshToken.create({
+  await store.oAuthRefreshToken.create({
     data: {
       tokenHash: hashToken(token),
       clientId,
@@ -328,57 +332,60 @@ export async function rotateRefreshToken(
   pkceCodeVerifier?: string
 ): Promise<{ accessToken: AccessToken; refreshToken: RefreshToken } | null> {
   const tokenHash = hashToken(oldToken);
-  const refreshToken = await prisma.oAuthRefreshToken.findUnique({ where: { tokenHash } });
+  return prisma.$transaction(async transaction => {
+    const refreshToken = await transaction.oAuthRefreshToken.findUnique({ where: { tokenHash } });
 
-  if (!refreshToken) return null;
-  if (refreshToken.expiresAt < new Date()) {
-    await prisma.oAuthRefreshToken.delete({ where: { tokenHash } });
-    return null;
-  }
-  if (refreshToken.clientId !== clientId || refreshToken.userId !== userId) return null;
-  if (refreshToken.consumedAt) {
-    // Token was already consumed — replay detected. Revoke entire family.
-    await prisma.oAuthRefreshToken.updateMany({
-      where: { familyId: refreshToken.familyId, consumedAt: null },
+    if (!refreshToken) return null;
+    if (refreshToken.expiresAt < new Date()) {
+      await transaction.oAuthRefreshToken.delete({ where: { tokenHash } });
+      return null;
+    }
+    if (refreshToken.clientId !== clientId || refreshToken.userId !== userId) return null;
+    if (refreshToken.consumedAt) {
+      // Token was already consumed — replay detected. Revoke the entire family
+      // in the same transaction so no successor can remain usable.
+      await transaction.oAuthRefreshToken.updateMany({
+        where: { familyId: refreshToken.familyId, consumedAt: null },
+        data: { consumedAt: new Date() },
+      });
+      return null;
+    }
+
+    // Check PKCE verifier: stored value is the code_challenge, presented value is the verifier.
+    if (pkceCodeVerifier && refreshToken.pkceCodeVerifier) {
+      const valid = verifyPKCE(refreshToken.pkceCodeVerifier, pkceCodeVerifier);
+      if (!valid) return null;
+    }
+
+    // Mark and mint inside one transaction. Concurrent requests may both read
+    // the unconsumed row, but the conditional update serializes the winner. If
+    // a loser detects that race, its family revocation runs in this transaction
+    // after the winner commits, revoking the newly minted successor too.
+    const consumed = await transaction.oAuthRefreshToken.updateMany({
+      where: { tokenHash, consumedAt: null },
       data: { consumedAt: new Date() },
     });
-    return null;
-  }
 
-  // Check PKCE verifier: stored value is the code_challenge, presented value is the verifier
-  if (pkceCodeVerifier && refreshToken.pkceCodeVerifier) {
-    const valid = verifyPKCE(refreshToken.pkceCodeVerifier, pkceCodeVerifier);
-    if (!valid) return null;
-  }
+    if (consumed.count !== 1) {
+      await transaction.oAuthRefreshToken.updateMany({
+        where: { familyId: refreshToken.familyId, consumedAt: null },
+        data: { consumedAt: new Date() },
+      });
+      return null;
+    }
 
-  // Mark old token as consumed atomically. Two concurrent refresh requests can
-  // both pass the read above, but only one may win this conditional update and
-  // mint a new token pair.
-  const consumed = await prisma.oAuthRefreshToken.updateMany({
-    where: { tokenHash, consumedAt: null },
-    data: { consumedAt: new Date() },
+    const newAccessToken = await createAccessToken(clientId, userId, scope, transaction);
+    const newRefreshToken = await createRefreshToken(
+      clientId,
+      userId,
+      scope,
+      refreshToken.pkceCodeVerifier ?? undefined,
+      refreshToken.familyId,
+      transaction
+    );
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   });
-
-  if (consumed.count !== 1) {
-    // Another request won the race. Treat this as replay and revoke the rest
-    // of the family, matching the already-consumed-token path above.
-    await prisma.oAuthRefreshToken.updateMany({
-      where: { familyId: refreshToken.familyId, consumedAt: null },
-      data: { consumedAt: new Date() },
-    });
-    return null;
-  }
-
-  const newAccessToken = await createAccessToken(clientId, userId, scope);
-  const newRefreshToken = await createRefreshToken(
-    clientId,
-    userId,
-    scope,
-    refreshToken.pkceCodeVerifier ?? undefined,
-    refreshToken.familyId
-  );
-
-  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
 
 export async function validateAccessToken(

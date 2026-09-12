@@ -18,6 +18,7 @@ const actor = {
   userId: 'user-1',
   source: 'mcp' as const,
   vaultUnlocked: false,
+  vaultUnlockedUntil: null,
   requestId: 'request-1',
 };
 

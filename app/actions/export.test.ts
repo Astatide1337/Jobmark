@@ -1,23 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, getLockedProjectIdsMock, isVaultUnlockedMock, prismaMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  getLockedProjectIdsMock: vi.fn(),
-  isVaultUnlockedMock: vi.fn(),
-  prismaMock: {
-    user: { findUnique: vi.fn() },
-    project: { findMany: vi.fn() },
-    activity: { findMany: vi.fn() },
-    report: { findMany: vi.fn() },
-    userSettings: { findUnique: vi.fn() },
-    goal: { findMany: vi.fn() },
-    contact: { findMany: vi.fn() },
-    interactionLog: { findMany: vi.fn() },
-    outreachDraft: { findMany: vi.fn() },
-  },
-}));
+const { authMock, getLockedProjectIdsMock, isVaultUnlockedMock, prismaMock, signOutMock } =
+  vi.hoisted(() => ({
+    authMock: vi.fn(),
+    getLockedProjectIdsMock: vi.fn(),
+    isVaultUnlockedMock: vi.fn(),
+    signOutMock: vi.fn(),
+    prismaMock: {
+      user: { findUnique: vi.fn() },
+      project: { findMany: vi.fn() },
+      activity: { findMany: vi.fn() },
+      report: { findMany: vi.fn() },
+      userSettings: { findUnique: vi.fn() },
+      goal: { findMany: vi.fn() },
+      contact: { findMany: vi.fn() },
+      interactionLog: { findMany: vi.fn() },
+      outreachDraft: { findMany: vi.fn() },
+      decompressionLog: { findMany: vi.fn() },
+      userCompliance: { findUnique: vi.fn() },
+      mcpConnection: { findMany: vi.fn() },
+      $transaction: vi.fn(),
+    },
+  }));
 
-vi.mock('@/lib/auth', () => ({ auth: authMock, requireUserId: vi.fn() }));
+vi.mock('@/lib/auth', () => ({ auth: authMock, requireUserId: vi.fn(), signOut: signOutMock }));
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/project-lock', () => ({
   getLockedProjectIds: getLockedProjectIdsMock,
@@ -25,7 +31,7 @@ vi.mock('@/lib/project-lock', () => ({
   filterLockedReports: vi.fn((reports: unknown[]) => reports),
 }));
 
-import { exportUserData } from './settings';
+import { deleteUserAccount, exportUserData } from './settings';
 
 describe('account export safety', () => {
   beforeEach(() => {
@@ -62,6 +68,9 @@ describe('account export safety', () => {
     prismaMock.contact.findMany.mockResolvedValue([]);
     prismaMock.interactionLog.findMany.mockResolvedValue([]);
     prismaMock.outreachDraft.findMany.mockResolvedValue([]);
+    prismaMock.decompressionLog.findMany.mockResolvedValue([]);
+    prismaMock.userCompliance.findUnique.mockResolvedValue(null);
+    prismaMock.mcpConnection.findMany.mockResolvedValue([]);
   });
 
   it('does not serialize prohibited security fields', async () => {
@@ -79,5 +88,24 @@ describe('account export safety', () => {
         }),
       })
     );
+    expect(prismaMock.mcpConnection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.not.objectContaining({
+          id: expect.anything(),
+          oauthClientId: expect.anything(),
+        }),
+      })
+    );
+  });
+
+  it('requires the exact deletion confirmation before touching account data', async () => {
+    await expect(deleteUserAccount('delete')).resolves.toEqual({
+      success: false,
+      message: 'Type DELETE to confirm account deletion.',
+    });
+
+    expect(prismaMock.mcpConnection.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    expect(signOutMock).not.toHaveBeenCalled();
   });
 });

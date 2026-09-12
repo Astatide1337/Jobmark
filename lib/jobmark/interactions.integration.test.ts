@@ -24,6 +24,7 @@ describe.skipIf(!integrationEnabled)('PostgreSQL interaction pagination', () => 
     clientId: 'pagination-test',
     scopes: ['jobmark:read'],
     vaultUnlocked: false,
+    vaultUnlockedUntil: null,
     requestId: randomUUID(),
   };
 

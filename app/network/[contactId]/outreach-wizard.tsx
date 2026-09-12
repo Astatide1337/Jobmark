@@ -187,7 +187,11 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
     if (!draftContent || isSaving || saved) return;
     setIsSaving(true);
     try {
-      await saveOutreachDraftToHistory(draftContent, config);
+      const result = await saveOutreachDraftToHistory(draftContent, config);
+      if (!result.success) {
+        toast.error('Could not save the draft.');
+        return;
+      }
       setSaved(true);
       router.refresh();
       toast.success('Draft saved.');

@@ -25,16 +25,12 @@ import { FileText, Flame, FolderOpen, TrendingUp } from 'lucide-react';
  * 3. Variable Rewards: Milestone messages
  */
 
-import { useMemo } from 'react';
-import { shiftCalendarDate } from '@/lib/date-semantics';
-
 interface StatsProps {
   thisMonth: number;
-  dates?: string[];
   projects: number;
   monthlyGoal: number;
   summaries?: number;
-  today: string;
+  currentStreak?: number;
 }
 
 export function StatsCards({
@@ -42,43 +38,8 @@ export function StatsCards({
   projects,
   monthlyGoal,
   summaries = 0,
-  dates = [],
-  today,
+  currentStreak = 0,
 }: StatsProps) {
-  const currentStreak = useMemo(() => {
-    if (!dates.length) return 0;
-
-    const uniqueDates = Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
-
-    if (uniqueDates.length === 0) return 0;
-
-    const yesterday = shiftCalendarDate(today, -1);
-
-    // Check if the most recent activity is recent enough to count
-    const latest = uniqueDates[0];
-
-    // If latest activity is older than yesterday, streak is broken
-    if (latest < yesterday) return 0;
-
-    // Count consecutive days starting from the most recent
-    let streak = 1;
-
-    for (let i = 1; i < uniqueDates.length; i++) {
-      const current = uniqueDates[i - 1];
-      const previous = uniqueDates[i];
-
-      const expectedPrevious = shiftCalendarDate(current, -1);
-
-      if (previous === expectedPrevious) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  }, [dates, today]);
-
   return (
     <TooltipProvider delayDuration={300}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

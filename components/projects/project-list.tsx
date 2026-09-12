@@ -49,6 +49,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Project {
   id: string;
@@ -118,22 +119,52 @@ export function ProjectList({
       return;
     }
     startMoveToVaultTransition(async () => {
-      await moveProjectToVault(projectId);
-      router.refresh();
+      try {
+        const result = await moveProjectToVault(projectId);
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
+        router.refresh();
+      } catch (error) {
+        console.error('Moving project to private failed:', error);
+        toast.error('The project was not made private. Try again.');
+      }
     });
   };
 
   const handleMoveFromVault = (projectId: string) => {
     startMoveFromVaultTransition(async () => {
-      await moveProjectFromVault(projectId);
-      router.refresh();
+      try {
+        const result = await moveProjectFromVault(projectId);
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
+        router.refresh();
+      } catch (error) {
+        console.error('Moving project out of private failed:', error);
+        toast.error('The project was not made active. Try again.');
+      }
     });
   };
 
   const handleLockVault = () => {
     startLockTransition(async () => {
-      await lockVault();
-      router.refresh();
+      try {
+        const result = await lockVault();
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
+        router.refresh();
+      } catch (error) {
+        console.error('Closing private projects failed:', error);
+        toast.error('Private projects were not closed. Try again.');
+      }
     });
   };
 
@@ -482,23 +513,46 @@ function ProjectCard({
 }: ProjectCardProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const handleArchive = () => {
     startTransition(async () => {
-      if (onArchive) {
-        await onArchive(project.id);
-      } else {
-        await archiveProject(project.id);
+      try {
+        if (onArchive) {
+          await onArchive(project.id);
+        } else {
+          const result = await archiveProject(project.id);
+          if (!result.success) {
+            toast.error(result.message);
+            return;
+          }
+          toast.success(result.message);
+        }
+        router.refresh();
+      } catch (error) {
+        console.error('Archiving project failed:', error);
+        toast.error('The project was not archived. Try again.');
       }
     });
   };
 
   const handleUnarchive = () => {
     startTransition(async () => {
-      if (onUnarchive) {
-        await onUnarchive(project.id);
-      } else {
-        await unarchiveProject(project.id);
+      try {
+        if (onUnarchive) {
+          await onUnarchive(project.id);
+        } else {
+          const result = await unarchiveProject(project.id);
+          if (!result.success) {
+            toast.error(result.message);
+            return;
+          }
+          toast.success(result.message);
+        }
+        router.refresh();
+      } catch (error) {
+        console.error('Restoring project failed:', error);
+        toast.error('The project was not restored. Try again.');
       }
     });
   };

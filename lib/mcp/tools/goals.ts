@@ -7,22 +7,30 @@ import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 
-const goalCreateSchema = z.object({
-  title: z.string().min(1).max(200),
-  deadline: z.string().datetime().optional().nullable(),
-  why: z.string().max(500).optional().nullable(),
-});
+const goalIdSchema = z.string().min(1).max(100);
 
-const goalUpdateSchema = z.object({
-  goalId: z.string(),
-  title: z.string().min(1).max(200).optional(),
-  deadline: z.string().datetime().optional().nullable(),
-  why: z.string().max(500).optional().nullable(),
-});
+const goalCreateSchema = z
+  .object({
+    title: z.string().min(1).max(200),
+    deadline: z.string().datetime().optional().nullable(),
+    why: z.string().max(500).optional().nullable(),
+  })
+  .strict();
 
-const goalGetDeleteSchema = z.object({
-  goalId: z.string(),
-});
+const goalUpdateSchema = z
+  .object({
+    goalId: goalIdSchema,
+    title: z.string().min(1).max(200).optional(),
+    deadline: z.string().datetime().optional().nullable(),
+    why: z.string().max(500).optional().nullable(),
+  })
+  .strict();
+
+const goalGetDeleteSchema = z
+  .object({
+    goalId: goalIdSchema,
+  })
+  .strict();
 
 export const goalsListTool = {
   definition: {
@@ -33,7 +41,7 @@ export const goalsListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 100, default: 100 },
-        cursor: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
       },
       additionalProperties: false,
     },
@@ -64,8 +72,9 @@ export const goalsListTool = {
     const result = z
       .object({
         limit: z.number().int().min(1).max(100).default(100),
-        cursor: z.string().optional(),
+        cursor: goalIdSchema.optional(),
       })
+      .strict()
       .safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
@@ -84,7 +93,7 @@ export const goalsGetTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        goalId: { type: 'string' },
+        goalId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['goalId'],
       additionalProperties: false,
@@ -167,7 +176,7 @@ export const goalsUpdateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        goalId: { type: 'string' },
+        goalId: { type: 'string', minLength: 1, maxLength: 100 },
         title: { type: 'string', minLength: 1, maxLength: 200 },
         deadline: { type: ['string', 'null'], format: 'date-time' },
         why: { type: ['string', 'null'], maxLength: 500 },
@@ -213,7 +222,7 @@ export const goalsDeleteTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        goalId: { type: 'string' },
+        goalId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['goalId'],
       additionalProperties: false,

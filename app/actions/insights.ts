@@ -24,6 +24,7 @@ import {
   getCalendarDate,
   getCalendarRange,
   isValidTimeZone,
+  calculateStreaks,
   shiftCalendarDate,
 } from '@/lib/date-semantics';
 import {
@@ -109,7 +110,10 @@ export async function getInsightsData(): Promise<InsightsData> {
       // Project distribution
       prisma.activity.groupBy({
         by: ['projectId'],
-        where: { userId: targetUserId, ...lockedFilter },
+        where: {
+          userId: targetUserId,
+          AND: [{ OR: [{ projectId: null }, { project: { userId: targetUserId } }] }, lockedFilter],
+        },
         _count: true,
       }),
     ]);
@@ -120,7 +124,7 @@ export async function getInsightsData(): Promise<InsightsData> {
     .filter((id): id is string => id !== null);
 
   const projects = await prisma.project.findMany({
-    where: { id: { in: projectIds } },
+    where: { id: { in: projectIds }, userId: targetUserId },
     select: { id: true, name: true, color: true },
   });
 
@@ -136,9 +140,13 @@ export async function getInsightsData(): Promise<InsightsData> {
     };
   });
 
+  const visibleDatedActivities = allActivities.filter(
+    activity => activity.logDate.toISOString().slice(0, 10) <= todayDate
+  );
+
   // Calculate heatmap data
   const heatmapMap = new Map<string, number>();
-  allActivities.forEach(activity => {
+  visibleDatedActivities.forEach(activity => {
     const dateStr = activity.logDate.toISOString().slice(0, 10);
     heatmapMap.set(dateStr, (heatmapMap.get(dateStr) || 0) + 1);
   });
@@ -165,11 +173,15 @@ export async function getInsightsData(): Promise<InsightsData> {
 
   // Calculate weekly trend (last 12 weeks)
   const weeklyTrend: number[] = [];
+  const currentWeekStart = shiftCalendarDate(
+    todayDate,
+    -new Date(`${todayDate}T00:00:00Z`).getUTCDay()
+  );
   for (let i = 11; i >= 0; i--) {
-    const weekEnd = shiftCalendarDate(todayDate, -i * 7);
-    const weekStart = shiftCalendarDate(weekEnd, -7);
+    const weekStart = shiftCalendarDate(currentWeekStart, -i * 7);
+    const weekEnd = shiftCalendarDate(weekStart, 7);
 
-    const count = allActivities.filter(a => {
+    const count = visibleDatedActivities.filter(a => {
       const date = a.logDate.toISOString().slice(0, 10);
       return date >= weekStart && date < weekEnd;
     }).length;
@@ -177,56 +189,17 @@ export async function getInsightsData(): Promise<InsightsData> {
     weeklyTrend.push(count);
   }
 
-  // Streaks use the represented calendar date, so backdated entries behave
-  // consistently with reports, heatmaps, and goal totals.
-  const uniqueDates = Array.from(
-    new Set(allActivities.map(a => a.logDate.toISOString().slice(0, 10)))
-  ).sort((a, b) => b.localeCompare(a));
-
-  let currentStreak = 0;
-  if (uniqueDates.length > 0) {
-    const yesterday = shiftCalendarDate(todayDate, -1);
-    const latest = uniqueDates[0];
-
-    if (latest >= yesterday) {
-      currentStreak = 1;
-      for (let i = 1; i < uniqueDates.length; i++) {
-        const current = uniqueDates[i - 1];
-        const previous = uniqueDates[i];
-        const expectedPrevious = shiftCalendarDate(current, -1);
-        if (previous === expectedPrevious) {
-          currentStreak++;
-        } else {
-          break;
-        }
-      }
-    }
-  }
-
-  // Calculate longest streak (simplified - check all consecutive sequences)
-  let longestStreak = currentStreak;
-  let tempStreak = 0;
-  const sortedDates = [...uniqueDates].sort();
-
-  for (let i = 0; i < sortedDates.length; i++) {
-    if (i === 0) {
-      tempStreak = 1;
-    } else {
-      if (shiftCalendarDate(sortedDates[i - 1], 1) === sortedDates[i]) {
-        tempStreak++;
-      } else {
-        tempStreak = 1;
-      }
-    }
-    longestStreak = Math.max(longestStreak, tempStreak);
-  }
+  const streaks = calculateStreaks(
+    visibleDatedActivities.map(activity => activity.logDate.toISOString().slice(0, 10)),
+    todayDate
+  );
 
   return {
     timeZone,
     today: todayDate,
     totalActivities,
-    currentStreak,
-    longestStreak,
+    currentStreak: streaks.current,
+    longestStreak: streaks.longest,
     bestDay,
     activeDaysThisMonth,
     heatmapData,

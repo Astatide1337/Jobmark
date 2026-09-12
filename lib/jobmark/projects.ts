@@ -1,11 +1,11 @@
 /**
  * Projects domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
-import { getLockedProjectIds } from '@/lib/project-lock';
+import { getLockedProjectIdsForActor } from '@/lib/project-lock';
 import {
   JobmarkActor,
   assertActor,
@@ -17,14 +17,16 @@ import { z } from 'zod';
 import { getActivityDisplayContent } from './activity-copy';
 import { projectColors } from '@/lib/constants';
 
-const projectCreateSchema = z.object({
-  name: z.string().min(1).max(50),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .default(projectColors[0]),
-  description: z.string().max(200).optional().nullable(),
-});
+const projectCreateSchema = z
+  .object({
+    name: z.string().min(1).max(50),
+    color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .default(projectColors[0]),
+    description: z.string().max(200).optional().nullable(),
+  })
+  .strict();
 
 const projectUpdateSchema = projectCreateSchema.partial();
 
@@ -59,27 +61,36 @@ export async function listProjects(
 ): Promise<ProjectsListResult> {
   assertActor(actor);
 
-  const { includeArchived = false, includeLocked = false, cursor } = options;
+  const { includeArchived = false, cursor } = options;
   const limit = Math.min(Math.max(options.limit ?? 100, 1), 100);
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
 
   const where: Prisma.ProjectWhereInput = { userId: actor.userId };
   if (!includeArchived) where.archived = false;
-  if (!includeLocked && lockedIds.length > 0) where.id = { notIn: lockedIds };
+  // Privacy is derived from the verified actor. The legacy includeLocked
+  // flag is intentionally ignored so callers cannot bypass the vault policy.
+  if (lockedIds.length > 0) where.id = { notIn: lockedIds };
 
   const projects = await prisma.project.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
-    include: { _count: { select: { activities: true, reports: true } } },
+    include: {
+      _count: {
+        select: {
+          activities: { where: { userId: actor.userId } },
+          reports: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   let nextCursor: string | null = null;
   if (projects.length > limit) {
-    const next = projects.pop();
-    nextCursor = next!.id;
+    projects.pop();
+    nextCursor = projects[projects.length - 1]?.id ?? null;
   }
 
   return { projects: projects.map(toProjectDTO), nextCursor };
@@ -90,7 +101,14 @@ export async function getProject(actor: JobmarkActor, projectId: string): Promis
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: actor.userId },
-    include: { _count: { select: { activities: true, reports: true } } },
+    include: {
+      _count: {
+        select: {
+          activities: { where: { userId: actor.userId } },
+          reports: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   if (!project) throw new NotFoundError('Project');
@@ -121,15 +139,22 @@ export async function getProjectWithActivities(
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: actor.userId },
-    include: { _count: { select: { activities: true, reports: true } } },
+    include: {
+      _count: {
+        select: {
+          activities: { where: { userId: actor.userId } },
+          reports: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   if (!project) throw new NotFoundError('Project');
   if (project.locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   const activities = await prisma.activity.findMany({
-    where: { projectId },
-    orderBy: { createdAt: 'desc' },
+    where: { projectId, userId: actor.userId },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
@@ -138,8 +163,8 @@ export async function getProjectWithActivities(
 
   let nextCursor: string | null = null;
   if (activities.length > limit) {
-    const next = activities.pop();
-    nextCursor = next!.id;
+    activities.pop();
+    nextCursor = activities[activities.length - 1]?.id ?? null;
   }
 
   return {
@@ -170,7 +195,14 @@ export async function createProject(actor: JobmarkActor, input: ProjectInput): P
       color: result.data.color,
       description: result.data.description,
     },
-    include: { _count: { select: { activities: true, reports: true } } },
+    include: {
+      _count: {
+        select: {
+          activities: { where: { userId: actor.userId } },
+          reports: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   return toProjectDTO(project);
@@ -198,7 +230,14 @@ export async function updateProject(
   const updated = await prisma.project.update({
     where: { id: projectId },
     data: result.data,
-    include: { _count: { select: { activities: true, reports: true } } },
+    include: {
+      _count: {
+        select: {
+          activities: { where: { userId: actor.userId } },
+          reports: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   return toProjectDTO(updated);
@@ -221,7 +260,14 @@ export async function setProjectArchived(
   const updated = await prisma.project.update({
     where: { id: projectId },
     data: { archived },
-    include: { _count: { select: { activities: true, reports: true } } },
+    include: {
+      _count: {
+        select: {
+          activities: { where: { userId: actor.userId } },
+          reports: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   return toProjectDTO(updated);

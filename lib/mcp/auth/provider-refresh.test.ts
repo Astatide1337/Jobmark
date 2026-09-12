@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   refreshFindUnique: vi.fn(),
   refreshUpdateMany: vi.fn(),
+  refreshDelete: vi.fn(),
   accessCreate: vi.fn(),
   refreshCreate: vi.fn(),
+  transaction: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -12,10 +14,11 @@ vi.mock('@/lib/db', () => ({
     oAuthRefreshToken: {
       findUnique: mocks.refreshFindUnique,
       updateMany: mocks.refreshUpdateMany,
-      delete: vi.fn(),
+      delete: mocks.refreshDelete,
       create: mocks.refreshCreate,
     },
     oAuthAccessToken: { create: mocks.accessCreate },
+    $transaction: mocks.transaction,
   },
 }));
 
@@ -24,6 +27,18 @@ import { rotateRefreshToken } from './provider';
 describe('refresh token rotation concurrency', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mocks.transaction.mockImplementation(async (callback: (transaction: unknown) => unknown) =>
+      callback({
+        oAuthRefreshToken: {
+          findUnique: mocks.refreshFindUnique,
+          updateMany: mocks.refreshUpdateMany,
+          delete: mocks.refreshDelete,
+          create: mocks.refreshCreate,
+        },
+        oAuthAccessToken: { create: mocks.accessCreate },
+      })
+    );
 
     mocks.refreshFindUnique.mockResolvedValue({
       tokenHash: 'hashed-refresh-token',

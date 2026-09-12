@@ -1,37 +1,40 @@
 /**
  * Settings domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, ValidationError } from './index';
 import { z } from 'zod';
+import { isValidTimeZone } from '@/lib/date-semantics';
 
-const settingsUpdateSchema = z.object({
-  // Goals
-  primaryGoal: z.string().max(500).optional().nullable(),
-  goalDeadline: z.string().datetime().optional().nullable(),
-  whyStatement: z.string().optional().nullable(),
-  dailyTarget: z.number().int().min(1).max(100).optional(),
-  weeklyTarget: z.number().int().min(1).max(500).optional(),
-  monthlyTarget: z.number().int().min(1).max(2000).optional(),
+const settingsUpdateSchema = z
+  .object({
+    // Goals
+    primaryGoal: z.string().max(500).optional().nullable(),
+    goalDeadline: z.string().datetime().optional().nullable(),
+    whyStatement: z.string().max(500).optional().nullable(),
+    dailyTarget: z.number().int().min(1).max(100).optional(),
+    weeklyTarget: z.number().int().min(1).max(500).optional(),
+    monthlyTarget: z.number().int().min(1).max(2000).optional(),
 
-  // Reports
-  defaultTone: z.string().optional(),
-  customInstructions: z.string().optional().nullable(),
+    // Reports
+    defaultTone: z.enum(['professional', 'casual', 'bullet-points']).optional(),
+    customInstructions: z.string().max(4_000).optional().nullable(),
 
-  // Appearance
-  themePreset: z.string().optional(),
-  themeMode: z.enum(['light', 'dark', 'system']).optional(),
+    // Appearance
+    themePreset: z.string().max(100).optional(),
+    themeMode: z.enum(['light', 'dark', 'system']).optional(),
 
-  // Preferences
-  hideArchived: z.boolean().optional(),
-  showConfetti: z.boolean().optional(),
+    // Preferences
+    hideArchived: z.boolean().optional(),
+    showConfetti: z.boolean().optional(),
 
-  // Timezone
-  timeZone: z.string().optional(),
-});
+    // Timezone
+    timeZone: z.string().max(100).refine(isValidTimeZone, 'Invalid timezone.').optional(),
+  })
+  .strict();
 
 export type SettingsInput = z.infer<typeof settingsUpdateSchema>;
 
@@ -99,7 +102,7 @@ export async function getSettings(actor: JobmarkActor): Promise<SettingsDTO> {
     themeMode: settings.themeMode,
     hideArchived: settings.hideArchived,
     showConfetti: settings.showConfetti,
-    timeZone: settings.timeZone,
+    timeZone: isValidTimeZone(settings.timeZone) ? settings.timeZone : 'America/New_York',
   };
 }
 

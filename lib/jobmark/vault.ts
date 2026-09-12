@@ -1,9 +1,10 @@
 /**
  * Vault domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
 import {
   JobmarkActor,
   assertActor,
@@ -23,23 +24,33 @@ function getPublicAppUrl(): string {
   return value.replace(/\/$/, '');
 }
 
-const vaultSetupSchema = z.object({
-  password: z.string().min(12).max(128),
-});
+const vaultSetupSchema = z
+  .object({
+    password: z.string().min(12).max(128),
+  })
+  .strict();
 
-const vaultUnlockSchema = z.object({
-  password: z.string().min(12).max(128),
-});
+const vaultUnlockSchema = z
+  .object({
+    password: z.string().min(12).max(128),
+  })
+  .strict();
 
-const vaultChangePasswordSchema = z.object({
-  currentPassword: z.string().min(12).max(128),
-  newPassword: z.string().min(12).max(128),
-});
+const vaultChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(12).max(128),
+    newPassword: z.string().min(12).max(128),
+  })
+  .strict();
 
-const vaultSetProjectLockedSchema = z.object({
-  projectId: z.string(),
-  locked: z.boolean(),
-});
+const vaultSetProjectLockedSchema = z
+  .object({
+    projectId: z.string().min(1).max(100),
+    locked: z.boolean(),
+  })
+  .strict();
+
+type SecureActionNonceStore = Pick<Prisma.TransactionClient, 'secureActionNonce'>;
 
 export type VaultStatusDTO = {
   configured: boolean;
@@ -63,9 +74,7 @@ export async function getVaultStatus(actor: JobmarkActor): Promise<VaultStatusDT
   return {
     configured: !!settings?.vaultPasswordHash,
     unlocked: actor.vaultUnlocked,
-    unlockedUntil: actor.vaultUnlocked
-      ? new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()
-      : null,
+    unlockedUntil: actor.vaultUnlocked ? (actor.vaultUnlockedUntil?.toISOString() ?? null) : null,
     lockedProjectCount: lockedProjects,
   };
 }
@@ -187,7 +196,9 @@ export async function setProjectLocked(
 ): Promise<{ success: boolean }> {
   assertActor(actor);
 
-  if (!actor.vaultUnlocked) throw new VaultLockedError();
+  // Hiding an ordinary project is not a private-data read. Opening or
+  // reclassifying an already private project still requires the grant.
+  if (!locked && !actor.vaultUnlocked) throw new VaultLockedError();
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: actor.userId },
@@ -229,12 +240,13 @@ async function createSecureActionNonce(
 export async function consumeSecureActionNonce(
   rawNonce: string,
   type: string,
-  userId: string
+  userId: string,
+  store: SecureActionNonceStore = prisma
 ): Promise<{ connectionId: string | null } | null> {
   const { createHash } = await import('crypto');
   const nonceHash = createHash('sha256').update(rawNonce).digest('hex');
 
-  const nonce = await prisma.secureActionNonce.findUnique({
+  const nonce = await store.secureActionNonce.findUnique({
     where: { nonceHash },
   });
 
@@ -249,7 +261,7 @@ export async function consumeSecureActionNonce(
     return null;
   }
 
-  const consumed = await prisma.secureActionNonce.updateMany({
+  const consumed = await store.secureActionNonce.updateMany({
     where: {
       id: nonce.id,
       userId,
@@ -261,6 +273,36 @@ export async function consumeSecureActionNonce(
   });
 
   if (consumed.count !== 1) return null;
+
+  return { connectionId: nonce.connectionId };
+}
+
+/**
+ * Validate a nonce without consuming it. Credential verification must happen
+ * before the single-use marker is written so a mistyped password can be
+ * retried with the same short-lived link.
+ */
+export async function validateSecureActionNonce(
+  rawNonce: string,
+  type: string,
+  userId: string
+): Promise<{ connectionId: string | null } | null> {
+  if (!rawNonce || rawNonce.length > 256) return null;
+
+  const { createHash } = await import('crypto');
+  const nonceHash = createHash('sha256').update(rawNonce).digest('hex');
+  const nonce = await prisma.secureActionNonce.findUnique({ where: { nonceHash } });
+  const now = new Date();
+
+  if (
+    !nonce ||
+    nonce.used ||
+    nonce.expiresAt < now ||
+    nonce.userId !== userId ||
+    nonce.type !== type
+  ) {
+    return null;
+  }
 
   return { connectionId: nonce.connectionId };
 }

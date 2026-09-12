@@ -11,33 +11,47 @@ import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
-const interactionListSchema = z.object({
-  limit: z.number().int().min(1).max(100).optional(),
-  cursor: z.string().optional(),
-  contactId: z.string().optional(),
-});
+const interactionIdSchema = z.string().min(1).max(100);
+const contactIdSchema = z.string().min(1).max(100);
+const dateTimeSchema = z.string().datetime();
 
-const interactionCreateSchema = z.object({
-  contactId: z.string(),
-  occurredAt: z.string().datetime(),
-  channel: z.string().default('other'),
-  summary: z.string(),
-  nextStep: z.string().optional().nullable(),
-  followUpDate: z.string().datetime().optional().nullable(),
-  rawNotes: z.string().optional().nullable(),
-});
+const interactionListSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).optional(),
+    cursor: interactionIdSchema.optional(),
+    contactId: contactIdSchema.optional(),
+  })
+  .strict();
 
-const interactionUpdateSchema = z.object({
-  interactionId: z.string(),
-  occurredAt: z.string().datetime().optional(),
-  channel: z.string().optional(),
-  summary: z.string().optional(),
-  nextStep: z.string().optional().nullable(),
-  followUpDate: z.string().datetime().optional().nullable(),
-  rawNotes: z.string().optional().nullable(),
-});
+const interactionCreateSchema = z
+  .object({
+    contactId: contactIdSchema,
+    occurredAt: dateTimeSchema,
+    channel: z
+      .enum(['email', 'call', 'text', 'in-person', 'linkedin', 'video', 'other'])
+      .default('other'),
+    summary: z.string().min(1).max(5000),
+    nextStep: z.string().max(5000).optional().nullable(),
+    followUpDate: dateTimeSchema.optional().nullable(),
+    rawNotes: z.string().max(10_000).optional().nullable(),
+  })
+  .strict();
 
-const interactionDeleteSchema = z.object({ interactionId: z.string() });
+const interactionUpdateSchema = z
+  .object({
+    interactionId: interactionIdSchema,
+    occurredAt: dateTimeSchema.optional(),
+    channel: z
+      .enum(['email', 'call', 'text', 'in-person', 'linkedin', 'video', 'other'])
+      .optional(),
+    summary: z.string().min(1).max(5000).optional(),
+    nextStep: z.string().max(5000).optional().nullable(),
+    followUpDate: dateTimeSchema.optional().nullable(),
+    rawNotes: z.string().max(10_000).optional().nullable(),
+  })
+  .strict();
+
+const interactionDeleteSchema = z.object({ interactionId: interactionIdSchema }).strict();
 
 export const interactionsListTool = {
   definition: {
@@ -49,8 +63,8 @@ export const interactionsListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 100, default: 50 },
-        cursor: { type: 'string' },
-        contactId: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       additionalProperties: false,
     },
@@ -110,13 +124,17 @@ export const interactionsCreateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string' },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
         occurredAt: { type: 'string', format: 'date-time' },
-        channel: { type: 'string', default: 'other' },
-        summary: { type: 'string' },
-        nextStep: { type: 'string' },
+        channel: {
+          type: 'string',
+          enum: ['email', 'call', 'text', 'in-person', 'linkedin', 'video', 'other'],
+          default: 'other',
+        },
+        summary: { type: 'string', minLength: 1, maxLength: 5000 },
+        nextStep: { type: 'string', maxLength: 5000 },
         followUpDate: { type: 'string', format: 'date-time' },
-        rawNotes: { type: 'string' },
+        rawNotes: { type: 'string', maxLength: 10000 },
       },
       required: ['contactId', 'occurredAt', 'summary'],
       additionalProperties: false,
@@ -159,13 +177,16 @@ export const interactionsUpdateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        interactionId: { type: 'string' },
+        interactionId: { type: 'string', minLength: 1, maxLength: 100 },
         occurredAt: { type: 'string', format: 'date-time' },
-        channel: { type: 'string' },
-        summary: { type: 'string' },
-        nextStep: { type: 'string' },
+        channel: {
+          type: 'string',
+          enum: ['email', 'call', 'text', 'in-person', 'linkedin', 'video', 'other'],
+        },
+        summary: { type: 'string', minLength: 1, maxLength: 5000 },
+        nextStep: { type: 'string', maxLength: 5000 },
         followUpDate: { type: 'string', format: 'date-time' },
-        rawNotes: { type: 'string' },
+        rawNotes: { type: 'string', maxLength: 10000 },
       },
       required: ['interactionId'],
       additionalProperties: false,
@@ -206,7 +227,7 @@ export const interactionsDeleteTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        interactionId: { type: 'string' },
+        interactionId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['interactionId'],
       additionalProperties: false,

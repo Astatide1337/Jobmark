@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getCalendarDate,
   getCalendarRange,
+  calculateStreaks,
   shiftCalendarDate,
   zonedCalendarDateToUtc,
 } from './date-semantics';
@@ -105,5 +106,29 @@ describe('calendar date semantics', () => {
       'Invalid timezone'
     );
     expect(() => shiftCalendarDate('2025-02-29', 1)).toThrow('Invalid calendar date');
+  });
+
+  it('calculates current and longest streaks from unique, non-future dates', () => {
+    expect(
+      calculateStreaks(
+        ['2026-09-10', '2026-09-10', '2026-09-09', '2026-09-08', '2026-09-07', '2026-09-11'],
+        '2026-09-10'
+      )
+    ).toEqual({ current: 4, longest: 4 });
+
+    expect(calculateStreaks(['2026-09-08', '2026-09-09'], '2026-09-10')).toEqual({
+      current: 2,
+      longest: 2,
+    });
+    expect(calculateStreaks(['2026-09-11', 'not-a-date'], '2026-09-10')).toEqual({
+      current: 0,
+      longest: 0,
+    });
+  });
+
+  it('does not truncate streak history when one day has more than 365 rows', () => {
+    const dates = Array.from({ length: 366 }, (_, index) => shiftCalendarDate('2025-09-12', index));
+
+    expect(calculateStreaks(dates, '2026-09-12')).toEqual({ current: 366, longest: 366 });
   });
 });

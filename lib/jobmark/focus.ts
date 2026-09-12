@@ -1,53 +1,38 @@
 /**
  * Focus and decompression domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { JobmarkActor, assertActor, ValidationError } from './index';
 import { deterministicRewrite } from '@/lib/deterministic-drafts';
 import { z } from 'zod';
+import { getDefaultFocusConfig } from '@/lib/focus/defaults';
+import { focusConfigSchema, type FocusConfig } from '@/lib/focus/schema';
+import type { FocusBlock } from '@/lib/focus/types';
 
-const focusConfigSchema = z.object({
-  enabled: z.boolean(),
-  workDuration: z.number().min(1).max(120),
-  breakDuration: z.number().min(1).max(60),
-  longBreakDuration: z.number().min(1).max(120),
-  sessionsUntilLongBreak: z.number().min(1).max(10),
-  autoStartBreaks: z.boolean(),
-  autoStartWork: z.boolean(),
-  soundEnabled: z.boolean(),
-  soundVolume: z.number().min(0).max(1),
-  dailyTarget: z.number().min(1).max(20),
-});
+const decompressionLogSchema = z
+  .object({
+    durationMinutes: z.number().min(1).max(480),
+    moodBefore: z.number().min(1).max(10),
+    moodAfter: z.number().min(1).max(10),
+    notes: z.string().max(10_000).optional().nullable(),
+  })
+  .strict();
 
-const decompressionLogSchema = z.object({
-  durationMinutes: z.number().min(1).max(480),
-  moodBefore: z.number().min(1).max(10),
-  moodAfter: z.number().min(1).max(10),
-  notes: z.string().optional().nullable(),
-});
+const dictationPolishSchema = z
+  .object({
+    text: z.string().min(1).max(5_000),
+    instructions: z.string().max(2_000).optional().nullable(),
+  })
+  .strict();
 
-const dictationPolishSchema = z.object({
-  text: z.string().min(1),
-  instructions: z.string().optional().nullable(),
-});
-
-export type FocusConfigInput = z.infer<typeof focusConfigSchema>;
+export type FocusConfigInput = FocusConfig;
 export type DecompressionLogInput = z.infer<typeof decompressionLogSchema>;
 export type DictationPolishInput = z.infer<typeof dictationPolishSchema>;
 
 export type FocusConfigDTO = {
-  enabled: boolean;
-  workDuration: number;
-  breakDuration: number;
-  longBreakDuration: number;
-  sessionsUntilLongBreak: number;
-  autoStartBreaks: boolean;
-  autoStartWork: boolean;
-  soundEnabled: boolean;
-  soundVolume: number;
-  dailyTarget: number;
+  blocks: FocusBlock[];
   updatedAt: string;
 };
 
@@ -59,21 +44,11 @@ export async function getFocusConfig(actor: JobmarkActor): Promise<FocusConfigDT
     select: { focusConfig: true, updatedAt: true },
   });
 
-  const config = (settings?.focusConfig as FocusConfigInput) ?? {
-    enabled: true,
-    workDuration: 25,
-    breakDuration: 5,
-    longBreakDuration: 15,
-    sessionsUntilLongBreak: 4,
-    autoStartBreaks: true,
-    autoStartWork: false,
-    soundEnabled: true,
-    soundVolume: 0.5,
-    dailyTarget: 4,
-  };
+  const parsed = focusConfigSchema.safeParse(settings?.focusConfig);
+  const blocks = parsed.success ? parsed.data : getDefaultFocusConfig();
 
   return {
-    ...config,
+    blocks,
     updatedAt: settings?.updatedAt.toISOString() ?? new Date().toISOString(),
   };
 }
@@ -86,7 +61,9 @@ export async function saveFocusConfig(
 
   const result = focusConfigSchema.safeParse(input);
   if (!result.success) {
-    throw new ValidationError('Validation failed', result.error.flatten().fieldErrors);
+    throw new ValidationError('Validation failed', {
+      focusConfig: result.error.issues.map(issue => issue.message),
+    });
   }
 
   const settings = await prisma.userSettings.upsert({
@@ -97,7 +74,7 @@ export async function saveFocusConfig(
   });
 
   return {
-    ...(settings.focusConfig as FocusConfigInput),
+    blocks: focusConfigSchema.parse(settings.focusConfig),
     updatedAt: settings.updatedAt.toISOString(),
   };
 }
@@ -105,18 +82,7 @@ export async function saveFocusConfig(
 export async function resetFocusConfig(actor: JobmarkActor): Promise<FocusConfigDTO> {
   assertActor(actor);
 
-  const defaultConfig: FocusConfigInput = {
-    enabled: true,
-    workDuration: 25,
-    breakDuration: 5,
-    longBreakDuration: 15,
-    sessionsUntilLongBreak: 4,
-    autoStartBreaks: true,
-    autoStartWork: false,
-    soundEnabled: true,
-    soundVolume: 0.5,
-    dailyTarget: 4,
-  };
+  const defaultConfig: FocusConfigInput = getDefaultFocusConfig();
 
   const settings = await prisma.userSettings.upsert({
     where: { userId: actor.userId },
@@ -126,7 +92,7 @@ export async function resetFocusConfig(actor: JobmarkActor): Promise<FocusConfig
   });
 
   return {
-    ...(settings.focusConfig as FocusConfigInput),
+    blocks: focusConfigSchema.parse(settings.focusConfig),
     updatedAt: settings.updatedAt.toISOString(),
   };
 }
