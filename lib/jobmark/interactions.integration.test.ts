@@ -12,9 +12,11 @@ describe.skipIf(!integrationEnabled)('PostgreSQL interaction pagination', () => 
   const otherUserId = randomUUID();
   const contactId = randomUUID();
   const secondContactId = randomUUID();
+  const tieContactId = randomUUID();
   const foreignContactId = randomUUID();
   const rowIds = ['A', 'B', 'C', 'D', 'E'].map(label => `${userId}-${label}`);
   const secondContactRowId = `${userId}-second-contact`;
+  const tieRowIds = [`${userId}-tie-a`, `${userId}-tie-b`];
   const actor: McpActor = {
     userId,
     source: 'mcp',
@@ -36,6 +38,7 @@ describe.skipIf(!integrationEnabled)('PostgreSQL interaction pagination', () => 
       data: [
         { id: contactId, userId, fullName: 'Pagination contact' },
         { id: secondContactId, userId, fullName: 'Second pagination contact' },
+        { id: tieContactId, userId, fullName: 'Tied pagination contact' },
         { id: foreignContactId, userId: otherUserId, fullName: 'Other user contact' },
       ],
     });
@@ -55,6 +58,13 @@ describe.skipIf(!integrationEnabled)('PostgreSQL interaction pagination', () => 
           summary: 'Second contact',
           occurredAt: new Date('2026-09-01T12:30:00.000Z'),
         },
+        ...tieRowIds.map(id => ({
+          id,
+          userId,
+          contactId: tieContactId,
+          summary: id,
+          occurredAt: new Date('2026-09-01T11:30:00.000Z'),
+        })),
         {
           id: `${otherUserId}-foreign`,
           userId: otherUserId,
@@ -113,11 +123,31 @@ describe.skipIf(!integrationEnabled)('PostgreSQL interaction pagination', () => 
 
   it('preserves contact filtering and user isolation', async () => {
     const allContacts = await listInteractions(actor, { limit: 100 });
-    expect(allContacts.interactions.map(row => row.id)).toEqual([secondContactRowId, ...rowIds]);
+    expect(allContacts.interactions.map(row => row.id)).toEqual([
+      secondContactRowId,
+      rowIds[0],
+      tieRowIds[1],
+      tieRowIds[0],
+      ...rowIds.slice(1),
+    ]);
     const foreignContact = await listInteractions(actor, { contactId: foreignContactId });
     expect(foreignContact).toEqual({ interactions: [], nextCursor: null });
     const pastEnd = await listInteractions(actor, { contactId, cursor: rowIds[4], limit: 2 });
     expect(pastEnd).toEqual({ interactions: [], nextCursor: null });
+  });
+
+  it('uses the ID as a stable tie-breaker for equal timestamps', async () => {
+    const first = await listInteractions(actor, { contactId: tieContactId, limit: 1 });
+    expect(first.interactions.map(row => row.id)).toEqual([tieRowIds[1]]);
+    expect(first.nextCursor).toBe(tieRowIds[1]);
+
+    const last = await listInteractions(actor, {
+      contactId: tieContactId,
+      limit: 1,
+      cursor: first.nextCursor ?? undefined,
+    });
+    expect(last.interactions.map(row => row.id)).toEqual([tieRowIds[0]]);
+    expect(last.nextCursor).toBeNull();
   });
 
   it('passes the continuation cursor through the real MCP tool handler', async () => {

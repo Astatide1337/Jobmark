@@ -51,7 +51,7 @@ export async function listInteractions(
 
   const interactions = await prisma.interactionLog.findMany({
     where,
-    orderBy: { occurredAt: 'desc' },
+    orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
