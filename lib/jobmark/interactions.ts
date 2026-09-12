@@ -60,8 +60,8 @@ export async function listInteractions(
 
   let nextCursor: string | null = null;
   if (interactions.length > limit) {
-    const next = interactions.pop();
-    nextCursor = next!.id;
+    interactions.pop();
+    nextCursor = interactions[interactions.length - 1].id;
   }
 
   return { interactions: interactions.map(toInteractionDTO), nextCursor };
