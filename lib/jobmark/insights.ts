@@ -1,10 +1,14 @@
 /**
  * Insights domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
+import {
+  filterLockedReports,
+  getLockedProjectIdsForActor,
+  buildLockedActivityFilter,
+} from '@/lib/project-lock';
 import { JobmarkActor, assertActor } from './index';
 import {
   calendarDateToUtcMidnight,
@@ -12,6 +16,7 @@ import {
   getCalendarDate,
   getCalendarRange,
   isValidTimeZone,
+  calculateStreaks,
   shiftCalendarDate,
 } from '@/lib/date-semantics';
 
@@ -38,7 +43,7 @@ export type InsightsData = {
 export async function getDashboardStats(actor: JobmarkActor): Promise<DashboardStats> {
   assertActor(actor);
 
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
   const lockedFilter = buildLockedActivityFilter(lockedIds);
 
   const now = new Date();
@@ -51,8 +56,10 @@ export async function getDashboardStats(actor: JobmarkActor): Promise<DashboardS
       ? userSettings.timeZone
       : DEFAULT_TIME_ZONE;
   const todayDate = getCalendarDate(now, timeZone);
-  const weekRange = getCalendarRange({ kind: '7d', now, timeZone });
   const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
+  const dayOfWeek = new Date(`${todayDate}T00:00:00.000Z`).getUTCDay();
+  const weekStart = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, -dayOfWeek));
+  const weekEnd = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 7 - dayOfWeek));
 
   const [
     totalActivities,
@@ -60,17 +67,13 @@ export async function getDashboardStats(actor: JobmarkActor): Promise<DashboardS
     thisMonth,
     activeProjects,
     archivedProjects,
-    totalReports,
     totalGoals,
     totalContacts,
+    totalReports,
   ] = await Promise.all([
     prisma.activity.count({ where: { userId: actor.userId, ...lockedFilter } }),
     prisma.activity.count({
-      where: {
-        userId: actor.userId,
-        logDate: { gte: weekRange.start, lt: weekRange.endExclusive },
-        ...lockedFilter,
-      },
+      where: { userId: actor.userId, logDate: { gte: weekStart, lt: weekEnd }, ...lockedFilter },
     }),
     prisma.activity.count({
       where: {
@@ -93,49 +96,35 @@ export async function getDashboardStats(actor: JobmarkActor): Promise<DashboardS
         ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
       },
     }),
-    prisma.report.count({ where: { userId: actor.userId, ...lockedFilter } }),
     prisma.goal.count({ where: { userId: actor.userId } }),
     prisma.contact.count({ where: { userId: actor.userId } }),
+    prisma.report.findMany({
+      where: { userId: actor.userId },
+      select: { projectId: true, metadata: true },
+    }),
   ]);
 
-  // Calculate streak
+  const visibleReports = filterLockedReports(totalReports, lockedIds);
+
+  // Calculate streak from unique calendar dates, anchored to today or the
+  // immediately preceding day. Future-dated rows never create a streak.
   const recentActivities = await prisma.activity.findMany({
     where: { userId: actor.userId, ...lockedFilter },
     orderBy: { logDate: 'desc' },
     select: { logDate: true },
-    take: 365,
   });
-
-  let currentStreak = 0;
-  let longestStreak = 0;
-  let current = 0;
-  let prevDate: Date | null = null;
-
-  for (const a of recentActivities) {
-    const d = new Date(`${a.logDate.toISOString().split('T')[0]}T12:00:00Z`);
-    if (!prevDate) {
-      current = 1;
-    } else {
-      const diff = Math.floor((prevDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-      if (diff === 1) {
-        current++;
-      } else if (diff > 1) {
-        if (current > longestStreak) longestStreak = current;
-        current = 1;
-      }
-    }
-    prevDate = d;
-  }
-  if (current > longestStreak) longestStreak = current;
-  currentStreak = current;
+  const streaks = calculateStreaks(
+    recentActivities.map(activity => activity.logDate.toISOString().slice(0, 10)),
+    todayDate
+  );
 
   return {
     activities: { total: totalActivities, thisWeek, thisMonth },
     projects: { active: activeProjects, archived: archivedProjects },
-    reports: { total: totalReports },
+    reports: { total: visibleReports.length },
     goals: { total: totalGoals },
     contacts: { total: totalContacts },
-    streak: { current: currentStreak, longest: longestStreak },
+    streak: { current: streaks.current, longest: streaks.longest },
   };
 }
 
@@ -155,7 +144,7 @@ export async function getInsights(
     includeProjectDistribution = true,
   } = options;
 
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
   const lockedFilter = buildLockedActivityFilter(lockedIds);
 
   const userSettings = await prisma.userSettings.findUnique({
@@ -170,12 +159,15 @@ export async function getInsights(
   const [heatmap, weeklyTrend, projectDistribution, reportStats] = await Promise.all([
     includeHeatmap
       ? (async () => {
-          const yearAgo = new Date();
-          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          const yearAgoDate = shiftCalendarDate(getCalendarDate(new Date(), timeZone), -365);
+          const todayDate = getCalendarDate(new Date(), timeZone);
           const activities = await prisma.activity.findMany({
             where: {
               userId: actor.userId,
-              logDate: { gte: calendarDateToUtcMidnight(getCalendarDate(yearAgo, timeZone)) },
+              logDate: {
+                gte: calendarDateToUtcMidnight(yearAgoDate),
+                lt: calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 1)),
+              },
               ...lockedFilter,
             },
             select: { logDate: true },
@@ -194,29 +186,36 @@ export async function getInsights(
     includeWeeklyTrend
       ? (async () => {
           const weeks = 12;
-          const startDate = new Date();
-          startDate.setDate(startDate.getDate() - weeks * 7);
+          const todayDate = getCalendarDate(new Date(), timeZone);
+          const currentWeekStart = shiftCalendarDate(
+            todayDate,
+            -new Date(`${todayDate}T00:00:00Z`).getUTCDay()
+          );
+          const startDate = shiftCalendarDate(currentWeekStart, -(weeks - 1) * 7);
           const activities = await prisma.activity.findMany({
             where: {
               userId: actor.userId,
-              logDate: { gte: calendarDateToUtcMidnight(getCalendarDate(startDate, timeZone)) },
+              logDate: {
+                gte: calendarDateToUtcMidnight(startDate),
+                lt: calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 1)),
+              },
               ...lockedFilter,
             },
             select: { logDate: true },
           });
 
           const weekMap = new Map<string, number>();
+          for (let index = 0; index < weeks; index += 1) {
+            weekMap.set(shiftCalendarDate(startDate, index * 7), 0);
+          }
           for (const a of activities) {
-            const date = new Date(`${a.logDate.toISOString().split('T')[0]}T00:00:00Z`);
-            const weekStart = new Date(date);
-            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-            const weekKey = weekStart.toISOString().split('T')[0];
+            const date = a.logDate.toISOString().split('T')[0];
+            const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
+            const weekKey = shiftCalendarDate(date, -dayOfWeek);
             weekMap.set(weekKey, (weekMap.get(weekKey) ?? 0) + 1);
           }
 
-          return Array.from(weekMap.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([week, count]) => ({ week, count }));
+          return Array.from(weekMap, ([week, count]) => ({ week, count }));
         })()
       : Promise.resolve([]),
     includeProjectDistribution
@@ -227,7 +226,12 @@ export async function getInsights(
               archived: false,
               ...(lockedIds.length > 0 && { id: { notIn: lockedIds } }),
             },
-            select: { id: true, name: true, color: true, _count: { select: { activities: true } } },
+            select: {
+              id: true,
+              name: true,
+              color: true,
+              _count: { select: { activities: { where: { userId: actor.userId } } } },
+            },
           });
           return projects.map(p => ({
             projectId: p.id,
@@ -239,12 +243,14 @@ export async function getInsights(
       : Promise.resolve([]),
     (async () => {
       const reports = await prisma.report.findMany({
-        where: { userId: actor.userId, ...lockedFilter },
-        select: { projectId: true, project: { select: { id: true, name: true } } },
+        where: { userId: actor.userId },
+        select: { projectId: true, metadata: true, project: { select: { id: true, name: true } } },
       });
 
+      const visibleReports = filterLockedReports(reports, lockedIds);
+
       const byProject = new Map<string, { projectId: string; name: string; count: number }>();
-      for (const r of reports) {
+      for (const r of visibleReports) {
         if (r.projectId && r.project) {
           const key = r.projectId;
           if (!byProject.has(key)) {
@@ -253,7 +259,7 @@ export async function getInsights(
           byProject.get(key)!.count++;
         }
       }
-      return { total: reports.length, byProject: Array.from(byProject.values()) };
+      return { total: visibleReports.length, byProject: Array.from(byProject.values()) };
     })(),
   ]);
 

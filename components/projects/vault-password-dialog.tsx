@@ -51,31 +51,36 @@ export function VaultPasswordDialog({
     setError('');
 
     startTransition(async () => {
-      if (mode === 'setup') {
-        if (password !== confirmPassword) {
-          setError('The passwords do not match.');
-          return;
-        }
-        const result = await setVaultPassword(password, confirmPassword);
-        if (result.success) {
-          onOpenChange(false);
-          setPassword('');
-          setConfirmPassword('');
-          router.refresh();
-          onSuccess?.();
+      try {
+        if (mode === 'setup') {
+          if (password !== confirmPassword) {
+            setError('The passwords do not match.');
+            return;
+          }
+          const result = await setVaultPassword(password, confirmPassword);
+          if (result.success) {
+            onOpenChange(false);
+            setPassword('');
+            setConfirmPassword('');
+            router.refresh();
+            onSuccess?.();
+          } else {
+            setError(result.message);
+          }
         } else {
-          setError(result.message);
+          const result = await unlockVault(password);
+          if (result.success) {
+            onOpenChange(false);
+            setPassword('');
+            router.refresh();
+            onSuccess?.();
+          } else {
+            setError(result.message);
+          }
         }
-      } else {
-        const result = await unlockVault(password);
-        if (result.success) {
-          onOpenChange(false);
-          setPassword('');
-          router.refresh();
-          onSuccess?.();
-        } else {
-          setError(result.message);
-        }
+      } catch (actionError) {
+        console.error('Vault password action failed:', actionError);
+        setError('Could not update private projects. Please try again.');
       }
     });
   };

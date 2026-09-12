@@ -131,25 +131,58 @@ jobs:
         run: npm run build
       - name: Build production container
         run: docker build --tag jobmark-ci .
-      - name: Start container
+      - name: Create isolated container smoke-test network
+        run: docker network create jobmark-ci-network
+      - name: Start disposable migration database
         run: >-
-          docker run --detach --rm --name jobmark-ci-container --publish 3000:3000
-          --env DATABASE_URL="$DATABASE_URL"
+          docker run --detach --rm --name jobmark-ci-postgres
+          --network jobmark-ci-network --network-alias jobmark-ci-postgres
+          --env POSTGRES_USER=ci --env POSTGRES_PASSWORD=ci --env POSTGRES_DB=jobmark
+          postgres:16
+      - name: Wait for migration database
+        run: |
+          for attempt in {1..30}; do
+            if docker exec jobmark-ci-postgres pg_isready -U ci -d jobmark > /dev/null; then
+              exit 0
+            fi
+            echo "Migration database not ready (attempt $attempt/30)" >&2
+            sleep 2
+          done
+          docker logs jobmark-ci-postgres
+          exit 1
+      - name: Apply packaged migrations from production image
+        run: >-
+          docker run --rm --network jobmark-ci-network
+          --env DATABASE_URL=postgresql://ci:ci@jobmark-ci-postgres:5432/jobmark
+          jobmark-ci node scripts/run-prisma-migrations.mjs
+      - name: Start production container
+        run: >-
+          docker run --detach --rm --name jobmark-ci-container --network jobmark-ci-network
+          --publish 3000:3000 --env DATABASE_URL=postgresql://ci:ci@jobmark-ci-postgres:5432/jobmark
           --env AUTH_SECRET="$AUTH_SECRET"
           --env AUTH_GOOGLE_ID="$AUTH_GOOGLE_ID"
           --env AUTH_GOOGLE_SECRET="$AUTH_GOOGLE_SECRET"
+          --env AUTH_TRUST_HOST=true
           jobmark-ci
-      - name: Smoke test container
+      - name: Smoke test production container readiness
         run: |
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then
-              exit 0
+            if curl --fail --silent http://127.0.0.1:3000/api/health/live > /dev/null && \
+              curl --fail --silent http://127.0.0.1:3000/api/health/ready > /dev/null; then
+              health_status="$(docker inspect --format '{{.State.Health.Status}}' jobmark-ci-container)"
+              if [ "$health_status" = "healthy" ]; then
+                exit 0
+              fi
             fi
-            echo "Container not ready (attempt $attempt/30)" >&2
+            echo "Production container not ready (attempt $attempt/30)" >&2
             sleep 2
           done
           docker logs jobmark-ci-container
+          docker logs jobmark-ci-postgres
           exit 1
-      - name: Stop container
+      - name: Stop container smoke-test services
         if: always()
-        run: docker stop jobmark-ci-container || true
+        run: |
+          docker stop jobmark-ci-container || true
+          docker stop jobmark-ci-postgres || true
+          docker network rm jobmark-ci-network || true

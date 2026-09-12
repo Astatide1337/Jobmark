@@ -110,25 +110,41 @@ export function FocusSection({
 
   async function handleSave() {
     setIsSaving(true);
-    const result = await saveFocusConfig(blocks);
-    if (result.success) {
-      setLastSavedBlocks(blocks);
-      toast.success('Focus session saved');
-    } else {
-      toast.error(result.error ?? 'Failed to save');
+    try {
+      const result = await saveFocusConfig(blocks);
+      if (result.success) {
+        setLastSavedBlocks(blocks);
+        toast.success('Focus session saved');
+      } else {
+        toast.error(result.error ?? 'Failed to save');
+      }
+    } catch (error) {
+      console.error('Saving focus settings failed:', error);
+      toast.error('Your focus settings were not saved. Try again.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   }
 
   async function handleReset() {
     setIsResetting(true);
-    await resetFocusConfig();
-    const defaults = getDefaultFocusConfig();
-    setBlocks(defaults);
-    setLastSavedBlocks(defaults);
-    setExpandedId(null);
-    toast.success('Reset to defaults');
-    setIsResetting(false);
+    try {
+      const result = await resetFocusConfig();
+      if (!result.success) {
+        toast.error('Your focus settings were not reset. Try again.');
+        return;
+      }
+      const defaults = getDefaultFocusConfig();
+      setBlocks(defaults);
+      setLastSavedBlocks(defaults);
+      setExpandedId(null);
+      toast.success('Reset to defaults');
+    } catch (error) {
+      console.error('Resetting focus settings failed:', error);
+      toast.error('Your focus settings were not reset. Try again.');
+    } finally {
+      setIsResetting(false);
+    }
   }
 
   return (

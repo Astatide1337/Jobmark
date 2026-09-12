@@ -57,38 +57,54 @@ export type InteractionFormState = {
   };
 };
 
+const recordIdSchema = z.string().min(1).max(100);
+
 // ---------------------------------------------------------------------------
 // Schemas
 // ---------------------------------------------------------------------------
 
-const contactSchema = z.object({
-  fullName: z.string().min(1, 'Enter a name.').max(150, 'Keep the name under 150 characters.'),
-  phone: z.string().optional().nullable(),
-  email: z.string().email('Enter a valid email address.').optional().nullable().or(z.literal('')),
-  birthday: z
-    .date()
-    .refine(d => d <= new Date(), {
-      message: 'The birthday cannot be later than today.',
-    })
-    .optional()
-    .nullable(),
-  relationship: z.string().optional().nullable(),
-  personalityTraits: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-});
+const contactSchema = z
+  .object({
+    fullName: z.string().min(1, 'Enter a name.').max(150, 'Keep the name under 150 characters.'),
+    phone: z.string().max(50, 'Keep the phone number under 50 characters.').optional().nullable(),
+    email: z
+      .union([z.string().email('Enter a valid email address.').max(255), z.literal('')])
+      .optional()
+      .nullable(),
+    birthday: z
+      .date()
+      .refine(d => d <= new Date(), {
+        message: 'The birthday cannot be later than today.',
+      })
+      .optional()
+      .nullable(),
+    relationship: z
+      .string()
+      .max(120, 'Keep the relationship under 120 characters.')
+      .optional()
+      .nullable(),
+    personalityTraits: z.string().max(10_000).optional().nullable(),
+    notes: z.string().max(20_000).optional().nullable(),
+  })
+  .strict();
 
-const interactionSchema = z.object({
-  contactId: z.string().min(1, 'Choose a contact.'),
-  occurredAt: z.date().optional(),
-  channel: z.string().optional().default('other'),
-  summary: z
-    .string()
-    .min(1, 'Add a short summary.')
-    .max(5000, 'Keep the summary under 5,000 characters.'),
-  nextStep: z.string().optional().nullable(),
-  followUpDate: z.date().optional().nullable(),
-  rawNotes: z.string().optional().nullable(),
-});
+const interactionSchema = z
+  .object({
+    contactId: recordIdSchema,
+    occurredAt: z.date().optional(),
+    channel: z
+      .enum(['email', 'call', 'text', 'in-person', 'linkedin', 'video', 'other'])
+      .optional()
+      .default('other'),
+    summary: z
+      .string()
+      .min(1, 'Add a short summary.')
+      .max(5000, 'Keep the summary under 5,000 characters.'),
+    nextStep: z.string().max(5000).optional().nullable(),
+    followUpDate: z.date().optional().nullable(),
+    rawNotes: z.string().max(10_000).optional().nullable(),
+  })
+  .strict();
 
 // ---------------------------------------------------------------------------
 // Contact CRUD
@@ -148,22 +164,17 @@ export async function createContact(
   }
 }
 
-export async function updateContact(
-  contactId: string,
-  data: {
-    fullName?: string;
-    phone?: string;
-    email?: string;
-    birthday?: Date | null;
-    relationship?: string;
-    personalityTraits?: string;
-    notes?: string;
-  }
-) {
+export async function updateContact(contactId: string, data: unknown) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Sign in to edit this contact.' };
+  if (!recordIdSchema.safeParse(contactId).success) {
+    return { success: false, message: 'That contact is no longer available.' };
+  }
 
   try {
+    const parsed = contactSchema.partial().strict().safeParse(data);
+    if (!parsed.success) return { success: false, message: 'Check the contact and try again.' };
+
     const existing = await prisma.contact.findUnique({
       where: { id: contactId },
     });
@@ -172,11 +183,18 @@ export async function updateContact(
       return { success: false, message: 'That contact is no longer available.' };
     }
 
+    const { birthday, fullName, phone, email, relationship, personalityTraits, notes } =
+      parsed.data;
     await prisma.contact.update({
       where: { id: contactId },
       data: {
-        ...data,
-        birthday: data.birthday ? parseUTCDate(data.birthday) : data.birthday,
+        fullName,
+        phone,
+        email,
+        relationship,
+        personalityTraits,
+        notes,
+        birthday: birthday === undefined ? undefined : parseUTCDate(birthday),
       },
     });
 
@@ -191,6 +209,9 @@ export async function updateContact(
 export async function deleteContact(contactId: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Sign in to delete this contact.' };
+  if (!recordIdSchema.safeParse(contactId).success) {
+    return { success: false, message: 'That contact is no longer available.' };
+  }
 
   try {
     await prisma.contact.delete({
@@ -214,14 +235,17 @@ export async function deleteContact(contactId: string) {
 
 export async function getContacts(search?: string) {
   const targetUserId = await requireUserId();
+  const parsedSearch = z.string().max(200).optional().safeParse(search);
+  if (!parsedSearch.success) return [];
+  const searchTerm = parsedSearch.data?.trim();
 
   const contacts = await prisma.contact.findMany({
     where: {
       userId: targetUserId,
-      ...(search && {
+      ...(searchTerm && {
         OR: [
-          { fullName: { contains: search, mode: 'insensitive' as const } },
-          { email: { contains: search, mode: 'insensitive' as const } },
+          { fullName: { contains: searchTerm, mode: 'insensitive' as const } },
+          { email: { contains: searchTerm, mode: 'insensitive' as const } },
         ],
       }),
     },
@@ -236,6 +260,7 @@ export async function getContacts(search?: string) {
 
 export async function getContactById(contactId: string) {
   const targetUserId = await requireUserId();
+  if (!recordIdSchema.safeParse(contactId).success) return null;
 
   const contact = await prisma.contact.findUnique({
     where: {
@@ -244,6 +269,7 @@ export async function getContactById(contactId: string) {
     },
     include: {
       interactions: {
+        where: { userId: targetUserId },
         orderBy: { occurredAt: 'desc' },
         take: 10,
       },
@@ -325,6 +351,9 @@ export async function deleteInteraction(interactionId: string) {
   const session = await auth();
   if (!session?.user?.id)
     return { success: false, message: 'Sign in to delete this conversation.' };
+  if (!recordIdSchema.safeParse(interactionId).success) {
+    return { success: false, message: 'That conversation is no longer available.' };
+  }
 
   try {
     await prisma.interactionLog.delete({
@@ -348,14 +377,16 @@ export async function deleteInteraction(interactionId: string) {
 
 export async function getInteractionsByContact(contactId: string, limit = 20) {
   const targetUserId = await requireUserId();
+  if (!recordIdSchema.safeParse(contactId).success) return [];
+  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 1), 100) : 20;
 
   const interactions = await prisma.interactionLog.findMany({
     where: {
       userId: targetUserId,
       contactId,
     },
-    orderBy: { occurredAt: 'desc' },
-    take: limit,
+    orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+    take: safeLimit,
   });
 
   return interactions;

@@ -86,11 +86,14 @@ export function ReportHistory({
       if (onDelete) {
         await onDelete(id);
       } else {
-        await deleteReport(id);
+        const result = await deleteReport(id);
+        if (!result.success) throw new Error('The draft was not deleted.');
       }
       setReports(reports.filter(r => r.id !== id));
+      toast.success('Draft deleted.');
     } catch (error) {
       console.error('Failed to delete draft:', error);
+      toast.error('Could not delete the draft.');
     } finally {
       setIsDeleting(null);
     }
@@ -117,7 +120,8 @@ export function ReportHistory({
       if (onUpdate) {
         await onUpdate(reportId, editContent);
       } else {
-        await updateReport(reportId, editContent);
+        const result = await updateReport(reportId, editContent);
+        if (!result.success) throw new Error('The draft was not saved.');
       }
 
       // Update local state

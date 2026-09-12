@@ -7,16 +7,32 @@ const PENDING_POLL_INTERVAL_MS = 200;
 export type IdempotencyClaim =
   | { kind: 'owner' }
   | { kind: 'cached'; result: unknown }
-  | { kind: 'pending' };
+  | { kind: 'pending' }
+  | { kind: 'conflict' };
 
-type IdempotencyKey = {
+export type IdempotencyKey = {
   connectionId: string;
   toolName: string;
   requestKey: string;
+  requestHash: string;
 };
 
 function whereFor(key: IdempotencyKey) {
-  return { connectionId_toolName_requestKey: key };
+  return {
+    connectionId_toolName_requestKey: {
+      connectionId: key.connectionId,
+      toolName: key.toolName,
+      requestKey: key.requestKey,
+    },
+  };
+}
+
+function identityFor(key: IdempotencyKey) {
+  return {
+    connectionId: key.connectionId,
+    toolName: key.toolName,
+    requestKey: key.requestKey,
+  };
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
@@ -36,7 +52,8 @@ export async function claimIdempotency(key: IdempotencyKey): Promise<Idempotency
   try {
     await prisma.mcpIdempotency.create({
       data: {
-        ...key,
+        ...identityFor(key),
+        requestHash: key.requestHash,
         status: 'pending',
         expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
       },
@@ -53,9 +70,15 @@ export async function claimIdempotency(key: IdempotencyKey): Promise<Idempotency
       return claimIdempotency(key);
     }
 
+    // Rows from before argument binding are never replayed. A caller must
+    // choose a fresh key rather than inheriting an unbound cached result.
+    if (record.requestHash !== key.requestHash) {
+      return { kind: 'conflict' };
+    }
+
     if (record.expiresAt <= new Date()) {
       await prisma.mcpIdempotency.deleteMany({
-        where: { ...key, expiresAt: { lte: new Date() } },
+        where: { ...identityFor(key), expiresAt: { lte: new Date() } },
       });
       return claimIdempotency(key);
     }
@@ -65,7 +88,7 @@ export async function claimIdempotency(key: IdempotencyKey): Promise<Idempotency
     }
 
     if (record.status === 'failed') {
-      await prisma.mcpIdempotency.deleteMany({ where: key });
+      await prisma.mcpIdempotency.deleteMany({ where: identityFor(key) });
       return claimIdempotency(key);
     }
 
@@ -85,5 +108,5 @@ export async function completeIdempotency(key: IdempotencyKey, result: unknown):
 }
 
 export async function releaseIdempotency(key: IdempotencyKey): Promise<void> {
-  await prisma.mcpIdempotency.deleteMany({ where: { ...key, status: 'pending' } });
+  await prisma.mcpIdempotency.deleteMany({ where: { ...identityFor(key), status: 'pending' } });
 }

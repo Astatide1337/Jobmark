@@ -1,18 +1,20 @@
 /**
  * Goals domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
 
-const goalCreateSchema = z.object({
-  title: z.string().min(1).max(200),
-  deadline: z.string().datetime().optional().nullable(),
-  why: z.string().max(500).optional().nullable(),
-});
+const goalCreateSchema = z
+  .object({
+    title: z.string().min(1).max(200),
+    deadline: z.string().datetime().optional().nullable(),
+    why: z.string().max(500).optional().nullable(),
+  })
+  .strict();
 
 const goalUpdateSchema = goalCreateSchema.partial();
 
@@ -39,7 +41,7 @@ export async function listGoals(
 
   const goals = await prisma.goal.findMany({
     where: { userId: actor.userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
@@ -47,8 +49,8 @@ export async function listGoals(
 
   let nextCursor: string | null = null;
   if (goals.length > limit) {
-    const next = goals.pop();
-    nextCursor = next!.id;
+    goals.pop();
+    nextCursor = goals[goals.length - 1]?.id ?? null;
   }
 
   return { goals: goals.map(toGoalDTO), nextCursor };

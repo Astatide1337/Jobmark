@@ -1,22 +1,33 @@
 /**
  * Interactions domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
+import {
+  DEFAULT_TIME_ZONE,
+  getCalendarRange,
+  isValidTimeZone,
+  shiftCalendarDate,
+  zonedCalendarDateToUtc,
+} from '@/lib/date-semantics';
 
-const interactionCreateSchema = z.object({
-  contactId: z.string(),
-  occurredAt: z.string().datetime(),
-  channel: z.string().default('other'),
-  summary: z.string(),
-  nextStep: z.string().optional().nullable(),
-  followUpDate: z.string().datetime().optional().nullable(),
-  rawNotes: z.string().optional().nullable(),
-});
+const interactionCreateSchema = z
+  .object({
+    contactId: z.string().min(1).max(100),
+    occurredAt: z.string().datetime(),
+    channel: z
+      .enum(['email', 'call', 'text', 'in-person', 'linkedin', 'video', 'other'])
+      .default('other'),
+    summary: z.string().min(1).max(5000),
+    nextStep: z.string().max(5000).optional().nullable(),
+    followUpDate: z.string().datetime().optional().nullable(),
+    rawNotes: z.string().max(10_000).optional().nullable(),
+  })
+  .strict();
 
 const interactionUpdateSchema = interactionCreateSchema.partial().omit({ contactId: true });
 
@@ -155,17 +166,27 @@ export async function getNetworkStats(actor: JobmarkActor): Promise<{
   assertActor(actor);
 
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: actor.userId },
+    select: { timeZone: true },
+  });
+  const timeZone =
+    settings?.timeZone && isValidTimeZone(settings.timeZone)
+      ? settings.timeZone
+      : DEFAULT_TIME_ZONE;
+  const monthRange = getCalendarRange({ kind: 'month', now, timeZone });
+  const monthStart = zonedCalendarDateToUtc(monthRange.startDate, timeZone);
+  const monthEnd = zonedCalendarDateToUtc(shiftCalendarDate(monthRange.endDate, 1), timeZone);
 
   const [totalContacts, totalInteractions, interactionsThisMonth, followUpsDue] = await Promise.all(
     [
       prisma.contact.count({ where: { userId: actor.userId } }),
       prisma.interactionLog.count({ where: { userId: actor.userId } }),
       prisma.interactionLog.count({
-        where: { userId: actor.userId, occurredAt: { gte: monthStart } },
+        where: { userId: actor.userId, occurredAt: { gte: monthStart, lt: monthEnd } },
       }),
       prisma.interactionLog.count({
-        where: { userId: actor.userId, followUpDate: { lte: now, gte: monthStart } },
+        where: { userId: actor.userId, followUpDate: { lte: now } },
       }),
     ]
   );

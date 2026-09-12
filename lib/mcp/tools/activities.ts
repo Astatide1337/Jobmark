@@ -11,41 +11,57 @@ import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError, McpNotFoundError, McpVaultLockedError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
+import { isValidCalendarDate } from '@/lib/date-semantics';
 
-const activityListSchema = z.object({
-  limit: z.number().int().min(1).max(100).optional(),
-  cursor: z.string().optional(),
-  projectId: z.string().optional(),
-  dateFrom: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  dateTo: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  search: z.string().max(200).optional(),
-});
+const activityIdSchema = z.string().min(1).max(100);
+const calendarDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(isValidCalendarDate, 'Invalid calendar date.');
 
-const activityGetSchema = z.object({ activityId: z.string() });
+const activityListSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).optional(),
+    cursor: activityIdSchema.optional(),
+    projectId: activityIdSchema.optional(),
+    dateFrom: calendarDateSchema.optional(),
+    dateTo: calendarDateSchema.optional(),
+    search: z.string().max(200).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.dateFrom && value.dateTo && value.dateFrom > value.dateTo) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'dateFrom must be on or before dateTo.',
+      });
+    }
+  });
 
-const activityCreateSchema = z.object({
-  content: z.string().min(1).max(5000),
-  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  projectId: z.string().optional().nullable(),
-});
+const activityGetSchema = z.object({ activityId: activityIdSchema }).strict();
 
-const activityUpdateSchema = z.object({
-  activityId: z.string(),
-  content: z.string().min(1).max(5000).optional(),
-  logDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  projectId: z.string().optional().nullable(),
-});
+const activityCreateSchema = z
+  .object({
+    content: z.string().min(10).max(1000),
+    logDate: calendarDateSchema,
+    projectId: activityIdSchema.optional().nullable(),
+  })
+  .strict();
 
-const activityDeleteSchema = z.object({ activityId: z.string() });
+const activityUpdateSchema = z
+  .object({
+    activityId: activityIdSchema,
+    content: z.string().min(10).max(1000).optional(),
+    logDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine(isValidCalendarDate, 'Invalid calendar date.')
+      .optional(),
+    projectId: activityIdSchema.optional().nullable(),
+  })
+  .strict();
+
+const activityDeleteSchema = z.object({ activityId: activityIdSchema }).strict();
 
 export const activitiesListTool = {
   definition: {
@@ -57,8 +73,8 @@ export const activitiesListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 100, default: 50 },
-        cursor: { type: 'string' },
-        projectId: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
         dateFrom: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
         dateTo: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
         search: { type: 'string', maxLength: 200 },
@@ -122,7 +138,7 @@ export const activitiesGetTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        activityId: { type: 'string' },
+        activityId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['activityId'],
       additionalProperties: false,
@@ -131,9 +147,9 @@ export const activitiesGetTool = {
       type: 'object',
       properties: {
         id: { type: 'string' },
-        content: { type: 'string' },
+        content: { type: 'string', minLength: 10, maxLength: 1000 },
         logDate: { type: 'string' },
-        projectId: { type: ['string', 'null'] },
+        projectId: { type: ['string', 'null'], maxLength: 100 },
         project: {
           type: ['object', 'null'],
           properties: {
@@ -171,9 +187,9 @@ export const activitiesCreateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        content: { type: 'string', minLength: 1, maxLength: 5000 },
+        content: { type: 'string', minLength: 10, maxLength: 1000 },
         logDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-        projectId: { type: ['string', 'null'] },
+        projectId: { type: ['string', 'null'], minLength: 1, maxLength: 100 },
       },
       required: ['content', 'logDate'],
       additionalProperties: false,
@@ -222,10 +238,10 @@ export const activitiesUpdateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        activityId: { type: 'string' },
-        content: { type: 'string', minLength: 1, maxLength: 5000 },
+        activityId: { type: 'string', minLength: 1, maxLength: 100 },
+        content: { type: 'string', minLength: 10, maxLength: 1000 },
         logDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-        projectId: { type: ['string', 'null'] },
+        projectId: { type: ['string', 'null'], minLength: 1, maxLength: 100 },
       },
       required: ['activityId'],
       additionalProperties: false,
@@ -274,7 +290,7 @@ export const activitiesDeleteTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        activityId: { type: 'string' },
+        activityId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['activityId'],
       additionalProperties: false,

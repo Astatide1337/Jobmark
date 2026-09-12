@@ -65,12 +65,22 @@ export function ReportsSection({ settings: initialSettings }: { settings: UserSe
   const handleSave = async () => {
     setIsSaving(true);
     setSaved(false);
-    await updateReportSettings({ customInstructions: customInstructions || null });
-    await refreshSettings();
-    setIsSaving(false);
-    setSaved(true);
-    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    try {
+      const result = await updateReportSettings({ customInstructions: customInstructions || null });
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      await refreshSettings();
+      setSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Saving review settings failed:', error);
+      toast.error('Your settings were not saved. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -168,19 +178,29 @@ export function AppearanceSection({ settings }: { settings: UserSettingsData }) 
   const handleSave = async () => {
     setIsSaving(true);
     setSaved(false);
-    await updateAppearanceSettings({
-      themePreset,
-      themeMode,
-      hideArchived,
-      showConfetti,
-      timeZone,
-    });
-    committedThemeRef.current = { themePreset, themeMode };
-    await refreshSettings();
-    setIsSaving(false);
-    setSaved(true);
-    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    try {
+      const result = await updateAppearanceSettings({
+        themePreset,
+        themeMode,
+        hideArchived,
+        showConfetti,
+        timeZone,
+      });
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      committedThemeRef.current = { themePreset, themeMode };
+      await refreshSettings();
+      setSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Saving appearance settings failed:', error);
+      toast.error('Your settings were not saved. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -360,17 +380,38 @@ export function DataSection() {
   const handleClearActivities = async () => {
     if (clearConfirmation !== 'CLEAR ALL NOTES') return;
     setIsClearing(true);
-    await clearAllActivities('CLEAR ALL NOTES');
-    setIsClearing(false);
-    setClearConfirmation('');
+    try {
+      const result = await clearAllActivities('CLEAR ALL NOTES');
+      if (result.success) {
+        toast.success(result.message);
+        setClearConfirmation('');
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Clearing activities failed:', error);
+      toast.error('Your notes were not cleared. Try again.');
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmation !== 'DELETE') return;
     setIsDeleting(true);
-    const result = await deleteUserAccount();
-    if (result.success) await signOut({ callbackUrl: '/' });
-    setIsDeleting(false);
+    try {
+      const result = await deleteUserAccount(deleteConfirmation);
+      if (result.success) {
+        await signOut({ callbackUrl: '/' });
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Deleting account failed:', error);
+      toast.error('Your account was not deleted. Try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (

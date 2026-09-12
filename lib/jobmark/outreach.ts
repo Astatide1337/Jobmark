@@ -1,7 +1,7 @@
 /**
  * Outreach domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
@@ -9,22 +9,36 @@ import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './ind
 import { z } from 'zod';
 import { buildOutreachDraft, deterministicRewrite } from '@/lib/deterministic-drafts';
 
-const outreachCreateSchema = z.object({
-  contactId: z.string(),
-  title: z.string().min(1).max(200),
-  content: z.string(),
-  metadata: z.record(z.string(), z.json()).optional().nullable(),
-});
+const outreachMetadataSchema = z
+  .record(z.string().min(1).max(100), z.json())
+  .nullable()
+  .optional()
+  .refine(value => value == null || Object.keys(value).length <= 50, 'Too many metadata fields.')
+  .refine(
+    value => value == null || JSON.stringify(value).length <= 20_000,
+    'Metadata is too large.'
+  );
+
+const outreachCreateSchema = z
+  .object({
+    contactId: z.string().min(1).max(100),
+    title: z.string().min(1).max(200),
+    content: z.string().min(1).max(100_000),
+    metadata: outreachMetadataSchema,
+  })
+  .strict();
 
 const outreachUpdateSchema = outreachCreateSchema.partial().omit({ contactId: true });
 
-const outreachGenerateSchema = z.object({
-  contactId: z.string(),
-  goal: z.string().optional(),
-  context: z.string().optional(),
-  tone: z.string().max(100).optional(),
-  channel: z.string().max(100).optional(),
-});
+const outreachGenerateSchema = z
+  .object({
+    contactId: z.string().min(1).max(100),
+    goal: z.string().max(2_000).optional(),
+    context: z.string().max(2_000).optional(),
+    tone: z.string().max(100).optional(),
+    channel: z.string().max(100).optional(),
+  })
+  .strict();
 
 export type OutreachInput = z.infer<typeof outreachCreateSchema>;
 export type OutreachUpdateInput = z.infer<typeof outreachUpdateSchema>;
@@ -60,7 +74,7 @@ export async function listOutreach(
 
   const items = await prisma.outreachDraft.findMany({
     where: { userId: actor.userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
@@ -69,8 +83,8 @@ export async function listOutreach(
 
   let nextCursor: string | null = null;
   if (items.length > limit) {
-    const next = items.pop();
-    nextCursor = next!.id;
+    items.pop();
+    nextCursor = items[items.length - 1]?.id ?? null;
   }
 
   return { outreach: items.map(toOutreachPreviewDTO), nextCursor };

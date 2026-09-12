@@ -1,11 +1,11 @@
 /**
  * Activities domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
-import { getLockedProjectIds } from '@/lib/project-lock';
+import { getLockedProjectIdsForActor } from '@/lib/project-lock';
 import {
   JobmarkActor,
   assertActor,
@@ -18,29 +18,36 @@ import {
   DEFAULT_TIME_ZONE,
   getCalendarDate,
   getCalendarRange,
+  isValidCalendarDate,
   isValidTimeZone,
   shiftCalendarDate,
 } from '@/lib/date-semantics';
 import { z } from 'zod';
 import { getActivityDisplayContent } from './activity-copy';
 
-const activityCreateSchema = z.object({
-  content: z.string().min(10, 'Note must be at least 10 characters').max(1000),
-  projectId: z.string().optional().nullable(),
-  logDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-});
+const activityCreateSchema = z
+  .object({
+    content: z.string().min(10, 'Note must be at least 10 characters').max(1000),
+    projectId: z.string().min(1).max(100).optional().nullable(),
+    logDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine(isValidCalendarDate, 'Invalid calendar date.')
+      .optional(),
+  })
+  .strict();
 
-const activityUpdateSchema = z.object({
-  content: z.string().min(10).max(1000).optional(),
-  projectId: z.string().optional().nullable(),
-  logDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-});
+const activityUpdateSchema = z
+  .object({
+    content: z.string().min(10).max(1000).optional(),
+    projectId: z.string().min(1).max(100).optional().nullable(),
+    logDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine(isValidCalendarDate, 'Invalid calendar date.')
+      .optional(),
+  })
+  .strict();
 
 export type ActivityInput = z.infer<typeof activityCreateSchema>;
 export type ActivityUpdateInput = z.infer<typeof activityUpdateSchema>;
@@ -85,7 +92,7 @@ export async function listActivities(
     search,
   } = options;
   const limit = Math.min(Math.max(requestedLimit, 1), 100);
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
 
   const where: Prisma.ActivityWhereInput = { userId: actor.userId };
   const filters: Prisma.ActivityWhereInput[] = [];
@@ -109,7 +116,7 @@ export async function listActivities(
 
   const activities = await prisma.activity.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
@@ -120,8 +127,8 @@ export async function listActivities(
 
   let nextCursor: string | null = null;
   if (activities.length > limit) {
-    const next = activities.pop();
-    nextCursor = next!.id;
+    activities.pop();
+    nextCursor = activities[activities.length - 1]?.id ?? null;
   }
 
   const totalCount = await prisma.activity.count({ where });
@@ -165,7 +172,7 @@ export async function getActivityStats(actor: JobmarkActor): Promise<{
   const startOfWeek = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, -dayOfWeek));
   const endOfWeek = calendarDateToUtcMidnight(shiftCalendarDate(todayDate, 7 - dayOfWeek));
 
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
   const lockedFilter =
     lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
 
@@ -212,12 +219,12 @@ export async function getActivityStats(actor: JobmarkActor): Promise<{
     where: { userId: actor.userId, ...lockedFilter },
     orderBy: { logDate: 'desc' },
     select: { logDate: true },
-    take: 365,
   });
 
-  const recentDates = recentActivities.map(
-    a => `${a.logDate.toISOString().slice(0, 10)}T12:00:00.000Z`
-  );
+  const recentDates = recentActivities
+    .map(a => a.logDate.toISOString().slice(0, 10))
+    .filter(date => date <= todayDate)
+    .map(date => `${date}T12:00:00.000Z`);
 
   return {
     thisMonth: thisMonthCount,
@@ -235,7 +242,7 @@ export async function getActivityStats(actor: JobmarkActor): Promise<{
 export async function getActivity(actor: JobmarkActor, activityId: string): Promise<ActivityDTO> {
   assertActor(actor);
 
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
   const lockedFilter =
     lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
 
@@ -317,6 +324,18 @@ export async function updateActivity(
 
   if (!activity) throw new NotFoundError('Note');
   if (activity.project?.locked && !actor.vaultUnlocked) throw new VaultLockedError();
+
+  if (Object.prototype.hasOwnProperty.call(result.data, 'projectId')) {
+    const targetProjectId = result.data.projectId;
+    if (targetProjectId) {
+      const targetProject = await prisma.project.findFirst({
+        where: { id: targetProjectId, userId: actor.userId },
+        select: { locked: true },
+      });
+      if (!targetProject) throw new NotFoundError('Project');
+      if (targetProject.locked && !actor.vaultUnlocked) throw new VaultLockedError();
+    }
+  }
 
   const data: Prisma.ActivityUncheckedUpdateInput = {
     content: result.data.content,

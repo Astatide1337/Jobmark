@@ -11,6 +11,12 @@ const mocks = vi.hoisted(() => ({
   claimIdempotency: vi.fn(),
   completeIdempotency: vi.fn(),
   releaseIdempotency: vi.fn(),
+  toolDefinition: {
+    name: 'jobmark_list_projects',
+    description: 'List projects',
+    inputSchema: { type: 'object', properties: {} },
+    annotations: { readOnlyHint: false, idempotentHint: true, requiredScopes: ['jobmark:read'] },
+  },
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -38,15 +44,9 @@ vi.mock('@/lib/mcp/idempotency', () => ({
 }));
 
 vi.mock('@/lib/mcp/tools', () => {
-  const definition = {
-    name: 'jobmark_list_projects',
-    description: 'List projects',
-    inputSchema: { type: 'object', properties: {} },
-    annotations: { readOnlyHint: true, idempotentHint: true, requiredScopes: ['jobmark:read'] },
-  };
   return {
-    allTools: [{ definition, execute: mocks.executeTool }],
-    toolDefinitions: [definition],
+    allTools: [{ definition: mocks.toolDefinition, execute: mocks.executeTool }],
+    toolDefinitions: [mocks.toolDefinition],
   };
 });
 
@@ -69,6 +69,41 @@ function modernRequest(body: Record<string, unknown>, method: string): NextReque
       'mcp-method': method,
     },
     body: JSON.stringify(body),
+  });
+}
+
+function authenticatedRequest(body: string, headers: Record<string, string> = {}): NextRequest {
+  return new NextRequest('https://jobmark.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer test-token',
+      'content-type': 'application/json',
+      accept: 'application/json, text-stream',
+      'mcp-protocol-version': '2025-11-25',
+      ...headers,
+    },
+    body,
+  });
+}
+
+function configureAuthenticatedRequest() {
+  mocks.executeTool.mockClear();
+  mocks.validateAccessToken.mockResolvedValue({
+    clientId: 'chatgpt',
+    userId: 'user-1',
+    scope: 'jobmark:read',
+  });
+  mocks.clientFindUnique.mockResolvedValue({ id: 'client-1' });
+  mocks.connectionFindFirst.mockResolvedValue({
+    id: 'connection-1',
+    userId: 'user-1',
+    scopes: ['jobmark:read'],
+    vaultUnlockedUntil: null,
+  });
+  mocks.rateLimit.mockResolvedValue({
+    allowed: true,
+    remaining: 59,
+    resetAt: Date.now() + 60_000,
   });
 }
 
@@ -196,6 +231,55 @@ describe('MCP modern discovery and tool listing', () => {
     expect(mocks.validateAccessToken).not.toHaveBeenCalled();
   });
 
+  it('rejects a revoked MCP connection before dispatch', async () => {
+    configureAuthenticatedRequest();
+    mocks.connectionFindFirst.mockResolvedValueOnce(null);
+
+    const response = await POST(
+      authenticatedRequest(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 10,
+          method: 'tools/call',
+          params: { name: 'jobmark_list_projects', arguments: {} },
+        })
+      )
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: -32600, data: { code: 'INVALID_TOKEN' } },
+    });
+    expect(mocks.executeTool).not.toHaveBeenCalled();
+  });
+
+  it('enforces destructive scope requirements before dispatch', async () => {
+    configureAuthenticatedRequest();
+    const originalScopes = mocks.toolDefinition.annotations.requiredScopes;
+    mocks.toolDefinition.annotations.requiredScopes = ['jobmark:destructive'];
+
+    try {
+      const response = await POST(
+        authenticatedRequest(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 12,
+            method: 'tools/call',
+            params: { name: 'jobmark_list_projects', arguments: {} },
+          })
+        )
+      );
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { code: -32603, data: { code: 'INSUFFICIENT_SCOPE' } },
+      });
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      mocks.toolDefinition.annotations.requiredScopes = originalScopes;
+    }
+  });
+
   it('rejects a modern header/body protocol mismatch before dispatch', async () => {
     mocks.validateAccessToken.mockResolvedValue({
       clientId: 'chatgpt',
@@ -228,7 +312,7 @@ describe('MCP modern discovery and tool listing', () => {
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32020 } });
   });
 
-  it('claims and completes idempotent tool calls using the public idempotentHint', async () => {
+  it('claims and completes retry-safe mutating tool calls with bound arguments', async () => {
     mocks.validateAccessToken.mockResolvedValue({
       clientId: 'chatgpt',
       userId: 'user-1',
@@ -275,6 +359,7 @@ describe('MCP modern discovery and tool listing', () => {
       connectionId: 'connection-1',
       toolName: 'jobmark_list_projects',
       requestKey: 'retry-1',
+      requestHash: expect.any(String),
     });
     expect(mocks.executeTool).toHaveBeenCalledTimes(1);
     expect(mocks.completeIdempotency).toHaveBeenCalledWith(
@@ -372,5 +457,100 @@ describe('MCP modern discovery and tool listing', () => {
     const body = await response.json();
     expect(body.error.message).toBe('Internal server error');
     expect(JSON.stringify(body)).not.toContain('database password');
+  });
+
+  it('does not release a mutation claim when result persistence fails', async () => {
+    configureAuthenticatedRequest();
+    mocks.claimIdempotency.mockResolvedValue({ kind: 'owner' });
+    mocks.executeTool.mockResolvedValue({ content: [{ type: 'text', text: 'created' }] });
+    mocks.completeIdempotency.mockRejectedValue(new Error('idempotency database unavailable'));
+
+    const response = await POST(
+      authenticatedRequest(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 11,
+          method: 'tools/call',
+          params: { name: 'jobmark_list_projects', arguments: {} },
+        }),
+        { 'idempotency-key': 'uncertain-1' }
+      )
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: -32603, message: 'Internal server error' },
+    });
+    expect(mocks.releaseIdempotency).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed, scalar, and array request bodies before dispatch', async () => {
+    configureAuthenticatedRequest();
+
+    for (const body of ['{', 'null', '[]', '"scalar"']) {
+      const response = await POST(authenticatedRequest(body));
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { code: -32600, data: { code: 'INVALID_REQUEST' } },
+      });
+    }
+
+    expect(mocks.executeTool).not.toHaveBeenCalled();
+  });
+
+  it('rejects oversized request bodies before parsing or dispatch', async () => {
+    configureAuthenticatedRequest();
+
+    const response = await POST(
+      authenticatedRequest(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 7,
+          method: 'tools/list',
+          params: { padding: 'x'.repeat(270_000) },
+        })
+      )
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: -32600, data: { code: 'REQUEST_TOO_LARGE' } },
+    });
+  });
+
+  it('rejects non-object tool arguments and oversized idempotency keys', async () => {
+    configureAuthenticatedRequest();
+
+    const invalidArguments = await POST(
+      authenticatedRequest(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 8,
+          method: 'tools/call',
+          params: { name: 'jobmark_list_projects', arguments: [] },
+        })
+      )
+    );
+    expect(invalidArguments.status).toBe(200);
+    await expect(invalidArguments.json()).resolves.toMatchObject({
+      error: { code: -32602 },
+    });
+
+    const invalidKey = await POST(
+      authenticatedRequest(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 9,
+          method: 'tools/call',
+          params: { name: 'jobmark_list_projects', arguments: {} },
+        }),
+        { 'idempotency-key': 'x'.repeat(201) }
+      )
+    );
+    expect(invalidKey.status).toBe(200);
+    await expect(invalidKey.json()).resolves.toMatchObject({
+      error: { code: -32602 },
+    });
+    expect(mocks.executeTool).not.toHaveBeenCalled();
   });
 });

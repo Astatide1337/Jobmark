@@ -138,6 +138,7 @@ export async function updateReportSettings(data: {
       defaultTone: z.enum(['professional', 'casual', 'bullet-points']).optional(),
       customInstructions: z.string().max(4_000).nullable().optional(),
     })
+    .strict()
     .safeParse(data);
   if (!reportSettings.success)
     return { success: false, message: 'Check your review settings and try again.' };
@@ -216,6 +217,9 @@ export async function exportUserData() {
     contacts,
     interactions,
     outreachDrafts,
+    decompressionLogs,
+    compliance,
+    connections,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -246,7 +250,7 @@ export async function exportUserData() {
     }),
     prisma.report.findMany({
       where: { userId: session.user.id },
-      select: { title: true, content: true, createdAt: true, metadata: true },
+      select: { title: true, content: true, projectId: true, createdAt: true, metadata: true },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.userSettings.findUnique({
@@ -265,6 +269,7 @@ export async function exportUserData() {
         timeZone: true,
         hideArchived: true,
         showConfetti: true,
+        focusConfig: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -324,6 +329,38 @@ export async function exportUserData() {
         createdAt: true,
       },
     }),
+    prisma.decompressionLog.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        durationMinutes: true,
+        moodBefore: true,
+        moodAfter: true,
+        notes: true,
+        createdAt: true,
+      },
+    }),
+    prisma.userCompliance.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        age16ConfirmedAt: true,
+        acceptances: {
+          orderBy: { acceptedAt: 'asc' },
+          select: { documentType: true, documentVersion: true, acceptedAt: true },
+        },
+      },
+    }),
+    prisma.mcpConnection.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        clientName: true,
+        scopes: true,
+        createdAt: true,
+        lastUsedAt: true,
+        revokedAt: true,
+      },
+    }),
   ]);
 
   const filteredReports = filterLockedReports(reports, lockedIds);
@@ -332,7 +369,7 @@ export async function exportUserData() {
     exportedAt: new Date().toISOString(),
     user,
     // Allowlist only user-facing preferences. Vault hashes, encrypted keys,
-    // cryptographic metadata, and internal IDs are intentionally excluded.
+    // cryptographic metadata, and connection identifiers are intentionally excluded.
     settings,
     projects,
     activities: activities.map(a => ({
@@ -346,6 +383,14 @@ export async function exportUserData() {
     contacts,
     interactions,
     outreachDrafts,
+    decompressionLogs,
+    compliance: compliance
+      ? {
+          age16ConfirmedAt: compliance.age16ConfirmedAt,
+          acceptances: compliance.acceptances,
+        }
+      : null,
+    connections,
   };
 }
 
@@ -374,11 +419,14 @@ export async function clearAllActivities(confirmation: string) {
   }
 }
 
-export async function deleteUserAccount() {
+export async function deleteUserAccount(confirmation: string) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to delete your account.' };
+  }
+  if (confirmation !== 'DELETE') {
+    return { success: false, message: 'Type DELETE to confirm account deletion.' };
   }
 
   try {

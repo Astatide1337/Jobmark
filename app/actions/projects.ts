@@ -14,17 +14,20 @@
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { projectColors } from '@/lib/constants';
-import { getLockedProjectIds } from '@/lib/project-lock';
+import { getLockedProjectIds, isVaultUnlocked } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { projectUpdateSchema } from '@/lib/input-schemas';
 import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
 
-const projectSchema = z.object({
-  name: z.string().min(1, 'Enter a project name.').max(50),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color.'),
-  description: z.string().max(200).optional(),
-});
+const projectSchema = z
+  .object({
+    name: z.string().min(1, 'Enter a project name.').max(50),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Choose a valid color.'),
+    description: z.string().max(200).optional(),
+  })
+  .strict();
+const projectIdSchema = z.string().min(1).max(100);
 
 export type ProjectFormState = {
   success: boolean;
@@ -95,9 +98,10 @@ export async function getProjects(filter: 'active' | 'archived' = 'active') {
     orderBy: { name: 'asc' },
     include: {
       _count: {
-        select: { activities: true },
+        select: { activities: { where: { userId: targetUserId } } },
       },
       activities: {
+        where: { userId: targetUserId },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: {
@@ -119,11 +123,23 @@ export async function updateProject(
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to edit this project.' };
   }
+  if (!projectIdSchema.safeParse(projectId).success) {
+    return { success: false, message: 'That project is no longer available.' };
+  }
 
   const parsed = projectUpdateSchema.safeParse(data);
   if (!parsed.success) return { success: false, message: 'Check the project and try again.' };
 
   try {
+    const existing = await prisma.project.findFirst({
+      where: { id: projectId, userId: session.user.id },
+      select: { locked: true },
+    });
+    if (!existing) return { success: false, message: 'That project is no longer available.' };
+    if (existing.locked && !(await isVaultUnlocked(session.user.id))) {
+      return { success: false, message: 'Open private projects before editing this project.' };
+    }
+
     await prisma.project.update({
       where: {
         id: projectId,
@@ -147,8 +163,20 @@ export async function archiveProject(projectId: string) {
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to archive this project.' };
   }
+  if (!projectIdSchema.safeParse(projectId).success) {
+    return { success: false, message: 'That project is no longer available.' };
+  }
 
   try {
+    const existing = await prisma.project.findFirst({
+      where: { id: projectId, userId: session.user.id },
+      select: { locked: true },
+    });
+    if (!existing) return { success: false, message: 'That project is no longer available.' };
+    if (existing.locked && !(await isVaultUnlocked(session.user.id))) {
+      return { success: false, message: 'Open private projects before archiving this project.' };
+    }
+
     await prisma.project.update({
       where: {
         id: projectId,
@@ -172,8 +200,20 @@ export async function unarchiveProject(projectId: string) {
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to restore this project.' };
   }
+  if (!projectIdSchema.safeParse(projectId).success) {
+    return { success: false, message: 'That project is no longer available.' };
+  }
 
   try {
+    const existing = await prisma.project.findFirst({
+      where: { id: projectId, userId: session.user.id },
+      select: { locked: true },
+    });
+    if (!existing) return { success: false, message: 'That project is no longer available.' };
+    if (existing.locked && !(await isVaultUnlocked(session.user.id))) {
+      return { success: false, message: 'Open private projects before restoring this project.' };
+    }
+
     await prisma.project.update({
       where: {
         id: projectId,
@@ -193,13 +233,21 @@ export async function unarchiveProject(projectId: string) {
 
 export async function getProjectDetails(projectId: string, activityLimit = 20) {
   const targetUserId = await requireUserId();
+  if (!projectIdSchema.safeParse(projectId).success) return null;
+  const safeActivityLimit = Number.isSafeInteger(activityLimit)
+    ? Math.min(Math.max(activityLimit, 1), 100)
+    : 20;
 
   const [project, lockedIds] = await Promise.all([
     prisma.project.findUnique({
       where: { id: projectId, userId: targetUserId },
       include: {
-        activities: { orderBy: { createdAt: 'desc' }, take: activityLimit },
-        _count: { select: { activities: true } },
+        activities: {
+          where: { userId: targetUserId },
+          orderBy: { createdAt: 'desc' },
+          take: safeActivityLimit,
+        },
+        _count: { select: { activities: { where: { userId: targetUserId } } } },
       },
     }),
     getLockedProjectIds(targetUserId),
@@ -225,6 +273,9 @@ export async function getProjectActivities(
   offset: number = 0
 ) {
   const targetUserId = await requireUserId();
+  if (!projectIdSchema.safeParse(projectId).success) return [];
+  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 1), 100) : 20;
+  const safeOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 10_000) : 0;
 
   const [project, lockedIds] = await Promise.all([
     prisma.project.findUnique({
@@ -239,9 +290,9 @@ export async function getProjectActivities(
 
   const activities = await prisma.activity.findMany({
     where: { projectId, userId: targetUserId },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    skip: offset,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: safeLimit,
+    skip: safeOffset,
   });
 
   // Convert logDate to ISO date string (YYYY-MM-DD) to prevent timezone issues

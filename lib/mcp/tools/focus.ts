@@ -9,31 +9,92 @@ import {
 import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
+import { focusConfigSchema } from '@/lib/focus/schema';
 
-const focusSaveSchema = z.object({
-  enabled: z.boolean(),
-  workDuration: z.number().min(1).max(120),
-  breakDuration: z.number().min(1).max(60),
-  longBreakDuration: z.number().min(1).max(120),
-  sessionsUntilLongBreak: z.number().min(1).max(10),
-  autoStartBreaks: z.boolean(),
-  autoStartWork: z.boolean(),
-  soundEnabled: z.boolean(),
-  soundVolume: z.number().min(0).max(1),
-  dailyTarget: z.number().min(1).max(20),
-});
+const focusSaveSchema = z.object({ blocks: focusConfigSchema }).strict();
 
-const decompressionLogSchema = z.object({
-  durationMinutes: z.number().int().min(1).max(480),
-  moodBefore: z.number().int().min(1).max(10),
-  moodAfter: z.number().int().min(1).max(10),
-  notes: z.string().max(1000).optional().nullable(),
-});
+const focusBlockInputSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      properties: {
+        id: { type: 'string', minLength: 1, maxLength: 100 },
+        type: { const: 'affirmation' },
+        config: {
+          type: 'object',
+          properties: {
+            texts: {
+              type: 'array',
+              minItems: 1,
+              maxItems: 20,
+              items: { type: 'string', minLength: 1, maxLength: 500 },
+            },
+            totalDuration: { type: 'integer', minimum: 1, maximum: 3600 },
+          },
+          required: ['texts', 'totalDuration'],
+          additionalProperties: false,
+        },
+      },
+      required: ['id', 'type', 'config'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        id: { type: 'string', minLength: 1, maxLength: 100 },
+        type: { const: 'breathing' },
+        config: {
+          type: 'object',
+          properties: {
+            pattern: {
+              type: 'string',
+              enum: ['box', '4-7-8', 'physiological-sigh', 'resonance'],
+            },
+            cycles: { type: 'integer', minimum: 1, maximum: 20 },
+          },
+          required: ['pattern', 'cycles'],
+          additionalProperties: false,
+        },
+      },
+      required: ['id', 'type', 'config'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        id: { type: 'string', minLength: 1, maxLength: 100 },
+        type: { const: 'goal' },
+        config: {
+          type: 'object',
+          properties: {
+            goalId: { type: 'string', minLength: 1, maxLength: 100 },
+            duration: { type: 'integer', minimum: 1, maximum: 3600 },
+          },
+          required: ['duration'],
+          additionalProperties: false,
+        },
+      },
+      required: ['id', 'type', 'config'],
+      additionalProperties: false,
+    },
+  ],
+};
 
-const dictationPolishSchema = z.object({
-  text: z.string().min(1).max(5000),
-  instructions: z.string().max(2000).optional().nullable(),
-});
+const decompressionLogSchema = z
+  .object({
+    durationMinutes: z.number().int().min(1).max(480),
+    moodBefore: z.number().int().min(1).max(10),
+    moodAfter: z.number().int().min(1).max(10),
+    notes: z.string().max(10_000).optional().nullable(),
+  })
+  .strict();
+
+const dictationPolishSchema = z
+  .object({
+    text: z.string().min(1).max(5000),
+    instructions: z.string().max(2000).optional().nullable(),
+  })
+  .strict();
 
 export const focusGetTool = {
   definition: {
@@ -48,16 +109,7 @@ export const focusGetTool = {
     outputSchema: {
       type: 'object',
       properties: {
-        enabled: { type: 'boolean' },
-        workDuration: { type: 'number' },
-        breakDuration: { type: 'number' },
-        longBreakDuration: { type: 'number' },
-        sessionsUntilLongBreak: { type: 'number' },
-        autoStartBreaks: { type: 'boolean' },
-        autoStartWork: { type: 'boolean' },
-        soundEnabled: { type: 'boolean' },
-        soundVolume: { type: 'number' },
-        dailyTarget: { type: 'number' },
+        blocks: { type: 'array', minItems: 1, maxItems: 30, items: focusBlockInputSchema },
         updatedAt: { type: 'string' },
       },
     },
@@ -78,36 +130,15 @@ export const focusSaveTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        enabled: { type: 'boolean' },
-        workDuration: { type: 'number', minimum: 1, maximum: 120 },
-        breakDuration: { type: 'number', minimum: 1, maximum: 60 },
-        longBreakDuration: { type: 'number', minimum: 1, maximum: 120 },
-        sessionsUntilLongBreak: { type: 'number', minimum: 1, maximum: 10 },
-        autoStartBreaks: { type: 'boolean' },
-        autoStartWork: { type: 'boolean' },
-        soundEnabled: { type: 'boolean' },
-        soundVolume: { type: 'number', minimum: 0, maximum: 1 },
-        dailyTarget: { type: 'number', minimum: 1, maximum: 20 },
+        blocks: { type: 'array', minItems: 1, maxItems: 30, items: focusBlockInputSchema },
       },
-      required: [
-        'enabled',
-        'workDuration',
-        'breakDuration',
-        'longBreakDuration',
-        'sessionsUntilLongBreak',
-        'autoStartBreaks',
-        'autoStartWork',
-        'soundEnabled',
-        'soundVolume',
-        'dailyTarget',
-      ],
+      required: ['blocks'],
       additionalProperties: false,
     },
     outputSchema: {
       type: 'object',
       properties: {
-        enabled: { type: 'boolean' },
-        workDuration: { type: 'number' },
+        blocks: { type: 'array', minItems: 1, maxItems: 30, items: focusBlockInputSchema },
         updatedAt: { type: 'string' },
       },
     },
@@ -124,7 +155,7 @@ export const focusSaveTool = {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
     }
 
-    const config = await saveFocusConfig(actor, result.data);
+    const config = await saveFocusConfig(actor, result.data.blocks);
     return createStructuredResult(config, 'Focus settings saved');
   },
 };
@@ -142,8 +173,7 @@ export const focusResetTool = {
     outputSchema: {
       type: 'object',
       properties: {
-        enabled: { type: 'boolean' },
-        workDuration: { type: 'number' },
+        blocks: { type: 'array', maxItems: 30 },
       },
     },
     annotations: { destructiveHint: true, idempotentHint: true, requiredScopes: ['jobmark:write'] },
@@ -166,7 +196,7 @@ export const focusLogDecompressionTool = {
         durationMinutes: { type: 'number', minimum: 1, maximum: 480 },
         moodBefore: { type: 'number', minimum: 1, maximum: 10 },
         moodAfter: { type: 'number', minimum: 1, maximum: 10 },
-        notes: { type: 'string', maxLength: 1000 },
+        notes: { type: 'string', maxLength: 10000 },
       },
       required: ['durationMinutes', 'moodBefore', 'moodAfter'],
       additionalProperties: false,

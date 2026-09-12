@@ -50,7 +50,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     return [];
   }
 
-  if (!query.trim()) {
+  if (typeof query !== 'string' || query.length > 200 || !query.trim()) {
     return [];
   }
 
@@ -240,6 +240,7 @@ export async function getRecentProjects(limit = 3) {
   }
 
   const lockedIds = await getLockedProjectIds(session.user.id);
+  const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.trunc(limit), 1), 20) : 3;
   return prisma.project.findMany({
     where: {
       userId: session.user.id,
@@ -247,7 +248,7 @@ export async function getRecentProjects(limit = 3) {
       locked: lockedIds.length > 0 ? false : undefined,
     },
     orderBy: { updatedAt: 'desc' },
-    take: limit,
+    take: safeLimit,
     select: { id: true, name: true, color: true },
   });
 }

@@ -9,6 +9,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { isVaultUnlocked } from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import {
   calendarDateToUtcMidnight,
@@ -42,6 +43,10 @@ export async function logDecompressionSession() {
         name: { in: ['Focus', 'Decompress'] },
       },
     });
+
+    if (project?.locked && !(await isVaultUnlocked(session.user.id))) {
+      return { error: 'Open private projects before saving this focus session.' };
+    }
 
     if (!project) {
       project = await prisma.project.create({

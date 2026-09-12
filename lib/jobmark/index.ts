@@ -1,3 +1,5 @@
+import 'server-only';
+
 /**
  * Jobmark domain functions - main export
  */

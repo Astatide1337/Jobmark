@@ -15,7 +15,12 @@
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getLockedProjectIds, filterLockedReports } from '@/lib/project-lock';
-import { DEFAULT_TIME_ZONE, getCalendarRange, isValidTimeZone } from '@/lib/date-semantics';
+import {
+  DEFAULT_TIME_ZONE,
+  getCalendarRange,
+  isValidCalendarDate,
+  isValidTimeZone,
+} from '@/lib/date-semantics';
 import { z } from 'zod';
 import { buildReviewBrief } from '@/lib/deterministic-drafts';
 import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
@@ -29,26 +34,66 @@ export type ReportConfig = {
   notes?: string;
 };
 
-const reportConfigSchema = z.object({
-  dateRange: z.enum(['7d', '30d', 'month', 'custom']),
-  customStartDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  customEndDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  projectId: z.string().max(100).nullable().optional(),
-  tone: z.enum(['professional', 'casual', 'bullet-points']),
-  notes: z.string().max(4_000).optional(),
-});
+const reportConfigSchema = z
+  .object({
+    dateRange: z.enum(['7d', '30d', 'month', 'custom']),
+    customStartDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    customEndDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    projectId: z.string().min(1).max(100).nullable().optional(),
+    tone: z.enum(['professional', 'casual', 'bullet-points']),
+    notes: z.string().max(4_000).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.dateRange === 'custom' && (!value.customStartDate || !value.customEndDate)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Custom review dates are required.',
+      });
+    }
+    if (value.dateRange !== 'custom' && (value.customStartDate || value.customEndDate)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Custom dates require custom mode.',
+      });
+    }
+    for (const [field, date] of [
+      ['customStartDate', value.customStartDate],
+      ['customEndDate', value.customEndDate],
+    ] as const) {
+      if (date && !isValidCalendarDate(date)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: 'Invalid calendar date.',
+        });
+      }
+    }
+    if (
+      value.customStartDate &&
+      value.customEndDate &&
+      value.customStartDate > value.customEndDate
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'The start date must be on or before the end date.',
+      });
+    }
+  });
 
 function validateReportConfig(config: ReportConfig): ReportConfig {
   const parsed = reportConfigSchema.safeParse(config);
   if (!parsed.success) throw new Error('Check the review settings and try again.');
   return parsed.data;
 }
+
+const reportIdSchema = z.string().min(1).max(100);
 
 async function getReportRange(userId: string, config: ReportConfig) {
   const settings = await prisma.userSettings.findUnique({
@@ -191,9 +236,39 @@ export async function saveReportToHistory(content: string, config: ReportConfig)
     throw new Error('That project is no longer available.');
   }
 
+  const lockedIds = await getLockedProjectIds(session.user.id);
+  if (config.projectId && lockedIds.includes(config.projectId)) {
+    throw new Error('Open private projects before saving a draft from this project.');
+  }
+
+  const range = await getReportRange(session.user.id, config);
+  const sourceActivities = await prisma.activity.findMany({
+    where: {
+      userId: session.user.id,
+      logDate: { gte: range.start, lt: range.endExclusive },
+      projectId: config.projectId === undefined ? undefined : config.projectId,
+      ...(config.projectId === undefined &&
+        lockedIds.length > 0 && {
+          OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }],
+        }),
+    },
+    select: { projectId: true },
+  });
+  const sourceProjectIds = [
+    ...new Set(
+      sourceActivities
+        .map(activity => activity.projectId)
+        .filter((projectId): projectId is string => Boolean(projectId))
+    ),
+  ];
+
   // Generate a friendly title
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const title = `Review draft - ${dateStr}`;
+  let scope: 'all' | 'unassigned' | 'project';
+  if (config.projectId === undefined) scope = 'all';
+  else if (config.projectId === null) scope = 'unassigned';
+  else scope = 'project';
 
   await prisma.report.create({
     data: {
@@ -202,12 +277,21 @@ export async function saveReportToHistory(content: string, config: ReportConfig)
       title,
       content,
       metadata: {
+        generated: true,
+        deterministic: true,
         dateRange: config.dateRange,
         customStartDate: config.customStartDate ?? null,
         customEndDate: config.customEndDate ?? null,
         projectId: config.projectId ?? null,
         tone: config.tone,
         notes: config.notes ?? null,
+        scope,
+        sourceProjectIds,
+        rangeStartDate: range.startDate,
+        rangeEndDate: range.endDate,
+        resolvedStartDate: range.startDate,
+        resolvedEndDate: range.endDate,
+        timeZone: range.timeZone,
       },
     },
   });
@@ -233,6 +317,19 @@ export async function getReports() {
 export async function deleteReport(reportId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Sign in to delete this review draft.');
+  if (!reportIdSchema.safeParse(reportId).success) {
+    throw new Error('That review draft is no longer available.');
+  }
+
+  const report = await prisma.report.findFirst({
+    where: { id: reportId, userId: session.user.id },
+    select: { projectId: true, metadata: true },
+  });
+  if (!report) throw new Error('That review draft is no longer available.');
+  const lockedIds = await getLockedProjectIds(session.user.id);
+  if (filterLockedReports([report], lockedIds).length === 0) {
+    throw new Error('Open private projects before deleting this review draft.');
+  }
 
   await prisma.report.delete({
     where: {
@@ -248,13 +345,33 @@ export async function deleteReport(reportId: string) {
 export async function updateReport(reportId: string, content: string, title?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Sign in to edit this review draft.');
+  if (!reportIdSchema.safeParse(reportId).success) {
+    throw new Error('That review draft is no longer available.');
+  }
 
-  const updateData: { content: string; title?: string } = {
-    content,
-  };
+  const parsed = z
+    .object({
+      content: z.string().trim().min(1).max(100_000),
+      title: z.string().trim().min(1).max(200).optional(),
+    })
+    .strict()
+    .safeParse({ content, title });
+  if (!parsed.success) throw new Error('This review draft is empty or too long.');
 
-  if (title) {
-    updateData.title = title;
+  const report = await prisma.report.findFirst({
+    where: { id: reportId, userId: session.user.id },
+    select: { projectId: true, metadata: true },
+  });
+  if (!report) throw new Error('That review draft is no longer available.');
+  const lockedIds = await getLockedProjectIds(session.user.id);
+  if (filterLockedReports([report], lockedIds).length === 0) {
+    throw new Error('Open private projects before editing this review draft.');
+  }
+
+  const updateData: { content: string; title?: string } = { content: parsed.data.content };
+
+  if (parsed.data.title) {
+    updateData.title = parsed.data.title;
   }
 
   await prisma.report.update({

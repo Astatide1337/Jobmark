@@ -43,29 +43,40 @@ export function GoalsSection({
   const handleCreateGoal = async () => {
     if (!newGoalTitle.trim()) return;
     setIsCreating(true);
-    const result = await createGoal({
-      title: newGoalTitle,
-      deadline: newGoalDeadline ? calendarDateToLocalDate(newGoalDeadline) : null,
-      why: newGoalWhy,
-    });
-    if (result.success && result.goal) {
-      setGoals(current => [result.goal!, ...current]);
-      setNewGoalTitle('');
-      setNewGoalDeadline('');
-      setNewGoalWhy('');
-      toast.success('Goal created.');
-    } else {
+    try {
+      const result = await createGoal({
+        title: newGoalTitle,
+        deadline: newGoalDeadline ? calendarDateToLocalDate(newGoalDeadline) : null,
+        why: newGoalWhy,
+      });
+      if (result.success && result.goal) {
+        setGoals(current => [result.goal!, ...current]);
+        setNewGoalTitle('');
+        setNewGoalDeadline('');
+        setNewGoalWhy('');
+        toast.success('Goal created.');
+      } else {
+        toast.error(result.message || 'Could not create the goal. Try again.');
+      }
+    } catch (error) {
+      console.error('Creating goal failed:', error);
       toast.error('Could not create the goal. Try again.');
+    } finally {
+      setIsCreating(false);
     }
-    setIsCreating(false);
   };
 
   const handleDeleteGoal = async (id: string) => {
-    const result = await deleteGoal(id);
-    if (result.success) {
-      setGoals(current => current.filter(goal => goal.id !== id));
-      toast.success('Goal deleted.');
-    } else {
+    try {
+      const result = await deleteGoal(id);
+      if (result.success) {
+        setGoals(current => current.filter(goal => goal.id !== id));
+        toast.success('Goal deleted.');
+      } else {
+        toast.error(result.message || 'Could not delete the goal. Try again.');
+      }
+    } catch (error) {
+      console.error('Deleting goal failed:', error);
       toast.error('Could not delete the goal. Try again.');
     }
   };
@@ -73,9 +84,20 @@ export function GoalsSection({
   const handleSaveTargets = async () => {
     setIsSavingTargets(true);
     setTargetsSaved(false);
-    await updateGoalSettings({ dailyTarget, weeklyTarget, monthlyTarget });
-    setIsSavingTargets(false);
-    setTargetsSaved(true);
+    try {
+      const result = await updateGoalSettings({ dailyTarget, weeklyTarget, monthlyTarget });
+      if (result.success) {
+        setTargetsSaved(true);
+        toast.success('Targets saved.');
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Saving targets failed:', error);
+      toast.error('Your targets were not saved. Try again.');
+    } finally {
+      setIsSavingTargets(false);
+    }
   };
 
   const hasTargetChanges =
