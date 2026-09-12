@@ -412,6 +412,7 @@ model McpIdempotency {
   connectionId String
   toolName     String
   requestKey   String
+  requestHash  String?  @db.VarChar(64)
   status       String   @default("completed") // "pending" | "completed" | "failed"
   resultJson   Json?
   createdAt    DateTime @default(now())

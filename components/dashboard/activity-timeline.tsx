@@ -257,7 +257,21 @@ function DeleteActivityButton({
 
     deleteTimeoutRef.current = setTimeout(() => {
       startTransition(async () => {
-        await deleteActivity(activityId);
+        try {
+          const result = await deleteActivity(activityId);
+          if (result.success) {
+            toast.success('Note deleted.');
+          } else {
+            onUndoDelete?.();
+            toast.error(result.message);
+          }
+        } catch (error) {
+          console.error('Delete note error:', error);
+          onUndoDelete?.();
+          toast.error('Could not delete the note.');
+        } finally {
+          deleteTimeoutRef.current = null;
+        }
       });
     }, 5000);
   };

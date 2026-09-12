@@ -20,11 +20,13 @@ export type GoalData = {
   updatedAt: string;
 };
 
-const goalInputSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  deadline: z.date().nullable().optional(),
-  why: z.string().max(500).optional(),
-});
+const goalInputSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    deadline: z.date().nullable().optional(),
+    why: z.string().max(500).optional(),
+  })
+  .strict();
 
 export async function getGoals(): Promise<GoalData[]> {
   const targetUserId = await requireUserId();
@@ -77,6 +79,9 @@ export async function createGoal(data: { title: string; deadline?: Date | null; 
 export async function deleteGoal(id: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, message: 'Sign in to delete this goal.' };
+  if (!z.string().min(1).max(100).safeParse(id).success) {
+    return { success: false, message: 'That goal is no longer available.' };
+  }
 
   try {
     // Verify ownership

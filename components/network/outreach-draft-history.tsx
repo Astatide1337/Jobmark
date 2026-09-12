@@ -70,7 +70,8 @@ export function OutreachDraftHistory({
     if (!window.confirm('Delete this draft?')) return;
     setIsDeleting(id);
     try {
-      await deleteOutreachDraft(id);
+      const result = await deleteOutreachDraft(id);
+      if (!result.success) throw new Error('The draft was not deleted.');
       setDrafts(prev => prev.filter(d => d.id !== id));
       if (expandedId === id) setExpandedId(null);
     } catch {
@@ -93,7 +94,8 @@ export function OutreachDraftHistory({
   const saveEdit = async (draftId: string) => {
     setIsSaving(true);
     try {
-      await updateOutreachDraft(draftId, editContent);
+      const result = await updateOutreachDraft(draftId, editContent);
+      if (!result.success) throw new Error('The draft was not saved.');
       setDrafts(prev => prev.map(d => (d.id === draftId ? { ...d, content: editContent } : d)));
       setEditingId(null);
       setEditContent('');

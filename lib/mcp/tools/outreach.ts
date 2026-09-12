@@ -12,39 +12,61 @@ import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
-const outreachListSchema = z.object({
-  limit: z.number().int().min(1).max(50).optional(),
-  cursor: z.string().optional(),
-});
+const outreachIdSchema = z.string().min(1).max(100);
+const contactIdSchema = z.string().min(1).max(100);
+const outreachMetadataSchema = z
+  .record(z.string().min(1).max(100), z.json())
+  .nullable()
+  .optional()
+  .refine(value => value == null || Object.keys(value).length <= 50, 'Too many metadata fields.')
+  .refine(
+    value => value == null || JSON.stringify(value).length <= 20_000,
+    'Metadata is too large.'
+  );
 
-const outreachGenerateSchema = z.object({
-  contactId: z.string(),
-  goal: z.string().optional(),
-  context: z.string().optional(),
-  tone: z.string().max(100).optional(),
-  channel: z.string().max(100).optional(),
-});
+const outreachListSchema = z
+  .object({
+    limit: z.number().int().min(1).max(50).optional(),
+    cursor: outreachIdSchema.optional(),
+  })
+  .strict();
 
-const outreachCreateSchema = z.object({
-  contactId: z.string(),
-  title: z.string().min(1).max(200),
-  content: z.string(),
-  metadata: z.record(z.string(), z.json()).optional().nullable(),
-});
+const outreachGenerateSchema = z
+  .object({
+    contactId: contactIdSchema,
+    goal: z.string().max(2_000).optional(),
+    context: z.string().max(2_000).optional(),
+    tone: z.string().max(100).optional(),
+    channel: z.string().max(100).optional(),
+  })
+  .strict();
 
-const outreachUpdateSchema = z.object({
-  outreachId: z.string(),
-  title: z.string().min(1).max(200).optional(),
-  content: z.string().optional(),
-  metadata: z.record(z.string(), z.json()).optional().nullable(),
-});
+const outreachCreateSchema = z
+  .object({
+    contactId: contactIdSchema,
+    title: z.string().min(1).max(200),
+    content: z.string().min(1).max(100_000),
+    metadata: outreachMetadataSchema,
+  })
+  .strict();
 
-const outreachDeleteSchema = z.object({ outreachId: z.string() });
+const outreachUpdateSchema = z
+  .object({
+    outreachId: outreachIdSchema,
+    title: z.string().min(1).max(200).optional(),
+    content: z.string().min(1).max(100_000).optional(),
+    metadata: outreachMetadataSchema,
+  })
+  .strict();
 
-const outreachImproveSchema = z.object({
-  outreachId: z.string(),
-  instructions: z.string().max(500).optional(),
-});
+const outreachDeleteSchema = z.object({ outreachId: outreachIdSchema }).strict();
+
+const outreachImproveSchema = z
+  .object({
+    outreachId: outreachIdSchema,
+    instructions: z.string().max(500).optional(),
+  })
+  .strict();
 
 export const outreachListTool = {
   definition: {
@@ -55,7 +77,7 @@ export const outreachListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 50, default: 25 },
-        cursor: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
       },
       additionalProperties: false,
     },
@@ -111,9 +133,9 @@ export const outreachGenerateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string' },
-        goal: { type: 'string' },
-        context: { type: 'string' },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
+        goal: { type: 'string', maxLength: 2000 },
+        context: { type: 'string', maxLength: 2000 },
         tone: { type: 'string' },
         channel: { type: 'string' },
       },
@@ -148,10 +170,10 @@ export const outreachCreateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string' },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
         title: { type: 'string', minLength: 1, maxLength: 200 },
-        content: { type: 'string' },
-        metadata: { type: 'object' },
+        content: { type: 'string', minLength: 1, maxLength: 100000 },
+        metadata: { type: ['object', 'null'], maxProperties: 50 },
       },
       required: ['contactId', 'title', 'content'],
       additionalProperties: false,
@@ -193,10 +215,10 @@ export const outreachUpdateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        outreachId: { type: 'string' },
+        outreachId: { type: 'string', minLength: 1, maxLength: 100 },
         title: { type: 'string', minLength: 1, maxLength: 200 },
-        content: { type: 'string' },
-        metadata: { type: 'object' },
+        content: { type: 'string', minLength: 1, maxLength: 100000 },
+        metadata: { type: ['object', 'null'], maxProperties: 50 },
       },
       required: ['outreachId'],
       additionalProperties: false,
@@ -236,7 +258,7 @@ export const outreachDeleteTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        outreachId: { type: 'string' },
+        outreachId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['outreachId'],
       additionalProperties: false,
@@ -274,7 +296,7 @@ export const outreachImproveTextTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        outreachId: { type: 'string' },
+        outreachId: { type: 'string', minLength: 1, maxLength: 100 },
         instructions: { type: 'string', maxLength: 500 },
       },
       required: ['outreachId'],

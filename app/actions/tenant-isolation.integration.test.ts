@@ -110,11 +110,16 @@ describe.skipIf(!integrationEnabled)('PostgreSQL tenant isolation', () => {
 
     const activities = await getActivities();
 
-    expect(activities.map(activity => activity.content)).toEqual([
-      'User A private activity',
-      'User A locked activity',
-      'User A future activity',
-    ]);
+    const contents = activities.map(activity => activity.content);
+    expect(contents).toHaveLength(3);
+    expect(contents).toEqual(
+      expect.arrayContaining([
+        'User A private activity',
+        'User A locked activity',
+        'User A future activity',
+      ])
+    );
+    expect(contents).not.toContain('User B private activity');
   });
 
   it('hides locked-project activities when the vault is closed', async () => {

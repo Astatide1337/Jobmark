@@ -138,11 +138,10 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <StatsCards
             thisMonth={stats.thisMonth}
-            dates={stats.recentDates}
             projects={stats.projects}
             monthlyGoal={stats.monthlyGoal}
             summaries={reports}
-            today={stats.today}
+            currentStreak={stats.currentStreak}
           />
         </div>
 

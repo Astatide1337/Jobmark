@@ -18,35 +18,43 @@ import { McpValidationError, McpNotFoundError } from '../errors';
 import { createStructuredResult } from '../results';
 import { getLimit } from '../pagination';
 
-const contactListSchema = z.object({
-  limit: z.number().int().min(1).max(100).optional(),
-  cursor: z.string().optional(),
-});
+const contactIdSchema = z.string().min(1).max(100);
 
-const contactGetSchema = z.object({ contactId: z.string() });
+const contactListSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).optional(),
+    cursor: contactIdSchema.optional(),
+  })
+  .strict();
 
-const contactCreateSchema = z.object({
-  fullName: z.string().min(1).max(150),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().max(50).optional().nullable(),
-  birthday: z.string().optional().nullable(),
-  relationship: z.string().max(120).optional().nullable(),
-  personalityTraits: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-});
+const contactGetSchema = z.object({ contactId: contactIdSchema }).strict();
 
-const contactUpdateSchema = z.object({
-  contactId: z.string(),
-  fullName: z.string().min(1).max(150).optional(),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().max(50).optional().nullable(),
-  birthday: z.string().optional().nullable(),
-  relationship: z.string().max(120).optional().nullable(),
-  personalityTraits: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-});
+const contactCreateSchema = z
+  .object({
+    fullName: z.string().min(1).max(150),
+    email: z.string().email().max(255).optional().nullable(),
+    phone: z.string().max(50).optional().nullable(),
+    birthday: z.string().datetime().optional().nullable(),
+    relationship: z.string().max(120).optional().nullable(),
+    personalityTraits: z.string().max(10_000).optional().nullable(),
+    notes: z.string().max(20_000).optional().nullable(),
+  })
+  .strict();
 
-const contactDeleteSchema = z.object({ contactId: z.string() });
+const contactUpdateSchema = z
+  .object({
+    contactId: contactIdSchema,
+    fullName: z.string().min(1).max(150).optional(),
+    email: z.string().email().max(255).optional().nullable(),
+    phone: z.string().max(50).optional().nullable(),
+    birthday: z.string().datetime().optional().nullable(),
+    relationship: z.string().max(120).optional().nullable(),
+    personalityTraits: z.string().max(10_000).optional().nullable(),
+    notes: z.string().max(20_000).optional().nullable(),
+  })
+  .strict();
+
+const contactDeleteSchema = z.object({ contactId: contactIdSchema }).strict();
 
 export const contactsListTool = {
   definition: {
@@ -57,7 +65,7 @@ export const contactsListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 100, default: 50 },
-        cursor: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
       },
       additionalProperties: false,
     },
@@ -106,7 +114,7 @@ export const contactsGetTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string' },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['contactId'],
       additionalProperties: false,
@@ -120,8 +128,8 @@ export const contactsGetTool = {
         phone: { type: ['string', 'null'] },
         birthday: { type: ['string', 'null'] },
         relationship: { type: ['string', 'null'] },
-        personalityTraits: { type: ['string', 'null'] },
-        notes: { type: ['string', 'null'] },
+        personalityTraits: { type: ['string', 'null'], maxLength: 10000 },
+        notes: { type: ['string', 'null'], maxLength: 20000 },
         createdAt: { type: 'string' },
         updatedAt: { type: 'string' },
       },
@@ -152,12 +160,12 @@ export const contactsCreateTool = {
       type: 'object',
       properties: {
         fullName: { type: 'string', minLength: 1, maxLength: 150 },
-        email: { type: ['string', 'null'], format: 'email' },
+        email: { type: ['string', 'null'], format: 'email', maxLength: 255 },
         phone: { type: ['string', 'null'], maxLength: 50 },
-        birthday: { type: ['string', 'null'] },
+        birthday: { type: ['string', 'null'], format: 'date-time' },
         relationship: { type: ['string', 'null'], maxLength: 120 },
-        personalityTraits: { type: ['string', 'null'] },
-        notes: { type: ['string', 'null'] },
+        personalityTraits: { type: ['string', 'null'], maxLength: 10000 },
+        notes: { type: ['string', 'null'], maxLength: 20000 },
       },
       required: ['fullName'],
       additionalProperties: false,
@@ -198,14 +206,14 @@ export const contactsUpdateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string' },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
         fullName: { type: 'string', minLength: 1, maxLength: 150 },
-        email: { type: ['string', 'null'], format: 'email' },
+        email: { type: ['string', 'null'], format: 'email', maxLength: 255 },
         phone: { type: ['string', 'null'], maxLength: 50 },
-        birthday: { type: ['string', 'null'] },
+        birthday: { type: ['string', 'null'], format: 'date-time' },
         relationship: { type: ['string', 'null'], maxLength: 120 },
-        personalityTraits: { type: ['string', 'null'] },
-        notes: { type: ['string', 'null'] },
+        personalityTraits: { type: ['string', 'null'], maxLength: 10000 },
+        notes: { type: ['string', 'null'], maxLength: 20000 },
       },
       required: ['contactId'],
       additionalProperties: false,
@@ -246,7 +254,7 @@ export const contactsDeleteTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string' },
+        contactId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['contactId'],
       additionalProperties: false,

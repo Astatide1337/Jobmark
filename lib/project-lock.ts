@@ -16,6 +16,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
+import type { JobmarkActor } from '@/lib/jobmark/actor';
 
 const COOKIE_NAME = 'jm_vault_unlocked';
 
@@ -83,10 +84,13 @@ export async function isVaultUnlocked(userId: string): Promise<boolean> {
     if (
       payload.sub !== userId ||
       typeof payload.version !== 'number' ||
-      typeof payload.issuedAt !== 'number'
+      !Number.isInteger(payload.version) ||
+      typeof payload.issuedAt !== 'number' ||
+      !Number.isFinite(payload.issuedAt)
     ) {
       return false;
     }
+    if (payload.issuedAt > Date.now() + 5 * 60 * 1000) return false;
     if (Date.now() - payload.issuedAt > 24 * 60 * 60 * 1000) return false;
     const settings = await prisma.userSettings.findUnique({
       where: { userId },
@@ -154,6 +158,26 @@ export async function getLockedProjectIds(userId: string): Promise<string[]> {
 }
 
 /**
+ * Resolve project visibility from the actor's authenticated context.
+ * Browser actors use the encrypted browser grant; MCP actors use the
+ * connection grant that was verified before the domain call began.
+ */
+export async function getLockedProjectIdsForActor(
+  actor: Pick<JobmarkActor, 'source' | 'userId' | 'vaultUnlocked'>
+): Promise<string[]> {
+  if (actor.source === 'mcp') {
+    if (actor.vaultUnlocked) return [];
+    const lockedProjects = await prisma.project.findMany({
+      where: { userId: actor.userId, locked: true },
+      select: { id: true },
+    });
+    return lockedProjects.map(project => project.id);
+  }
+
+  return getLockedProjectIds(actor.userId);
+}
+
+/**
  * Build a Prisma `where` fragment that excludes activities belonging to locked projects.
  * Activities without a project are always included. Returns `{}` when nothing is locked.
  */
@@ -173,8 +197,34 @@ export function filterLockedReports<T extends { metadata: unknown }>(
   if (lockedIds.length === 0) return reports;
   return reports.filter(report => {
     const relationalProjectId = (report as T & { projectId?: string | null }).projectId;
-    const metadata = report.metadata as Record<string, unknown> | null;
-    const projectId = relationalProjectId ?? (metadata?.projectId as string | null | undefined);
-    return !projectId || !lockedIds.includes(projectId);
+    const metadata = isRecord(report.metadata) ? report.metadata : null;
+    const sourceProjectIds = Array.isArray(metadata?.sourceProjectIds)
+      ? metadata.sourceProjectIds.filter((value): value is string => typeof value === 'string')
+      : [];
+    const projectIds = new Set<string>(sourceProjectIds);
+    if (relationalProjectId) projectIds.add(relationalProjectId);
+    if (typeof metadata?.projectId === 'string') projectIds.add(metadata.projectId);
+
+    if ([...projectIds].some(projectId => lockedIds.includes(projectId))) return false;
+
+    // A legacy aggregate report without provenance is ambiguous while private
+    // projects are closed, so fail closed. New deterministic reports record an
+    // empty source list when the selected range only contains unassigned notes;
+    // that is explicit provenance and remains safe to show.
+    const hasExplicitProvenance =
+      metadata?.generated === true &&
+      metadata?.deterministic === true &&
+      Array.isArray(metadata?.sourceProjectIds);
+    if (metadata?.scope === 'all' && projectIds.size === 0 && !hasExplicitProvenance) return false;
+
+    // Project deletion intentionally unlinks notes and reports (the Prisma
+    // relation uses SetNull). Once the source project no longer exists, its
+    // old ID cannot represent a currently locked project; the report follows
+    // the documented unassigned-record behavior.
+    return true;
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }

@@ -1,22 +1,24 @@
 /**
  * Contacts domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { JobmarkActor, assertActor, NotFoundError, ValidationError } from './index';
 import { z } from 'zod';
 
-const contactCreateSchema = z.object({
-  fullName: z.string().min(1).max(150),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().max(50).optional().nullable(),
-  birthday: z.string().datetime().optional().nullable(),
-  relationship: z.string().max(120).optional().nullable(),
-  personalityTraits: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-});
+const contactCreateSchema = z
+  .object({
+    fullName: z.string().min(1).max(150),
+    email: z.string().email().max(255).optional().nullable(),
+    phone: z.string().max(50).optional().nullable(),
+    birthday: z.string().datetime().optional().nullable(),
+    relationship: z.string().max(120).optional().nullable(),
+    personalityTraits: z.string().max(10_000).optional().nullable(),
+    notes: z.string().max(20_000).optional().nullable(),
+  })
+  .strict();
 
 const contactUpdateSchema = contactCreateSchema.partial();
 
@@ -48,17 +50,24 @@ export async function listContacts(
 
   const contacts = await prisma.contact.findMany({
     where: { userId: actor.userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : undefined,
-    include: { _count: { select: { interactions: true, outreachDrafts: true } } },
+    include: {
+      _count: {
+        select: {
+          interactions: { where: { userId: actor.userId } },
+          outreachDrafts: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   let nextCursor: string | null = null;
   if (contacts.length > limit) {
-    const next = contacts.pop();
-    nextCursor = next!.id;
+    contacts.pop();
+    nextCursor = contacts[contacts.length - 1]?.id ?? null;
   }
 
   return { contacts: contacts.map(toContactDTO), nextCursor };
@@ -69,7 +78,14 @@ export async function getContact(actor: JobmarkActor, contactId: string): Promis
 
   const contact = await prisma.contact.findFirst({
     where: { id: contactId, userId: actor.userId },
-    include: { _count: { select: { interactions: true, outreachDrafts: true } } },
+    include: {
+      _count: {
+        select: {
+          interactions: { where: { userId: actor.userId } },
+          outreachDrafts: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   if (!contact) throw new NotFoundError('Contact');
@@ -96,7 +112,14 @@ export async function createContact(actor: JobmarkActor, input: ContactInput): P
       personalityTraits: result.data.personalityTraits,
       notes: result.data.notes,
     },
-    include: { _count: { select: { interactions: true, outreachDrafts: true } } },
+    include: {
+      _count: {
+        select: {
+          interactions: { where: { userId: actor.userId } },
+          outreachDrafts: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   return toContactDTO(contact);
@@ -131,7 +154,14 @@ export async function updateContact(
   const updated = await prisma.contact.update({
     where: { id: contactId },
     data,
-    include: { _count: { select: { interactions: true, outreachDrafts: true } } },
+    include: {
+      _count: {
+        select: {
+          interactions: { where: { userId: actor.userId } },
+          outreachDrafts: { where: { userId: actor.userId } },
+        },
+      },
+    },
   });
 
   return toContactDTO(updated);

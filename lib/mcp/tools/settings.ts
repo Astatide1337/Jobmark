@@ -4,21 +4,23 @@ import { McpActor, assertMcpActor } from '../actor';
 import { McpValidationError } from '../errors';
 import { createStructuredResult } from '../results';
 
-const settingsUpdateSchema = z.object({
-  primaryGoal: z.string().max(500).optional().nullable(),
-  goalDeadline: z.string().optional().nullable(),
-  whyStatement: z.string().optional().nullable(),
-  dailyTarget: z.number().int().min(1).max(100).optional(),
-  weeklyTarget: z.number().int().min(1).max(500).optional(),
-  monthlyTarget: z.number().int().min(1).max(2000).optional(),
-  defaultTone: z.string().optional(),
-  customInstructions: z.string().optional().nullable(),
-  themePreset: z.string().optional(),
-  themeMode: z.enum(['light', 'dark', 'system']).optional(),
-  hideArchived: z.boolean().optional(),
-  showConfetti: z.boolean().optional(),
-  timeZone: z.string().optional(),
-});
+const settingsUpdateSchema = z
+  .object({
+    primaryGoal: z.string().max(500).optional().nullable(),
+    goalDeadline: z.string().datetime().optional().nullable(),
+    whyStatement: z.string().max(500).optional().nullable(),
+    dailyTarget: z.number().int().min(1).max(100).optional(),
+    weeklyTarget: z.number().int().min(1).max(500).optional(),
+    monthlyTarget: z.number().int().min(1).max(2000).optional(),
+    defaultTone: z.enum(['professional', 'casual', 'bullet-points']).optional(),
+    customInstructions: z.string().max(4_000).optional().nullable(),
+    themePreset: z.string().max(100).optional(),
+    themeMode: z.enum(['light', 'dark', 'system']).optional(),
+    hideArchived: z.boolean().optional(),
+    showConfetti: z.boolean().optional(),
+    timeZone: z.string().max(100).optional(),
+  })
+  .strict();
 
 export const settingsGetTool = {
   definition: {
@@ -66,18 +68,18 @@ export const settingsUpdateTool = {
       type: 'object',
       properties: {
         primaryGoal: { type: 'string', maxLength: 500 },
-        goalDeadline: { type: 'string' },
-        whyStatement: { type: 'string' },
+        goalDeadline: { type: 'string', format: 'date-time' },
+        whyStatement: { type: 'string', maxLength: 500 },
         dailyTarget: { type: 'number', minimum: 1, maximum: 100 },
         weeklyTarget: { type: 'number', minimum: 1, maximum: 500 },
         monthlyTarget: { type: 'number', minimum: 1, maximum: 2000 },
-        defaultTone: { type: 'string' },
-        customInstructions: { type: 'string' },
-        themePreset: { type: 'string' },
+        defaultTone: { type: 'string', enum: ['professional', 'casual', 'bullet-points'] },
+        customInstructions: { type: 'string', maxLength: 4000 },
+        themePreset: { type: 'string', maxLength: 100 },
         themeMode: { type: 'string', enum: ['light', 'dark', 'system'] },
         hideArchived: { type: 'boolean' },
         showConfetti: { type: 'boolean' },
-        timeZone: { type: 'string' },
+        timeZone: { type: 'string', maxLength: 100 },
       },
       additionalProperties: false,
     },

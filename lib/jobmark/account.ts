@@ -1,15 +1,17 @@
 /**
  * Account data domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { JobmarkActor, assertActor, ConfirmationRequiredError } from './index';
 import { z } from 'zod';
 
-const accountClearActivitiesSchema = z.object({
-  confirmation: z.literal('DELETE ALL MY NOTES'),
-});
+const accountClearActivitiesSchema = z
+  .object({
+    confirmation: z.literal('DELETE ALL MY NOTES'),
+  })
+  .strict();
 
 export type AccountClearActivitiesInput = z.infer<typeof accountClearActivitiesSchema>;
 

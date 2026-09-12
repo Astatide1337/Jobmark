@@ -1,10 +1,10 @@
 /**
  * Search domain functions
  */
-'use server';
+import 'server-only';
 
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds } from '@/lib/project-lock';
+import { filterLockedReports, getLockedProjectIdsForActor } from '@/lib/project-lock';
 import { JobmarkActor, assertActor } from './index';
 import { getActivityDisplayContent } from './activity-copy';
 
@@ -24,7 +24,7 @@ export async function globalSearch(
   assertActor(actor);
 
   const { limit = 20 } = options;
-  const lockedIds = await getLockedProjectIds(actor.userId);
+  const lockedIds = await getLockedProjectIdsForActor(actor);
 
   const lockedFilter =
     lockedIds.length > 0 ? { OR: [{ projectId: null }, { projectId: { notIn: lockedIds } }] } : {};
@@ -80,14 +80,13 @@ export async function globalSearch(
         { title: { contains: query, mode: 'insensitive' } },
         { content: { contains: query, mode: 'insensitive' } },
       ],
-      ...lockedFilter,
     },
     take: Math.ceil(limit / 5),
     include: { project: { select: { id: true, name: true, color: true } } },
   });
 
   results.push(
-    ...reports.map(r => ({
+    ...filterLockedReports(reports, lockedIds).map(r => ({
       type: 'report' as const,
       id: r.id,
       title: r.title,

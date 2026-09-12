@@ -184,3 +184,34 @@ export function getCalendarRange(options: {
     timeZone,
   };
 }
+
+export function calculateStreaks(
+  dates: readonly string[],
+  today: string
+): { current: number; longest: number } {
+  const uniqueDates = new Set(dates.filter(date => isValidCalendarDate(date) && date <= today));
+
+  let longest = 0;
+  let run = 0;
+  const ordered = [...uniqueDates].sort();
+  for (let index = 0; index < ordered.length; index += 1) {
+    if (index > 0 && ordered[index] === shiftCalendarDate(ordered[index - 1], 1)) {
+      run += 1;
+    } else {
+      run = 1;
+    }
+    longest = Math.max(longest, run);
+  }
+
+  const yesterday = shiftCalendarDate(today, -1);
+  let current = 0;
+  let cursor = '';
+  if (uniqueDates.has(today)) cursor = today;
+  else if (uniqueDates.has(yesterday)) cursor = yesterday;
+  while (cursor && uniqueDates.has(cursor)) {
+    current += 1;
+    cursor = shiftCalendarDate(cursor, -1);
+  }
+
+  return { current, longest };
+}

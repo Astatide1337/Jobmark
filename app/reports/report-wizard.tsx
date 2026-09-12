@@ -193,16 +193,26 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
 
   const handleSave = async () => {
     setIsSaving(true);
-    const finalConfig = { ...config };
-    if (config.dateRange === 'custom' && dateRange?.from) {
-      finalConfig.customStartDate = format(dateRange.from, 'yyyy-MM-dd');
-      finalConfig.customEndDate = format(dateRange.to || dateRange.from, 'yyyy-MM-dd');
+    try {
+      const finalConfig = { ...config };
+      if (config.dateRange === 'custom' && dateRange?.from) {
+        finalConfig.customStartDate = format(dateRange.from, 'yyyy-MM-dd');
+        finalConfig.customEndDate = format(dateRange.to || dateRange.from, 'yyyy-MM-dd');
+      }
+      const result = await saveReportToHistory(reportContent, finalConfig);
+      if (!result.success) {
+        toast.error('Could not save the draft.');
+        return;
+      }
+      setSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('Saving review draft failed:', error);
+      toast.error('Could not save the draft.');
+    } finally {
+      setIsSaving(false);
     }
-    await saveReportToHistory(reportContent, finalConfig);
-    setIsSaving(false);
-    setSaved(true);
-    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
   };
 
   const handleDraftWithProvider = async (provider: ConnectedMcpProvider) => {

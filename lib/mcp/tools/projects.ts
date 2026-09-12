@@ -17,44 +17,57 @@ import { McpValidationError, McpForbiddenError, McpNotFoundError } from '../erro
 import { getLimit } from '../pagination';
 import { projectColors } from '@/lib/constants';
 
-const projectsListSchema = z.object({
-  limit: z.number().int().min(1).max(100).optional(),
-  cursor: z.string().optional(),
-  includeArchived: z.boolean().optional(),
-  includeLocked: z.boolean().optional(),
-});
+const projectIdSchema = z.string().min(1).max(100);
 
-const projectGetSchema = z.object({
-  projectId: z.string(),
-});
+const projectsListSchema = z
+  .object({
+    limit: z.number().int().min(1).max(100).optional(),
+    cursor: projectIdSchema.optional(),
+    includeArchived: z.boolean().optional(),
+  })
+  .strict();
 
-const projectCreateSchema = z.object({
-  name: z.string().min(1).max(50),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .default(projectColors[0]),
-  description: z.string().max(200).optional().nullable(),
-});
+const projectGetSchema = z
+  .object({
+    projectId: projectIdSchema,
+  })
+  .strict();
 
-const projectUpdateSchema = z.object({
-  projectId: z.string(),
-  name: z.string().min(1).max(50).optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional(),
-  description: z.string().max(200).optional().nullable(),
-});
+const projectCreateSchema = z
+  .object({
+    name: z.string().min(1).max(50),
+    color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .default(projectColors[0]),
+    description: z.string().max(200).optional().nullable(),
+  })
+  .strict();
 
-const projectArchiveSchema = z.object({
-  projectId: z.string(),
-  archived: z.boolean(),
-});
+const projectUpdateSchema = z
+  .object({
+    projectId: projectIdSchema,
+    name: z.string().min(1).max(50).optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .optional(),
+    description: z.string().max(200).optional().nullable(),
+  })
+  .strict();
 
-const projectDeleteSchema = z.object({
-  projectId: z.string(),
-});
+const projectArchiveSchema = z
+  .object({
+    projectId: projectIdSchema,
+    archived: z.boolean(),
+  })
+  .strict();
+
+const projectDeleteSchema = z
+  .object({
+    projectId: projectIdSchema,
+  })
+  .strict();
 
 export const projectsListTool = {
   definition: {
@@ -66,9 +79,8 @@ export const projectsListTool = {
       type: 'object',
       properties: {
         limit: { type: 'number', minimum: 1, maximum: 100, default: 100 },
-        cursor: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
         includeArchived: { type: 'boolean', default: false },
-        includeLocked: { type: 'boolean', default: false },
       },
       additionalProperties: false,
     },
@@ -114,7 +126,6 @@ export const projectsListTool = {
       limit: getLimit('projects', result.data.limit),
       cursor: result.data.cursor,
       includeArchived: result.data.includeArchived,
-      includeLocked: result.data.includeLocked,
     });
 
     return createStructuredResult(data, `Found ${data.projects.length} projects`);
@@ -129,7 +140,7 @@ export const projectsGetTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string' },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['projectId'],
       additionalProperties: false,
@@ -176,9 +187,9 @@ export const projectsGetWithActivitiesTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string' },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
         limit: { type: 'number', minimum: 1, maximum: 50, default: 50 },
-        cursor: { type: 'string' },
+        cursor: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['projectId'],
       additionalProperties: false,
@@ -228,10 +239,11 @@ export const projectsGetWithActivitiesTool = {
     assertMcpActor(actor);
     const result = z
       .object({
-        projectId: z.string(),
+        projectId: projectIdSchema,
         limit: z.number().int().min(1).max(50).optional(),
-        cursor: z.string().optional(),
+        cursor: projectIdSchema.optional(),
       })
+      .strict()
       .safeParse(input);
     if (!result.success) {
       throw new McpValidationError('Invalid input', result.error.flatten().fieldErrors);
@@ -311,7 +323,7 @@ export const projectsUpdateTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string' },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
         name: { type: 'string', minLength: 1, maxLength: 50 },
         color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$' },
         description: { type: ['string', 'null'], maxLength: 200 },
@@ -366,7 +378,7 @@ export const projectsSetArchivedTool = {
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string' },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
         archived: { type: 'boolean' },
       },
       required: ['projectId', 'archived'],
@@ -408,11 +420,11 @@ export const projectsDeleteTool = {
     name: 'projects_delete',
     title: 'Delete project',
     description:
-      'Permanently delete a project and all its notes. Requires the jobmark:destructive permission.',
+      'Delete a project grouping. Its notes and saved review drafts remain as unassigned records. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string' },
+        projectId: { type: 'string', minLength: 1, maxLength: 100 },
       },
       required: ['projectId'],
       additionalProperties: false,

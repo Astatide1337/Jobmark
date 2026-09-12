@@ -14,7 +14,11 @@
 
 import { auth, requireUserId } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds, buildLockedActivityFilter } from '@/lib/project-lock';
+import {
+  getLockedProjectIds,
+  buildLockedActivityFilter,
+  isVaultUnlocked,
+} from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getActivityDisplayContent } from '@/lib/jobmark/activity-copy';
@@ -23,15 +27,20 @@ import {
   DEFAULT_TIME_ZONE,
   getCalendarDate,
   getCalendarRange,
+  isValidCalendarDate,
   isValidTimeZone,
+  calculateStreaks,
   shiftCalendarDate,
 } from '@/lib/date-semantics';
 
-const activitySchema = z.object({
-  content: z.string().min(10, 'Write at least 10 characters.').max(1000),
-  projectId: z.string().optional().nullable(),
-  logDate: z.date().optional(),
-});
+const activitySchema = z
+  .object({
+    content: z.string().min(10, 'Write at least 10 characters.').max(1000),
+    projectId: z.string().min(1).max(100).optional().nullable(),
+    logDate: z.date().optional(),
+  })
+  .strict();
+const activityIdSchema = z.string().min(1).max(100);
 
 export type ActivityFormState = {
   success: boolean;
@@ -65,10 +74,16 @@ export async function createActivity(
       : DEFAULT_TIME_ZONE;
   const defaultLogDate = calendarDateToUtcMidnight(getCalendarDate(new Date(), timeZone));
 
+  let parsedLogDate = defaultLogDate;
+  if (logDateStr) {
+    parsedLogDate = isValidCalendarDate(logDateStr)
+      ? calendarDateToUtcMidnight(logDateStr)
+      : new Date('invalid');
+  }
   const rawData = {
     content: formData.get('content') as string,
     projectId: formData.get('projectId') as string | null,
-    logDate: logDateStr ? new Date(logDateStr) : defaultLogDate,
+    logDate: parsedLogDate,
   };
 
   const result = activitySchema.safeParse(rawData);
@@ -89,7 +104,9 @@ export async function createActivity(
           select: { locked: true },
         });
         if (!project) throw new Error('Invalid project');
-        if (project.locked) throw new Error('Locked project');
+        if (project.locked && !(await isVaultUnlocked(session.user.id))) {
+          throw new Error('Locked project');
+        }
       }
 
       await tx.activity.create({
@@ -119,6 +136,8 @@ export async function createActivity(
 
 export async function getActivities(limit = 20, offset = 0, hideArchived = false) {
   const targetUserId = await requireUserId();
+  const safeLimit = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 1), 100) : 20;
+  const safeOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 10_000) : 0;
 
   const lockedIds = await getLockedProjectIds(targetUserId);
 
@@ -144,9 +163,9 @@ export async function getActivities(limit = 20, offset = 0, hideArchived = false
           : []),
       ],
     },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    skip: offset,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: safeLimit,
+    skip: safeOffset,
     include: {
       project: {
         select: { id: true, name: true, color: true, archived: true },
@@ -169,8 +188,20 @@ export async function deleteActivity(activityId: string) {
   if (!session?.user?.id) {
     return { success: false, message: 'Sign in to delete this note.' };
   }
+  if (!activityIdSchema.safeParse(activityId).success) {
+    return { success: false, message: 'The note was not found.' };
+  }
 
   try {
+    const activity = await prisma.activity.findFirst({
+      where: { id: activityId, userId: session.user.id },
+      include: { project: { select: { locked: true } } },
+    });
+    if (!activity) return { success: false, message: 'The note was not found.' };
+    if (activity.project?.locked && !(await isVaultUnlocked(session.user.id))) {
+      return { success: false, message: 'Open private projects before deleting this note.' };
+    }
+
     await prisma.activity.delete({
       where: {
         id: activityId,
@@ -261,16 +292,19 @@ export async function getActivityStats() {
     },
     orderBy: { logDate: 'desc' },
     select: { logDate: true },
-    take: 365,
   });
 
-  const recentDates = recentActivities.map(a => a.logDate.toISOString().slice(0, 10));
+  const recentDates = recentActivities
+    .map(a => a.logDate.toISOString().slice(0, 10))
+    .filter(date => date <= todayDate);
+  const currentStreak = calculateStreaks(Array.from(new Set(recentDates)), todayDate).current;
 
   return {
     thisMonth: thisMonthCount,
     todayCount,
     thisWeek: thisWeekCount,
     recentDates,
+    currentStreak,
     projects: projectCount,
     monthlyGoal: settings?.monthlyTarget ?? 40,
     dailyGoal: settings?.dailyTarget ?? 3,
