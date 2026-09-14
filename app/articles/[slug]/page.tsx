@@ -1,3 +1,4 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -95,10 +96,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   return (
     <div className="mx-auto max-w-4xl">
       <ReadingProgress />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: articleSchemaJson }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleSchemaJson }} />
 
       <div className="mb-6 flex flex-wrap items-center gap-4 text-sm">
         <Link
