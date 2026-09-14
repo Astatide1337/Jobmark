@@ -1,4 +1,3 @@
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
