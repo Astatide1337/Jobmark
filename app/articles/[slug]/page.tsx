@@ -88,12 +88,17 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     mainEntityOfPage: canonical,
   };
 
+  const articleSchemaJson = JSON.stringify(articleSchema)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+
   return (
     <div className="mx-auto max-w-4xl">
       <ReadingProgress />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: articleSchemaJson }}
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-4 text-sm">
