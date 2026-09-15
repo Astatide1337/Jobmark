@@ -87,7 +87,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     },
     mainEntityOfPage: canonical,
   };
-
   const articleSchemaJson = JSON.stringify(articleSchema)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
