@@ -95,10 +95,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   return (
     <div className="mx-auto max-w-4xl">
       <ReadingProgress />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: articleSchemaJson }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleSchemaJson }} />
 
       <div className="mb-6 flex flex-wrap items-center gap-4 text-sm">
         <Link
