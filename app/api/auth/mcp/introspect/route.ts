@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   let authenticatedClientId: string | null = null;
 
-  if (clientSecret) {
+  if (clientSecret && clientId) {
     const client = await validateClient(clientId, clientSecret);
     if (client) authenticatedClientId = client.client_id;
   } else if (clientId) {
