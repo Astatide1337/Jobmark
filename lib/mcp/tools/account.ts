@@ -15,7 +15,7 @@ export const accountClearActivitiesTool = {
     name: 'account_clear_activities',
     title: 'Clear all notes',
     description:
-      'Delete all notes. Type the exact words below. Requires the jobmark:destructive permission.',
+      'Delete all notes. Notes in private projects are kept unless private projects are open. Type the exact words below. Requires the jobmark:destructive permission.',
     inputSchema: {
       type: 'object',
       properties: {

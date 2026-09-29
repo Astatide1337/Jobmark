@@ -12,7 +12,12 @@
 
 import { auth, requireUserId, signOut } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getLockedProjectIds, filterLockedReports, isVaultUnlocked } from '@/lib/project-lock';
+import {
+  buildLockedActivityFilter,
+  getLockedProjectIds,
+  filterLockedReports,
+  isVaultUnlocked,
+} from '@/lib/project-lock';
 import { revalidatePath } from 'next/cache';
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/date-semantics';
 import { z } from 'zod';
@@ -405,14 +410,21 @@ export async function clearAllActivities(confirmation: string) {
   }
 
   try {
+    const lockedIds = await getLockedProjectIds(session.user.id);
     await prisma.activity.deleteMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, ...buildLockedActivityFilter(lockedIds) },
     });
 
     revalidatePath('/dashboard');
     revalidatePath('/insights');
     revalidatePath('/projects');
-    return { success: true, message: 'All notes cleared.' };
+    return {
+      success: true,
+      message:
+        lockedIds.length > 0
+          ? 'Notes cleared. Notes in private projects were kept.'
+          : 'All notes cleared.',
+    };
   } catch (error) {
     console.error('Failed to clear activities:', error);
     return { success: false, message: 'Your notes were not cleared. Try again.' };
