@@ -10,6 +10,7 @@ export interface RateLimitConfig {
 
 export const RATE_LIMITS = {
   authorize: { windowMs: 60 * 1000, maxRequests: 10, keyPrefix: 'rl:authz' }, // 10/min/IP
+  register: { windowMs: 60 * 1000, maxRequests: 10, keyPrefix: 'rl:register' }, // 10/min/IP
   token: { windowMs: 60 * 1000, maxRequests: 30, keyPrefix: 'rl:token' }, // 30/min/IP
   introspect: { windowMs: 60 * 1000, maxRequests: 120, keyPrefix: 'rl:introspect' }, // 120/min/IP
   mcp: { windowMs: 60 * 1000, maxRequests: 120, keyPrefix: 'rl:mcp' }, // 120/min/connection
@@ -80,6 +81,9 @@ export async function checkMcpRateLimit(
 }
 
 export function getClientIp(request: Request): string {
+  // Cloudflare sets CF-Connecting-IP itself; the first X-Forwarded-For entry is whatever the client sent.
+  const cloudflare = request.headers.get('cf-connecting-ip')?.trim();
+  if (cloudflare) return cloudflare;
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();
   return request.headers.get('x-real-ip') ?? 'unknown';

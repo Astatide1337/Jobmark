@@ -154,12 +154,12 @@ function parseScope(value: unknown): string | null | undefined {
 export async function POST(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const ip = getClientIp(request);
-  const rateLimit = await checkRateLimit(ip, { ...RATE_LIMITS.authorize, maxRequests: 10 });
+  const rateLimit = await checkRateLimit(ip, RATE_LIMITS.register);
 
   if (!rateLimit.allowed) {
     return new NextResponse('Too Many Requests', {
       status: 429,
-      headers: createRateLimitHeaders(rateLimit, { ...RATE_LIMITS.authorize, maxRequests: 10 }),
+      headers: createRateLimitHeaders(rateLimit, RATE_LIMITS.register),
     });
   }
 
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(response, {
     status: 201,
     headers: {
-      ...createRateLimitHeaders(rateLimit, { ...RATE_LIMITS.authorize, maxRequests: 10 }),
+      ...createRateLimitHeaders(rateLimit, RATE_LIMITS.register),
       'Cache-Control': 'no-store',
     },
   });
