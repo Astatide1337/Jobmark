@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 
 const mocks = vi.hoisted(() => ({
   validateAccessToken: vi.fn(),
+  validateClient: vi.fn(),
   clientFindUnique: vi.fn(),
 }));
 
@@ -11,7 +12,7 @@ vi.mock('@/lib/db', () => ({
 }));
 vi.mock('@/lib/mcp/auth/provider', () => ({
   validateAccessToken: mocks.validateAccessToken,
-  validateClient: vi.fn(),
+  validateClient: mocks.validateClient,
   hashToken: vi.fn(),
 }));
 vi.mock('@/lib/mcp/auth/rate-limit', () => ({
@@ -53,5 +54,19 @@ describe('MCP token introspection', () => {
       client_id: 'public-client-id',
       aud: 'https://jobmark.example.com/mcp',
     });
+  });
+
+  it('rejects a client secret sent without a client ID', async () => {
+    const response = await POST(
+      new NextRequest('https://jobmark.example.com/api/auth/mcp/introspect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'access-token', client_secret: 'secret' }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ active: false });
+    expect(mocks.validateClient).not.toHaveBeenCalled();
   });
 });
