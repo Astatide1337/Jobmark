@@ -100,22 +100,37 @@ function clientAddress(request: Request): string {
 }
 
 function rateLimitAddress(address: string): string {
-  const withoutZone = address.split('%')[0];
-  if (!isIPv6(withoutZone)) return address;
+  const host = address.split('%')[0];
+  if (!isIPv6(host)) return address;
 
-  const mappedIPv4 = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(withoutZone);
-  if (mappedIPv4) return mappedIPv4[1];
+  // URL parsing canonicalizes the address: lowercase, no leading zeros, and any
+  // dotted IPv4 tail rewritten as two hex groups.
+  let canonical: string;
+  try {
+    canonical = new URL(`http://[${host}]`).hostname.slice(1, -1);
+  } catch {
+    return address;
+  }
 
-  const [head, tail = ''] = withoutZone.toLowerCase().split('::');
+  const mappedIPv4 = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(canonical);
+  if (mappedIPv4) {
+    const high = parseInt(mappedIPv4[1], 16);
+    const low = parseInt(mappedIPv4[2], 16);
+    return `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+  }
+
+  const [head, tail] = canonical.split('::');
   const headGroups = head ? head.split(':') : [];
-  const tailGroups = withoutZone.includes('::') && tail ? tail.split(':') : [];
-  const groups = withoutZone.includes('::')
-    ? [...headGroups, ...Array(8 - headGroups.length - tailGroups.length).fill('0'), ...tailGroups]
-    : headGroups;
-  return `${groups
-    .slice(0, 4)
-    .map(group => parseInt(group, 16).toString(16))
-    .join(':')}::/64`;
+  const tailGroups = tail ? tail.split(':') : [];
+  const groups =
+    tail === undefined
+      ? headGroups
+      : [
+          ...headGroups,
+          ...Array(8 - headGroups.length - tailGroups.length).fill('0'),
+          ...tailGroups,
+        ];
+  return `${groups.slice(0, 4).join(':')}::/64`;
 }
 
 export function createRateLimitHeaders(
