@@ -130,7 +130,29 @@ jobs:
     permissions:
       contents: read
       packages: write
+    # CI runs for two quick pushes can finish in either order. Publish one
+    # revision per branch at a time, and move the branch tag only while the
+    # revision is still the branch head, so the tag never goes back to older code.
+    concurrency:
+      group: publish-image-${{ needs.resolve.outputs.branch }}
+      cancel-in-progress: false
     steps:
+      - name: Check that the revision is still the branch head
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ needs.resolve.outputs.branch }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          head="$(gh api "repos/${GITHUB_REPOSITORY}/commits/heads/${BRANCH}" --jq .sha)"
+          if [[ "$head" == "$SHA" ]]; then
+            echo "head=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::${BRANCH} has moved to ${head}; publishing sha-${SHA} without moving the ${BRANCH} tag."
+            echo "head=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check out source
         uses: actions/checkout@v4
         with:
@@ -149,8 +171,8 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=main,enable=${{ needs.resolve.outputs.branch == 'main' }}
-            type=raw,value=preview,enable=${{ needs.resolve.outputs.branch == 'preview' }}
+            type=raw,value=main,enable=${{ needs.resolve.outputs.branch == 'main' && steps.current.outputs.head == 'true' }}
+            type=raw,value=preview,enable=${{ needs.resolve.outputs.branch == 'preview' && steps.current.outputs.head == 'true' }}
             type=raw,value=sha-${{ needs.resolve.outputs.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
