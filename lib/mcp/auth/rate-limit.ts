@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { isIPv6 } from 'node:net';
+
 import { prisma } from '@/lib/db';
 
 export interface RateLimitConfig {
@@ -80,13 +82,40 @@ export async function checkMcpRateLimit(
   };
 }
 
+/**
+ * The client key for per-IP rate limits. An IPv6 client usually controls a whole
+ * /64, so every address in it shares one key; IPv4 addresses are used as-is.
+ */
 export function getClientIp(request: Request): string {
+  return rateLimitAddress(clientAddress(request));
+}
+
+function clientAddress(request: Request): string {
   // Cloudflare sets CF-Connecting-IP itself; the first X-Forwarded-For entry is whatever the client sent.
   const cloudflare = request.headers.get('cf-connecting-ip')?.trim();
   if (cloudflare) return cloudflare;
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();
   return request.headers.get('x-real-ip') ?? 'unknown';
+}
+
+function rateLimitAddress(address: string): string {
+  const withoutZone = address.split('%')[0];
+  if (!isIPv6(withoutZone)) return address;
+
+  const mappedIPv4 = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(withoutZone);
+  if (mappedIPv4) return mappedIPv4[1];
+
+  const [head, tail = ''] = withoutZone.toLowerCase().split('::');
+  const headGroups = head ? head.split(':') : [];
+  const tailGroups = withoutZone.includes('::') && tail ? tail.split(':') : [];
+  const groups = withoutZone.includes('::')
+    ? [...headGroups, ...Array(8 - headGroups.length - tailGroups.length).fill('0'), ...tailGroups]
+    : headGroups;
+  return `${groups
+    .slice(0, 4)
+    .map(group => parseInt(group, 16).toString(16))
+    .join(':')}::/64`;
 }
 
 export function createRateLimitHeaders(
