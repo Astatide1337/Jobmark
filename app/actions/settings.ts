@@ -418,7 +418,13 @@ export async function clearAllActivities(confirmation: string) {
     revalidatePath('/dashboard');
     revalidatePath('/insights');
     revalidatePath('/projects');
-    return { success: true, message: 'All notes cleared.' };
+    return {
+      success: true,
+      message:
+        lockedIds.length > 0
+          ? 'Notes cleared. Notes in private projects were kept.'
+          : 'All notes cleared.',
+    };
   } catch (error) {
     console.error('Failed to clear activities:', error);
     return { success: false, message: 'Your notes were not cleared. Try again.' };
