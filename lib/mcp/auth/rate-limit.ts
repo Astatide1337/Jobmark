@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { isIPv6 } from 'node:net';
+
 import { prisma } from '@/lib/db';
 
 export interface RateLimitConfig {
@@ -80,13 +82,55 @@ export async function checkMcpRateLimit(
   };
 }
 
+/**
+ * The client key for per-IP rate limits. An IPv6 client usually controls a whole
+ * /64, so every address in it shares one key; IPv4 addresses are used as-is.
+ */
 export function getClientIp(request: Request): string {
+  return rateLimitAddress(clientAddress(request));
+}
+
+function clientAddress(request: Request): string {
   // Cloudflare sets CF-Connecting-IP itself; the first X-Forwarded-For entry is whatever the client sent.
   const cloudflare = request.headers.get('cf-connecting-ip')?.trim();
   if (cloudflare) return cloudflare;
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();
   return request.headers.get('x-real-ip') ?? 'unknown';
+}
+
+function rateLimitAddress(address: string): string {
+  const host = address.split('%')[0];
+  if (!isIPv6(host)) return address;
+
+  // URL parsing canonicalizes the address: lowercase, no leading zeros, and any
+  // dotted IPv4 tail rewritten as two hex groups.
+  let canonical: string;
+  try {
+    canonical = new URL(`http://[${host}]`).hostname.slice(1, -1);
+  } catch {
+    return address;
+  }
+
+  const mappedIPv4 = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(canonical);
+  if (mappedIPv4) {
+    const high = parseInt(mappedIPv4[1], 16);
+    const low = parseInt(mappedIPv4[2], 16);
+    return `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+  }
+
+  const [head, tail] = canonical.split('::');
+  const headGroups = head ? head.split(':') : [];
+  const tailGroups = tail ? tail.split(':') : [];
+  const groups =
+    tail === undefined
+      ? headGroups
+      : [
+          ...headGroups,
+          ...Array(8 - headGroups.length - tailGroups.length).fill('0'),
+          ...tailGroups,
+        ];
+  return `${groups.slice(0, 4).join(':')}::/64`;
 }
 
 export function createRateLimitHeaders(
