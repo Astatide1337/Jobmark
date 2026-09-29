@@ -464,8 +464,9 @@ export function DataSection() {
                   <AlertDialogTitle>Clear all notes?</AlertDialogTitle>
                   <AlertDialogDescription>
                     <span className="block">
-                      This will permanently delete all your notes. Your projects and drafts will
-                      remain. This action cannot be undone.
+                      This will permanently delete all your notes. Notes in private projects stay
+                      unless private projects are open. Your projects and drafts will remain. This
+                      action cannot be undone.
                     </span>
                     <span className="mt-3 block font-medium">Type CLEAR ALL NOTES to confirm:</span>
                     <Input
