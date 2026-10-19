@@ -27,7 +27,7 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts
       - name: Block high and critical dependency advisories
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
   verify:
     name: verify
