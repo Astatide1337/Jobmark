@@ -99,3 +99,11 @@ was not actually run.
 Develop on a feature branch. `main` and `preview` are protected; release through reviewed GitHub
 PRs and required checks. Keep commits focused and explain behavior changes. Never use destructive
 history operations or broad filesystem deletes without explicit authorization.
+
+## Review guidelines
+
+When reviewing a pull request:
+
+- Focus on correctness, security and data safety; explain a concrete failure.
+- Cite `file:line` and supporting evidence for every behavior claim.
+- Skip findings already enforced by CI. Report at most two actionable nits.
