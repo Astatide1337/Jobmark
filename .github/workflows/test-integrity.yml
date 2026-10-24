@@ -1,0 +1,16 @@
+name: Test integrity
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  integrity:
+    uses: Astatide1337/Skills/.github/workflows/test-integrity.yml@05b772299bfefa5e4e0a227ef48f1f1a3045fa84
+    with:
+      skills-ref: 05b772299bfefa5e4e0a227ef48f1f1a3045fa84
+      approvers: Astatide1337
