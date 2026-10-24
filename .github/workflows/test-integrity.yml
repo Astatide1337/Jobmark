@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   integrity:
-    uses: Astatide1337/Skills/.github/workflows/test-integrity.yml@4738ab232969db6332bf031fcbf42ac6e6758f4c
+    uses: Astatide1337/Skills/.github/workflows/test-integrity.yml@05b772299bfefa5e4e0a227ef48f1f1a3045fa84
     with:
-      skills-ref: 4738ab232969db6332bf031fcbf42ac6e6758f4c
+      skills-ref: 05b772299bfefa5e4e0a227ef48f1f1a3045fa84
       approvers: Astatide1337
