@@ -26,12 +26,7 @@ import { LiveEditor } from '@/components/reports/live-editor';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { copyTextToClipboard } from '@/lib/clipboard';
-import {
-  McpProviderMenu,
-  getMcpProviderLaunchUrl,
-  providerSupportsPromptUrl,
-  type ConnectedMcpProvider,
-} from '@/components/reports/mcp-draft-actions';
+import { McpProviderMenu, type ConnectedMcpProvider } from '@/components/reports/mcp-draft-actions';
 import { buildSavedDraftAssistantInstructions } from '@/lib/assistant-instructions';
 
 interface OutreachDraft {
@@ -109,27 +104,6 @@ export function OutreachDraftHistory({
 
   const contentFor = (draft: OutreachDraft) =>
     editingId === draft.id ? editContent : draft.content;
-
-  const openDraftWithProvider = async (provider: ConnectedMcpProvider, content: string) => {
-    const prompt = buildSavedDraftAssistantInstructions('outreach', content);
-    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
-    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
-    const copyPromise = copyTextToClipboard(prompt);
-    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
-
-    try {
-      const copied = await copyPromise;
-      if (!copied) throw new Error('clipboard_unavailable');
-      toast.success(`${provider.name} instructions copied`, {
-        description:
-          launchPrompt && providerSupportsPromptUrl(provider.key)
-            ? `Open ${provider.name} to continue your message.`
-            : `Open ${provider.name} and paste the instructions to continue.`,
-      });
-    } catch {
-      toast.error('Could not copy the instructions.');
-    }
-  };
 
   if (drafts.length === 0) {
     return (
@@ -245,11 +219,8 @@ export function OutreachDraftHistory({
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <McpProviderMenu
                       connectedMcpProviders={connectedMcpProviders}
-                      onOpenProvider={provider =>
-                        openDraftWithProvider(
-                          provider,
-                          editingId === draft.id ? editContent : draft.content
-                        )
+                      buildInstructions={() =>
+                        buildSavedDraftAssistantInstructions('outreach', contentFor(draft))
                       }
                       className="h-9 w-auto shrink-0"
                     />

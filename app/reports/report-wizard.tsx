@@ -28,16 +28,10 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { copyTextToClipboard } from '@/lib/clipboard';
 import { buildReviewAssistantInstructions } from '@/lib/assistant-instructions';
 import { useSettings } from '@/components/providers/settings-provider';
 import { ReportWizardEditor } from '@/components/reports/report-wizard-editor';
-import {
-  McpDraftActions,
-  getMcpProviderLaunchUrl,
-  providerSupportsPromptUrl,
-  type ConnectedMcpProvider,
-} from '@/components/reports/mcp-draft-actions';
+import { McpDraftActions, type ConnectedMcpProvider } from '@/components/reports/mcp-draft-actions';
 
 interface Project {
   id: string;
@@ -215,40 +209,13 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
     }
   };
 
-  const handleDraftWithProvider = async (provider: ConnectedMcpProvider) => {
-    const prompt = buildReviewAssistantInstructions({
+  const buildInstructions = () =>
+    buildReviewAssistantInstructions({
       period: getDateRangeLabel(config.dateRange, dateRange),
       projectScope: getProjectScopeLabel(config.projectId, projects),
       tone: getToneLabel(config.tone),
       focus: config.notes?.trim() || undefined,
     });
-    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
-    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
-
-    // Start copying before opening a new tab. Some browsers revoke clipboard
-    // permission as soon as focus moves to the provider tab.
-    const copyPromise = copyTextToClipboard(prompt);
-    // Open synchronously from the click event so popup protection does not
-    // block the assistant while the clipboard permission prompt resolves.
-    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
-
-    try {
-      const copied = await copyPromise;
-      if (!copied) throw new Error('clipboard_unavailable');
-      let promptDescription = `Open ${provider.name} and paste the instructions to start your review.`;
-      if (launchPrompt && providerSupportsPromptUrl(provider.key)) {
-        promptDescription = `Open ${provider.name} to draft your review with Jobmark.`;
-      } else if (provider.key === 'gemini') {
-        promptDescription =
-          'Your instructions are copied. Paste them into Gemini to start your draft.';
-      }
-      toast.success(`${provider.name} instructions copied`, {
-        description: promptDescription,
-      });
-    } catch {
-      toast.error('Could not copy the instructions.');
-    }
-  };
 
   const stepLabels = ['Dates', 'Projects', 'Style', 'Draft'];
   const dateRangeLabel = getDateRangeButtonLabel(config, dateRange);
@@ -481,7 +448,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
 
             <McpDraftActions
               connectedMcpProviders={connectedMcpProviders}
-              onDraftWithProvider={handleDraftWithProvider}
+              buildInstructions={buildInstructions}
             />
 
             <div className="mt-8 flex justify-between">
@@ -513,7 +480,7 @@ export function ReportWizard({ projects, connectedMcpProviders }: ReportWizardPr
             onGmail={handleGmail}
             onSave={handleSave}
             connectedMcpProviders={connectedMcpProviders}
-            onDraftWithProvider={handleDraftWithProvider}
+            buildInstructions={buildInstructions}
           />
         )}
       </AnimatePresence>

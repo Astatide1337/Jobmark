@@ -39,8 +39,6 @@ import { LiveEditor } from '@/components/reports/live-editor';
 import {
   McpDraftActions,
   McpProviderMenu,
-  getMcpProviderLaunchUrl,
-  providerSupportsPromptUrl,
   type ConnectedMcpProvider,
 } from '@/components/reports/mcp-draft-actions';
 import { copyTextToClipboard } from '@/lib/clipboard';
@@ -153,8 +151,8 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
     }
   };
 
-  const handleDraftWithProvider = async (provider: ConnectedMcpProvider, includeDraft = false) => {
-    const prompt = buildOutreachAssistantInstructions({
+  const buildInstructions = (includeDraft = false) =>
+    buildOutreachAssistantInstructions({
       recipient: contact.fullName,
       purpose: config.objective,
       channel: config.channel,
@@ -162,26 +160,6 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
       context: config.extraContext.trim() || undefined,
       draft: includeDraft ? draftContent : undefined,
     });
-    // Keep provider URLs short enough for browser and provider limits. The
-    // full instructions are always copied, so a longer draft still works reliably.
-    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
-    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
-    const copyPromise = copyTextToClipboard(prompt);
-
-    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
-
-    try {
-      const copied = await copyPromise;
-      if (!copied) throw new Error('clipboard_unavailable');
-      const description =
-        launchPrompt && providerSupportsPromptUrl(provider.key)
-          ? `Open ${provider.name} to draft with your Jobmark notes.`
-          : `Your instructions are copied. Paste them into ${provider.name} to start.`;
-      toast.success(`${provider.name} instructions copied`, { description });
-    } catch {
-      toast.error('Could not copy the instructions.');
-    }
-  };
 
   const handleSave = async () => {
     if (!draftContent || isSaving || saved) return;
@@ -421,7 +399,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
 
             <McpDraftActions
               connectedMcpProviders={connectedMcpProviders}
-              onDraftWithProvider={provider => handleDraftWithProvider(provider)}
+              buildInstructions={() => buildInstructions()}
               eyebrow="Optional"
               title="Edit with an assistant"
               description="Jobmark will make the first draft. An assistant can help edit it."
@@ -466,7 +444,7 @@ export function OutreachWizard({ contact, connectedMcpProviders }: OutreachWizar
 
               <McpProviderMenu
                 connectedMcpProviders={connectedMcpProviders}
-                onOpenProvider={provider => handleDraftWithProvider(provider, true)}
+                buildInstructions={() => buildInstructions(true)}
               />
 
               {/* Send via */}

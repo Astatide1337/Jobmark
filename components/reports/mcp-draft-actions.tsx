@@ -1,9 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { useId, useRef, useState } from 'react';
 import { Claude, Gemini, OpenAI } from '@lobehub/icons';
 import { ArrowRight, ChevronDown, Link2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -23,35 +34,83 @@ const MCP_PROVIDER_URLS: Record<string, string> = {
   gemini: 'https://gemini.google.com/app',
 };
 
-// These are the only provider URL handoffs we can verify against the current
-// web apps. Gemini currently ignores query parameters, so it uses the
-// clipboard fallback instead.
-const MCP_PROVIDER_PROMPT_PARAMS: Record<string, string> = {
-  claude: 'q',
-  chatgpt: 'q',
-};
-
-export function providerSupportsPromptUrl(providerKey: string) {
-  return Object.prototype.hasOwnProperty.call(MCP_PROVIDER_PROMPT_PARAMS, providerKey);
+export function getMcpProviderLaunchUrl(providerKey: string): string | undefined {
+  return Object.hasOwn(MCP_PROVIDER_URLS, providerKey) ? MCP_PROVIDER_URLS[providerKey] : undefined;
 }
 
-export function getMcpProviderLaunchUrl(providerKey: string, prompt?: string) {
-  const baseUrl = MCP_PROVIDER_URLS[providerKey];
-  const promptParam = MCP_PROVIDER_PROMPT_PARAMS[providerKey];
-  if (!baseUrl || !prompt || !promptParam) return baseUrl;
+interface Handoff {
+  provider: ConnectedMcpProvider;
+  instructions: string;
+  trigger: HTMLButtonElement;
+}
 
-  const url = new URL(baseUrl);
-  url.searchParams.set(promptParam, prompt);
-  return url.toString();
+function McpHandoffDialog({ handoff, onClose }: { handoff: Handoff; onClose: () => void }) {
+  const { provider, instructions, trigger } = handoff;
+  const providerUrl = getMcpProviderLaunchUrl(provider.key);
+  const instructionsId = useId();
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'failed'>('idle');
+
+  const copyInstructions = async () => {
+    setCopyStatus('copying');
+    const copied = await copyTextToClipboard(instructions).catch(() => false);
+    setCopyStatus(copied ? 'copied' : 'failed');
+  };
+
+  return (
+    <Dialog open onOpenChange={open => !open && onClose()}>
+      <DialogContent
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        onCloseAutoFocus={event => {
+          event.preventDefault();
+          trigger.focus();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>Instructions for {provider.name}</DialogTitle>
+          <DialogDescription>
+            Copy these instructions and paste them into your assistant.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          <label htmlFor={instructionsId} className="text-sm font-medium">
+            Instructions
+          </label>
+          <Textarea
+            id={instructionsId}
+            value={instructions}
+            readOnly
+            rows={8}
+            className="field-sizing-fixed max-h-[40dvh] resize-none"
+          />
+          <p role="status" className="text-muted-foreground text-sm">
+            {copyStatus === 'copied' && 'Instructions copied.'}
+            {copyStatus === 'failed' &&
+              'Could not copy the instructions. Select and copy the text manually.'}
+          </p>
+        </div>
+        <DialogFooter className="flex-col">
+          <Button type="button" onClick={copyInstructions} disabled={copyStatus === 'copying'}>
+            Copy instructions
+          </Button>
+          {providerUrl && (
+            <Button asChild variant="outline">
+              <a href={providerUrl} target="_blank" rel="noopener noreferrer">
+                Open {provider.name}
+              </a>
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 interface McpDraftActionsProps {
   connectedMcpProviders: ConnectedMcpProvider[];
-  onDraftWithProvider: (provider: ConnectedMcpProvider) => void;
+  buildInstructions: () => string;
   eyebrow?: string;
   title?: string;
   description?: string;
-  providerAction?: string;
 }
 
 function ProviderIcon({ providerKey }: { providerKey: string }) {
@@ -65,23 +124,19 @@ function ProviderIcon({ providerKey }: { providerKey: string }) {
 
 export function McpDraftActions({
   connectedMcpProviders,
-  onDraftWithProvider,
+  buildInstructions,
   eyebrow = 'Optional',
   title = 'Edit with an assistant',
   description = 'Use a connected assistant to edit the draft.',
-  providerAction = 'Edit with',
 }: McpDraftActionsProps) {
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
+
   return (
     <div className="border-border/50 bg-card/30 rounded-2xl border p-5">
       <div className="flex flex-col gap-1">
         <p className="text-primary text-xs font-semibold tracking-widest uppercase">{eyebrow}</p>
         <h3 className="text-foreground font-semibold">{title}</h3>
         <p className="text-muted-foreground text-sm">{description}</p>
-        {connectedMcpProviders.some(provider => provider.key === 'gemini') && (
-          <p className="text-muted-foreground mt-1 text-xs">
-            Gemini opens in a new tab. Copy the text and paste it there.
-          </p>
-        )}
       </div>
 
       {connectedMcpProviders.length > 0 ? (
@@ -92,14 +147,16 @@ export function McpDraftActions({
               type="button"
               variant="outline"
               className="h-11 rounded-xl px-4"
-              onClick={() => onDraftWithProvider(provider)}
+              onClick={event =>
+                setHandoff({
+                  provider,
+                  instructions: buildInstructions(),
+                  trigger: event.currentTarget,
+                })
+              }
             >
               <ProviderIcon providerKey={provider.key} />
-              <span className="ml-2">
-                {getMcpProviderLaunchUrl(provider.key)
-                  ? `${providerAction} ${provider.name}`
-                  : `Copy for ${provider.name}`}
-              </span>
+              <span className="ml-2">Edit with {provider.name}</span>
             </Button>
           ))}
         </div>
@@ -111,26 +168,32 @@ export function McpDraftActions({
           </Link>
         </Button>
       )}
+      {handoff && <McpHandoffDialog handoff={handoff} onClose={() => setHandoff(null)} />}
     </div>
   );
 }
 
 interface McpProviderMenuProps {
   connectedMcpProviders: ConnectedMcpProvider[];
-  onOpenProvider: (provider: ConnectedMcpProvider) => void;
+  buildInstructions: () => string;
   className?: string;
 }
 
 /**
  * A compact provider chooser for post-draft actions. One connection gets a
- * direct action; multiple connections get a menu, so “Open in…” is never
- * ambiguous.
+ * direct action and multiple connections get a menu.
  */
 export function McpProviderMenu({
   connectedMcpProviders,
-  onOpenProvider,
+  buildInstructions,
   className,
 }: McpProviderMenuProps) {
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const openHandoff = (provider: ConnectedMcpProvider, trigger: HTMLButtonElement) =>
+    setHandoff({ provider, instructions: buildInstructions(), trigger });
+  const dialog = handoff && <McpHandoffDialog handoff={handoff} onClose={() => setHandoff(null)} />;
+
   if (connectedMcpProviders.length === 0) {
     return (
       <Button
@@ -151,29 +214,8 @@ export function McpProviderMenu({
 
   if (connectedMcpProviders.length === 1) {
     const provider = connectedMcpProviders[0];
-    const launchUrl = getMcpProviderLaunchUrl(provider.key);
     return (
-      <Button
-        type="button"
-        variant="outline"
-        className={cn(
-          'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
-          className
-        )}
-        onClick={() => onOpenProvider(provider)}
-      >
-        <ProviderIcon providerKey={provider.key} />
-        <span className="ml-2">
-          {launchUrl ? `Open in ${provider.name}` : `Copy for ${provider.name}`}
-        </span>
-        <ArrowRight className="text-muted-foreground ml-auto h-4 w-4" />
-      </Button>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <>
         <Button
           type="button"
           variant="outline"
@@ -181,28 +223,57 @@ export function McpProviderMenu({
             'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
             className
           )}
+          onClick={event => openHandoff(provider, event.currentTarget)}
         >
-          <ArrowRight className="mr-2 h-4 w-4" />
-          Continue with
-          <ChevronDown className="text-muted-foreground ml-auto h-4 w-4" />
+          <ProviderIcon providerKey={provider.key} />
+          <span className="ml-2">Edit with {provider.name}</span>
+          <ArrowRight className="text-muted-foreground ml-auto h-4 w-4" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
-        {connectedMcpProviders.map(provider => (
-          <DropdownMenuItem
-            key={provider.key}
-            onSelect={() => onOpenProvider(provider)}
-            className="cursor-pointer"
+        {dialog}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            ref={menuTrigger}
+            type="button"
+            variant="outline"
+            className={cn(
+              'border-muted-foreground/20 hover:border-muted-foreground/50 h-12 w-full justify-start rounded-xl hover:bg-transparent',
+              className
+            )}
           >
-            <ProviderIcon providerKey={provider.key} />
-            <span>
-              {getMcpProviderLaunchUrl(provider.key)
-                ? `Open in ${provider.name}`
-                : `Copy for ${provider.name}`}
-            </span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <ArrowRight className="mr-2 h-4 w-4" />
+            Continue with
+            <ChevronDown className="text-muted-foreground ml-auto h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="w-64"
+          onCloseAutoFocus={event => {
+            if (handoff) event.preventDefault();
+          }}
+        >
+          {connectedMcpProviders.map(provider => (
+            <DropdownMenuItem
+              key={provider.key}
+              onSelect={() => {
+                if (menuTrigger.current) openHandoff(provider, menuTrigger.current);
+              }}
+              className="cursor-pointer"
+            >
+              <ProviderIcon providerKey={provider.key} />
+              <span>Edit with {provider.name}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {dialog}
+    </>
   );
 }
