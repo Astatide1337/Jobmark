@@ -7,17 +7,12 @@ vi.mock('@lobehub/icons', () => ({
   OpenAI: () => null,
 }));
 
-import {
-  getMcpProviderLaunchUrl,
-  McpDraftActions,
-  McpProviderMenu,
-  providerSupportsPromptUrl,
-} from './mcp-draft-actions';
+import { getMcpProviderLaunchUrl, McpDraftActions, McpProviderMenu } from './mcp-draft-actions';
 
 describe('McpDraftActions', () => {
   it('encourages setup when no MCP provider is connected', () => {
     const markup = renderToStaticMarkup(
-      <McpDraftActions connectedMcpProviders={[]} onDraftWithProvider={vi.fn()} />
+      <McpDraftActions connectedMcpProviders={[]} buildInstructions={vi.fn()} />
     );
 
     expect(markup).toContain('Connect an assistant');
@@ -33,22 +28,22 @@ describe('McpDraftActions', () => {
           { key: 'claude', name: 'Claude' },
           { key: 'gemini', name: 'Gemini' },
         ]}
-        onDraftWithProvider={vi.fn()}
+        buildInstructions={vi.fn()}
       />
     );
 
     expect(markup).toContain('Edit with Claude');
     expect(markup).toContain('Edit with Gemini');
-    expect(markup).toContain('Gemini opens in a new tab. Copy the text and paste it there.');
     expect(markup).not.toContain('Edit with ChatGPT');
     expect(markup).not.toContain('Connect an MCP');
   });
 
-  it('uses a direct open action for one provider and a chooser for multiple', () => {
+  it('offers a local button for one provider and a chooser for multiple', () => {
+    const buildInstructions = vi.fn();
     const singleMarkup = renderToStaticMarkup(
       <McpProviderMenu
         connectedMcpProviders={[{ key: 'gemini', name: 'Gemini' }]}
-        onOpenProvider={vi.fn()}
+        buildInstructions={buildInstructions}
       />
     );
     const multipleMarkup = renderToStaticMarkup(
@@ -57,44 +52,42 @@ describe('McpDraftActions', () => {
           { key: 'claude', name: 'Claude' },
           { key: 'chatgpt', name: 'ChatGPT' },
         ]}
-        onOpenProvider={vi.fn()}
+        buildInstructions={buildInstructions}
       />
     );
 
-    expect(singleMarkup).toContain('Open in Gemini');
-    expect(singleMarkup).not.toContain('Open in...');
+    expect(singleMarkup).toContain('Edit with Gemini');
     expect(multipleMarkup).toContain('Continue with');
-    expect(getMcpProviderLaunchUrl('claude')).toBe('https://claude.ai/new');
-    expect(getMcpProviderLaunchUrl('chatgpt')).toBe('https://chatgpt.com/');
-    expect(getMcpProviderLaunchUrl('gemini')).toBe('https://gemini.google.com/app');
+    expect(multipleMarkup).toContain('aria-haspopup="dialog"');
+    expect(singleMarkup).not.toContain('href=');
+    expect(multipleMarkup).not.toContain('href=');
+    expect(buildInstructions).not.toHaveBeenCalled();
   });
 
-  it('builds provider links with the prompt in the expected field', () => {
-    const prompt = 'Draft my review for Q3';
-
-    expect(getMcpProviderLaunchUrl('claude', prompt)).toBe(
-      'https://claude.ai/new?q=Draft+my+review+for+Q3'
-    );
-    expect(getMcpProviderLaunchUrl('chatgpt', prompt)).toBe(
-      'https://chatgpt.com/?q=Draft+my+review+for+Q3'
-    );
-    // Gemini's web app ignores prompt query parameters. Keep the prompt out
-    // of the URL and rely on the clipboard fallback instead.
-    expect(getMcpProviderLaunchUrl('gemini', prompt)).toBe('https://gemini.google.com/app');
-    expect(providerSupportsPromptUrl('claude')).toBe(true);
-    expect(providerSupportsPromptUrl('chatgpt')).toBe(true);
-    expect(providerSupportsPromptUrl('gemini')).toBe(false);
+  it.each([
+    ['claude', 'https://claude.ai/new'],
+    ['chatgpt', 'https://chatgpt.com/'],
+    ['gemini', 'https://gemini.google.com/app'],
+  ])('uses the static provider URL for %s', (key, url) => {
+    expect(getMcpProviderLaunchUrl(key)).toBe(url);
   });
 
-  it('uses a copy action for an unlisted MCP client', () => {
+  it.each(['client:linear', 'https://unknown.example/', 'constructor', '__proto__', 'toString'])(
+    'offers no external URL for %s',
+    key => {
+      expect(getMcpProviderLaunchUrl(key)).toBeUndefined();
+    }
+  );
+
+  it('offers local instructions for an unlisted MCP client', () => {
     const markup = renderToStaticMarkup(
       <McpProviderMenu
         connectedMcpProviders={[{ key: 'client:linear', name: 'Linear' }]}
-        onOpenProvider={vi.fn()}
+        buildInstructions={vi.fn()}
       />
     );
 
-    expect(markup).toContain('Copy for Linear');
-    expect(markup).not.toContain('Open in Linear');
+    expect(markup).toContain('Edit with Linear');
+    expect(markup).not.toContain('href=');
   });
 });

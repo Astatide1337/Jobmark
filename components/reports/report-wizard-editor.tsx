@@ -37,7 +37,7 @@ interface ReportWizardEditorProps {
   onGmail: () => void;
   onSave: () => void;
   connectedMcpProviders: ConnectedMcpProvider[];
-  onDraftWithProvider: (provider: ConnectedMcpProvider) => void;
+  buildInstructions: () => string;
 }
 
 export function ReportWizardEditor({
@@ -51,7 +51,7 @@ export function ReportWizardEditor({
   onGmail,
   onSave,
   connectedMcpProviders,
-  onDraftWithProvider,
+  buildInstructions,
 }: ReportWizardEditorProps) {
   return (
     <motion.div
@@ -185,7 +185,7 @@ export function ReportWizardEditor({
             </Button>
             <McpProviderMenu
               connectedMcpProviders={connectedMcpProviders}
-              onOpenProvider={onDraftWithProvider}
+              buildInstructions={buildInstructions}
             />
           </div>
         </div>

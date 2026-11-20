@@ -38,12 +38,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { LiveEditor } from './live-editor';
 import { copyTextToClipboard } from '@/lib/clipboard';
-import {
-  McpProviderMenu,
-  getMcpProviderLaunchUrl,
-  providerSupportsPromptUrl,
-  type ConnectedMcpProvider,
-} from './mcp-draft-actions';
+import { McpProviderMenu, type ConnectedMcpProvider } from './mcp-draft-actions';
 import { buildSavedDraftAssistantInstructions } from '@/lib/assistant-instructions';
 
 interface Report {
@@ -134,27 +129,6 @@ export function ReportHistory({
       toast.error('Could not save the draft.');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const openDraftWithProvider = async (provider: ConnectedMcpProvider, content: string) => {
-    const prompt = buildSavedDraftAssistantInstructions('review', content);
-    const launchPrompt = prompt.length <= 2_000 ? prompt : undefined;
-    const providerUrl = getMcpProviderLaunchUrl(provider.key, launchPrompt);
-    const copyPromise = copyTextToClipboard(prompt);
-    if (providerUrl) window.open(providerUrl, '_blank', 'noopener,noreferrer');
-
-    try {
-      const copied = await copyPromise;
-      if (!copied) throw new Error('clipboard_unavailable');
-      toast.success(`${provider.name} instructions copied.`, {
-        description:
-          launchPrompt && providerSupportsPromptUrl(provider.key)
-            ? `Open ${provider.name} to continue your review.`
-            : `Open ${provider.name} and paste the instructions to continue.`,
-      });
-    } catch {
-      toast.error('Could not copy the instructions.');
     }
   };
 
@@ -279,9 +253,9 @@ export function ReportHistory({
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <McpProviderMenu
                       connectedMcpProviders={connectedMcpProviders}
-                      onOpenProvider={provider =>
-                        openDraftWithProvider(
-                          provider,
+                      buildInstructions={() =>
+                        buildSavedDraftAssistantInstructions(
+                          'review',
                           editingId === report.id ? editContent : report.content
                         )
                       }
