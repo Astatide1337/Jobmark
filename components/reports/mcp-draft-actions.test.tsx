@@ -58,6 +58,7 @@ describe('McpDraftActions', () => {
 
     expect(singleMarkup).toContain('Edit with Gemini');
     expect(multipleMarkup).toContain('Continue with');
+    expect(multipleMarkup).toContain('aria-haspopup="dialog"');
     expect(singleMarkup).not.toContain('href=');
     expect(multipleMarkup).not.toContain('href=');
     expect(buildInstructions).not.toHaveBeenCalled();

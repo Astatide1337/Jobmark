@@ -156,13 +156,14 @@ async function providerLink(dialog: Locator, provider: string, url: string) {
   return link;
 }
 
-async function chooseFromMenu(section: Page | Locator, page: Page, provider: string) {
+async function chooseAssistant(section: Page | Locator, page: Page, provider: string) {
   await section.getByRole('button', { name: 'Continue with', exact: true }).click();
-  const menu = page.getByRole('menu').and(page.locator('[data-state="open"]'));
-  const item = menu.getByRole('menuitem', { name: new RegExp(`Edit with ${provider}$`) });
-  await expect(item).toBeInViewport();
-  await item.click();
-  await expect(menu).toBeHidden();
+  const chooser = page.getByRole('dialog', { name: 'Choose an assistant', exact: true });
+  const option = chooser.getByRole('button', { name: new RegExp(`Edit with ${provider}$`) });
+  await expect(option).toBeInViewport();
+  await option.click();
+  await expect(chooser).toBeHidden();
+  await expect(page.getByRole('dialog')).toHaveCount(1);
 }
 
 test('hands off review focus and the current saved-review editor text locally', async ({
@@ -203,7 +204,7 @@ test('hands off review focus and the current saved-review editor text locally', 
   await expect(page.getByRole('button', { name: 'Save draft', exact: true })).toBeEnabled();
   const editor = await checkHandoff(
     page,
-    () => chooseFromMenu(page, page, 'ChatGPT'),
+    () => chooseAssistant(page, page, 'ChatGPT'),
     'ChatGPT',
     review
   );
@@ -220,7 +221,7 @@ test('hands off review focus and the current saved-review editor text locally', 
   const expected = buildSavedDraftAssistantInstructions('review', editedDraft);
   const history = await checkHandoff(
     page,
-    () => chooseFromMenu(section, page, 'ChatGPT'),
+    () => chooseAssistant(section, page, 'ChatGPT'),
     'ChatGPT',
     expected
   );
@@ -281,7 +282,7 @@ test('hands off outreach context and a longer edited draft without an unknown pr
   const current = buildOutreachAssistantInstructions({ ...outreachInput, draft: editedDraft });
   const wizardEditor = await checkHandoff(
     page,
-    () => chooseFromMenu(page, page, 'Gemini'),
+    () => chooseAssistant(page, page, 'Gemini'),
     'Gemini',
     current
   );
@@ -295,10 +296,14 @@ test('hands off outreach context and a longer edited draft without an unknown pr
   await section.getByRole('button', { name: 'Edit', exact: true }).click();
   const longDraft = `${editedDraft}\n${'Full draft. '.repeat(200)}`;
   await section.getByRole('textbox').fill(longDraft);
+  await section
+    .getByRole('button', { name: 'Continue with', exact: true })
+    .scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   const expected = buildSavedDraftAssistantInstructions('outreach', longDraft);
   const history = await checkHandoff(
     page,
-    () => chooseFromMenu(section, page, 'E2E Other assistant'),
+    () => chooseAssistant(section, page, 'E2E Other assistant'),
     'E2E Other assistant',
     expected
   );
