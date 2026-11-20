@@ -106,17 +106,28 @@ jobs:
           upload-release-assets: false
 
       - name: Scan image for fixed high and critical vulnerabilities
+        id: vulnerability-gate
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: jobmark:security-${{ needs.resolve.outputs.sha }}
+          # The action clears the severity filter for full SARIF reports.
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Generate full image vulnerability report
+        id: vulnerability-report
+        if: ${{ !cancelled() && (steps.vulnerability-gate.outcome == 'success' || steps.vulnerability-gate.outcome == 'failure') }}
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: jobmark:security-${{ needs.resolve.outputs.sha }}
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'
 
       - name: Upload image scan results
-        if: always() && hashFiles('trivy-results.sarif') != ''
+        if: ${{ !cancelled() && steps.vulnerability-report.outcome == 'success' }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
