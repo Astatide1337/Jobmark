@@ -60,6 +60,10 @@ const test = base.extend<{ handoff: { id: string; label: string } }>({
         where: { email: 'dev-user@jobmark.local' },
         select: { id: true },
       });
+      const settings = await db.userSettings.findUnique({
+        where: { userId },
+        select: { defaultTone: true },
+      });
       const clients = providers.map(([, host]) => `https://${host}/jobmark-e2e/${id}`);
 
       await db.$transaction([
@@ -97,6 +101,14 @@ const test = base.extend<{ handoff: { id: string; label: string } }>({
           db.report.deleteMany({ where: { id, userId } }),
           db.contact.deleteMany({ where: { id, userId } }),
           db.oAuthClient.deleteMany({ where: { clientId: { in: clients }, userId } }),
+          ...(settings && settings.defaultTone !== 'professional'
+            ? [
+                db.userSettings.updateMany({
+                  where: { userId, defaultTone: 'professional' },
+                  data: { defaultTone: settings.defaultTone },
+                }),
+              ]
+            : []),
         ]);
       }
     } finally {
@@ -147,7 +159,9 @@ async function providerLink(dialog: Locator, provider: string, url: string) {
 async function chooseFromMenu(section: Page | Locator, page: Page, provider: string) {
   await section.getByRole('button', { name: 'Continue with', exact: true }).click();
   const menu = page.getByRole('menu').and(page.locator('[data-state="open"]'));
-  await menu.getByRole('menuitem', { name: new RegExp(`Edit with ${provider}$`) }).click();
+  const item = menu.getByRole('menuitem', { name: new RegExp(`Edit with ${provider}$`) });
+  await expect(item).toBeInViewport();
+  await item.click();
   await expect(menu).toBeHidden();
 }
 
@@ -183,6 +197,20 @@ test('hands off review focus and the current saved-review editor text locally', 
   await expect(wizard.prompt).toHaveValue(review);
   await page.keyboard.press('Escape');
   await expect(chooser).toBeFocused();
+
+  await page.getByRole('button', { name: 'Make review draft', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Review draft', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save draft', exact: true })).toBeEnabled();
+  const editor = await checkHandoff(
+    page,
+    () => chooseFromMenu(page, page, 'ChatGPT'),
+    'ChatGPT',
+    review
+  );
+  await copyInstructions(page, editor.dialog, review);
+  await providerLink(editor.dialog, 'ChatGPT', 'https://chatgpt.com/');
+  await page.keyboard.press('Escape');
+  await expect(editor.dialog).toBeHidden();
 
   await page.getByRole('tab', { name: 'Review drafts', exact: true }).click();
   await page.getByRole('button', { name: new RegExp(`^${handoff.label}`) }).click();
@@ -247,7 +275,9 @@ test('hands off outreach context and a longer edited draft without an unknown pr
 
   await page.getByRole('button', { name: 'Make draft', exact: true }).click();
   const editor = page.getByPlaceholder('Your draft will show here...');
+  await expect(editor).toHaveValue(/^Subject:/);
   await editor.fill(editedDraft);
+  await expect(editor).toHaveValue(editedDraft);
   const current = buildOutreachAssistantInstructions({ ...outreachInput, draft: editedDraft });
   const wizardEditor = await checkHandoff(
     page,
@@ -258,6 +288,7 @@ test('hands off outreach context and a longer edited draft without an unknown pr
   await copyInstructions(page, wizardEditor.dialog, current);
   await page.keyboard.press('Escape');
   await expect(wizardEditor.dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Continue with', exact: true })).toBeFocused();
 
   await page.getByRole('button', { name: new RegExp(`^${handoff.label}`) }).click();
   const section = page.locator(`#outreach-draft-${handoff.id}-content`);
